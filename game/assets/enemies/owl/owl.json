@@ -1,0 +1,110 @@
+{
+  "id": "owl",
+  "fps": 30,
+  "height_m": 2.4,
+  "radius_m": 0.8,
+  "aim_height_m": 1.1,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 1.2,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.1,
+      "loop": false
+    },
+    "Cast": {
+      "seconds": 1.5,
+      "loop": false
+    },
+    "Roar": {
+      "seconds": 2.0,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 2.2,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.55
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.467
+    },
+    "Cast": {
+      "cast": 0.6
+    },
+    "Roar": {
+      "roar": 0.533
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.hat.1",
+      "end": "jig.hat.3",
+      "stiffness": 2.5,
+      "drag": 0.4,
+      "gravity": 0.3,
+      "radius": 0.07
+    },
+    {
+      "root": "jig.lantern.1",
+      "end": "jig.lantern.2",
+      "stiffness": 0.8,
+      "drag": 0.25,
+      "gravity": 1.0,
+      "radius": 0.09
+    },
+    {
+      "root": "jig.shawl_L.1",
+      "end": "jig.shawl_L.2",
+      "stiffness": 2.0,
+      "drag": 0.5,
+      "gravity": 0.5,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.shawl_R.1",
+      "end": "jig.shawl_R.2",
+      "stiffness": 2.0,
+      "drag": 0.5,
+      "gravity": 0.5,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.shawl_BL.1",
+      "end": "jig.shawl_BL.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.6,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.shawl_B.1",
+      "end": "jig.shawl_B.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.6,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.shawl_BR.1",
+      "end": "jig.shawl_BR.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.6,
+      "radius": 0.08
+    }
+  ],
+  "tris": 9307
+}

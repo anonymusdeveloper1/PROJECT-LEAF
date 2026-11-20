@@ -1,0 +1,39 @@
+{
+  "id": "trader",
+  "fps": 30,
+  "height_m": 1.085,
+  "radius_m": 0.5,
+  "clips": {
+    "Idle": {
+      "seconds": 3.2,
+      "loop": true
+    },
+    "Wave": {
+      "seconds": 1.2,
+      "loop": false
+    },
+    "Talk": {
+      "seconds": 2.4,
+      "loop": true
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.scarf.1",
+      "end": "jig.scarf.2",
+      "stiffness": 2.0,
+      "drag": 0.5,
+      "gravity": 0.4,
+      "radius": 0.03
+    },
+    {
+      "root": "jig.lantern.1",
+      "end": "jig.lantern.2",
+      "stiffness": 0.8,
+      "drag": 0.3,
+      "gravity": 1.0,
+      "radius": 0.07
+    }
+  ],
+  "tris": 4634
+}

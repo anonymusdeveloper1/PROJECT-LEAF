@@ -1,0 +1,398 @@
+{
+  "_note": "Phase E Burrows props (docs/PHASE_E_SPEC.md section 17). size_m = [x width, y depth, z height] in metres, Blender axes (Godot: x, z, y). Fronts face Blender -Y (Godot +Z). Origin on the ground at the footprint centre unless origin says centre. collision null = walk-through / decided by the code. Parts are separate mesh nodes with their origin at the pivot; markers are empty nodes. Glowing parts are plain bright faces (vertex colour).",
+  "group": "burrows",
+  "extra_colours": {
+    "_note": "sRGB colours used here that art/palette.json does not have yet",
+    "earth_light": "#8A7354",
+    "earth": "#6F5A41",
+    "earth_mid": "#625039",
+    "earth_dark": "#4E3F2D",
+    "earth_deep": "#33291D",
+    "hole_dark": "#18110B",
+    "teal_light": "#B8FFF1",
+    "teal_glow": "#5FE0C8",
+    "teal": "#2FB09E",
+    "teal_dark": "#1C6F66",
+    "amber_light": "#FFD889",
+    "amber": "#F5A12A",
+    "amber_dark": "#C2691A",
+    "heartwood_light": "#C5733F",
+    "heartwood": "#9C4F2B",
+    "heartwood_dark": "#6A3320",
+    "dew_light": "#D9FFC4",
+    "dew": "#93E66A",
+    "dew_dark": "#4FAE3E"
+  },
+  "props": [
+    {
+      "name": "burrow_hollow",
+      "file": "burrow_hollow.glb",
+      "size_m": [
+        4.46,
+        3.63,
+        2.88
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 1.4
+      },
+      "tris": 2270,
+      "origin": "ground centre",
+      "notes": "The Old Hollow: a dark round hole (1.6 m across) going down between giant mossy roots, wooden steps down on the north (camp, +Y) side. North rim 0.4 m, south rim (camera side, -Y) under 0.9 m in the middle, root arches on the east and west up to 2.95 m, two amber lanterns. Parts (origin on the ground at the hole centre): `seal` = violet Gloom crystals and brambles plugging the hole (sink it: position y -1.2 and scale y 0.1, then hide); `eyes` = two violet glints on the seal's south face, origin at their midpoint (blink them while sealed); `glow` = the hole's inner rim band, bright amber (hide it while sealed, show it once open). Front -Y faces the camera/woods; the camp is +Y.",
+      "parts": [
+        "glow",
+        "seal",
+        "eyes"
+      ]
+    },
+    {
+      "name": "hollow_roots_a",
+      "file": "hollow_roots_a.glb",
+      "size_m": [
+        6.0,
+        1.15,
+        0.75
+      ],
+      "collision": null,
+      "tris": 496,
+      "origin": "ground centre",
+      "notes": "Giant mossy root snaking flat from the treeline toward the Old Hollow (dressing in the cleared notch, no collision). Runs along X: the thick end (+X) comes out of the ground at the treeline, the thin end (-X) points at the hollow."
+    },
+    {
+      "name": "hollow_roots_b",
+      "file": "hollow_roots_b.glb",
+      "size_m": [
+        6.1,
+        1.18,
+        0.64
+      ],
+      "collision": null,
+      "tris": 496,
+      "origin": "ground centre",
+      "notes": "Giant mossy root snaking flat from the treeline toward the Old Hollow (dressing in the cleared notch, no collision). Runs along X: the thick end (+X) comes out of the ground at the treeline, the thin end (-X) points at the hollow."
+    },
+    {
+      "name": "burrow_hole",
+      "file": "burrow_hole.glb",
+      "size_m": [
+        1.11,
+        1.18,
+        0.27
+      ],
+      "collision": null,
+      "tris": 190,
+      "origin": "ground centre",
+      "notes": "Dirt spawn hole (Grublings, the Amber Grub): mound rim round a dark hole, claw marks, clods. Walk-over, no collision."
+    },
+    {
+      "name": "burrow_spring",
+      "file": "burrow_spring.glb",
+      "size_m": [
+        2.42,
+        2.4,
+        0.3
+      ],
+      "collision": null,
+      "tris": 991,
+      "origin": "ground centre",
+      "notes": "Moonwell spring (r 1.1). Walkable: the glowing water surface is at z 0.07 and the front (-Y) has a low gap with two stepping stones where the cat wades in. Mossy stone rim, small teal glow mushrooms, lily pads. No collision."
+    },
+    {
+      "name": "boon_shrine",
+      "file": "boon_shrine.glb",
+      "size_m": [
+        0.82,
+        0.56,
+        1.35
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.35
+      },
+      "tris": 304,
+      "origin": "ground centre",
+      "notes": "Mossy standing stone with a glowing teal leaf rune on its flat front (-Y) face. Two stand in a spring room; the code fades the one not taken."
+    },
+    {
+      "name": "root_lift",
+      "file": "root_lift.glb",
+      "size_m": [
+        1.65,
+        1.23,
+        2.6
+      ],
+      "collision": null,
+      "tris": 870,
+      "origin": "ground centre",
+      "notes": "Vine-basket lift in a niche of giant roots, open to the front (-Y). Part `basket` (origin on the ground at the basket centre, z 0 to 0.56): raise it (position y up) to lift the cat out; the vine ropes from the root knot (z 2.4) stay. Collision is up to the code.",
+      "parts": [
+        "basket"
+      ]
+    },
+    {
+      "name": "burrow_chest",
+      "file": "burrow_chest.glb",
+      "size_m": [
+        0.96,
+        0.8,
+        0.82
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          0.96,
+          0.7
+        ]
+      },
+      "tris": 409,
+      "origin": "ground centre",
+      "notes": "Root chest, front -Y. Part `lid` with its origin on the hinge (back top edge of the body); open it by rotating about its local X axis, about -100 degrees in Godot (rotation.x = deg_to_rad(-100)) lifts the front. Inside: glowing amber and gold.",
+      "parts": [
+        "lid"
+      ]
+    },
+    {
+      "name": "gloom_seal",
+      "file": "gloom_seal.glb",
+      "size_m": [
+        1.25,
+        0.96,
+        0.89
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.2,
+          0.9
+        ]
+      },
+      "tris": 291,
+      "origin": "ground centre",
+      "notes": "Violet Gloom crystal cage that sits over burrow_chest (same origin; inner clearance 1.02 x 0.72 x 0.8 m). Hide or shatter it when the seal is broken."
+    },
+    {
+      "name": "burrow_chest_boss",
+      "file": "burrow_chest_boss.glb",
+      "size_m": [
+        1.6,
+        1.22,
+        1.2
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.6,
+          1.1
+        ]
+      },
+      "tris": 650,
+      "origin": "ground centre",
+      "notes": "Boss chest, wrapped in glowing teal vines. Root chest, front -Y. Part `lid` with its origin on the hinge (back top edge of the body); open it by rotating about its local X axis, about -100 degrees in Godot (rotation.x = deg_to_rad(-100)) lifts the front. Inside: glowing amber and gold.",
+      "parts": [
+        "lid"
+      ]
+    },
+    {
+      "name": "trap_thorns",
+      "file": "trap_thorns.glb",
+      "size_m": [
+        1.68,
+        1.65,
+        0.58
+      ],
+      "collision": null,
+      "tris": 480,
+      "origin": "ground centre",
+      "notes": "Thorn floor plate (r 0.85). Part `spikes` is modelled RAISED (fired, tips at 0.58 m), origin on the ground at the plate centre: at rest set its position y to -0.5 (the tips then sit in the dark holes), fire = tween to 0, hold 0.5 s, back to -0.5. Walk-over, no collision.",
+      "parts": [
+        "spikes"
+      ]
+    },
+    {
+      "name": "spore_vent",
+      "file": "spore_vent.glb",
+      "size_m": [
+        0.88,
+        0.86,
+        0.31
+      ],
+      "collision": null,
+      "tris": 232,
+      "origin": "ground centre",
+      "notes": "Spore vent: an earth vent ringed by tiny teal glow mushrooms. Part `cap` = the puffball cap on the vent, origin at its base (z 0.04): squash it (scale y down) before a puff. No collision.",
+      "parts": [
+        "cap"
+      ]
+    },
+    {
+      "name": "dew_bud",
+      "file": "dew_bud.glb",
+      "size_m": [
+        0.18,
+        0.36,
+        0.47
+      ],
+      "collision": null,
+      "tris": 96,
+      "origin": "ground centre",
+      "notes": "Closed green bud on a short stem with a glowing dew drop inside. Part `petals` (origin at the top of the stem, z 0.2): open it by scaling (about x 1.7, y 0.45, z 1.7 in Godot) so the four petals splay out and show the dew. No collision.",
+      "parts": [
+        "petals"
+      ]
+    },
+    {
+      "name": "glow_mushroom_big",
+      "file": "glow_mushroom_big.glb",
+      "size_m": [
+        0.89,
+        0.88,
+        1.37
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.15
+      },
+      "tris": 338,
+      "origin": "ground centre",
+      "notes": "Tall glowing teal mushroom (Grotto dressing): pale stem, big teal cap with bright spots, two small ones at its foot."
+    },
+    {
+      "name": "amber_cluster",
+      "file": "amber_cluster.glb",
+      "size_m": [
+        0.46,
+        0.46,
+        0.46
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.22
+      },
+      "tris": 193,
+      "origin": "ground centre",
+      "notes": "Amber crystals on a dark rock (Deeps dressing; also the level-5 fallback cap). Origin on the ground at its centre."
+    },
+    {
+      "name": "root_tangle",
+      "file": "root_tangle.glb",
+      "size_m": [
+        1.09,
+        0.62,
+        0.38
+      ],
+      "collision": null,
+      "tris": 114,
+      "origin": "ground centre",
+      "notes": "Floor and wall dressing: roots looping out of the ground. No collision."
+    },
+    {
+      "name": "mat_amber",
+      "file": "mat_amber.glb",
+      "size_m": [
+        0.17,
+        0.15,
+        0.25
+      ],
+      "collision": null,
+      "tris": 49,
+      "origin": "centre",
+      "notes": "Pickup. Origin at its centre (floats and spins, like golden_leaf). Honey-orange amber resin crystal (double point) with a small side crystal."
+    },
+    {
+      "name": "mat_glowstone",
+      "file": "mat_glowstone.glb",
+      "size_m": [
+        0.21,
+        0.17,
+        0.16
+      ],
+      "collision": null,
+      "tris": 32,
+      "origin": "centre",
+      "notes": "Pickup. Origin at its centre (floats and spins, like golden_leaf). Rounded teal glowstone pebble with bright faces (teal, never violet)."
+    },
+    {
+      "name": "mat_heartwood",
+      "file": "mat_heartwood.glb",
+      "size_m": [
+        0.21,
+        0.11,
+        0.22
+      ],
+      "collision": null,
+      "tris": 84,
+      "origin": "centre",
+      "notes": "Pickup. Origin at its centre (floats and spins, like golden_leaf). Knot of red-brown heartwood root looped round a glowing amber core; stands upright, face toward -Y."
+    },
+    {
+      "name": "dew_drop",
+      "file": "dew_drop.glb",
+      "size_m": [
+        0.17,
+        0.16,
+        0.2
+      ],
+      "collision": null,
+      "tris": 56,
+      "origin": "centre",
+      "notes": "Pickup. Origin at its centre (floats and spins, like golden_leaf). Green water drop (heals 1)."
+    },
+    {
+      "name": "barricade_heartwood",
+      "file": "barricade_heartwood.glb",
+      "size_m": [
+        2.98,
+        0.84,
+        1.1
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          3.0,
+          0.6
+        ]
+      },
+      "tris": 874,
+      "origin": "ground centre",
+      "notes": "Barricade level 5 (Heartwood): three carved heartwood logs with amber cores, four pointed posts, bound with glowing amber root bands; a carved amber leaf on the front. Runs 3.0 m along X, front -Y faces the woods, same footprint as the other barricades."
+    },
+    {
+      "name": "acorn_tower_5",
+      "file": "acorn_tower_5.glb",
+      "size_m": [
+        1.94,
+        1.91,
+        3.2
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.5,
+          1.5
+        ]
+      },
+      "tris": 1290,
+      "origin": "ground centre",
+      "notes": "Level 5 acorn tower (the Amber Tower): heartwood frame on a stone and root footing, bound with glowing amber root bands, a crown of amber crystals round the deck (the amber cap). `turret` = the heartwood crossbow loaded with an amber acorn, origin on its vertical turning axis at the top of the fixed collar, aims -Y; rotate it about its local up axis. `marker_shoot` (child of turret) = bolt tip, where the acorn leaves. Front -Y.",
+      "parts": [
+        "turret"
+      ],
+      "markers": [
+        "marker_shoot"
+      ]
+    },
+    {
+      "name": "thorn_spikes_5",
+      "file": "thorn_spikes_5.glb",
+      "size_m": [
+        1.25,
+        0.92,
+        0.41
+      ],
+      "collision": null,
+      "tris": 903,
+      "origin": "ground centre",
+      "notes": "Level 5 spikes (Amber Thorns): a thorn bed of heartwood stakes with glowing amber tips and heartwood bramble vines with amber thorns. Ground trap (walk-over, no blocking), trap area about 1.3 x 1.0 m like thorn_spikes_1-3."
+    }
+  ]
+}

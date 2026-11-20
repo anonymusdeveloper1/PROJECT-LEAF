@@ -1,0 +1,65 @@
+{
+  "id": "pitcher",
+  "fps": 30,
+  "height_m": 1.102,
+  "radius_m": 0.4,
+  "aim_height_m": 0.5,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.5333,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.2,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.8,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.42
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.567
+    }
+  },
+  "mouth_height_m": 0.625,
+  "spring_chains": [
+    {
+      "root": "jig.lid.1",
+      "end": "jig.lid.2",
+      "stiffness": 2.5,
+      "drag": 0.45,
+      "gravity": 0.25,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.tendril_l.1",
+      "end": "jig.tendril_l.3",
+      "stiffness": 1.8,
+      "drag": 0.4,
+      "gravity": 0.3,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.tendril_r.1",
+      "end": "jig.tendril_r.3",
+      "stiffness": 1.8,
+      "drag": 0.4,
+      "gravity": 0.3,
+      "radius": 0.04
+    }
+  ],
+  "tris": 3968
+}

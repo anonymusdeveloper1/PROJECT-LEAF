@@ -1,0 +1,97 @@
+{
+  "id": "boar",
+  "fps": 30,
+  "height_m": 0.998,
+  "radius_m": 0.48,
+  "aim_height_m": 0.5,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.533,
+      "loop": true
+    },
+    "Windup": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Charge": {
+      "seconds": 0.4,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.333,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 1.0,
+    "Charge": 5.0
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.3
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.2",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.3,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.mane_head.1",
+      "end": "jig.mane_head.2",
+      "stiffness": 3.0,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.mane_back.1",
+      "end": "jig.mane_back.2",
+      "stiffness": 3.0,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.mane_rump.1",
+      "end": "jig.mane_rump.1",
+      "stiffness": 3.0,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.ear_l.1",
+      "end": "jig.ear_l.1",
+      "stiffness": 4.0,
+      "drag": 0.5,
+      "gravity": 0.05,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.ear_r.1",
+      "end": "jig.ear_r.1",
+      "stiffness": 4.0,
+      "drag": 0.5,
+      "gravity": 0.05,
+      "radius": 0.04
+    }
+  ],
+  "tris": 5898
+}

@@ -1,0 +1,380 @@
+extends Node
+## Phase G2: the camp (`-- --autotest --fresh --campg`), run from autotest.gd. Each check logs "EXPECT PASS <what>" or
+## "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: the numbers come from balance.json, no fight is
+## played (the Well's mending is stepped by hand, with a breather or a wave faked for those few lines only).
+##   (a) the Hearthtree's card: its title is the Hearthtree (no "Shop"), its rows hold sections and item tiles, the
+##       Grow tile "Hearthtree level 2" last after the goals
+##   (b) at Hearthtree 1 the Market and the Mushroom Cottage are not offered; at 2 they are; a goal for one not built
+##       points to the Hearthtree's card; building the Market brings Thistle, who can be ridden
+##   (c) the Market: buying timber, a food item and (after the missions) amber changes the right stocks; selling amber
+##   (d) the Well: a hurt campfire and building mend toward the cap between waves, a little in a wave, never above the
+##       cap between waves, never a broken thing or the ashes; no wish row, no "!" for wishing
+##   (e) the Training Target and Bow Bench cards are made of item tiles (and section headings)
+##   (f) an old save with the stall and cottage (gifts of missions 2 and 3) keeps them, with Thistle and Sprig
+
+var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _at_ring, _press, _log)
+var main
+
+
+func run() -> bool:
+	main.player.invincible = true
+	_start_fresh()
+	await t._wait(0.3)
+	await _hearthtree_card()
+	await _unlocks()
+	_market()
+	_well()
+	await _tiles()
+	_old_save()
+	main.hud.hide_card()
+	return true
+
+
+func _x(what: String, ok: bool, extra := {}) -> bool:
+	return t._expect(what, ok, extra)
+
+
+func _st():
+	return main.stations
+
+
+## A camp with mission 1 won and nothing built or bought.
+func _start_fresh() -> void:
+	Save.missions_done = [String(Data.mission(0)["id"])]
+	Save.mission_run = {}
+	Save.camp_level = 1
+	for k in Save.stations:
+		Save.stations[k] = 0
+	for k in Save.stats:
+		Save.stats[k] = 0
+	Save.bows = {"twig": 1}
+	Save.bow = "twig"
+	Save.ruined = []
+	Save.wear = {}
+	Save.fire_ruined = false
+	Save.leaves = 0
+	Save.timber = 0
+	for k in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done"]:
+		Save.set_flag(k)
+	_st().refresh()
+
+
+func _kind(r: Dictionary) -> String:
+	return String(r.get("kind", ""))
+
+
+func _items(rows: Array) -> Array:
+	return rows.filter(func(r): return _kind(r) == "item")
+
+
+func _tile_named(rows: Array, title: String) -> Dictionary:
+	for r in rows:
+		if _kind(r) == "item" and String(r.get("title", "")) == title:
+			return r
+	return {}
+
+
+## Every word on a card's rows (titles, lines, notes, buttons), for "is it there at all" checks.
+func _words(rows: Array) -> String:
+	var bits: Array = []
+	for r in rows:
+		for k in ["title", "text", "note", "label"]:
+			bits.append(String(r.get(k, "")))
+	return " | ".join(bits)
+
+
+func _titles(rows: Array) -> Array:
+	return rows.map(func(r): return "%s:%s" % [_kind(r), String(r.get("title", r.get("text", "")))])
+
+
+# ---------------------------------------------------------------- (a) the Hearthtree's card
+func _hearthtree_card() -> void:
+	var st = _st()
+	var spec: Dictionary = st._card_shop()
+	var rows: Array = spec["rows"]
+	var ht := Data.camp_name(true)
+	_x("camp_name: 'the Hearthtree' / 'The Hearthtree'", Data.camp_name() == String(Data.b.get("camp_name", "the Hearthtree"))
+		and Data.camp_name(true).begins_with("The "), {"name": Data.camp_name(), "cap": Data.camp_name(true)})
+	_x("the Hearthtree's card is called the Hearthtree", String(spec["title"]) == ht, {"title": spec["title"]})
+	_x("its rows hold item tiles and section headings", _items(rows).size() >= 3 and rows.any(func(r): return _kind(r) == "section"),
+		{"rows": _titles(rows)})
+	_x("no 'Shop' on the card, and no 'your home'", not _words(rows).contains("Shop") and not _words(rows).to_lower().contains("your home")
+		and not String(spec["sub"]).to_lower().contains("home"), {"sub": spec["sub"]})
+	var want := "%s level 2" % ht.trim_prefix("The ")
+	var grow: Array = rows.filter(func(r): return String(r.get("title", "")) == want)
+	_x("the Grow tile: '%s' with Grow, the last of the goals' shelf" % want, grow.size() == 1 and String(grow[0]["label"]) == "Grow"
+		and String((st._grow_rows().back() as Dictionary).get("title", "")) == want and (grow[0].get("stats", []) as Array).size() == 1,
+		{"rows": _titles(rows)})
+	var cat: Dictionary = _tile_named(rows, String(Data.stat_info("health")["name"]))
+	_x("the cat's Health is a tile with a level badge and a bar", not cat.is_empty() and String(cat.get("badge", "")).begins_with("Level")
+		and (cat.get("stats", []) as Array).size() == 1 and String(cat["label"]) == "Buy", {"tile": cat})
+	await t._at_ring(st.rings["shop"])
+	await t._wait(0.5)
+	_x("the card opens with the Hearthtree's name", main.hud.card_ring() == st.rings["shop"] and main.hud.card_title() == ht,
+		{"title": main.hud.card_title()})
+	await t._shot("campg_hearthtree_card")
+	main.hud.hide_card()
+	await t._wait(0.2)
+
+
+# ---------------------------------------------------------------- (b) the pet and the Market at Hearthtree 2
+func _unlocks() -> void:
+	var st = _st()
+	var market := String(Data.b["stations"]["stall"]["name"])
+	var cottage := String(Data.b["stations"]["cottage"]["name"])
+	Save.leaves = 99999
+	Save.timber = 9999
+	Save.camp_level = 1
+	st.refresh()
+	var rows: Array = st._card_shop()["rows"]
+	var m1: Dictionary = _tile_named(rows, market)
+	var c1: Dictionary = _tile_named(rows, cottage)
+	_x("Hearthtree 1: the Market and the Cottage are not open (needs_home 2)", not Data.station_open("stall") and not Data.station_open("cottage")
+		and Data.station_needs_home("stall") == 2 and Data.station_needs_home("cottage") == 2)
+	_x("Hearthtree 1: neither is offered (at most a locked tile, no Build)", not bool(m1.get("enabled", false)) and not bool(c1.get("enabled", false))
+		and (m1.is_empty() or String(m1.get("badge", "")) == "Locked"), {"market": m1.get("text", ""), "cottage": c1.get("text", "")})
+	st._build_station("stall")
+	st._build_station("cottage")
+	_x("Hearthtree 1: building them is refused", int(Save.stations["stall"]) == 0 and int(Save.stations["cottage"]) == 0 and Save.leaves == 99999)
+	_x("no mission gives them any more", Data.gift_mission("stall") < 0 and Data.gift_mission("cottage") < 0)
+	Save.camp_level = 2
+	st.refresh()
+	rows = st._card_shop()["rows"]
+	var m2: Dictionary = _tile_named(rows, market)
+	var c2: Dictionary = _tile_named(rows, cottage)
+	_x("Hearthtree 2: the Market and the Cottage are Build tiles", bool(m2.get("enabled", false)) and String(m2.get("label", "")) == "Build"
+		and bool(c2.get("enabled", false)) and String(c2.get("label", "")) == "Build", {"market": m2, "cottage": c2})
+	# a goal for one not built yet points to the Hearthtree's card (where it is bought now)
+	var g3: Array = Data.home_goals(3).filter(func(g): return String(g["type"]) == "station" and String(g["id"]) in ["stall", "cottage"])
+	var to_home := not g3.is_empty()
+	for g in g3:
+		to_home = to_home and String(g["station"]) == "home" and st.goal_ring(String(g["station"])) == st.rings["shop"] \
+			and not _tile_named(rows, st._goal_find(g)).is_empty()
+	_x("Hearthtree 3's goals for the Cottage and the Market point to the Hearthtree's card", to_home,
+		{"goals": g3.map(func(g): return "%s [%s]" % [g["progress"], g["station"]])})
+	st._build_station("stall")
+	await t._wait(0.3)
+	_x("the Market is built and Thistle comes with it", int(Save.stations["stall"]) == 1 and Data.mount_level() == 1 and main.mount != null,
+		{"stall": Save.stations["stall"], "mount": main.mount != null})
+	var ride: Dictionary = st._card_stall()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")[0] if main.mount != null else {}
+	_x("the Market's card has an enabled Ride row", bool(ride.get("enabled", false)), {"ride": ride.get("text", "")})
+	main.set_riding(true, false)
+	_x("Thistle can be ridden", main.player.riding)
+	main.set_riding(false, false)
+	st._build_station("cottage")
+	await t._wait(0.3)
+	_x("the Cottage is built and Sprig moves in", int(Save.stations["cottage"]) == 1 and main.pet != null)
+	await t._at_ring(st.rings["stall"])
+	await t._wait(0.5)
+	_x("the Market's card opens as 'Market'", main.hud.card_title() == market, {"title": main.hud.card_title()})
+	await t._shot("campg_market_card")
+	main.hud.hide_card()
+	await t._wait(0.2)
+
+
+# ---------------------------------------------------------------- (c) the Market: Bramble sells and buys
+func _index_of(list_key: String, id: String) -> int:
+	var list: Array = Data.b.get("market", {}).get(list_key, [])
+	for i in list.size():
+		if String(list[i]["id"]) == id:
+			return i
+	return -1
+
+
+func _market() -> void:
+	var st = _st()
+	var tb: Dictionary = Data.b["trade"]["buy"]
+	Save.leaves = 1000
+	Save.timber = 0
+	st._trade(true)
+	_x("buying timber: +%d timber for %d leaves" % [int(tb["timber"]), int(tb["leaves"])],
+		Save.timber == int(tb["timber"]) and Save.leaves == 1000 - int(tb["leaves"]), {"timber": Save.timber, "leaves": Save.leaves})
+	var bi := _index_of("sells", "berries")
+	var be: Dictionary = Data.b["market"]["sells"][bi] if bi >= 0 else {}
+	Save.pantry["berries"] = 0
+	var l0 := Save.leaves
+	st._market_buy(bi)
+	_x("buying Sunberries: they go to the pantry, the leaves are paid", bi >= 0 and int(Save.pantry["berries"]) == int(be.get("amount", 0))
+		and Save.leaves == l0 - int(be.get("leaves", 0)), {"pantry": Save.pantry, "leaves": Save.leaves})
+	var cap := int(Data.b["cooking"]["pantry_cap"])
+	Save.pantry["berries"] = cap - 1
+	var full: Dictionary = st._market_sells().filter(func(r): return String(r.get("icon", "")) == "berries")[0]
+	l0 = Save.leaves
+	st._market_buy(bi)
+	_x("a full pantry: the berries tile is off and nothing is bought", not bool(full["enabled"]) and int(Save.pantry["berries"]) == cap - 1
+		and Save.leaves == l0, {"tile": full.get("text", "")})
+	Save.pantry["berries"] = 2
+	# Burrow materials: only once every mission is won
+	var ai := _index_of("sells", "amber")
+	var ae: Dictionary = Data.b["market"]["sells"][ai] if ai >= 0 else {}
+	var a0 := int(Save.mats.get("amber", 0))
+	l0 = Save.leaves
+	var shown_before: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
+	st._market_buy(ai)
+	_x("before the missions are won: no amber for sale, and none bought", ai >= 0 and not shown_before and int(Save.mats["amber"]) == a0 and Save.leaves == l0)
+	var keep: Array = Save.missions_done.duplicate()
+	Save.missions_done = []
+	for i in Data.mission_count():
+		Save.missions_done.append(String(Data.mission(i)["id"]))
+	var shown_after: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
+	st._market_buy(ai)
+	_x("after the missions: amber for sale, bought into the materials", shown_after and int(Save.mats["amber"]) == a0 + int(ae.get("amount", 0))
+		and Save.leaves == l0 - int(ae.get("leaves", 0)), {"amber": Save.mats["amber"], "leaves": Save.leaves})
+	var si := _index_of("buys", "amber")
+	var se: Dictionary = Data.b["market"]["buys"][si] if si >= 0 else {}
+	l0 = Save.leaves
+	var a1 := int(Save.mats["amber"])
+	st._market_sell(si)
+	_x("Bramble buys amber back for leaves", si >= 0 and int(Save.mats["amber"]) == a1 - int(se.get("amount", 0)) and Save.leaves == l0 + int(se.get("leaves", 0)),
+		{"amber": Save.mats["amber"], "leaves": Save.leaves})
+	var rows: Array = st._card_stall()["rows"]
+	var heads: Array = rows.filter(func(r): return _kind(r) == "section").map(func(r): return String(r["text"]))
+	_x("the Market's card: Bramble sells, Bramble buys, the Stable and the upgrade", heads.has("Bramble sells") and heads.has("Bramble buys")
+		and heads.has("Stable") and heads.has("Upgrade"), {"sections": heads})
+	Save.missions_done = keep
+
+
+# ---------------------------------------------------------------- (d) the Wishing Well mends by itself
+func _well() -> void:
+	var st = _st()
+	var f = main.fight
+	Save.stations["well"] = 1
+	Save.leaves = 0
+	st.refresh()
+	var wr: Array = st._card_well()["rows"]
+	_x("no wish row on the Well's card, no wish left anywhere", not _words(wr).to_lower().contains("make a wish")
+		and not wr.any(func(r): return String(r.get("label", "")) == "Wish") and not st.has_method("_wish") and f.get("wished") == null,
+		{"rows": _words(wr)})
+	_x("the Well's card says what it does and sells its next level", _words(wr).contains("between waves") and wr.any(func(r): return String(r.get("label", "")) == "Upgrade"))
+	_x("the Well's marker shows no '!' for wishing", not st.rings["well"].pulse)
+	var cap1: float = st.well_cap(1)
+	var reg1: float = st.well_regen(1)
+	# a breather of a mission, faked for these lines only (no frame passes while it is on)
+	var keep := {"active": f.active, "in_wave": f.in_wave, "on_break": f.on_break, "last_stand": f.last_stand, "gate_hp": f.gate_hp, "gate_max": f.gate_max}
+	var keep_hp: Dictionary = st.hp.duplicate()
+	st.reset_hp()
+	f.active = true
+	f.in_wave = false
+	f.on_break = true
+	f.last_stand = false
+	f.gate_max = 600.0
+	f.gate_hp = 600.0 * 0.2
+	var full: float = st.full_hp("home")
+	st.hp["home"] = full * 0.2
+	for k in 30:
+		st.well_tick(0.1)
+	var g3s: float = f.gate_hp / f.gate_max
+	var h3s: float = float(st.hp["home"]) / full
+	_x("between waves: a hurt campfire and building mend toward the cap (3 s)", g3s > 0.2 + 0.01 and g3s <= cap1 + 0.0001 and h3s > 0.2 + 0.01 and h3s <= cap1 + 0.0001,
+		{"fire": snappedf(g3s, 0.001), "home": snappedf(h3s, 0.001), "cap": cap1})
+	for k in 600:
+		st.well_tick(0.1)
+	var g60: float = f.gate_hp / f.gate_max
+	var h60: float = float(st.hp["home"]) / full
+	_x("between waves: they stop at the cap (%d%%), never above" % int(round(cap1 * 100.0)), absf(g60 - cap1) < 0.001 and absf(h60 - cap1) < 0.001,
+		{"fire": snappedf(g60, 0.001), "home": snappedf(h60, 0.001)})
+	f.gate_hp = 600.0 * 0.95
+	for k in 50:
+		st.well_tick(0.1)
+	_x("between waves: above the cap stays as it is", absf(f.gate_hp - 600.0 * 0.95) < 0.001, {"fire": f.gate_hp})
+	Save.stations["well"] = 2
+	for k in 600:
+		st.well_tick(0.1)
+	_x("Well level 2: the cap rises (%d%%)" % int(round(st.well_cap(2) * 100.0)), absf(float(st.hp["home"]) / full - st.well_cap(2)) < 0.001 and st.well_cap(2) > cap1,
+		{"home": snappedf(float(st.hp["home"]) / full, 0.001)})
+	Save.stations["well"] = 1
+	# a wave: a little every second, up to full
+	f.on_break = false
+	f.in_wave = true
+	f.gate_hp = 600.0 * 0.3
+	st.hp["home"] = full * 0.3
+	for k in 10:
+		st.well_tick(0.1)
+	var gain: float = f.gate_hp / f.gate_max - 0.3
+	var hgain: float = float(st.hp["home"]) / full - 0.3
+	_x("in a wave: +%s a second" % st._pct(reg1), gain > 0.0 and absf(gain - reg1) < 0.0005 and absf(hgain - reg1) < 0.0005 and gain < st.well_rate(),
+		{"gain": snappedf(gain, 0.0001), "home": snappedf(hgain, 0.0001), "regen": reg1})
+	f.gate_hp = 600.0 * 0.999
+	for k in 100:
+		st.well_tick(0.1)
+	_x("in a wave: never above full", f.gate_hp <= 600.0 + 0.0001 and f.gate_hp > 600.0 * 0.999, {"fire": f.gate_hp})
+	# never a broken thing, a ruin or the ashes
+	st.hp["home"] = 0.0
+	f.last_stand = true
+	f.gate_hp = 0.0
+	for k in 50:
+		st.well_tick(0.1)
+	_x("never a broken building or the ashes", float(st.hp["home"]) == 0.0 and f.gate_hp == 0.0)
+	f.last_stand = false
+	f.gate_hp = 300.0
+	Save.ruined.append("well")
+	for k in 50:
+		st.well_tick(0.1)
+	_x("a ruined Well mends nothing", st.well_level() == 0 and f.gate_hp == 300.0)
+	Save.ruined.erase("well")
+	main.frozen = true
+	var hp_before: float = f.gate_hp
+	st._physics_process(0.5)
+	main.frozen = false
+	_x("nothing while the game is frozen", f.gate_hp == hp_before)
+	for k in keep:
+		f.set(k, keep[k])
+	st.hp = keep_hp
+	st.refresh()
+
+
+# ---------------------------------------------------------------- (e) the Training Target and the Bow Bench as tiles
+func _tiles() -> void:
+	var st = _st()
+	Save.stations["target"] = 1
+	Save.stations["bench"] = 1
+	Save.leaves = 5000
+	st.refresh()
+	var tr: Array = st._card_target()["rows"]
+	var only_t := tr.all(func(r): return _kind(r) in ["item", "section"])
+	var dmg: Dictionary = _tile_named(tr, String(Data.stat_info("damage")["name"]))
+	_x("the Training Target's card is made of item tiles", only_t and _items(tr).size() >= 4 and not dmg.is_empty()
+		and String(dmg.get("badge", "")) == "Level %d/%d" % [int(Save.stats["damage"]), Data.stat_cap("damage")] and (dmg.get("stats", []) as Array).size() == 1,
+		{"rows": _titles(tr), "damage": dmg.get("badge", "")})
+	var up: Dictionary = _tile_named(tr, "%s level 2" % String(Data.b["stations"]["target"]["name"]))
+	_x("the Target's own upgrade is a tile", not up.is_empty() and String(up["label"]) == "Upgrade", {"rows": _titles(tr)})
+	var br: Array = st._card_bench()["rows"]
+	var only_b := br.all(func(r): return _kind(r) in ["item", "section"])
+	var twig: Dictionary = _tile_named(br, String(Data.bow_info(Save.bow)["name"]))
+	_x("the Bow Bench's card is made of item tiles, the bow in the paw 'Equipped'", only_b and _items(br).size() >= 3
+		and String(twig.get("badge", "")) == "Equipped" and String(twig.get("label", "")) == "Buy", {"rows": _titles(br)})
+	var bench_name := String(Data.b["stations"]["bench"]["name"])
+	# the Bench's own upgrade tile shares the bow icon: leave it out
+	var others: Array = _items(br).filter(func(r): return String(r.get("icon", "")) == "bow" and r != twig and not String(r.get("title", "")).begins_with(bench_name))
+	_x("every other bow is a Use or Craft tile", not others.is_empty() and others.all(func(r): return String(r["label"]) in ["Use", "Craft"]),
+		{"bows": others.map(func(r): return "%s %s" % [r["title"], r["label"]])})
+	await t._at_ring(st.rings["target"])
+	await t._wait(0.5)
+	await t._shot("campg_target_card")
+	main.hud.hide_card()
+	await t._wait(0.2)
+
+
+# ---------------------------------------------------------------- (f) an old save keeps its stall and cottage
+func _old_save() -> void:
+	var st = _st()
+	Save.missions_done = []
+	for i in 3:
+		Save.missions_done.append(String(Data.mission(i)["id"]))
+	Save.camp_level = 1
+	Save.stations["stall"] = 2
+	Save.stations["cottage"] = 2
+	Save.save_game()
+	Save.load_game()
+	st.catch_up_gifts()
+	main.refresh_companions()
+	st.refresh()
+	_x("an old save keeps its Market and Cottage (gifts of missions 2 and 3) at their levels", int(Save.stations["stall"]) == 2
+		and int(Save.stations["cottage"]) == 2 and Save.camp_level == 1, {"stations": Save.stations})
+	_x("... and Thistle and Sprig", main.mount != null and main.pet != null and Data.mount_level() == 2 and Data.pet_level() == 2)
+	var rows: Array = st._card_shop()["rows"]
+	var market := String(Data.b["stations"]["stall"]["name"])
+	var cottage := String(Data.b["stations"]["cottage"]["name"])
+	_x("the Hearthtree's card does not sell them again", _tile_named(rows, market).is_empty() and _tile_named(rows, cottage).is_empty())
+	var ride: Array = st._card_stall()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")
+	_x("the Market works at Hearthtree 1 (Ride is on)", ride.size() == 1 and bool(ride[0]["enabled"]))

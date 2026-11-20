@@ -1,0 +1,31 @@
+# Only what another developer or agent needs to keep building the game:
+# the Godot project (game/), the design and status docs (docs/*.md), and the project rules (CLAUDE.md, GAME_PLAN.md).
+# Everything else in this folder (art pipeline, concept images, tools, screenshots) stays local.
+/*
+!/.gitignore
+!/game/
+!/docs/
+!/CLAUDE.md
+!/GAME_PLAN.md
+/docs/screens/
+
+# Godot's cache, builds and test output
+game/.godot/
+game/build/
+game/_autotest/
+*.apk
+*.apk.idsig
+*.aab
+game/android/build/
+
+# Never commit signing keys or secrets
+*.keystore
+*.jks
+*.p12
+.env
+.env.*
+
+# OS clutter
+Thumbs.db
+desktop.ini
+.DS_Store

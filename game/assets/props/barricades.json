@@ -1,0 +1,63 @@
+{
+ "_note": "size_m = [x width, y depth, z height] in metres, Blender axes (Godot: x, z, y). Fronts face Blender -Y (Godot +Z). Origin on the ground at the footprint centre. collision = footprint seen from above (box size_m = [x, y]). The three barricades are the upgrade levels of the road barricade (balance.json defences.barricade.levels[].model).",
+ "group": "barricades",
+ "props": [
+  {
+   "name": "barricade_log",
+   "file": "barricade_log.glb",
+   "size_m": [
+    3.0,
+    0.69,
+    0.87
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     3.0,
+     0.6
+    ]
+   },
+   "tris": 712,
+   "notes": "Level 1 road barricade: three stacked rough logs held between two pairs of short stakes lashed with rope, three sharpened stakes wedged through the stack pointing out to the front (tips 0.42 m in front of the centre line; their cut ends show at the back), a leafy sprig. Spans the trail along X; the front (-Y, Godot +Z) faces the enemies (world.gd barricade_slots() turns local +Z toward the woods). Both long faces are dressed. Origin on the ground at the centre of the wall.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "barricade_stone",
+   "file": "barricade_stone.glb",
+   "size_m": [
+    3.02,
+    0.59,
+    0.94
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     3.0,
+     0.6
+    ]
+   },
+   "tris": 900,
+   "notes": "Level 2 road barricade: low wall of chunky grey stones in two courses (the bottom course stepped out at the ends), moss cushions on top with two little white flowers, two sharpened stakes at the ends leaning out to the front, bound with rope. Spans the trail along X; the front (-Y, Godot +Z) faces the enemies (world.gd barricade_slots() turns local +Z toward the woods). Both long faces are dressed. Origin on the ground at the centre of the wall.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "barricade_thorn",
+   "file": "barricade_thorn.glb",
+   "size_m": [
+    3.03,
+    0.72,
+    1.05
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     3.0,
+     0.6
+    ]
+   },
+   "tris": 1398,
+   "notes": "Level 3 road barricade: dense dark-green bramble hedge on a base of grey stones and two logs, pale thorns all over, bramble canes looping out of the hedge into the logs, five small pink flowers (colour flower_pink #F27FB0, not yet in art/palette.json). Spans the trail along X; the front (-Y, Godot +Z) faces the enemies (world.gd barricade_slots() turns local +Z toward the woods). Both long faces are dressed. Origin on the ground at the centre of the wall.",
+   "origin": "ground centre"
+  }
+ ]
+}

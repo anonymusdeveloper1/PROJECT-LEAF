@@ -1,0 +1,64 @@
+{
+  "id": "lumi",
+  "fps": 30,
+  "height_m": 0.421,
+  "radius_m": 0.13,
+  "aim_height_m": 0.18,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Run": {
+      "seconds": 0.3333,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.4667,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Run": 1.5
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.267
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.3",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.ear_l.1",
+      "end": "jig.ear_l.2",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.05,
+      "radius": 0.015
+    },
+    {
+      "root": "jig.ear_r.1",
+      "end": "jig.ear_r.2",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.05,
+      "radius": 0.015
+    },
+    {
+      "root": "jig.bell.1",
+      "end": "jig.bell.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.012
+    }
+  ],
+  "tris": 2700
+}

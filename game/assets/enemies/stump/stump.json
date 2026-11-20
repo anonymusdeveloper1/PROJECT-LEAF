@@ -1,0 +1,88 @@
+{
+  "id": "stump",
+  "fps": 30,
+  "height_m": 1.602,
+  "radius_m": 0.55,
+  "aim_height_m": 0.95,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 1.4,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.6,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 2.2,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.4
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.8
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.fern_c.1",
+      "end": "jig.fern_c.2",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.fern_l.1",
+      "end": "jig.fern_l.2",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.fern_r.1",
+      "end": "jig.fern_r.2",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.shroom_a.1",
+      "end": "jig.shroom_a.2",
+      "stiffness": 3.0,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.shroom_b.1",
+      "end": "jig.shroom_b.1",
+      "stiffness": 3.5,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.shroom_c.1",
+      "end": "jig.shroom_c.1",
+      "stiffness": 3.5,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.06
+    }
+  ],
+  "tris": 4834
+}

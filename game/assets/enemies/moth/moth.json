@@ -1,0 +1,56 @@
+{
+  "id": "moth",
+  "fps": 30,
+  "height_m": 0.793,
+  "radius_m": 0.38,
+  "aim_height_m": 0.31,
+  "clips": {
+    "Idle": {
+      "seconds": 0.5,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.4,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.6,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.4,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.3333,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 1.8
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.3
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.antenna_l.1",
+      "end": "jig.antenna_l.3",
+      "stiffness": 3.0,
+      "drag": 0.45,
+      "gravity": 0.1,
+      "radius": 0.03
+    },
+    {
+      "root": "jig.antenna_r.1",
+      "end": "jig.antenna_r.3",
+      "stiffness": 3.0,
+      "drag": 0.45,
+      "gravity": 0.1,
+      "radius": 0.03
+    }
+  ],
+  "tris": 2990
+}

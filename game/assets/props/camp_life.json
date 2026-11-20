@@ -1,0 +1,287 @@
+{
+  "_note": "size_m = [width (X), height, depth] in metres, Godot axis order (Blender X, Z, Y). collision = footprint seen from above (circle radius_m = the station's FOOT), null = no blocking footprint. Front faces Blender -Y (Godot +Z). Origin on the ground at the footprint centre unless origin says otherwise (fishing_rod: at the grip). Parts and markers are child nodes of the prop root (Props.find_part).",
+  "props": [
+    {
+      "name": "guardian_stone",
+      "file": "guardian_stone.glb",
+      "size_m": [
+        0.97,
+        1.6,
+        0.84
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.7
+      },
+      "tris": 1427,
+      "notes": "Old leaning standing stone in flat grey patches with a moss cap, two roots coiling round the base, small white flowers, a fern, a ring of flat stones on a moss patch. The mossy hollow (dented, mossy -X face with a moss cushion on the ground) is where the Moss Warden sits (stone + (-1.1, 0, 0)). The carved leaf rune on the flat front face (-Y) is three separate gold leaves: rune_1 the centre leaf and stem, rune_2 the left leaf, rune_3 the right leaf; show rune_1..rune_<stone level>. Parts are children of the root, origin at each leaf's middle. marker_ring 1.1 m in front (-Y).",
+      "parts": [
+        "rune_1",
+        "rune_2",
+        "rune_3"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "garden_bed",
+      "file": "garden_bed.glb",
+      "size_m": [
+        2.23,
+        0.45,
+        1.49
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 1.1
+      },
+      "tris": 1912,
+      "notes": "Raised bed: plank walls between log corner posts, dark soil, 6 flat-topped mounds in 2 rows of 3, 0.6 m apart. marker_plot_1..3 = the front row (-Y, nearest the ring), 4..6 the back row, each left to right (-X to +X), on the mound tops (0.46 m flat tops: soil_wet and the plants sit there); markers have no rotation. Rain barrel at the back-left corner, seed crate at the back-right corner, watering can at the right end, tiny leaf sign on the front-left post. marker_ring 1.2 m in front (-Y). In the camp the bed is turned PI, so the game camera sees its back (+Y) side.",
+      "markers": [
+        "marker_plot_1",
+        "marker_plot_2",
+        "marker_plot_3",
+        "marker_plot_4",
+        "marker_plot_5",
+        "marker_plot_6",
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "plot_weeds",
+      "file": "plot_weeds.glb",
+      "size_m": [
+        0.35,
+        0.15,
+        0.32
+      ],
+      "collision": null,
+      "tris": 145,
+      "notes": "Weeds, a dandelion and a pebble on a locked plot. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "soil_wet",
+      "file": "soil_wet.glb",
+      "size_m": [
+        0.45,
+        0.02,
+        0.45
+      ],
+      "collision": null,
+      "tris": 20,
+      "notes": "Dark wet-soil slab (closed hexagon) laid on a watered mound top, under the plant. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "plant_sprout",
+      "file": "plant_sprout.glb",
+      "size_m": [
+        0.14,
+        0.15,
+        0.06
+      ],
+      "collision": null,
+      "tris": 42,
+      "notes": "Two tiny leaves on a short stem: the first stage of every crop. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "sunberry_growing",
+      "file": "sunberry_growing.glb",
+      "size_m": [
+        0.31,
+        0.25,
+        0.3
+      ],
+      "collision": null,
+      "tris": 105,
+      "notes": "Round green sunberry bush, no fruit yet. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "sunberry_ripe",
+      "file": "sunberry_ripe.glb",
+      "size_m": [
+        0.33,
+        0.32,
+        0.36
+      ],
+      "collision": null,
+      "tris": 146,
+      "notes": "Round green sunberry bush with 6 orange-red berries. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "fernmint_growing",
+      "file": "fernmint_growing.glb",
+      "size_m": [
+        0.28,
+        0.14,
+        0.33
+      ],
+      "collision": null,
+      "tris": 90,
+      "notes": "Young green mint-fern clump. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "fernmint_ripe",
+      "file": "fernmint_ripe.glb",
+      "size_m": [
+        0.44,
+        0.21,
+        0.46
+      ],
+      "collision": null,
+      "tris": 144,
+      "notes": "Fuller mint-fern clump, pale blue-green with white tips. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "honeybell_growing",
+      "file": "honeybell_growing.glb",
+      "size_m": [
+        0.23,
+        0.4,
+        0.25
+      ],
+      "collision": null,
+      "tris": 114,
+      "notes": "Honeybell stalks with closed green buds. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "honeybell_ripe",
+      "file": "honeybell_ripe.glb",
+      "size_m": [
+        0.29,
+        0.43,
+        0.28
+      ],
+      "collision": null,
+      "tris": 144,
+      "notes": "Honeybell stalks with 3 golden bell flowers hanging open. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
+    },
+    {
+      "name": "cook_pot",
+      "file": "cook_pot.glb",
+      "size_m": [
+        0.56,
+        0.55,
+        0.49
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.25
+      },
+      "tris": 464,
+      "notes": "Squat dark iron pot with two ring handles on 3 short legs over 3 hearth stones, 2 bright orange embers under it, green soup, a wooden ladle leaning out (+X, back). marker_steam at the middle of the pot's mouth (soup surface level). Sits on the campfire's north-east rim.",
+      "markers": [
+        "marker_steam"
+      ]
+    },
+    {
+      "name": "fishing_spot",
+      "file": "fishing_spot.glb",
+      "size_m": [
+        0.99,
+        1.28,
+        1.09
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.45
+      },
+      "tris": 862,
+      "notes": "Mossy stump seat, bait tin with a worm, wicker fish basket, and a rod rack (a forked rest stick and a butt peg) holding the rod, which points out over the water (+Y, Godot -Z) and up. `rod` is a separate child object with its origin at the grip (hide it while the cat has the rod). marker_tip = the rack rod's tip (start of the line when the cat cannot hold the rod). The cat stands on the +X side, which is kept clear; the water is behind (+Y).",
+      "parts": [
+        "rod"
+      ],
+      "markers": [
+        "marker_tip"
+      ]
+    },
+    {
+      "name": "fishing_rod",
+      "file": "fishing_rod.glb",
+      "size_m": [
+        0.04,
+        0.08,
+        1.1
+      ],
+      "collision": null,
+      "tris": 94,
+      "notes": "Bamboo rod with a cork grip and a little reel under it. Origin at the middle of the grip (not on the ground), the rod points straight along Blender +Y (Godot -Z), the reel hangs below (-Z); butt 0.1 m behind the origin, tip 1.0 m ahead. marker_tip at the tip.",
+      "markers": [
+        "marker_tip"
+      ],
+      "origin": "grip"
+    },
+    {
+      "name": "fish_minnow",
+      "file": "fish_minnow.glb",
+      "size_m": [
+        0.07,
+        0.09,
+        0.16
+      ],
+      "collision": null,
+      "tris": 76,
+      "notes": "Small blue-backed silver minnow, head toward -Y (Godot +Z), dorsal fin up. Catch item for the fishing catch arc (fishing.gd, like lake._fish_arc). Origin on the ground under its middle (ASSET_RULES); its centre is half its height above the origin, so rotate it about that point if it should spin round its middle."
+    },
+    {
+      "name": "fish_perch",
+      "file": "fish_perch.glb",
+      "size_m": [
+        0.1,
+        0.14,
+        0.24
+      ],
+      "collision": null,
+      "tris": 96,
+      "notes": "Sun perch: yellow-green with dark bars, spiky dorsal fin, orange fins. Head toward -Y. Catch item for the fishing catch arc (fishing.gd, like lake._fish_arc). Origin on the ground under its middle (ASSET_RULES); its centre is half its height above the origin, so rotate it about that point if it should spin round its middle."
+    },
+    {
+      "name": "fish_trout",
+      "file": "fish_trout.glb",
+      "size_m": [
+        0.06,
+        0.14,
+        0.3
+      ],
+      "collision": null,
+      "tris": 80,
+      "notes": "Silver trout: olive spotted back, pink side stripe, silver-white belly. Head toward -Y. Catch item for the fishing catch arc (fishing.gd, like lake._fish_arc). Origin on the ground under its middle (ASSET_RULES); its centre is half its height above the origin, so rotate it about that point if it should spin round its middle."
+    },
+    {
+      "name": "fish_carp",
+      "file": "fish_carp.glb",
+      "size_m": [
+        0.14,
+        0.19,
+        0.34
+      ],
+      "collision": null,
+      "tris": 80,
+      "notes": "Golden carp (the rare): deep gold body, orange fins. Head toward -Y. Catch item for the fishing catch arc (fishing.gd, like lake._fish_arc). Origin on the ground under its middle (ASSET_RULES); its centre is half its height above the origin, so rotate it about that point if it should spin round its middle."
+    },
+    {
+      "name": "driftwood",
+      "file": "driftwood.glb",
+      "size_m": [
+        0.4,
+        0.09,
+        0.21
+      ],
+      "collision": null,
+      "tris": 73,
+      "notes": "Bleached forked driftwood branch with a strand of lake weed. Catch item for the fishing catch arc (fishing.gd, like lake._fish_arc). Origin on the ground under its middle (ASSET_RULES); its centre is half its height above the origin, so rotate it about that point if it should spin round its middle."
+    },
+    {
+      "name": "sunken_chest",
+      "file": "sunken_chest.glb",
+      "size_m": [
+        0.31,
+        0.22,
+        0.23
+      ],
+      "collision": null,
+      "tris": 98,
+      "notes": "Small mossy wooden chest with iron bands, a gold lock and a gold glint (sparkle) on the lock. Front (lock) faces -Y. Catch item for the fishing catch arc (fishing.gd, like lake._fish_arc). Origin on the ground under its middle (ASSET_RULES); its centre is half its height above the origin, so rotate it about that point if it should spin round its middle."
+    }
+  ]
+}

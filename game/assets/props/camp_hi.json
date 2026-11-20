@@ -1,0 +1,68 @@
+{
+  "_note": "Campfires for home levels 4-6 (hearth = 4, bonfire = 5, brazier = 6). size_m = [width (X), height, depth] in metres, Godot axis order (Blender X, Z, Y). collision = footprint seen from above: circle radius_m. Front faces Blender -Y (Godot +Z). Origin on the ground at the footprint centre. Each has a separate mesh node `flame` (origin at the base of the flame, for flame.gdshader).",
+  "props": [
+    {
+      "name": "campfire_hearth",
+      "file": "campfire_hearth.glb",
+      "size_m": [
+        1.57,
+        1.14,
+        1.58
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.8
+      },
+      "tris": 954,
+      "notes": "home level 4: stone hearth (two courses of cut stones, 0.45 m) with a crib of split logs and a hanging pot on an iron crane at the back right; flame is a separate object (origin at its base, 0.12 m up); marker_ring in front (-Y)",
+      "parts": [
+        "flame"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "campfire_bonfire",
+      "file": "campfire_bonfire.glb",
+      "size_m": [
+        1.84,
+        1.52,
+        1.75
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.95
+      },
+      "tris": 1266,
+      "notes": "home level 5: great bonfire (log tepee 1.1 m) in a ring of mossy boulders, carved posts left and right; flame is a separate object (origin at its base, 0.1 m up); marker_ring in front (-Y)",
+      "parts": [
+        "flame"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "campfire_brazier",
+      "file": "campfire_brazier.glb",
+      "size_m": [
+        1.77,
+        1.79,
+        1.65
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.9
+      },
+      "tris": 1333,
+      "notes": "home level 6: crystal brazier, a wide stone bowl (rim 0.72 m) cupped by carved leaves on a short pedestal and stone dais, ringed by six clusters of glowing amber/gold crystals; flame is a separate object (origin at its base, 0.69 m up, in the bowl); marker_ring in front (-Y)",
+      "parts": [
+        "flame"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    }
+  ]
+}

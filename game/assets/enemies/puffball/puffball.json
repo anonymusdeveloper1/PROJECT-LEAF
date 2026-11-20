@@ -1,0 +1,39 @@
+{
+  "id": "puffball",
+  "fps": 30,
+  "height_m": 0.8,
+  "radius_m": 0.35,
+  "aim_height_m": 0.35,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.6667,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.2667,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.6,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.8,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.3
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.9
+    }
+  },
+  "spring_chains": [],
+  "tris": 2870
+}

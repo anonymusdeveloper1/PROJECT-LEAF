@@ -1,0 +1,94 @@
+{
+  "id": "bear",
+  "fps": 30,
+  "height_m": 2.899,
+  "radius_m": 1.0,
+  "aim_height_m": 1.3,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 1.5,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.1,
+      "loop": false
+    },
+    "Slam": {
+      "seconds": 1.6,
+      "loop": false
+    },
+    "Roar": {
+      "seconds": 2.0,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 2.0,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.6
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.45
+    },
+    "Slam": {
+      "impact": 0.7
+    },
+    "Roar": {
+      "roar": 0.5
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.cape1.1",
+      "end": "jig.cape1.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.5,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.cape2.1",
+      "end": "jig.cape2.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.5,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.cape3.1",
+      "end": "jig.cape3.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.5,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.cape4.1",
+      "end": "jig.cape4.3",
+      "stiffness": 1.5,
+      "drag": 0.5,
+      "gravity": 0.5,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.belly.1",
+      "end": "jig.belly.1",
+      "stiffness": 5.0,
+      "drag": 0.7,
+      "gravity": 0.0,
+      "radius": 0.12
+    }
+  ],
+  "tris": 11660
+}

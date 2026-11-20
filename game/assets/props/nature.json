@@ -1,0 +1,244 @@
+{
+ "_note": "size_m = [x width, y depth, z height] in metres, Blender axes (Godot: x, z, y). Fronts face Blender -Y (Godot +Z). Origin on the ground at the footprint centre unless origin says centre. collision null = walk-through / no blocking footprint.",
+ "group": "nature",
+ "props": [
+  {
+   "name": "tree_jungle_1",
+   "file": "tree_jungle_1.glb",
+   "size_m": [
+    6.58,
+    6.78,
+    6.0
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.65
+   },
+   "tris": 1232,
+   "notes": "Big jungle tree, wide canopy with big leaves and vines. Collision = trunk; the low roots spread to ~1.6 m. For the Gloom woods, tint it violet in the shader.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "tree_jungle_2",
+   "file": "tree_jungle_2.glb",
+   "size_m": [
+    6.61,
+    5.84,
+    6.97
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.7
+   },
+   "tris": 1224,
+   "notes": "Big jungle tree with a forked trunk and two canopy tiers, arching roots. For the Gloom woods, tint it violet in the shader.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "tree_round",
+   "file": "tree_round.glb",
+   "size_m": [
+    2.52,
+    2.31,
+    3.56
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.25
+   },
+   "tris": 524,
+   "notes": "Smaller round-canopy tree (grown-camp style). For the Gloom woods, tint it violet in the shader.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "bush_1",
+   "file": "bush_1.glb",
+   "size_m": [
+    1.4,
+    1.03,
+    0.86
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.5
+   },
+   "tris": 293,
+   "notes": "Round leafy bush with two small flowers.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "bush_2",
+   "file": "bush_2.glb",
+   "size_m": [
+    1.29,
+    1.26,
+    0.84
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.4
+   },
+   "tris": 236,
+   "notes": "Jungle broad-leaf bush.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "fern",
+   "file": "fern.glb",
+   "size_m": [
+    0.72,
+    0.78,
+    0.34
+   ],
+   "collision": null,
+   "tris": 138,
+   "notes": "Fern clump, walk-through decor.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "monstera",
+   "file": "monstera.glb",
+   "size_m": [
+    1.02,
+    0.99,
+    0.61
+   ],
+   "collision": null,
+   "tris": 148,
+   "notes": "Big tropical leaf clump (split leaves), walk-through decor.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "rock_1",
+   "file": "rock_1.glb",
+   "size_m": [
+    0.57,
+    0.49,
+    0.37
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.25
+   },
+   "tris": 103,
+   "notes": "Small rock with a pebble.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "rock_2",
+   "file": "rock_2.glb",
+   "size_m": [
+    1.21,
+    1.04,
+    0.7
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.5
+   },
+   "tris": 187,
+   "notes": "Large rock with a mossy top.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "stepping_stone",
+   "file": "stepping_stone.glb",
+   "size_m": [
+    0.43,
+    0.35,
+    0.08
+   ],
+   "collision": null,
+   "tris": 35,
+   "notes": "Flat stepping stone for paths, walkable.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "flower_hibiscus",
+   "file": "flower_hibiscus.glb",
+   "size_m": [
+    0.45,
+    0.44,
+    0.45
+   ],
+   "collision": null,
+   "tris": 134,
+   "notes": "Red hibiscus, walk-through decor.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "flower_small_white",
+   "file": "flower_small_white.glb",
+   "size_m": [
+    0.29,
+    0.21,
+    0.3
+   ],
+   "collision": null,
+   "tris": 141,
+   "notes": "Three small white daisies, walk-through decor.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "flower_purple",
+   "file": "flower_purple.glb",
+   "size_m": [
+    0.28,
+    0.25,
+    0.5
+   ],
+   "collision": null,
+   "tris": 144,
+   "notes": "Purple lupin spikes, walk-through decor.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "mushroom_cluster",
+   "file": "mushroom_cluster.glb",
+   "size_m": [
+    0.4,
+    0.31,
+    0.28
+   ],
+   "collision": null,
+   "tris": 120,
+   "notes": "Red-capped mushrooms on a moss tuft, walk-through decor.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "gloom_crystal",
+   "file": "gloom_crystal.glb",
+   "size_m": [
+    0.55,
+    0.46,
+    0.55
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.22
+   },
+   "tris": 114,
+   "notes": "Violet crystal cluster from the ground (Gloom woods). Crystal faces are bright so the game can make them glow.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "log_fallen",
+   "file": "log_fallen.glb",
+   "size_m": [
+    2.09,
+    0.66,
+    0.66
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     2.0,
+     0.5
+    ]
+   },
+   "tris": 259,
+   "notes": "Mossy fallen log along X; cut end at -X, broken end at +X.",
+   "origin": "ground centre"
+  }
+ ]
+}

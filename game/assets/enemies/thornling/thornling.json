@@ -1,0 +1,72 @@
+{
+  "id": "thornling",
+  "fps": 30,
+  "height_m": 0.622,
+  "radius_m": 0.22,
+  "aim_height_m": 0.28,
+  "clips": {
+    "Idle": {
+      "seconds": 1.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.267,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.4,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.2,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 1.042
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.3
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.fern.1",
+      "end": "jig.fern.3",
+      "stiffness": 1.6,
+      "drag": 0.35,
+      "gravity": 0.15,
+      "radius": 0.02
+    },
+    {
+      "root": "jig.leaf_l.1",
+      "end": "jig.leaf_l.1",
+      "stiffness": 2.5,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.015
+    },
+    {
+      "root": "jig.leaf_r_upper.1",
+      "end": "jig.leaf_r_upper.1",
+      "stiffness": 2.5,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.015
+    },
+    {
+      "root": "jig.leaf_r_lower.1",
+      "end": "jig.leaf_r_lower.1",
+      "stiffness": 2.5,
+      "drag": 0.5,
+      "gravity": 0.1,
+      "radius": 0.015
+    }
+  ],
+  "tris": 2472
+}

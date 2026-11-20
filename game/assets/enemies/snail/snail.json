@@ -1,0 +1,63 @@
+{
+  "id": "snail",
+  "fps": 30,
+  "height_m": 1.102,
+  "radius_m": 0.6,
+  "aim_height_m": 0.5,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 1.3333,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.0,
+      "loop": false
+    },
+    "Slam": {
+      "seconds": 1.6,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.6,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 2.0,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.45
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.5
+    },
+    "Slam": {
+      "impact": 1.0
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.eye_l.1",
+      "end": "jig.eye_l.2",
+      "stiffness": 3.0,
+      "drag": 0.35,
+      "gravity": 0.15,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.eye_r.1",
+      "end": "jig.eye_r.2",
+      "stiffness": 3.0,
+      "drag": 0.35,
+      "gravity": 0.15,
+      "radius": 0.05
+    }
+  ],
+  "tris": 4872
+}

@@ -1,0 +1,48 @@
+{
+  "id": "brute",
+  "fps": 30,
+  "height_m": 1.45,
+  "radius_m": 0.45,
+  "aim_height_m": 0.6,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.733,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.2,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.6,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.56
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.55
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.cap.1",
+      "end": "jig.cap.2",
+      "stiffness": 3.0,
+      "drag": 0.5,
+      "gravity": 0.2,
+      "radius": 0.12
+    }
+  ],
+  "tris": 5896
+}

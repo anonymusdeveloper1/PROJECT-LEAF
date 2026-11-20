@@ -1,0 +1,100 @@
+{
+  "id": "raccoon",
+  "fps": 30,
+  "height_m": 1.202,
+  "radius_m": 0.28,
+  "aim_height_m": 0.6,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.6,
+      "loop": true
+    },
+    "Run": {
+      "seconds": 0.4,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.6,
+      "loop": false
+    },
+    "Grab": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.4,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.3333,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.79,
+    "Run": 2.4
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.25
+    },
+    "Grab": {
+      "grab": 0.3
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.4",
+      "stiffness": 2.5,
+      "drag": 0.5,
+      "gravity": 0.25,
+      "radius": 0.07
+    },
+    {
+      "root": "jig.bandana_a.1",
+      "end": "jig.bandana_a.2",
+      "stiffness": 0.9,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.02
+    },
+    {
+      "root": "jig.bandana_b.1",
+      "end": "jig.bandana_b.2",
+      "stiffness": 0.9,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.02
+    },
+    {
+      "root": "jig.sack.1",
+      "end": "jig.sack.1",
+      "stiffness": 1.6,
+      "drag": 0.6,
+      "gravity": 0.7,
+      "radius": 0.11
+    },
+    {
+      "root": "jig.ear_L.1",
+      "end": "jig.ear_L.1",
+      "stiffness": 4.0,
+      "drag": 0.5,
+      "gravity": 0.0,
+      "radius": 0.03
+    },
+    {
+      "root": "jig.ear_R.1",
+      "end": "jig.ear_R.1",
+      "stiffness": 4.0,
+      "drag": 0.5,
+      "gravity": 0.0,
+      "radius": 0.03
+    }
+  ],
+  "tris": 5646
+}

@@ -1,0 +1,56 @@
+{
+  "id": "beetle",
+  "fps": 30,
+  "height_m": 1.301,
+  "radius_m": 0.45,
+  "aim_height_m": 0.55,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.8,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.2,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.8,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.4
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.433
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.cape_l.1",
+      "end": "jig.cape_l.2",
+      "stiffness": 2.0,
+      "drag": 0.5,
+      "gravity": 0.3,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.cape_r.1",
+      "end": "jig.cape_r.2",
+      "stiffness": 2.0,
+      "drag": 0.5,
+      "gravity": 0.3,
+      "radius": 0.06
+    }
+  ],
+  "tris": 4656
+}

@@ -1,0 +1,74 @@
+{
+  "id": "bramblewool",
+  "fps": 30,
+  "height_m": 1.5,
+  "radius_m": 0.43,
+  "aim_height_m": 0.75,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Run": {
+      "seconds": 0.4,
+      "loop": true
+    },
+    "Thump": {
+      "seconds": 1.1,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Run": 3.75
+  },
+  "events": {
+    "Thump": {
+      "impact": 0.533
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.ear_l.1",
+      "end": "jig.ear_l.2",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.1,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.ear_r.1",
+      "end": "jig.ear_r.2",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.1,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.2",
+      "stiffness": 2.5,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.1
+    },
+    {
+      "root": "jig.rein_l.1",
+      "end": "jig.rein_l.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.03
+    },
+    {
+      "root": "jig.rein_r.1",
+      "end": "jig.rein_r.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.03
+    }
+  ],
+  "tris": 5726,
+  "saddle_height_m": 1.006,
+  "saddle_bone": "saddle"
+}

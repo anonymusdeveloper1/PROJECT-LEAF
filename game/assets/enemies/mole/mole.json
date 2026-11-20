@@ -1,0 +1,56 @@
+{
+  "id": "mole",
+  "fps": 30,
+  "height_m": 1.09,
+  "radius_m": 0.4,
+  "aim_height_m": 0.55,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.8,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Dig": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Emerge": {
+      "seconds": 0.6,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.4,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.5,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.45
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.367
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.lantern.1",
+      "end": "jig.lantern.2",
+      "stiffness": 2.5,
+      "drag": 0.5,
+      "gravity": 0.25,
+      "radius": 0.04
+    }
+  ],
+  "tris": 4762
+}

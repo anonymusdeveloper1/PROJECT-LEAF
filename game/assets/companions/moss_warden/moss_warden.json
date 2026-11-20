@@ -1,0 +1,101 @@
+{
+  "id": "moss_warden",
+  "fps": 30,
+  "height_m": 2.098,
+  "radius_m": 0.6,
+  "aim_height_m": 1.0,
+  "clips": {
+    "Idle": {
+      "seconds": 3.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 1.3,
+      "loop": true
+    },
+    "Punch": {
+      "seconds": 1.1,
+      "loop": false
+    },
+    "Slam": {
+      "seconds": 1.6,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.45,
+      "loop": false
+    },
+    "Crumble": {
+      "seconds": 1.6,
+      "loop": false
+    },
+    "Reform": {
+      "seconds": 2.0,
+      "loop": false
+    },
+    "Sit": {
+      "seconds": 4.0,
+      "loop": true
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 1.15
+  },
+  "events": {
+    "Punch": {
+      "hit": 0.45
+    },
+    "Slam": {
+      "impact": 0.95
+    },
+    "Crumble": {
+      "down": 1.2
+    },
+    "Reform": {
+      "up": 1.7
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.sprout.1",
+      "end": "jig.sprout.2",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.1,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.moss_l.1",
+      "end": "jig.moss_l.3",
+      "stiffness": 4.0,
+      "drag": 0.6,
+      "gravity": 0.3,
+      "radius": 0.1
+    },
+    {
+      "root": "jig.moss_r.1",
+      "end": "jig.moss_r.3",
+      "stiffness": 4.0,
+      "drag": 0.6,
+      "gravity": 0.3,
+      "radius": 0.1
+    },
+    {
+      "root": "jig.vine_l.1",
+      "end": "jig.vine_l.2",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.03
+    },
+    {
+      "root": "jig.vine_r.1",
+      "end": "jig.vine_r.2",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.03
+    }
+  ],
+  "tris": 5724
+}

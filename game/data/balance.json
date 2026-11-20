@@ -1,0 +1,6631 @@
+{
+  "_note": "All game balance. Times in seconds, distances in metres, speeds in m/s. Costs: leaves (and timber where given).",
+  "cat": {
+    "hp": 5,
+    "speed": 2.6,
+    "range": 5.5,
+    "damage": 10,
+    "draw": 1.0,
+    "magnet": 2.0,
+    "respawn_s": 5.0
+  },
+  "stats": {
+    "damage": {
+      "name": "Damage",
+      "station": "target",
+      "per_level": 0.12,
+      "unit": "x",
+      "cost": [
+        20,
+        26,
+        35,
+        48,
+        65,
+        87,
+        117,
+        159,
+        214,
+        289
+      ],
+      "mastery": [
+        {
+          "leaves": 400,
+          "amber": 6
+        },
+        {
+          "leaves": 550,
+          "amber": 9,
+          "glowstone": 3
+        }
+      ]
+    },
+    "draw": {
+      "name": "Draw speed",
+      "station": "target",
+      "per_level": 0.07,
+      "unit": "x",
+      "cost": [
+        26,
+        35,
+        47,
+        64,
+        86,
+        116,
+        156,
+        211,
+        285,
+        385
+      ],
+      "mastery": [
+        {
+          "leaves": 400,
+          "amber": 6
+        },
+        {
+          "leaves": 550,
+          "amber": 9,
+          "glowstone": 3
+        }
+      ]
+    },
+    "range": {
+      "name": "Range",
+      "station": "target",
+      "per_level": 0.2,
+      "unit": "m",
+      "cost": [
+        32,
+        44,
+        60,
+        81,
+        109,
+        147,
+        198,
+        268,
+        361,
+        488
+      ],
+      "needs_station_level": 2
+    },
+    "health": {
+      "name": "Health",
+      "station": "home",
+      "per_level": 1,
+      "unit": "hp",
+      "cost": [
+        26,
+        35,
+        47,
+        64,
+        86,
+        116,
+        156,
+        211,
+        285,
+        385
+      ],
+      "mastery": [
+        {
+          "leaves": 400,
+          "amber": 6
+        },
+        {
+          "leaves": 550,
+          "amber": 9,
+          "glowstone": 3
+        }
+      ]
+    },
+    "speed": {
+      "name": "Move speed",
+      "station": "home",
+      "per_level": 0.05,
+      "unit": "x",
+      "cost": [
+        26,
+        35,
+        47,
+        64,
+        86,
+        116,
+        156,
+        211,
+        285,
+        385
+      ],
+      "mastery": [
+        {
+          "leaves": 400,
+          "amber": 6
+        },
+        {
+          "leaves": 550,
+          "amber": 9,
+          "glowstone": 3
+        }
+      ]
+    },
+    "magnet": {
+      "name": "Leaf magnet",
+      "station": "home",
+      "per_level": 0.3,
+      "unit": "m",
+      "cost": [
+        16,
+        21,
+        29,
+        39,
+        52,
+        70,
+        95,
+        127,
+        173,
+        233
+      ]
+    }
+  },
+  "_caps_note": "The home level caps every building's level and every defence level; a building's level caps what it sells. Phase F: the Training Target and Bow Bench have 5 levels, and their level caps stats and bows at 4/6/8/9/10 (Health, Move speed and Leaf magnet use the home level).",
+  "stat_cap_by_station_level": [
+    0,
+    4,
+    6,
+    8,
+    9,
+    10
+  ],
+  "bow_cap_by_bench_level": [
+    0,
+    4,
+    6,
+    8,
+    9,
+    10
+  ],
+  "stations": {
+    "camp": {
+      "name": "Hearthtree",
+      "levels": [
+        {},
+        {
+          "leaves": 500,
+          "timber": 20,
+          "goals": [
+            {
+              "type": "mission",
+              "n": 2
+            },
+            {
+              "type": "station",
+              "id": "target",
+              "level": 1
+            },
+            {
+              "type": "station",
+              "id": "bench",
+              "level": 1
+            },
+            {
+              "type": "stat",
+              "id": "damage",
+              "level": 4
+            },
+            {
+              "type": "stat",
+              "id": "draw",
+              "level": 2
+            },
+            {
+              "type": "stat",
+              "id": "health",
+              "level": 3
+            },
+            {
+              "type": "bow",
+              "id": "twig",
+              "level": 4
+            }
+          ]
+        },
+        {
+          "leaves": 3500,
+          "timber": 60,
+          "goals": [
+            {
+              "type": "mission",
+              "n": 6
+            },
+            {
+              "type": "station",
+              "id": "target",
+              "level": 2
+            },
+            {
+              "type": "station",
+              "id": "bench",
+              "level": 2
+            },
+            {
+              "type": "station",
+              "id": "cottage",
+              "level": 2
+            },
+            {
+              "type": "station",
+              "id": "stall",
+              "level": 2
+            },
+            {
+              "type": "station",
+              "id": "well",
+              "level": 1
+            },
+            {
+              "type": "stat",
+              "id": "damage",
+              "level": 6
+            },
+            {
+              "type": "stat",
+              "id": "draw",
+              "level": 5
+            },
+            {
+              "type": "stat",
+              "id": "range",
+              "level": 3
+            },
+            {
+              "type": "stat",
+              "id": "health",
+              "level": 5
+            },
+            {
+              "type": "stat",
+              "id": "speed",
+              "level": 3
+            },
+            {
+              "type": "bow",
+              "id": "sunwood",
+              "level": 4
+            },
+            {
+              "type": "towers",
+              "count": 3,
+              "level": 1
+            },
+            {
+              "type": "defence",
+              "id": "barricade",
+              "level": 2
+            }
+          ]
+        },
+        {
+          "leaves": 9000,
+          "timber": 60,
+          "goals": [
+            {
+              "type": "mission",
+              "n": 10
+            },
+            {
+              "type": "station",
+              "id": "target",
+              "level": 3
+            },
+            {
+              "type": "station",
+              "id": "bench",
+              "level": 3
+            },
+            {
+              "type": "station",
+              "id": "cottage",
+              "level": 3
+            },
+            {
+              "type": "station",
+              "id": "stall",
+              "level": 3
+            },
+            {
+              "type": "station",
+              "id": "well",
+              "level": 2
+            },
+            {
+              "type": "station",
+              "id": "garden",
+              "level": 2
+            },
+            {
+              "type": "stat",
+              "id": "damage",
+              "level": 8
+            },
+            {
+              "type": "stat",
+              "id": "draw",
+              "level": 7
+            },
+            {
+              "type": "stat",
+              "id": "range",
+              "level": 5
+            },
+            {
+              "type": "stat",
+              "id": "health",
+              "level": 7
+            },
+            {
+              "type": "stat",
+              "id": "speed",
+              "level": 5
+            },
+            {
+              "type": "bow_any",
+              "level": 7
+            },
+            {
+              "type": "towers",
+              "count": 4,
+              "level": 1
+            },
+            {
+              "type": "towers",
+              "count": 2,
+              "level": 3
+            },
+            {
+              "type": "defence",
+              "id": "barricade",
+              "level": 3
+            },
+            {
+              "type": "defence",
+              "id": "spikes",
+              "level": 2
+            }
+          ]
+        },
+        {
+          "leaves": 8000,
+          "timber": 60,
+          "goals": [
+            {
+              "type": "mission",
+              "n": 13
+            },
+            {
+              "type": "station",
+              "id": "target",
+              "level": 4
+            },
+            {
+              "type": "station",
+              "id": "bench",
+              "level": 4
+            },
+            {
+              "type": "station",
+              "id": "well",
+              "level": 3
+            },
+            {
+              "type": "station",
+              "id": "garden",
+              "level": 3
+            },
+            {
+              "type": "stat",
+              "id": "damage",
+              "level": 9
+            },
+            {
+              "type": "stat",
+              "id": "draw",
+              "level": 9
+            },
+            {
+              "type": "stat",
+              "id": "range",
+              "level": 7
+            },
+            {
+              "type": "stat",
+              "id": "health",
+              "level": 9
+            },
+            {
+              "type": "stat",
+              "id": "speed",
+              "level": 7
+            },
+            {
+              "type": "bow_any",
+              "level": 9
+            },
+            {
+              "type": "bow_owned",
+              "id": "volley"
+            },
+            {
+              "type": "towers",
+              "count": 5,
+              "level": 3
+            },
+            {
+              "type": "defence",
+              "id": "spikes",
+              "level": 3
+            }
+          ]
+        },
+        {
+          "leaves": 15000,
+          "timber": 200,
+          "amber": 20,
+          "glowstone": 8,
+          "needs_burrows": true,
+          "needs_depth": 1,
+          "goals": [
+            {
+              "type": "mission",
+              "n": 15
+            },
+            {
+              "type": "depth",
+              "n": 1
+            },
+            {
+              "type": "station",
+              "id": "target",
+              "level": 5
+            },
+            {
+              "type": "station",
+              "id": "bench",
+              "level": 5
+            },
+            {
+              "type": "all_stats",
+              "level": 10
+            },
+            {
+              "type": "bow_any",
+              "level": 10
+            }
+          ]
+        },
+        {
+          "leaves": 25000,
+          "timber": 90,
+          "amber": 60,
+          "glowstone": 24,
+          "heartwood": 5,
+          "needs_burrows": true,
+          "needs_depth": 2,
+          "goals": [
+            {
+              "type": "depth",
+              "n": 2
+            }
+          ]
+        },
+        {
+          "leaves": 40000,
+          "timber": 135,
+          "amber": 90,
+          "glowstone": 45,
+          "heartwood": 9,
+          "needs_burrows": true,
+          "needs_depth": 3,
+          "goals": [
+            {
+              "type": "depth",
+              "n": 3
+            }
+          ]
+        }
+      ],
+      "_note": "Phase F (19 Nov 2026): each home level has `goals`; the home grows only when every goal is met and its price is paid. Goal types: mission {n: mission number, 1-based, won}; station {id, level}; stat {id, level}; bow {id, level} (that bow owned at that level); bow_any {level}; bow_owned {id}; towers {count, level} (placed towers at least that level); defence {id, level} (barricade / spikes / tower type level); all_stats {level}; depth {n} (Gloomwood level n beaten). needs_burrows / needs_depth on levels 6-8 are kept for older code."
+    },
+    "target": {
+      "name": "Training Target",
+      "build": {
+        "leaves": 10
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 150
+        },
+        {
+          "leaves": 600,
+          "timber": 20
+        },
+        {
+          "leaves": 2000,
+          "timber": 60
+        },
+        {
+          "leaves": 4000,
+          "timber": 100
+        }
+      ]
+    },
+    "bench": {
+      "name": "Bow Bench",
+      "build": {
+        "leaves": 40
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 200
+        },
+        {
+          "leaves": 700,
+          "timber": 30
+        },
+        {
+          "leaves": 2000,
+          "timber": 60
+        },
+        {
+          "leaves": 4000,
+          "timber": 100
+        }
+      ]
+    },
+    "well": {
+      "name": "Wishing Well",
+      "build": {
+        "leaves": 80
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 250
+        },
+        {
+          "leaves": 700,
+          "timber": 25
+        }
+      ],
+      "needs_missions": 4
+    },
+    "cottage": {
+      "name": "Mushroom Cottage",
+      "build": {
+        "leaves": 160
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 350
+        },
+        {
+          "leaves": 900,
+          "timber": 30
+        }
+      ],
+      "needs_home": 2,
+      "_note": "Phase G2: Sprig's home, buildable at Hearthtree level 2"
+    },
+    "stall": {
+      "name": "Market",
+      "build": {
+        "leaves": 260,
+        "timber": 10
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 450
+        },
+        {
+          "leaves": 1000,
+          "timber": 35
+        }
+      ],
+      "needs_home": 2,
+      "_note": "Phase G2: the Market (Bramble the trader), buildable at Hearthtree level 2; Thistle the hare comes free with it"
+    },
+    "stone": {
+      "name": "Guardian Stone",
+      "build": {
+        "leaves": 0
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 500
+        },
+        {
+          "leaves": 1200,
+          "timber": 15
+        },
+        {
+          "leaves": 2500,
+          "timber": 20,
+          "needs_burrows": true
+        }
+      ]
+    },
+    "garden": {
+      "name": "Garden",
+      "build": {
+        "leaves": 0
+      },
+      "levels": [
+        {},
+        {
+          "leaves": 400
+        },
+        {
+          "leaves": 1000
+        }
+      ]
+    },
+    "fishing": {
+      "name": "Fishing Spot",
+      "build": {
+        "leaves": 0
+      },
+      "levels": [
+        {}
+      ]
+    }
+  },
+  "home_names": [
+    "Shed",
+    "Hut",
+    "Treehouse",
+    "Big Treehouse",
+    "Great Tree Home",
+    "Tree Hall",
+    "Old Oak Hall",
+    "Heart Oak"
+  ],
+  "bows": {
+    "twig": {
+      "name": "Twig Bow",
+      "damage": 1.0,
+      "arrows": 1,
+      "spread_deg": 0,
+      "pierce": 0,
+      "range_bonus": 0.0,
+      "bench_level": 1,
+      "craft": 0,
+      "tint": "#FFFFFF",
+      "per_level": 0.1,
+      "cost": [
+        26,
+        39,
+        58,
+        84,
+        117,
+        162,
+        221,
+        299,
+        403,
+        546
+      ],
+      "mastery": [
+        {
+          "leaves": 600,
+          "amber": 6,
+          "glowstone": 2
+        },
+        {
+          "leaves": 800,
+          "amber": 9,
+          "glowstone": 3,
+          "heartwood": 1
+        }
+      ]
+    },
+    "sunwood": {
+      "name": "Sunwood Longbow",
+      "damage": 1.3,
+      "arrows": 1,
+      "spread_deg": 0,
+      "pierce": 1,
+      "range_bonus": 1.5,
+      "bench_level": 2,
+      "craft": 250,
+      "tint": "#FFD36A",
+      "per_level": 0.1,
+      "cost": [
+        39,
+        58,
+        84,
+        117,
+        162,
+        221,
+        299,
+        403,
+        546,
+        728
+      ],
+      "mastery": [
+        {
+          "leaves": 600,
+          "amber": 6,
+          "glowstone": 2
+        },
+        {
+          "leaves": 800,
+          "amber": 9,
+          "glowstone": 3,
+          "heartwood": 1
+        }
+      ]
+    },
+    "volley": {
+      "name": "Thorn Volley",
+      "damage": 0.65,
+      "arrows": 3,
+      "spread_deg": 13,
+      "pierce": 0,
+      "range_bonus": 0.0,
+      "bench_level": 3,
+      "craft": 600,
+      "tint": "#8FD06A",
+      "per_level": 0.1,
+      "cost": [
+        58,
+        84,
+        117,
+        162,
+        221,
+        299,
+        403,
+        546,
+        728,
+        975
+      ],
+      "mastery": [
+        {
+          "leaves": 600,
+          "amber": 6,
+          "glowstone": 2
+        },
+        {
+          "leaves": 800,
+          "amber": 9,
+          "glowstone": 3,
+          "heartwood": 1
+        }
+      ]
+    },
+    "foxfire": {
+      "name": "Foxfire Bow",
+      "damage": 1.45,
+      "arrows": 1,
+      "spread_deg": 0,
+      "pierce": 2,
+      "range_bonus": 1.0,
+      "bench_level": 3,
+      "craft": {
+        "leaves": 2000,
+        "glowstone": 16,
+        "heartwood": 3
+      },
+      "needs_burrows": true,
+      "tint": "#7FF0D8",
+      "per_level": 0.1,
+      "cost": [
+        58,
+        84,
+        117,
+        162,
+        221,
+        299,
+        403,
+        546,
+        728,
+        975
+      ],
+      "mastery": [
+        {
+          "leaves": 600,
+          "amber": 6,
+          "glowstone": 2
+        },
+        {
+          "leaves": 800,
+          "amber": 9,
+          "glowstone": 3,
+          "heartwood": 1
+        }
+      ]
+    }
+  },
+  "defences": {
+    "fence": {
+      "name": "Fence piece",
+      "unlock_claimed": 1,
+      "piece": 20,
+      "free_pieces": 3,
+      "levels": [
+        {
+          "hp": 120,
+          "upgrade": 0,
+          "model": "fence_twig"
+        },
+        {
+          "hp": 260,
+          "upgrade": 150,
+          "model": "palisade"
+        },
+        {
+          "hp": 520,
+          "upgrade": 400,
+          "model": "palisade_stone"
+        }
+      ],
+      "removed": true
+    },
+    "tower": {
+      "name": "Acorn Tower",
+      "piece": 90,
+      "levels": [
+        {
+          "damage": 8,
+          "every": 1.2,
+          "range": 5.0,
+          "upgrade": 0,
+          "hp": 160
+        },
+        {
+          "damage": 14,
+          "every": 1.0,
+          "range": 5.5,
+          "upgrade": 220,
+          "hp": 320
+        },
+        {
+          "damage": 24,
+          "every": 0.8,
+          "range": 6.0,
+          "upgrade": 500,
+          "hp": 520
+        },
+        {
+          "damage": 36,
+          "every": 0.7,
+          "range": 6.5,
+          "upgrade": 2400,
+          "shards": 90,
+          "hp": 800
+        },
+        {
+          "damage": 44,
+          "every": 0.65,
+          "range": 7.0,
+          "hp": 1000,
+          "upgrade": 2800,
+          "amber": 20,
+          "glowstone": 8,
+          "heartwood": 2,
+          "name": "Amber",
+          "needs_burrows": true
+        }
+      ],
+      "unlock_missions": 2,
+      "max_by_camp_level": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "repair_share": 0.3,
+      "_note": "Phase G2: a knocked-down tower can be repaired on the spot for repair_share of what it cost (build plus upgrades)",
+      "repair_leaves_per_timber": 30
+    },
+    "spikes": {
+      "name": "Thorn Spikes",
+      "piece": 70,
+      "levels": [
+        {
+          "dps": 6,
+          "slow": 0.25,
+          "upgrade": 0
+        },
+        {
+          "dps": 12,
+          "slow": 0.35,
+          "upgrade": 180
+        },
+        {
+          "dps": 22,
+          "slow": 0.45,
+          "upgrade": 420
+        },
+        {
+          "dps": 34,
+          "slow": 0.5,
+          "upgrade": 1200,
+          "shards": 50
+        },
+        {
+          "dps": 42,
+          "slow": 0.55,
+          "upgrade": 1500,
+          "amber": 14,
+          "glowstone": 6,
+          "name": "Amber Thorns",
+          "needs_burrows": true
+        }
+      ],
+      "unlock_missions": 3
+    },
+    "barricade": {
+      "name": "Road Barricade",
+      "unlock_missions": 1,
+      "piece": 30,
+      "slots_at": [
+        0.45,
+        0.62,
+        0.78
+      ],
+      "length": 3.0,
+      "free_pieces": 2,
+      "levels": [
+        {
+          "hp": 220,
+          "upgrade": 0,
+          "model": "barricade_log"
+        },
+        {
+          "hp": 480,
+          "upgrade": 200,
+          "model": "barricade_stone"
+        },
+        {
+          "hp": 900,
+          "upgrade": 480,
+          "model": "barricade_thorn"
+        },
+        {
+          "hp": 1400,
+          "upgrade": 1500,
+          "shards": 60,
+          "model": "barricade_shard",
+          "name": "Shardstone"
+        },
+        {
+          "hp": 2000,
+          "upgrade": 1800,
+          "amber": 16,
+          "glowstone": 6,
+          "model": "barricade_heartwood",
+          "name": "Heartwood",
+          "needs_burrows": true
+        }
+      ],
+      "row": {
+        "pieces": 3,
+        "cost": {
+          "leaves": 90,
+          "timber": 5
+        }
+      },
+      "rows_by_home": [
+        0,
+        2,
+        3,
+        5,
+        7,
+        9,
+        12,
+        12,
+        12
+      ],
+      "repair_share": 0.3,
+      "crack_at": 0.5,
+      "_note": "Phase G2: not sold in the shop any more. Each road spot (slots_at, 3 per road) takes one row of row.pieces pieces, built by tapping the spot for row.cost. rows_by_home caps the rows by Hearthtree level. Each piece cracks below crack_at of its health and breaks at 0 (it falls, leaving rubble; enemies pass the gap). Repair: repair_share of the row's cost per broken piece, less for cracked ones. levels still set each piece's health and look (upgraded on the Hearthtree's card)."
+    }
+  },
+  "enemies": {
+    "thornling": {
+      "name": "Thornling",
+      "hp": 18,
+      "speed": 1.5,
+      "damage": 1,
+      "gate_damage": 4,
+      "leaves": 2,
+      "aggro": 4.5,
+      "reach": 0.45,
+      "attack_every": 1.0,
+      "height": 0.78,
+      "radius": 0.3,
+      "color": "#4E8A2E",
+      "scale": 1.25
+    },
+    "chief": {
+      "name": "Thornling Chief",
+      "model": "thornling",
+      "scale": 2.3,
+      "hp": 160,
+      "speed": 1.1,
+      "damage": 2,
+      "gate_damage": 14,
+      "leaves": 30,
+      "aggro": 5.0,
+      "reach": 0.7,
+      "attack_every": 1.2,
+      "height": 1.43,
+      "radius": 0.45,
+      "color": "#3C7A24"
+    },
+    "brute": {
+      "name": "Toadstool Brute",
+      "hp": 120,
+      "speed": 0.7,
+      "damage": 2,
+      "gate_damage": 14,
+      "leaves": 8,
+      "aggro": 1.6,
+      "reach": 0.75,
+      "attack_every": 1.6,
+      "height": 1.45,
+      "radius": 0.55,
+      "color": "#D9443A"
+    },
+    "raccoon": {
+      "name": "Raccoon Bandit",
+      "hp": 30,
+      "speed": 2.4,
+      "damage": 1,
+      "gate_damage": 0,
+      "leaves": 5,
+      "aggro": 1.2,
+      "reach": 0.5,
+      "attack_every": 0.8,
+      "height": 1.2,
+      "radius": 0.3,
+      "color": "#7D7480",
+      "steals": 25
+    },
+    "boar": {
+      "name": "Bramble Boar",
+      "hp": 70,
+      "speed": 1.0,
+      "damage": 2,
+      "gate_damage": 22,
+      "leaves": 6,
+      "aggro": 7.0,
+      "reach": 0.8,
+      "attack_every": 1.3,
+      "height": 1.0,
+      "radius": 0.45,
+      "color": "#8E3B26",
+      "charge_speed": 5.5,
+      "windup": 0.8,
+      "charge_time": 1.4,
+      "charge_every": 5.0,
+      "fence_damage": 90,
+      "miss_daze": 1.0,
+      "daze_hurt": 1.5
+    },
+    "bear": {
+      "name": "Mossback",
+      "hp": 1500,
+      "speed": 0.6,
+      "damage": 2,
+      "gate_damage": 45,
+      "leaves": 300,
+      "aggro": 9.0,
+      "reach": 1.3,
+      "attack_every": 1.8,
+      "height": 2.9,
+      "radius": 0.95,
+      "color": "#7A4A2A",
+      "boss": true,
+      "slam_range": 3.2,
+      "slam_every": 5.0,
+      "roar_every": 14.0,
+      "roar_minions": 3,
+      "dash_every": 8.0
+    },
+    "moth": {
+      "name": "Gloom Moth",
+      "hp": 22,
+      "speed": 1.8,
+      "damage": 1,
+      "gate_damage": 6,
+      "leaves": 3,
+      "aggro": 3.6,
+      "reach": 0.5,
+      "attack_every": 1.3,
+      "height": 1.0,
+      "radius": 0.38,
+      "color": "#B9A3E0",
+      "flyer": true,
+      "fly_height": 1.05
+    },
+    "frog": {
+      "name": "Frog Shaman",
+      "hp": 55,
+      "speed": 0.9,
+      "damage": 1,
+      "gate_damage": 6,
+      "leaves": 7,
+      "aggro": 6.0,
+      "reach": 0.5,
+      "attack_every": 2.4,
+      "height": 1.0,
+      "radius": 0.36,
+      "color": "#5E9A3A",
+      "cast_range": 5.5,
+      "heal_every": 4.5,
+      "heal": 22,
+      "heal_range": 3.6,
+      "bolt_speed": 4.6,
+      "siege_range": 7.5
+    },
+    "beetle": {
+      "name": "Beetle Knight",
+      "hp": 110,
+      "speed": 0.85,
+      "damage": 2,
+      "gate_damage": 12,
+      "leaves": 9,
+      "aggro": 4.2,
+      "reach": 0.7,
+      "attack_every": 1.4,
+      "height": 1.3,
+      "radius": 0.45,
+      "color": "#2F7F7A",
+      "shield_cone_deg": 65,
+      "shield_block": 0.7,
+      "bash_every": 6.0
+    },
+    "snail": {
+      "name": "Crystal Snail",
+      "hp": 260,
+      "speed": 0.45,
+      "damage": 2,
+      "gate_damage": 25,
+      "leaves": 14,
+      "aggro": 1.6,
+      "reach": 0.8,
+      "attack_every": 2.0,
+      "height": 1.1,
+      "radius": 0.6,
+      "color": "#A8D88A",
+      "slime_every": 0.9,
+      "slime_life": 7.0,
+      "slam_range": 1.9,
+      "slam_every": 7.0
+    },
+    "owl": {
+      "name": "The Owl Witch",
+      "hp": 2200,
+      "speed": 0.7,
+      "damage": 2,
+      "gate_damage": 50,
+      "leaves": 400,
+      "aggro": 10.0,
+      "reach": 1.1,
+      "attack_every": 2.0,
+      "height": 2.4,
+      "radius": 0.8,
+      "color": "#7A5A3A",
+      "boss": true,
+      "orb_every": 3.6,
+      "orbs": 3,
+      "bolt_speed": 3.6,
+      "blink_every": 9.0,
+      "hex_every": 7.0,
+      "hex_range": 2.2,
+      "summon_every": 15.0,
+      "summon": 3
+    },
+    "stump": {
+      "name": "Stump Golem",
+      "hp": 220,
+      "speed": 0.6,
+      "damage": 2,
+      "gate_damage": 30,
+      "leaves": 12,
+      "aggro": 1.5,
+      "reach": 0.8,
+      "attack_every": 2.0,
+      "height": 1.6,
+      "radius": 0.55,
+      "color": "#7A5230",
+      "siege": 2.0
+    },
+    "pitcher": {
+      "name": "Pitcher Spitter",
+      "hp": 45,
+      "speed": 0.8,
+      "damage": 1,
+      "gate_damage": 8,
+      "leaves": 6,
+      "aggro": 6.0,
+      "reach": 0.5,
+      "attack_every": 2.2,
+      "height": 1.1,
+      "radius": 0.4,
+      "color": "#6FA83A",
+      "spit_range": 6.0,
+      "bolt_speed": 7.0,
+      "siege_range": 8.0
+    },
+    "mole": {
+      "name": "Mole Sapper",
+      "hp": 60,
+      "speed": 1.3,
+      "damage": 1,
+      "gate_damage": 8,
+      "leaves": 6,
+      "aggro": 3.0,
+      "reach": 0.5,
+      "attack_every": 1.2,
+      "height": 1.1,
+      "radius": 0.4,
+      "color": "#55505A",
+      "digs": true
+    },
+    "puffball": {
+      "name": "Puffball Bomber",
+      "hp": 30,
+      "speed": 1.4,
+      "damage": 2,
+      "gate_damage": 60,
+      "leaves": 3,
+      "aggro": 2.0,
+      "reach": 0.4,
+      "attack_every": 1.0,
+      "height": 0.8,
+      "radius": 0.35,
+      "color": "#E8D6B0",
+      "burst_range": 1.6
+    },
+    "crow": {
+      "name": "Crow Drummer",
+      "hp": 80,
+      "speed": 0.9,
+      "damage": 1,
+      "gate_damage": 8,
+      "leaves": 8,
+      "aggro": 3.0,
+      "reach": 0.6,
+      "attack_every": 1.5,
+      "height": 1.5,
+      "radius": 0.5,
+      "color": "#2E2A3A",
+      "drum_every": 6.0,
+      "drum_range": 4.0,
+      "drum_buff": 0.35,
+      "drum_time": 4.0
+    },
+    "stag": {
+      "name": "The Elder Thornstag",
+      "hp": 3200,
+      "speed": 0.8,
+      "damage": 2,
+      "gate_damage": 70,
+      "leaves": 500,
+      "aggro": 10.0,
+      "reach": 1.4,
+      "attack_every": 1.9,
+      "height": 3.0,
+      "radius": 0.9,
+      "color": "#7E8F6A",
+      "boss": true,
+      "charge_speed": 7.0,
+      "windup": 0.9,
+      "charge_time": 1.6,
+      "charge_every": 7.0,
+      "fence_damage": 400,
+      "slam_range": 3.0,
+      "slam_every": 6.0,
+      "roar_every": 16.0,
+      "roar_minions": 2,
+      "minion": "stump"
+    },
+    "herald": {
+      "name": "Gloom Herald",
+      "hp": 450,
+      "speed": 0.6,
+      "damage": 2,
+      "gate_damage": 10,
+      "leaves": 40,
+      "aggro": 3.0,
+      "reach": 0.7,
+      "attack_every": 1.6,
+      "height": 1.6,
+      "radius": 0.55,
+      "color": "#4A3566",
+      "boss": true,
+      "ai": "crow",
+      "model": "crow",
+      "scale": 1.25,
+      "drum_every": 7.0,
+      "drum_range": 5.0,
+      "drum_buff": 0.25,
+      "drum_time": 4.0,
+      "_note": "Gloom Raid leader (Phase D). model crow at scale 1.25 is the placeholder until the Meshy Herald exists: then model herald and drop scale. ai crow: it drums like the Crow Drummer."
+    },
+    "grub": {
+      "name": "Grubling",
+      "model": "mole",
+      "scale": 0.6,
+      "tint": "#C9B8F0",
+      "hp": 14,
+      "speed": 1.7,
+      "damage": 1,
+      "gate_damage": 0,
+      "leaves": 1,
+      "aggro": 6.0,
+      "reach": 0.4,
+      "attack_every": 0.9,
+      "height": 0.6,
+      "radius": 0.28,
+      "color": "#C9B8F0",
+      "emerge_warn": 0.8,
+      "emerge_damage": 1,
+      "emerge_r": 0.6,
+      "_note": "Phase E stand-in: the mole, small and tinted, until the user's Meshy model; then drop model, scale and tint"
+    },
+    "glowcap": {
+      "name": "Glowcap",
+      "model": "brute",
+      "scale": 0.55,
+      "tint": "#7FE3E0",
+      "hp": 40,
+      "speed": 0.6,
+      "damage": 1,
+      "gate_damage": 0,
+      "leaves": 4,
+      "aggro": 8.0,
+      "reach": 0.5,
+      "attack_every": 1.4,
+      "height": 0.9,
+      "radius": 0.35,
+      "color": "#7FE3E0",
+      "lob_every": 2.6,
+      "lob_range": 7.0,
+      "lob_warn": 1.1,
+      "lob_radius": 1.1,
+      "lob_lead": 0.5,
+      "keep_away": 4.0,
+      "slow_s": 2.0,
+      "_note": "Phase E stand-in: the brute, small and tinted teal"
+    },
+    "snapper": {
+      "name": "Root Snapper",
+      "model": "pitcher",
+      "scale": 1.15,
+      "tint": "#6E8F3A",
+      "hp": 90,
+      "speed": 0.0,
+      "damage": 2,
+      "gate_damage": 0,
+      "leaves": 6,
+      "aggro": 3.2,
+      "reach": 3.2,
+      "attack_every": 2.2,
+      "height": 1.2,
+      "radius": 0.5,
+      "color": "#6E8F3A",
+      "anchored": true,
+      "bite_cone_deg": 35,
+      "bite_warn": 0.7,
+      "bite_width": 0.9,
+      "turn_rate": 2.0,
+      "_note": "Phase E stand-in: the pitcher, bigger and tinted bark-green"
+    },
+    "amber_grub": {
+      "name": "Amber Grub",
+      "model": "mole",
+      "scale": 0.5,
+      "tint": "#F2B44C",
+      "hp": 45,
+      "speed": 2.3,
+      "damage": 0,
+      "gate_damage": 0,
+      "leaves": 0,
+      "aggro": 0.0,
+      "reach": 0.3,
+      "attack_every": 9.0,
+      "height": 0.45,
+      "radius": 0.28,
+      "color": "#F2B44C",
+      "_note": "Phase E stand-in: the mole, small and amber"
+    },
+    "golden_grub": {
+      "name": "Golden Grub",
+      "model": "mole",
+      "scale": 0.55,
+      "tint": "#FFD34D",
+      "hp": 40,
+      "speed": 2.6,
+      "damage": 0,
+      "gate_damage": 0,
+      "leaves": 40,
+      "aggro": 0.0,
+      "reach": 0.3,
+      "attack_every": 9.0,
+      "height": 0.5,
+      "radius": 0.28,
+      "color": "#FFD34D",
+      "ai": "golden_grub",
+      "bonus": true,
+      "_note": "Phase F: a bonus runner with a sack of leaves (never holds a wave up). Stand-in: the mole, small and gold, until the owner decides on a model"
+    },
+    "gloom_totem": {
+      "name": "Gloom Totem",
+      "hp": 140,
+      "speed": 0.0,
+      "damage": 0,
+      "gate_damage": 0,
+      "leaves": 8,
+      "aggro": 0.0,
+      "reach": 0.0,
+      "attack_every": 9.0,
+      "height": 1.4,
+      "radius": 0.5,
+      "color": "#8C5BD6",
+      "anchored": true,
+      "ai": "totem",
+      "totem": true,
+      "_note": "Phase F: a Gloom crystal that grows on a road during a wave; foes near it are faster and tougher (mission.totem). Stand-in look until the owner decides on a model"
+    }
+  },
+  "patch_scale": 0.15,
+  "pickup_value": 2,
+  "patches": [
+    {
+      "id": "fernwood",
+      "name": "Fernwood",
+      "angle_deg": 22
+    },
+    {
+      "id": "dell",
+      "name": "Toadstool Dell",
+      "angle_deg": -22
+    },
+    {
+      "id": "thicket",
+      "name": "Bandit Thicket",
+      "angle_deg": 62
+    },
+    {
+      "id": "den",
+      "name": "Mossback's Den",
+      "angle_deg": -62
+    }
+  ],
+  "fire_hp_by_camp_level": [
+    0,
+    120,
+    300,
+    600,
+    900,
+    1300,
+    1800,
+    2400,
+    3000
+  ],
+  "light_radius_by_camp_level": [
+    0,
+    4.0,
+    5.0,
+    6.0,
+    6.5,
+    7.0,
+    7.5,
+    7.6,
+    7.7
+  ],
+  "lanes": 4,
+  "well": {
+    "_note": "Phase G2: no more wishes. Built, the Well quietly mends the campfire, every building, barricade piece and tower that is not broken: between waves up to cap_by_level of its health, during waves regen_by_level of its health every second (never above full). Broken things need a repair or a mission won. wish_cost and mend_by_level are kept only for old code. between_per_s: how fast it mends between waves (share of health a second) until the cap.",
+    "wish_cost": 20,
+    "mend_by_level": [
+      0,
+      0.35,
+      0.55,
+      0.8
+    ],
+    "passive": {
+      "cap_by_level": [
+        0,
+        0.6,
+        0.75,
+        0.9
+      ],
+      "regen_by_level": [
+        0,
+        0.0025,
+        0.005,
+        0.01
+      ],
+      "between_per_s": 0.03
+    }
+  },
+  "pet": {
+    "name": "Sprig",
+    "_note": "the baby leaf dragon from the Mushroom Cottage; spits seed sparks",
+    "damage_by_level": [
+      0,
+      6,
+      10,
+      16
+    ],
+    "every_by_level": [
+      0,
+      1.3,
+      1.1,
+      0.9
+    ],
+    "range": 5.0,
+    "bolt_speed": 9.0
+  },
+  "mount": {
+    "name": "Thistle",
+    "_note": "the giant hare from the Market Stall; the cat rides it and it thumps enemies; it takes the hits while the cat rides it (hp_by_level); knocked out in a mission, it throws the cat off and stays out until the cat feeds it (revive_food from the pantry, the HUD's Feed button, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends",
+    "speed_by_level": [
+      0,
+      1.5,
+      1.65,
+      1.8
+    ],
+    "thump_damage_by_level": [
+      0,
+      15,
+      25,
+      40
+    ],
+    "thump_every": 2.6,
+    "thump_range": 1.3,
+    "hp_by_level": [
+      0,
+      6,
+      9,
+      13
+    ],
+    "rest_s": 20,
+    "revive_food": {
+      "berries": 2
+    }
+  },
+  "trade": {
+    "_note": "Phase G1: the Market Stall sells timber for leaves (buy) and buys it back for less (sell)",
+    "buy": {
+      "timber": 5,
+      "leaves": 50
+    },
+    "sell": {
+      "timber": 5,
+      "leaves": 30
+    }
+  },
+  "raid": {
+    "_note": "the camp falls in a MISSION (not the Gloom Raids: see gloom_raids): share of unspent leaves lost; ruins cost `repair_share` of what the building cost; the campfire's ashes cost `fire_rebuild` to light again (Phase G1: leaves only, and free when the cat has fewer leaves than that, so the game can never get stuck)",
+    "leaves_share": 0.3,
+    "repair_share": 0.3,
+    "fire_rebuild": {
+      "leaves": 40
+    }
+  },
+  "gloom_raids": {
+    "_note": "Gloom Raids after every mission is won (Phase D, docs/PHASE_D_SPEC.md); not `raid` (the mission camp-falls numbers). The meter fills ONLY while the game runs: `meter.per_minute` points a minute while no fight is on, no raid is pending, the fire burns, the cat is up and the player touched the screen in the last `meter.idle_after` s (frame delta clamped to `meter.max_delta`), plus `meter.actions`, which never fill it past `meter.bump_cap`. Nothing reads the clock. At `meter.stir_at` the next raid is planned (its kind, trails, level and leader are fixed then); at `meter.full` it is pending and its warning (`warning`, always `warning.min`..`warning.max` s) starts when allowed. A raid is `waves` waves of lerp(count) (+1 per `count_per_level` raid levels) from its kind's pool; the last wave is cut to 60% and led by its leader (queue index `leader_at`); beating the leader routs the rest. Raid level = 1 + floor(max(0, camp score - level.camp_free) / level.camp_step) + floor(renown / level.renown_step), at most level.max (the first raid: - level.first_raid_minus). Renown +level.won_renown per raid held, -level.loss_renown per raid lost, 0..level.renown_cap. Strength = strength.base + strength.per_level x level, x (1 + strength.wave_ramp x (wave - 1)), the leader x leader_mult. Pay: shards round((pay.shards + pay.shards_per_level x level) x kind shards x (1 + pay.perfect if perfect + pay.ready if ready)); leaves pay.leaves + pay.leaves_per_level x level; timber pay.timber + floor(level / pay.timber_per_levels); keys pay.keys. A lost raid pays pay.lost_per_wave_held shards per wave held and takes nothing.",
+    "meter": {
+      "full": 100,
+      "per_minute": 10,
+      "idle_after": 45,
+      "max_delta": 0.1,
+      "bump_cap": 95,
+      "first_fill": 70,
+      "call_from": 50,
+      "stir_at": 75,
+      "save_step": 10,
+      "actions": {
+        "replay_chapter": 6,
+        "replay_won": 12,
+        "harvest": 2,
+        "dish": 3,
+        "fish": 2,
+        "burrow_run": 15
+      }
+    },
+    "warning": {
+      "normal": 45,
+      "first": 60,
+      "elite": 60,
+      "called": 30,
+      "lookout_bonus": 15,
+      "min": 30,
+      "max": 60,
+      "sneak_reveal": 15,
+      "idle_hold": 20,
+      "ten_left": 10,
+      "point_s": 6
+    },
+    "waves": 3,
+    "breather": 10,
+    "count": [
+      12,
+      20
+    ],
+    "count_per_level": 5,
+    "leader_at": 5,
+    "max_alive_by_quality": [
+      18,
+      24,
+      28
+    ],
+    "strength": {
+      "base": 2.2,
+      "per_level": 0.07,
+      "wave_ramp": 0.08,
+      "herald_mult": 1.0,
+      "boss_mult": 0.8
+    },
+    "level": {
+      "camp_free": 20,
+      "camp_step": 2,
+      "renown_step": 2,
+      "renown_cap": 20,
+      "won_renown": 1,
+      "loss_renown": 2,
+      "max": 30,
+      "first_raid_minus": 2
+    },
+    "camp_score": {
+      "per_home_level": 2,
+      "per_station_level": 1,
+      "per_tower": 1,
+      "per_defence_level": 1,
+      "per_guardian_level": 1
+    },
+    "first_raid": "siege",
+    "max_same_in_a_row": 2,
+    "types": {
+      "siege": {
+        "name": "Siege raid",
+        "weight": 4,
+        "from_raid": 1,
+        "lanes": 1,
+        "lanes_more_from_level": 12,
+        "leader": "herald",
+        "shards": 1.0,
+        "pool": [
+          [
+            "stump",
+            3
+          ],
+          [
+            "brute",
+            3
+          ],
+          [
+            "boar",
+            2
+          ],
+          [
+            "beetle",
+            2
+          ],
+          [
+            "thornling",
+            4
+          ]
+        ],
+        "every": [
+          1.7,
+          1.1
+        ],
+        "tell": "Bruisers are coming for your buildings"
+      },
+      "sky": {
+        "name": "Sky raid",
+        "weight": 3,
+        "from_raid": 2,
+        "lanes": 2,
+        "leader": "herald",
+        "shards": 1.15,
+        "pool": [
+          [
+            "moth",
+            7
+          ],
+          [
+            "pitcher",
+            2
+          ],
+          [
+            "crow",
+            1
+          ],
+          [
+            "thornling",
+            2
+          ]
+        ],
+        "every": [
+          1.5,
+          1.0
+        ],
+        "tell": "Moths fly over barricades: towers and your bow matter"
+      },
+      "sneak": {
+        "name": "Sneak raid",
+        "weight": 3,
+        "from_raid": 3,
+        "lanes": 1,
+        "pick": "weakest",
+        "hidden": true,
+        "leader": "herald",
+        "shards": 1.15,
+        "pool": [
+          [
+            "thornling",
+            5
+          ],
+          [
+            "mole",
+            3
+          ],
+          [
+            "puffball",
+            3
+          ],
+          [
+            "pitcher",
+            1
+          ]
+        ],
+        "every": [
+          1.4,
+          0.9
+        ],
+        "tell": "They're hiding their trail. Watch the woods!"
+      },
+      "elite": {
+        "name": "Elite raid",
+        "weight": 1,
+        "from_raid": 5,
+        "gap": 4,
+        "lanes": 2,
+        "leaders": [
+          "bear",
+          "owl",
+          "stag"
+        ],
+        "shards": 2.0,
+        "warning": "elite",
+        "pool": [
+          [
+            "stump",
+            2
+          ],
+          [
+            "beetle",
+            2
+          ],
+          [
+            "frog",
+            1
+          ],
+          [
+            "crow",
+            1
+          ],
+          [
+            "snail",
+            1
+          ],
+          [
+            "thornling",
+            3
+          ]
+        ],
+        "every": [
+          1.7,
+          1.1
+        ],
+        "tell": "A great foe leads this raid"
+      }
+    },
+    "pay": {
+      "shards": 10,
+      "shards_per_level": 1.0,
+      "perfect": 0.5,
+      "ready": 0.2,
+      "lost_per_wave_held": 2,
+      "leaves": 100,
+      "leaves_per_level": 15,
+      "timber": 3,
+      "timber_per_levels": 4,
+      "keys": {
+        "held": 1,
+        "elite_extra": 1,
+        "max": 3
+      }
+    },
+    "streak_ribbons": [
+      3,
+      5,
+      10
+    ],
+    "rout": {
+      "max_pickups": 12,
+      "max_petals_low": 8
+    },
+    "lane_guard": {
+      "tower": 150,
+      "tower_reach_bonus": 1.0
+    },
+    "repair": {
+      "ruin_share": 0.1,
+      "ruin_min": 20,
+      "ruin_cap": {
+        "leaves": 900,
+        "timber": 30
+      },
+      "wear_share": 0.5,
+      "wear_min": 5,
+      "wear_step": 0.05,
+      "wear_gloom": 0.35,
+      "wear_rubble": [
+        0.2,
+        0.45,
+        0.7
+      ],
+      "mend_share": 0.3,
+      "mend_per_level": 0.5,
+      "mend_stagger_s": 0.15
+    },
+    "watch": {
+      "lookout": {
+        "name": "Lookout",
+        "shards": 25,
+        "note": "+15 s to get ready before every raid"
+      },
+      "tracker": {
+        "name": "Tracker",
+        "shards": 40,
+        "note": "See the next raid at 75% · sneak raids can't hide"
+      }
+    },
+    "fire_looks": [
+      {
+        "id": "",
+        "name": "Campfire",
+        "tint": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "light": [
+          1.0,
+          0.62,
+          0.28
+        ]
+      },
+      {
+        "id": "shardfire",
+        "name": "Shardfire",
+        "shards": 100,
+        "tint": [
+          0.6,
+          0.65,
+          1.25
+        ],
+        "light": [
+          0.62,
+          0.5,
+          1.0
+        ]
+      }
+    ],
+    "shard_trade": {
+      "shards": 5,
+      "leaves": 100
+    },
+    "alert_every_s": 10
+  },
+  "guardian": {
+    "_note": "the Moss Warden, freed in the Gloomwood via stations.free_guardian() and woken at the Guardian Stone. Numbers = the stone level's entry x power_by_camp_level[home level] (fists and slam also x a dish's 'friends', health x 'guardian_hp'); every guardian look uses exactly these. In a wave it goes for enemies within its leash, first those hitting a building, a barricade, a tower or the campfire. Enemies within taunt_m of it fight it with structure-scale hits (gate_damage, no siege multiplier, range-checked). Slam when slam_min_foes are within slam_range (or a boss); foes with radius <= daze_radius are dazed slam_daze_s. Knocked down it pulls itself together after revive_s of mission time (x help_rate while the cat stands within help_range) at revive_hp, or whole at the next breather.",
+    "hp_by_level": [
+      0,
+      600,
+      900,
+      1300,
+      1800
+    ],
+    "fist_damage_by_level": [
+      0,
+      25,
+      38,
+      55,
+      75
+    ],
+    "slam_damage_by_level": [
+      0,
+      40,
+      60,
+      90,
+      125
+    ],
+    "scale_by_level": [
+      1.0,
+      1.0,
+      1.06,
+      1.12,
+      1.18
+    ],
+    "power_by_camp_level": [
+      0,
+      1.0,
+      1.15,
+      1.3,
+      1.45,
+      1.6,
+      1.75,
+      1.9,
+      2.05
+    ],
+    "radius": 0.6,
+    "speed": 1.15,
+    "hurry": 1.3,
+    "fist_every": 1.6,
+    "fist_reach": 0.55,
+    "slam_every": 7.0,
+    "slam_first": 3.0,
+    "slam_range": 2.2,
+    "slam_min_foes": 2,
+    "slam_daze_s": 0.6,
+    "daze_radius": 0.45,
+    "taunt_m": 1.6,
+    "leash_extra_m": 5.0,
+    "hold_leash_m": 5.5,
+    "last_stand_reach": 2.5,
+    "think_s": 0.25,
+    "revive_s": 30.0,
+    "revive_hp": 0.6,
+    "help_range": 1.6,
+    "help_rate": 2.0,
+    "number_every": 0.4,
+    "rest_offset": [
+      -1.1,
+      0,
+      0
+    ]
+  },
+  "garden": {
+    "_note": "a planted plot grows grow_dry steps for every wave the camp holds, grow_wet while watered (watering lasts wet_waves_by_level waves held); ripe at the crop's grow. Never real time: nothing grows while the game is closed or while the cat waits in the camp.",
+    "plots_by_level": [
+      0,
+      3,
+      5,
+      6
+    ],
+    "wet_waves_by_level": [
+      0,
+      3,
+      4,
+      5
+    ],
+    "extra_by_level": [
+      0,
+      0,
+      0,
+      1
+    ],
+    "grow_dry": 1,
+    "grow_wet": 2,
+    "crops": [
+      {
+        "id": "sunberry",
+        "name": "Sunberries",
+        "gives": "berries",
+        "yield": 3,
+        "grow": 4,
+        "seed": {
+          "leaves": 10
+        }
+      },
+      {
+        "id": "fernmint",
+        "name": "Fernmint",
+        "gives": "herbs",
+        "yield": 2,
+        "grow": 5,
+        "seed": {
+          "leaves": 12
+        }
+      },
+      {
+        "id": "honeybell",
+        "name": "Honeybells",
+        "gives": "honey",
+        "yield": 2,
+        "grow": 6,
+        "seed": {
+          "leaves": 15
+        }
+      }
+    ]
+  },
+  "ingredients": {
+    "berries": [
+      "Sunberry",
+      "Sunberries"
+    ],
+    "herbs": [
+      "Fernmint",
+      "Fernmint"
+    ],
+    "honey": [
+      "honey",
+      "honey"
+    ],
+    "fish": [
+      "fish",
+      "fish"
+    ],
+    "goldfish": [
+      "Golden Carp",
+      "Golden Carp"
+    ]
+  },
+  "cooking": {
+    "_note": "one dish waits in the pot (Save.meal_ready); it is eaten when the next chapter (or raid) starts and lasts that chapter (Save.meal_on), then it is used up; if the camp falls it goes back into the pot. Boost keys: hp (added), draw, damage, friends (pet, mount and Warden hits), fire (campfire health), guardian_hp (shares), guardian_revive_s (seconds). unlock: garden | fishing | fishing+stone | goldfish (one was ever caught).",
+    "pantry_cap": 20,
+    "max_rows": 6,
+    "recipes": [
+      {
+        "id": "berry_tart",
+        "name": "Berry Tart",
+        "needs": {
+          "berries": 3
+        },
+        "boost": {
+          "draw": 0.15
+        },
+        "says": "shoots 15% faster",
+        "unlock": "garden",
+        "color": "#e8603c"
+      },
+      {
+        "id": "fernmint_tea",
+        "name": "Fernmint Tea",
+        "needs": {
+          "herbs": 2
+        },
+        "boost": {
+          "hp": 2
+        },
+        "says": "+2 health",
+        "unlock": "garden",
+        "color": "#8fd18a"
+      },
+      {
+        "id": "honey_cake",
+        "name": "Honey Cake",
+        "needs": {
+          "honey": 2,
+          "berries": 1
+        },
+        "boost": {
+          "friends": 0.4
+        },
+        "says": "your pet, mount and Warden hit 40% harder",
+        "unlock": "garden",
+        "color": "#ffd36e"
+      },
+      {
+        "id": "hearth_stew",
+        "name": "Hearth Stew",
+        "needs": {
+          "herbs": 2,
+          "honey": 1,
+          "berries": 2
+        },
+        "boost": {
+          "fire": 0.4
+        },
+        "says": "the campfire has 40% more health",
+        "unlock": "garden",
+        "color": "#d98b4a"
+      },
+      {
+        "id": "fish_skewers",
+        "name": "Fish Skewers",
+        "needs": {
+          "fish": 2,
+          "herbs": 1
+        },
+        "boost": {
+          "damage": 0.2
+        },
+        "says": "arrows hit 20% harder",
+        "unlock": "fishing",
+        "color": "#f07f6a"
+      },
+      {
+        "id": "root_stew",
+        "name": "Warden's Root Stew",
+        "needs": {
+          "fish": 2,
+          "herbs": 2,
+          "honey": 1
+        },
+        "boost": {
+          "guardian_hp": 0.5,
+          "guardian_revive_s": 15
+        },
+        "says": "the Warden: +50% health, back up in 15 s",
+        "unlock": "fishing+stone",
+        "color": "#7fcf6a"
+      },
+      {
+        "id": "carp_feast",
+        "name": "Golden Carp Feast",
+        "needs": {
+          "goldfish": 1,
+          "berries": 2,
+          "honey": 1
+        },
+        "boost": {
+          "hp": 2,
+          "damage": 0.15,
+          "draw": 0.1,
+          "friends": 0.2,
+          "guardian_hp": 0.2
+        },
+        "says": "a little of everything",
+        "unlock": "goldfish",
+        "color": "#ffb43c"
+      }
+    ]
+  },
+  "fishing": {
+    "_note": "a calm game at the lake (fishing.gd): cast, wait, tap anywhere on the bite; uncommon and rare catches add reel pulses (tap while the closing ring is green). Misses cost nothing. rare_pity: a rare at the latest on this catch. A rolled rare is the next unfound lake treasure treasure_share of the time.",
+    "cast_s": 0.55,
+    "cast_m": [
+      1.8,
+      2.6
+    ],
+    "wait_s": [
+      3.0,
+      6.0
+    ],
+    "nibbles": [
+      0,
+      2
+    ],
+    "early_tap_s": 1.0,
+    "bite_s": {
+      "common": 1.0,
+      "uncommon": 0.85,
+      "rare": 0.7
+    },
+    "pulses": {
+      "common": 0,
+      "uncommon": 1,
+      "rare": 2
+    },
+    "pulse_s": 1.1,
+    "pulse_zone": 0.3,
+    "pulse_grace_s": 0.15,
+    "misses_allowed": 1,
+    "rare_pity": 20,
+    "treasure_share": 0.5,
+    "cancel_drag": 0.5,
+    "catches": [
+      {
+        "id": "minnow",
+        "name": "Minnow",
+        "rarity": "common",
+        "weight": 44,
+        "gives": {
+          "fish": 1
+        },
+        "mesh": "fish_minnow"
+      },
+      {
+        "id": "perch",
+        "name": "Sun Perch",
+        "rarity": "common",
+        "weight": 28,
+        "gives": {
+          "fish": 1
+        },
+        "mesh": "fish_perch"
+      },
+      {
+        "id": "trout",
+        "name": "Silver Trout",
+        "rarity": "uncommon",
+        "weight": 15,
+        "gives": {
+          "fish": 2
+        },
+        "mesh": "fish_trout"
+      },
+      {
+        "id": "driftwood",
+        "name": "Driftwood",
+        "rarity": "common",
+        "weight": 7,
+        "gives": {
+          "timber": 1
+        },
+        "mesh": "driftwood"
+      },
+      {
+        "id": "carp",
+        "name": "Golden Carp",
+        "rarity": "rare",
+        "weight": 4,
+        "gives": {
+          "goldfish": 1
+        },
+        "mesh": "fish_carp"
+      },
+      {
+        "id": "chest",
+        "name": "Sunken Chest",
+        "rarity": "rare",
+        "weight": 2,
+        "gives": {
+          "leaves": 40,
+          "timber": 3
+        },
+        "mesh": "sunken_chest"
+      }
+    ],
+    "treasures": [
+      {
+        "id": "lake_lure",
+        "name": "Lucky Lure",
+        "says": "Bites come 25% sooner",
+        "wait_mult": 0.75
+      },
+      {
+        "id": "lake_line",
+        "name": "Silk Line",
+        "says": "One more slip forgiven when you reel",
+        "misses": 1
+      },
+      {
+        "id": "lake_charm",
+        "name": "Lake-moss Charm",
+        "says": "New colours for the Warden: Lakeweed"
+      }
+    ]
+  },
+  "missions": [
+    {
+      "id": "embers",
+      "name": "First Embers",
+      "lanes": [
+        0
+      ],
+      "power": 0,
+      "waves": 15,
+      "count": [
+        10,
+        25
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              1
+            ]
+          ],
+          "every": [
+            2.4,
+            1.8
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "thornling",
+              1
+            ]
+          ],
+          "every": [
+            1.9,
+            1.2
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "thornling",
+              1
+            ]
+          ],
+          "every": [
+            1.38,
+            1.1
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "chief",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "chief",
+          1
+        ]
+      ],
+      "reward": {
+        "leaves": 100,
+        "timber": 10
+      },
+      "gift": "garden",
+      "intro": "Thornlings creep out of Fernwood. Keep them off the campfire!",
+      "needs_home": 1
+    },
+    {
+      "id": "bramble",
+      "name": "Bramble Pack",
+      "lanes": [
+        1
+      ],
+      "power": 2,
+      "waves": 15,
+      "count": [
+        10,
+        25
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              4
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            2.2,
+            1.6
+          ],
+          "pool_first": [
+            [
+              "thornling",
+              1
+            ]
+          ],
+          "first_waves": 2,
+          "squads": [
+            [
+              "scouts",
+              3
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.8,
+            1.2
+          ],
+          "squads": [
+            [
+              "scouts",
+              2
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "thornling",
+              2
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.38,
+            1.0
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "boar",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "boar",
+          2
+        ]
+      ],
+      "reward": {
+        "leaves": 180,
+        "timber": 12
+      },
+      "gift": "",
+      "intro": "Boars charge down from the Dell. Block the road!",
+      "needs_home": 1,
+      "elite_by_chapter": [
+        1,
+        1,
+        2
+      ]
+    },
+    {
+      "id": "toadstool",
+      "name": "Toadstool March",
+      "lanes": [
+        2
+      ],
+      "power": 4,
+      "waves": 15,
+      "count": [
+        10,
+        25
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            2.2,
+            1.6
+          ],
+          "squads": [
+            [
+              "scouts",
+              2
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "brute",
+              1
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.8,
+            1.2
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "brute",
+              2
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.38,
+            1.1
+          ],
+          "squads": [
+            [
+              "brute_wall",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "brute",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "brute",
+          3
+        ]
+      ],
+      "reward": {
+        "leaves": 200,
+        "timber": 14
+      },
+      "gift": "",
+      "intro": "Toadstool Brutes stomp in. They hit buildings hard.",
+      "needs_home": 2
+    },
+    {
+      "id": "stumps",
+      "name": "Stumps at Dusk",
+      "lanes": [
+        3
+      ],
+      "power": 6,
+      "waves": 15,
+      "count": [
+        10,
+        25
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "stump",
+              1
+            ]
+          ],
+          "every": [
+            2.2,
+            1.6
+          ],
+          "squads": [
+            [
+              "scouts",
+              2
+            ],
+            [
+              "stump_siege",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "stump",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.8,
+            1.2
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "thornling",
+              3
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.38,
+            1.0
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              2
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "stump",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "stump",
+          3
+        ]
+      ],
+      "reward": {
+        "leaves": 300,
+        "timber": 16
+      },
+      "gift": "",
+      "intro": "Stump Golems lumber out of the den to smash your buildings.",
+      "needs_home": 2
+    },
+    {
+      "id": "bandits",
+      "name": "Bandit Night",
+      "lanes": [
+        0,
+        1
+      ],
+      "power": 8,
+      "waves": 15,
+      "count": [
+        10,
+        25
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "raccoon",
+              2
+            ]
+          ],
+          "every": [
+            2.0,
+            1.5
+          ],
+          "squads": [
+            [
+              "bandits",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "raccoon",
+              2
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.7,
+            1.1
+          ],
+          "squads": [
+            [
+              "bandits",
+              2
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "raccoon",
+              3
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "stump",
+              1
+            ]
+          ],
+          "every": [
+            1.26,
+            1.0
+          ],
+          "squads": [
+            [
+              "bandits",
+              2
+            ],
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "brute",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "brute",
+          2
+        ],
+        [
+          "raccoon",
+          4
+        ]
+      ],
+      "reward": {
+        "leaves": 350,
+        "timber": 18
+      },
+      "gift": "",
+      "intro": "Raccoon Bandits come for your leaves from two trails.",
+      "needs_home": 2
+    },
+    {
+      "id": "mossback",
+      "name": "Mossback Wakes",
+      "lanes": [
+        3
+      ],
+      "power": 10,
+      "waves": 20,
+      "count": [
+        16,
+        32
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            2.0,
+            1.5
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "thornling",
+              3
+            ]
+          ],
+          "every": [
+            1.7,
+            1.1
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "bandits",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "thornling",
+              5
+            ]
+          ],
+          "every": [
+            1.26,
+            1.25
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "bandits",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "thornling",
+              4
+            ],
+            [
+              "stump",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.44,
+            1.1
+          ],
+          "squads": [
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "brute",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "bear",
+          1
+        ]
+      ],
+      "reward": {
+        "leaves": 700,
+        "timber": 30
+      },
+      "gift": "fishing",
+      "intro": "The ground shakes. Mossback is awake.",
+      "needs_home": 2,
+      "boss_adds": 0.35,
+      "boss_escort": [
+        "brute_wall",
+        "boar_raid"
+      ]
+    },
+    {
+      "id": "moths",
+      "name": "Moth Swarm",
+      "lanes": [
+        0,
+        2
+      ],
+      "power": 12,
+      "waves": 20,
+      "count": [
+        16,
+        32
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "moth",
+              3
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.9,
+            1.4
+          ],
+          "squads": [
+            [
+              "moth_cloud",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "moth",
+              3
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.6,
+            1.0
+          ],
+          "squads": [
+            [
+              "moth_cloud",
+              2
+            ],
+            [
+              "moth_escort",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "moth",
+              7
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "brute",
+              1
+            ],
+            [
+              "stump",
+              1
+            ]
+          ],
+          "every": [
+            1.15,
+            0.95
+          ],
+          "squads": [
+            [
+              "moth_cloud",
+              2
+            ],
+            [
+              "moth_escort",
+              2
+            ],
+            [
+              "stump_siege",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "moth",
+              4
+            ],
+            [
+              "stump",
+              1
+            ]
+          ],
+          "every": [
+            1.09,
+            0.9
+          ],
+          "squads": [
+            [
+              "moth_escort",
+              2
+            ],
+            [
+              "moth_cloud",
+              1
+            ],
+            [
+              "stump_siege",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "moth",
+          3
+        ]
+      ],
+      "boss": [
+        [
+          "moth",
+          6
+        ],
+        [
+          "stump",
+          1
+        ]
+      ],
+      "reward": {
+        "leaves": 600,
+        "timber": 35
+      },
+      "gift": "",
+      "intro": "Gloom Moths fly over barricades. Your towers matter now.",
+      "needs_home": 3
+    },
+    {
+      "id": "spitters",
+      "name": "Spitting Thicket",
+      "lanes": [
+        1,
+        2
+      ],
+      "power": 14,
+      "waves": 20,
+      "count": [
+        16,
+        32
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "pitcher",
+              2
+            ],
+            [
+              "thornling",
+              3
+            ]
+          ],
+          "every": [
+            2.0,
+            1.5
+          ],
+          "squads": [
+            [
+              "spitter_nest",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "pitcher",
+              2
+            ],
+            [
+              "thornling",
+              3
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.7,
+            1.1
+          ],
+          "squads": [
+            [
+              "spitter_nest",
+              2
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "pitcher",
+              5
+            ],
+            [
+              "thornling",
+              3
+            ],
+            [
+              "brute",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "stump",
+              1
+            ]
+          ],
+          "every": [
+            1.26,
+            1.05
+          ],
+          "squads": [
+            [
+              "spitter_nest",
+              2
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "moth_cloud",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "pitcher",
+              3
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "stump",
+              1
+            ]
+          ],
+          "every": [
+            1.21,
+            1.0
+          ],
+          "squads": [
+            [
+              "spitter_nest",
+              2
+            ],
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "pitcher",
+          2
+        ]
+      ],
+      "boss": [
+        [
+          "pitcher",
+          4
+        ],
+        [
+          "stump",
+          1
+        ]
+      ],
+      "reward": {
+        "leaves": 700,
+        "timber": 37
+      },
+      "gift": "",
+      "intro": "Pitcher Spitters shoot thorns at your towers from afar.",
+      "needs_home": 3
+    },
+    {
+      "id": "choir",
+      "name": "Croaking Choir",
+      "lanes": [
+        2,
+        3
+      ],
+      "power": 16,
+      "waves": 20,
+      "count": [
+        16,
+        32
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "frog",
+              2
+            ],
+            [
+              "thornling",
+              3
+            ]
+          ],
+          "every": [
+            2.0,
+            1.5
+          ],
+          "squads": [
+            [
+              "choir",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "frog",
+              2
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "thornling",
+              3
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.7,
+            1.1
+          ],
+          "squads": [
+            [
+              "choir",
+              2
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "frog",
+              4
+            ],
+            [
+              "crow",
+              3
+            ],
+            [
+              "thornling",
+              3
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "stump",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.26,
+            1.05
+          ],
+          "squads": [
+            [
+              "choir",
+              2
+            ],
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "moth_escort",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "crow",
+              2
+            ],
+            [
+              "frog",
+              2
+            ],
+            [
+              "stump",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.21,
+            1.0
+          ],
+          "squads": [
+            [
+              "choir",
+              2
+            ],
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "crow",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "crow",
+          2
+        ],
+        [
+          "frog",
+          3
+        ]
+      ],
+      "reward": {
+        "leaves": 800,
+        "timber": 39
+      },
+      "gift": "",
+      "intro": "Frogs heal, crows drum. Take out the helpers first.",
+      "needs_home": 3
+    },
+    {
+      "id": "shieldwall",
+      "name": "Shield Wall",
+      "lanes": [
+        0,
+        3
+      ],
+      "power": 18,
+      "waves": 20,
+      "count": [
+        16,
+        32
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "beetle",
+              1
+            ],
+            [
+              "thornling",
+              3
+            ]
+          ],
+          "every": [
+            2.0,
+            1.5
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "beetle",
+              2
+            ],
+            [
+              "mole",
+              2
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.7,
+            1.1
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              2
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "beetle",
+              4
+            ],
+            [
+              "mole",
+              4
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.26,
+            1.05
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              2
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "beetle",
+              2
+            ],
+            [
+              "mole",
+              2
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.21,
+            1.0
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              2
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "beetle",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "beetle",
+          3
+        ],
+        [
+          "mole",
+          2
+        ]
+      ],
+      "reward": {
+        "leaves": 900,
+        "timber": 41
+      },
+      "gift": "",
+      "intro": "Beetle Knights block arrows from the front, and moles dig under barricades.",
+      "needs_home": 3,
+      "strength_mult": 0.95
+    },
+    {
+      "id": "creep",
+      "name": "Crystal Creep",
+      "lanes": [
+        1,
+        3
+      ],
+      "power": 20,
+      "waves": 20,
+      "count": [
+        20,
+        38
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "puffball",
+              3
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            2.0,
+            1.5
+          ],
+          "squads": [
+            [
+              "crystal_creep",
+              2
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "snail",
+              1
+            ],
+            [
+              "puffball",
+              3
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "moth",
+              1
+            ]
+          ],
+          "every": [
+            1.7,
+            1.1
+          ],
+          "squads": [
+            [
+              "crystal_creep",
+              2
+            ],
+            [
+              "moth_cloud",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "snail",
+              3
+            ],
+            [
+              "puffball",
+              6
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "moth",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ]
+          ],
+          "every": [
+            1.26,
+            1.05
+          ],
+          "squads": [
+            [
+              "crystal_creep",
+              2
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "snail",
+              2
+            ],
+            [
+              "puffball",
+              3
+            ],
+            [
+              "pitcher",
+              1
+            ]
+          ],
+          "every": [
+            1.21,
+            1.0
+          ],
+          "squads": [
+            [
+              "crystal_creep",
+              2
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "moth_escort",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "snail",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "snail",
+          2
+        ],
+        [
+          "puffball",
+          4
+        ]
+      ],
+      "reward": {
+        "leaves": 1300,
+        "timber": 43
+      },
+      "gift": "",
+      "intro": "Puffballs burst on buildings. Crystal Snails crawl in behind them.",
+      "needs_home": 4
+    },
+    {
+      "id": "fronts",
+      "name": "Two Fronts",
+      "lanes": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "power": 22,
+      "waves": 20,
+      "count": [
+        20,
+        38
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "brute",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "moth",
+              1
+            ]
+          ],
+          "every": [
+            1.8,
+            1.3
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "moth_cloud",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "puffball",
+              1
+            ],
+            [
+              "mole",
+              1
+            ]
+          ],
+          "every": [
+            1.49,
+            1.0
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "crystal_creep",
+              1
+            ],
+            [
+              "bandits",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "thornling",
+              5
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "puffball",
+              1
+            ],
+            [
+              "mole",
+              1
+            ],
+            [
+              "stump",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "frog",
+              1
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.15,
+            0.95
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "crystal_creep",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "frog",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.09,
+            0.9
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "stump",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "stump",
+          2
+        ],
+        [
+          "brute",
+          2
+        ]
+      ],
+      "reward": {
+        "leaves": 1400,
+        "timber": 45
+      },
+      "gift": "",
+      "intro": "They come from every trail at once.",
+      "needs_home": 4
+    },
+    {
+      "id": "owlwitch",
+      "name": "The Owl Witch",
+      "lanes": [
+        1
+      ],
+      "power": 24,
+      "waves": 20,
+      "count": [
+        20,
+        38
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "moth",
+              3
+            ],
+            [
+              "frog",
+              1
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.8,
+            1.3
+          ],
+          "squads": [
+            [
+              "moth_cloud",
+              2
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "moth",
+              2
+            ],
+            [
+              "crow",
+              1
+            ]
+          ],
+          "every": [
+            1.49,
+            1.0
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "moth_escort",
+              1
+            ],
+            [
+              "choir",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "moth",
+              4
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "frog",
+              1
+            ]
+          ],
+          "every": [
+            1.15,
+            0.95
+          ],
+          "squads": [
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "moth_cloud",
+              2
+            ],
+            [
+              "choir",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "moth",
+              3
+            ],
+            [
+              "frog",
+              1
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "crow",
+              1
+            ]
+          ],
+          "every": [
+            1.09,
+            1.0
+          ],
+          "squads": [
+            [
+              "moth_cloud",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "moth_escort",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "beetle",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "owl",
+          1
+        ]
+      ],
+      "reward": {
+        "leaves": 2000,
+        "timber": 55
+      },
+      "gift": "",
+      "intro": "The Owl Witch flies in from her spire.",
+      "needs_home": 4,
+      "strength_mult": 0.92,
+      "boss_adds": 0.35,
+      "boss_escort": [
+        "moth_cloud",
+        "choir"
+      ]
+    },
+    {
+      "id": "tide",
+      "name": "Gloom Tide",
+      "lanes": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "power": 26,
+      "waves": 20,
+      "count": [
+        20,
+        38
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "thornling",
+              3
+            ],
+            [
+              "moth",
+              2
+            ],
+            [
+              "puffball",
+              1
+            ],
+            [
+              "brute",
+              1
+            ]
+          ],
+          "every": [
+            1.7,
+            1.2
+          ],
+          "squads": [
+            [
+              "scouts",
+              1
+            ],
+            [
+              "moth_cloud",
+              1
+            ],
+            [
+              "crystal_creep",
+              1
+            ],
+            [
+              "brute_wall",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "mole",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.38,
+            0.9
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "choir",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "mole",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "thornling",
+              2
+            ],
+            [
+              "snail",
+              1
+            ],
+            [
+              "frog",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "puffball",
+              2
+            ],
+            [
+              "moth",
+              2
+            ]
+          ],
+          "every": [
+            1.03,
+            0.85
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "crystal_creep",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "moth_escort",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "snail",
+              1
+            ],
+            [
+              "frog",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "puffball",
+              2
+            ],
+            [
+              "moth",
+              2
+            ]
+          ],
+          "every": [
+            0.98,
+            0.8
+          ],
+          "squads": [
+            [
+              "crystal_creep",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ],
+            [
+              "moth_cloud",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "snail",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "snail",
+          2
+        ],
+        [
+          "stump",
+          2
+        ]
+      ],
+      "reward": {
+        "leaves": 1200,
+        "timber": 40
+      },
+      "gift": "",
+      "intro": "Everything the Gloom has, all at once.",
+      "needs_home": 5
+    },
+    {
+      "id": "thornstag",
+      "name": "The Elder Thornstag",
+      "lanes": [
+        2,
+        3
+      ],
+      "power": 28,
+      "waves": 20,
+      "count": [
+        20,
+        38
+      ],
+      "chapters": [
+        {
+          "name": "Scouts",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "thornling",
+              3
+            ],
+            [
+              "moth",
+              1
+            ]
+          ],
+          "every": [
+            1.8,
+            1.3
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "scouts",
+              1
+            ],
+            [
+              "moth_cloud",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Main assault",
+          "pool": [
+            [
+              "stump",
+              1
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "boar",
+              1
+            ]
+          ],
+          "every": [
+            1.49,
+            1.0
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Onslaught",
+          "pool": [
+            [
+              "stump",
+              2
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.15,
+            0.95
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              2
+            ],
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "spitter_nest",
+              1
+            ],
+            [
+              "choir",
+              1
+            ]
+          ]
+        },
+        {
+          "name": "Finale",
+          "pool": [
+            [
+              "stump",
+              2
+            ],
+            [
+              "beetle",
+              1
+            ],
+            [
+              "pitcher",
+              1
+            ],
+            [
+              "crow",
+              1
+            ],
+            [
+              "boar",
+              1
+            ],
+            [
+              "thornling",
+              2
+            ]
+          ],
+          "every": [
+            1.09,
+            0.9
+          ],
+          "squads": [
+            [
+              "stump_siege",
+              1
+            ],
+            [
+              "shield_wall",
+              1
+            ],
+            [
+              "choir",
+              1
+            ],
+            [
+              "boar_raid",
+              1
+            ]
+          ]
+        }
+      ],
+      "elite": [
+        [
+          "stump",
+          1
+        ]
+      ],
+      "boss": [
+        [
+          "stag",
+          1
+        ]
+      ],
+      "reward": {
+        "leaves": 1500,
+        "timber": 60
+      },
+      "gift": "",
+      "intro": "The Elder Thornstag, crowned in brambles, is coming for the camp.",
+      "needs_home": 5,
+      "boss_adds": 0.35,
+      "boss_escort": [
+        "stump_siege",
+        "shield_wall"
+      ]
+    }
+  ],
+  "mission": {
+    "_note": "how every mission runs (Draft 7): `waves` waves in chapters of `chapter_waves`; every chapter's last wave is an elite wave (the mission's `elite` enemies, more each chapter) and the mission's last wave brings its `boss`. Wave w has count[0]..count[1] ordinary enemies from its chapter's pool, spawned every[0]..every[1] s apart, at strength (base_strength + strength_per_mission x mission) x (1 + wave_ramp x (w - 1)); at most `max_alive` at once. A `breather` (s) between waves; after a chapter the camp rests until the player goes on from the signpost, and the game is saved there. Pay: kills drop `kill_pay` of their leaves; a cleared wave pays (wave_bonus + wave_bonus_step x w) leaves; a chapter pays chest_leaves / chest_timber [chapter]; all of it x (1 + pay_per_mission x mission). The win pays the mission's `reward` (replays: `replay_reward` of it). The campfire can be rebuilt once per chapter (`rebuild_s` on the ashes, `rebuild_timber`) and comes back at `rebuild_hp`; at every chapter break it is fed back to full. If a wave's last `flee_left` enemies (no boss) go `flee_after` s without one coming or falling, they flee so the wave can end.",
+    "chapter_waves": 5,
+    "breather": 15,
+    "base_strength": 1.0,
+    "strength_per_mission": 0.08,
+    "wave_ramp": 0.05,
+    "max_alive": 28,
+    "kill_pay": 0.65,
+    "wave_bonus": 3,
+    "wave_bonus_step": 0.5,
+    "chest_leaves": [
+      25,
+      40,
+      60,
+      80
+    ],
+    "chest_timber": [
+      2,
+      4,
+      4,
+      6
+    ],
+    "pay_per_mission": 0.2,
+    "replay_reward": 0.5,
+    "rebuild_s": 4.0,
+    "rebuild_timber": 10,
+    "rebuild_hp": 0.3,
+    "flee_after": 45.0,
+    "flee_left": 3,
+    "_note_phase_f": "Phase F (19 Nov 2026): roads = how a wave picks its roads (surround: all four, roads taking turns; pincer: two far apart; rush: one road, rush_count x enemies at rush_speed x speed, with a banner). A mission's `lanes` is now its favoured road (favoured_weight x share in surround; rushes come from it). teach_mission uses teach_roads_by_chapter roads (1, 2, then all 4). burst: enemies come in groups of size[0]..size[1], `spacing` s apart; the gap after a group keeps the chapter's average rate. min_wave_ratio: an ordinary wave is topped up (more enemies, up to max_alive) so its total health is at least this share of the wave before it (not after a chapter break, not the boss wave). boss_adds: share of a boss wave's ordinary enemies (a mission may override). bonus: quick clear (cleared within quick_base_s + quick_per_foe_s per enemy) pays quick_share x the wave bonus; intact (no building or defence ruined in the wave) pays intact_share x the wave bonus; Go early pays early_per_s leaves per breather second skipped (x the pay scale). golden_grub: from mission index from_mission, a chance per wave, it runs across the field and escapes after life_s; it never holds a wave up. totem: from mission index from_mission, a chance per ordinary wave, it grows on a road at trail progress `s`; foes within radius get speed_buff and take (1 - armor) damage; it is a foe (the wave waits for it). Mission keys: needs_home (the home level to start it), strength_mult, elite_by_chapter (replaces chapter+1), boss_adds, chapter pool_first + first_waves (the chapter's first waves use pool_first).",
+    "roads": {
+      "surround": 0.65,
+      "pincer": 0.2,
+      "rush": 0.15,
+      "favoured_weight": 1.5,
+      "rush_count": 1.0,
+      "rush_speed": 1.15,
+      "teach_mission": 0,
+      "teach_roads_by_chapter": [
+        1,
+        2,
+        4
+      ]
+    },
+    "burst": {
+      "size": [
+        2,
+        4
+      ],
+      "spacing": 0.4
+    },
+    "min_wave_ratio": 0.85,
+    "boss_adds": 0.6,
+    "bonus": {
+      "quick_base_s": 20.0,
+      "quick_per_foe_s": 3.0,
+      "quick_share": 0.5,
+      "intact_share": 0.5,
+      "early_per_s": 0.5
+    },
+    "golden_grub": {
+      "from_mission": 1,
+      "chance": 0.35,
+      "kind": "golden_grub",
+      "life_s": 14.0,
+      "at_s": [
+        8.0,
+        25.0
+      ]
+    },
+    "totem": {
+      "from_mission": 2,
+      "chance": 0.3,
+      "kind": "gloom_totem",
+      "radius": 4.0,
+      "speed_buff": 0.25,
+      "armor": 0.25,
+      "at_s": [
+        3.0,
+        10.0
+      ],
+      "s": 0.35
+    },
+    "_note_phase_g1": "Phase G1 (20 Nov 2026): wave_limits.groups by mission number (to_mission, 1-based): max_alive = the most enemies of a mission wave on the field at once; tanks_at_once = the most tank weight on the field at once (tank_weight: boar 0.5, the big ones 1; elites count, bosses do not); tank_share = the most tank weight in a whole wave as a share of its enemies. boss_others_on_field: with a boss alive, at most this many others on the field. min_wave_ratio now swaps weak kinds for stronger ones from the chapter pool (within the tank limits) and never adds enemies. Rush waves keep their count (roads.rush_count 1.0) and come rush_speed x faster. timber_per_wave: timber for each mission wave held (x the pay scale, rounded, at least 1). rebuild_leaves: the mid-mission campfire rebuild costs this many leaves when the cat has less than rebuild_timber timber.",
+    "wave_limits": {
+      "groups": [
+        {
+          "to_mission": 5,
+          "max_alive": 10,
+          "tanks_at_once": 1,
+          "tank_share": 0.1
+        },
+        {
+          "to_mission": 10,
+          "max_alive": 12,
+          "tanks_at_once": 2,
+          "tank_share": 0.15
+        },
+        {
+          "to_mission": 15,
+          "max_alive": 14,
+          "tanks_at_once": 3,
+          "tank_share": 0.15
+        }
+      ],
+      "tank_weight": {
+        "stump": 1.0,
+        "brute": 1.0,
+        "beetle": 1.0,
+        "snail": 1.0,
+        "boar": 0.5
+      },
+      "boss_others_on_field": 8
+    },
+    "timber_per_wave": 1,
+    "rebuild_leaves": 60,
+    "_note_squads": "Phase G1b: mission waves are planned from the chapter's `squads` (weights) instead of its random `pool`, until the wave reaches its count from `count`. Rules (squad_rules): from mission mixed_from on, a wave holds at least min_types different squad types; from mission share_from on, no kind is more than max_kind_share of a wave; the chapter's first_waves still use only its first squad. A squad spawns together on one road only when the field has room for all of it and the tank limit allows it. Elites lead their own squads (the elite plus elite_escort light enemies from the chapter's squads). The boss wave: each `boss` entry plus the mission's boss_escort squads.",
+    "squad_rules": {
+      "mixed_from": 2,
+      "min_types": 2,
+      "share_from": 3,
+      "max_kind_share": 0.4,
+      "elite_escort": [
+        2,
+        3
+      ],
+      "spacing": 0.6,
+      "support_behind": 2.5,
+      "break_off": 6.0,
+      "pace": 1.1,
+      "hit_break_r": 4.0,
+      "boss_escort_light": 2,
+      "tries": 8,
+      "filler": "scouts"
+    }
+  },
+  "building_hp": {
+    "_note": "health of each building by its level (index 0 unused)",
+    "home": [
+      0,
+      400,
+      700,
+      1100,
+      1500,
+      2000,
+      2600,
+      3300,
+      4000
+    ],
+    "target": [
+      0,
+      180,
+      300,
+      450
+    ],
+    "bench": [
+      0,
+      180,
+      300,
+      450
+    ],
+    "well": [
+      0,
+      150,
+      260,
+      400
+    ],
+    "cottage": [
+      0,
+      200,
+      340,
+      500
+    ],
+    "stall": [
+      0,
+      200,
+      340,
+      500
+    ]
+  },
+  "looks": {
+    "_note": "looks for the one mount slot and the one pet slot: every look does exactly the same (speed, damage, range, cooldown); only the model, its move and colours differ; `skins` recolour the look's `fur` colour family (hue, width) to `to` = [hue or -1 to keep it, saturation x, value x] (vc.gdshader): all free while testing, sold later A skin with `shards` (Gloomlit, Phase D) is earned with Gloom shards on the Stable and Nest cards and is never sold.",
+    "mount": [
+      {
+        "id": "thistle",
+        "name": "Thistle the hare",
+        "move": "stamps a Thump shockwave",
+        "short": "Thistle",
+        "shout": "Thump!",
+        "fur": [
+          0.072,
+          0.05
+        ],
+        "skins": [
+          {
+            "id": "natural",
+            "name": "Natural",
+            "to": [
+              -1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": "snow",
+            "name": "Snow",
+            "to": [
+              -1,
+              0.12,
+              1.3
+            ]
+          },
+          {
+            "id": "midnight",
+            "name": "Midnight",
+            "to": [
+              0.6,
+              0.55,
+              0.6
+            ]
+          },
+          {
+            "id": "autumn",
+            "name": "Autumn",
+            "to": [
+              0.02,
+              1.15,
+              0.85
+            ]
+          },
+          {
+            "id": "golden",
+            "name": "Golden",
+            "to": [
+              0.115,
+              0.85,
+              1.08
+            ]
+          },
+          {
+            "id": "gloomlit",
+            "name": "Gloomlit",
+            "to": [
+              0.76,
+              0.75,
+              0.9
+            ],
+            "shards": 60
+          }
+        ]
+      },
+      {
+        "id": "bramblewool",
+        "name": "Bramblewool the ram",
+        "move": "lowers its horns and rams",
+        "short": "Bramblewool",
+        "shout": "Ram!",
+        "fur": [
+          0.08,
+          0.05
+        ],
+        "skins": [
+          {
+            "id": "natural",
+            "name": "Natural",
+            "to": [
+              -1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": "snow",
+            "name": "Snow",
+            "to": [
+              -1,
+              0.12,
+              1.3
+            ]
+          },
+          {
+            "id": "midnight",
+            "name": "Midnight",
+            "to": [
+              0.6,
+              0.55,
+              0.6
+            ]
+          },
+          {
+            "id": "autumn",
+            "name": "Autumn",
+            "to": [
+              0.02,
+              1.15,
+              0.85
+            ]
+          },
+          {
+            "id": "golden",
+            "name": "Golden",
+            "to": [
+              0.115,
+              0.85,
+              1.08
+            ]
+          },
+          {
+            "id": "gloomlit",
+            "name": "Gloomlit",
+            "to": [
+              0.76,
+              0.75,
+              0.9
+            ],
+            "shards": 60
+          }
+        ]
+      }
+    ],
+    "pet": [
+      {
+        "id": "sprig",
+        "name": "Sprig the leaf dragon",
+        "flies": true,
+        "spark": [
+          0.75,
+          1.0,
+          0.35
+        ],
+        "short": "Sprig",
+        "fur": [
+          0.222,
+          0.07
+        ],
+        "skins": [
+          {
+            "id": "natural",
+            "name": "Natural",
+            "to": [
+              -1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": "frost",
+            "name": "Frost",
+            "to": [
+              0.53,
+              0.7,
+              1.15
+            ]
+          },
+          {
+            "id": "ember",
+            "name": "Ember",
+            "to": [
+              0.03,
+              1.1,
+              0.95
+            ]
+          },
+          {
+            "id": "golden",
+            "name": "Golden",
+            "to": [
+              0.115,
+              0.85,
+              1.08
+            ]
+          },
+          {
+            "id": "midnight",
+            "name": "Midnight",
+            "to": [
+              0.6,
+              0.6,
+              0.65
+            ]
+          },
+          {
+            "id": "gloomlit",
+            "name": "Gloomlit",
+            "to": [
+              0.76,
+              0.75,
+              0.9
+            ],
+            "shards": 60
+          }
+        ]
+      },
+      {
+        "id": "lumi",
+        "name": "Lumi the fox kit",
+        "flies": false,
+        "spark": [
+          1.0,
+          0.85,
+          0.4
+        ],
+        "short": "Lumi",
+        "fur": [
+          0.07,
+          0.05
+        ],
+        "skins": [
+          {
+            "id": "natural",
+            "name": "Natural",
+            "to": [
+              -1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": "snow",
+            "name": "Snow",
+            "to": [
+              -1,
+              0.1,
+              1.3
+            ]
+          },
+          {
+            "id": "midnight",
+            "name": "Midnight",
+            "to": [
+              0.6,
+              0.5,
+              0.6
+            ]
+          },
+          {
+            "id": "golden",
+            "name": "Golden",
+            "to": [
+              0.115,
+              0.85,
+              1.08
+            ]
+          },
+          {
+            "id": "ember",
+            "name": "Ember",
+            "to": [
+              0.01,
+              1.2,
+              0.85
+            ]
+          },
+          {
+            "id": "gloomlit",
+            "name": "Gloomlit",
+            "to": [
+              0.76,
+              0.75,
+              0.9
+            ],
+            "shards": 60
+          }
+        ]
+      }
+    ],
+    "guardian": [
+      {
+        "id": "moss_warden",
+        "name": "the Moss Warden",
+        "short": "Moss Warden",
+        "shout": "Rumble!",
+        "fur": [
+          0.25,
+          0.07
+        ],
+        "skins": [
+          {
+            "id": "natural",
+            "name": "Natural",
+            "to": [
+              -1,
+              1,
+              1
+            ]
+          },
+          {
+            "id": "autumn",
+            "name": "Autumn",
+            "to": [
+              0.07,
+              1.1,
+              0.95
+            ]
+          },
+          {
+            "id": "frost",
+            "name": "Frost",
+            "to": [
+              0.53,
+              0.55,
+              1.2
+            ]
+          },
+          {
+            "id": "golden",
+            "name": "Golden",
+            "to": [
+              0.12,
+              0.85,
+              1.08
+            ]
+          },
+          {
+            "id": "midnight",
+            "name": "Midnight",
+            "to": [
+              0.65,
+              0.6,
+              0.7
+            ]
+          },
+          {
+            "id": "lakeweed",
+            "name": "Lakeweed",
+            "to": [
+              0.45,
+              0.9,
+              0.95
+            ],
+            "needs_flag": "lake_charm"
+          }
+        ]
+      }
+    ]
+  },
+  "hero_model": "CatRanger",
+  "burrows": {
+    "_note": "The Burrows (docs/DUNGEON_SPEC.md; Phase E: docs/PHASE_E_SPEC.md), open once every mission is won. Entry is free and unlimited (the user, 18 Nov 2026); a Hollow key is only a bonus: entering with one starts the run with a boon. A Burrow is a dungeon: one continuous map at night (data/dungeons/<map>.json), a path the cat walks from the way in past fights (packs that wake, spawners that fire) to a boss in a big arena (or a treasure clearing), built far from the camp at origin. Replays are levels of the same map: level 1 is open when the Hollow opens, beating level N opens N+1 (Save burrow stats depth = the highest level beaten). Every per-depth table below is per level. Monster health x strength_by_depth x (1 + fight_ramp x the fight's number); bosses x the map's hp_mult; damage = the kind's damage + damage_add_by_depth. Packs: the map's base + per_level x (level - 1) monsters from the level's tier pool (tiers[].first = the level a pool starts), at most max_alive_by_quality; a Gloomtouched elite may join a pack (pack_elite_chance_by_level, from level 1) and from level 2 a Root Snapper (snapper_chance_by_depth). A waking pack wakes any pack asleep within link_r of it (a pull). The spring heals spring.heal of the cat's health; a dew bud blooms where a fight with a pip was won with dew.bud_chance. Harder from 19 Nov 2026 (the user: \"make the dungeon quite a lot harder\"): strength, damage_add, fight_ramp, elites, wake_r, link_r, max_alive (Medium/High), boss_minions_max, dew, spring, and pay +25% (leaf_mult_by_depth, drops) to match; the boss's own tuning is in the map's end.mods. The first run ever at level 1 uses the map's fixed packs. Keys only from play; nothing is ever given, refilled or taken by time. Satchel: all of it banked on a root lift, knockout_keep of it on a knock-out; leaves, timber and shards are banked at once. A drop value v = floor(v) + a chance frac(v) of one more. Past level 5: strength +strength_per_depth_after a level, pay x (1 + pay_per_depth_after x (level - 5)). `list` holds every Burrow (one now): a new one is data plus models. sealed_guardian: the Moss Warden waits sealed behind the boss on the first clear of that level.",
+    "origin": [
+      400.0,
+      0.0,
+      0.0
+    ],
+    "own_x": 200.0,
+    "cam": {
+      "path": 24.0,
+      "arena": 29.0,
+      "lead": 2.0,
+      "arena_bias": 0.35,
+      "arena_bias_max": 4.0
+    },
+    "fade_s": 0.3,
+    "reveal_after_win_s": 8.0,
+    "reveal_old_save_s": 6.0,
+    "reveal_wait_s": 1.0,
+    "reveal_wait_max": 4,
+    "keys": {
+      "cap": 3,
+      "open_fill": 3,
+      "replay": 1,
+      "first_clear": 1,
+      "overflow_leaves": 150
+    },
+    "meals_in_runs": true,
+    "knockout_keep": 0.5,
+    "strength_by_depth": [
+      0,
+      3.0,
+      3.7,
+      4.4,
+      5.2,
+      6.0
+    ],
+    "strength_per_depth_after": 0.7,
+    "fight_ramp": 0.06,
+    "damage_add_by_depth": [
+      0,
+      1,
+      1,
+      2,
+      2,
+      3
+    ],
+    "damage_add_after": {
+      "every": 2,
+      "max": 5
+    },
+    "trap_damage_by_depth": [
+      0,
+      1,
+      1,
+      2,
+      2,
+      2
+    ],
+    "leaf_mult_by_depth": [
+      0,
+      1.25,
+      1.5,
+      1.75,
+      2.0,
+      2.25
+    ],
+    "pay_per_depth_after": 0.1,
+    "leaf_mult_max": 3.0,
+    "power_by_depth": [
+      0,
+      40,
+      48,
+      56,
+      64,
+      72
+    ],
+    "power_per_depth_after": 8,
+    "max_alive_by_quality": [
+      8,
+      12,
+      12
+    ],
+    "boss_minions_max": 6,
+    "spawn_r": 28.0,
+    "link_r": 16.0,
+    "pack_elite_chance_by_level": [
+      0,
+      0.3,
+      0.45,
+      0.6,
+      0.75,
+      0.9
+    ],
+    "wake_r": 6.5,
+    "snapper_chance_by_depth": [
+      0,
+      0,
+      0.5,
+      0.6,
+      0.7,
+      0.8
+    ],
+    "gloomtouched": {
+      "hp": 2.4,
+      "damage_add": 1,
+      "scale": 1.15,
+      "speed": 1.1,
+      "gloom": 0.7
+    },
+    "vuln_mult": 1.5,
+    "daze_on_block_s": 2.5,
+    "stuck_after_s": 40.0,
+    "dew": {
+      "chance": 0.04,
+      "elite_chance": 0.15,
+      "heal": 1,
+      "bud_heal": 2,
+      "bud_chance": 0.5
+    },
+    "spring": {
+      "drink_s": 1.5,
+      "heal": 0.4
+    },
+    "amber_grub": {
+      "fight_chance": 0.12,
+      "spring_chance": 0.3,
+      "life_s": 10.0,
+      "leaves": 30,
+      "amber": 1
+    },
+    "save_hurt_every_s": 1.5,
+    "save_hurt_low_hp": 2,
+    "drops": {
+      "kill_amber_chance": [
+        0,
+        0.075,
+        0.0875,
+        0.1,
+        0.1125,
+        0.125
+      ],
+      "chest": {
+        "amber": [
+          0,
+          2.5,
+          2.5,
+          3.75,
+          3.75,
+          5
+        ],
+        "glowstone": [
+          0,
+          0,
+          1.25,
+          1.25,
+          1.25,
+          2.5
+        ],
+        "heartwood": [
+          0,
+          0,
+          0,
+          0,
+          0.25,
+          0.25
+        ],
+        "leaves": [
+          0,
+          50,
+          70,
+          90,
+          105,
+          125
+        ],
+        "timber": [
+          0,
+          2.5,
+          3.75,
+          3.75,
+          5,
+          6.25
+        ]
+      },
+      "unhurt_share": 0.5,
+      "sealed_mult": 2.0,
+      "elite": {
+        "amber": [
+          0,
+          1,
+          1,
+          1,
+          2,
+          2
+        ],
+        "glowstone": [
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        "heartwood": [
+          0,
+          0,
+          0,
+          0,
+          0.25,
+          0.25
+        ]
+      },
+      "boss": {
+        "amber": [
+          0,
+          2.5,
+          3.75,
+          3.75,
+          5,
+          5
+        ],
+        "glowstone": [
+          0,
+          0,
+          1.25,
+          2.5,
+          2.5,
+          3.75
+        ],
+        "heartwood": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        "leaves": [
+          0,
+          190,
+          250,
+          315,
+          375,
+          440
+        ],
+        "timber": [
+          0,
+          5,
+          6.25,
+          7.5,
+          8.75,
+          10
+        ],
+        "shards": [
+          0,
+          3.75,
+          5,
+          6.25,
+          7.5,
+          10
+        ]
+      },
+      "first_clear": {
+        "heartwood": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          2
+        ]
+      }
+    },
+    "dash": {
+      "distance": 3.0,
+      "time": 0.22,
+      "iframes": 0.32,
+      "cooldown": 1.4,
+      "flick_window_s": 0.08,
+      "flick_min_px": 70,
+      "close_call_s": 2.0,
+      "everywhere": false
+    },
+    "traps": {
+      "log": {
+        "every": 3.0,
+        "phase": 0.0,
+        "warn": 1.0,
+        "speed": 6.0,
+        "half_w": 0.45,
+        "half_len": 1.05,
+        "knock": 4.0,
+        "foe_damage": 60,
+        "half": 3.0
+      },
+      "thorns": {
+        "cols_x": [
+          -2.3,
+          0.0,
+          2.3
+        ],
+        "rows_z": [
+          -4.0,
+          -6.3,
+          -8.6,
+          -10.9,
+          -13.2
+        ],
+        "radius": 0.85,
+        "warn": 0.8,
+        "up_s": 0.5,
+        "cycle": 2.6,
+        "row_gap_s": 0.5,
+        "foe_damage": 40
+      },
+      "crystal": {
+        "z_from": -3.0,
+        "z_to": -13.0,
+        "every": 1.4,
+        "near_cat": 2.5,
+        "warn": 0.9,
+        "radius": 0.9,
+        "foe_damage": 80
+      },
+      "spores": {
+        "radius": 1.4,
+        "warn": 0.8,
+        "on_s": 1.5,
+        "off_s": 2.0,
+        "slow_s": 2.0
+      },
+      "tide": {
+        "speed": 0.55,
+        "start_after_s": 3.0,
+        "tick_s": 1.0,
+        "damage": 1
+      }
+    },
+    "boons": {
+      "sharp": {
+        "name": "Sharp Thorns",
+        "note": "Arrows hit 25% harder",
+        "damage": 0.25
+      },
+      "quick": {
+        "name": "Quick Paws",
+        "note": "The dash recharges 40% faster and goes 1 m further",
+        "dash_cd": 0.4,
+        "dash_dist": 1.0
+      },
+      "moss": {
+        "name": "Mossheart",
+        "note": "+3 health until you leave",
+        "hp": 3
+      },
+      "fury": {
+        "name": "Sprig's Fury",
+        "note": "Sprig spits 50% faster",
+        "pet_rate": 1.5
+      },
+      "dewcharm": {
+        "name": "Dewdrop Charm",
+        "note": "Healing dew drops three times as often",
+        "dew_mult": 3.0
+      },
+      "lucky": {
+        "name": "Lucky Paw",
+        "note": "Every chest gives one more of each material in it",
+        "chest_plus": 1
+      }
+    },
+    "materials": {
+      "amber": {
+        "name": "Root Amber",
+        "short": "amber",
+        "color": "#F2A23A"
+      },
+      "glowstone": {
+        "name": "Glowstone",
+        "short": "glowstone",
+        "color": "#5FE0C8"
+      },
+      "heartwood": {
+        "name": "Heartwood",
+        "short": "heartwood",
+        "color": "#A8743A"
+      }
+    },
+    "list": [
+      {
+        "id": "old_hollow",
+        "name": "The Gloomwood",
+        "map": "old_hollow",
+        "opens": "missions",
+        "colour": "#FFD14D",
+        "entrance": {
+          "name": "The Old Hollow",
+          "model": "burrow_hollow",
+          "pos": [
+            0.0,
+            0.0,
+            19.0
+          ],
+          "radius": 1.4,
+          "ring": [
+            0.0,
+            0.0,
+            16.9
+          ],
+          "ring_r": 0.8,
+          "return": [
+            0.0,
+            0.0,
+            15.5
+          ],
+          "ring_from_missions": 1,
+          "clear": {
+            "z_from": 15.5,
+            "z_to": 26.5,
+            "half_x": 4.0,
+            "widen": 0.4,
+            "path_clear": 1.8
+          },
+          "trunk": [
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.3,
+              0.0,
+              5.4
+            ]
+          ],
+          "path": [
+            [
+              0.3,
+              0.0,
+              5.4
+            ],
+            [
+              -1.0,
+              0.0,
+              6.2
+            ],
+            [
+              -2.3,
+              0.0,
+              8.3
+            ],
+            [
+              -2.2,
+              0.0,
+              11.0
+            ],
+            [
+              -1.0,
+              0.0,
+              13.6
+            ],
+            [
+              0.0,
+              0.0,
+              15.9
+            ]
+          ],
+          "roots": [
+            [
+              "hollow_roots_a",
+              [
+                -3.6,
+                0.0,
+                22.6
+              ],
+              0.75
+            ],
+            [
+              "hollow_roots_b",
+              [
+                3.6,
+                0.0,
+                22.6
+              ],
+              2.39
+            ]
+          ],
+          "grass_keep_out": 2.4,
+          "ring_keep_out": 1.1,
+          "hideout_keep_out": 3.0,
+          "defence_keep_out": 2.6
+        },
+        "tiers": [
+          {
+            "id": "rootways",
+            "name": "The Rootways",
+            "first": 1,
+            "pool": [
+              [
+                "thornling",
+                4
+              ],
+              [
+                "grub",
+                3
+              ],
+              [
+                "glowcap",
+                1
+              ],
+              [
+                "boar",
+                1
+              ],
+              [
+                "mole",
+                1
+              ]
+            ],
+            "elites": [
+              "chief",
+              "boar"
+            ]
+          },
+          {
+            "id": "grotto",
+            "name": "The Glowcap Grotto",
+            "first": 2,
+            "pool": [
+              [
+                "grub",
+                2
+              ],
+              [
+                "glowcap",
+                3
+              ],
+              [
+                "brute",
+                2
+              ],
+              [
+                "puffball",
+                1
+              ],
+              [
+                "frog",
+                1
+              ]
+            ],
+            "elites": [
+              "brute",
+              "frog"
+            ]
+          },
+          {
+            "id": "deeps",
+            "name": "The Amber Deeps",
+            "first": 3,
+            "pool": [
+              [
+                "beetle",
+                2
+              ],
+              [
+                "mole",
+                2
+              ],
+              [
+                "crow",
+                1
+              ],
+              [
+                "boar",
+                2
+              ],
+              [
+                "thornling",
+                2
+              ],
+              [
+                "grub",
+                1
+              ]
+            ],
+            "elites": [
+              "beetle",
+              "boar"
+            ]
+          },
+          {
+            "id": "warrens",
+            "name": "The Crystal Warrens",
+            "first": 4,
+            "pool": [
+              [
+                "moth",
+                3
+              ],
+              [
+                "pitcher",
+                2
+              ],
+              [
+                "glowcap",
+                2
+              ],
+              [
+                "snail",
+                1
+              ],
+              [
+                "beetle",
+                1
+              ]
+            ],
+            "elites": [
+              "snail",
+              "pitcher"
+            ]
+          },
+          {
+            "id": "gloomheart",
+            "name": "The Gloomheart",
+            "first": 5,
+            "pool": [
+              [
+                "stump",
+                1
+              ],
+              [
+                "beetle",
+                2
+              ],
+              [
+                "glowcap",
+                2
+              ],
+              [
+                "moth",
+                2
+              ],
+              [
+                "puffball",
+                1
+              ],
+              [
+                "crow",
+                1
+              ],
+              [
+                "grub",
+                2
+              ]
+            ],
+            "elites": [
+              "stump",
+              "snail",
+              "beetle"
+            ]
+          }
+        ],
+        "sealed_guardian": {
+          "depth": 1,
+          "seal_s": 3.0
+        }
+      }
+    ],
+    "lunch": [
+      {
+        "item": "fish",
+        "heal": 4
+      },
+      {
+        "item": "honey",
+        "heal": 3
+      },
+      {
+        "item": "goldfish",
+        "heal": 6
+      },
+      {
+        "item": "herbs",
+        "heal": 2
+      },
+      {
+        "item": "berries",
+        "heal": 2
+      }
+    ],
+    "snack_every_s": 3.0
+  },
+  "attachments": {
+    "_note": "Phase E: attachments for the mount and the pet. They help in the Burrows only (burrow_run.gd adds their mods to Data.run_mods with the boons), one worn per companion, bought with what the Burrows pay and worn on the Stable (Market Stall) and Nest (Mushroom Cottage) cards. Card-only for now: no model on the companions yet. mods: mount_hp (+share of the mount's health), thump_mult (+share of its Thump), loot_mult (x chests and kills), trap_warn (+s on trap and spore warnings), pet_dmg (+share of Sprig's sparks), hp (+cat health).",
+    "items": {
+      "mount_saddle": {
+        "slot": "mount",
+        "name": "Mossweave Saddle",
+        "note": "Your mount has 50% more health in the Burrows",
+        "cost": {
+          "leaves": 800,
+          "amber": 12,
+          "glowstone": 4
+        },
+        "mods": {
+          "mount_hp": 0.5
+        }
+      },
+      "mount_shoes": {
+        "slot": "mount",
+        "name": "Thunder Shoes",
+        "note": "Your mount's Thump hits 60% harder in the Burrows",
+        "cost": {
+          "leaves": 1200,
+          "amber": 16,
+          "glowstone": 8,
+          "heartwood": 1
+        },
+        "mods": {
+          "thump_mult": 0.6
+        }
+      },
+      "mount_bags": {
+        "slot": "mount",
+        "name": "Saddlebags",
+        "note": "25% more loot from kills and chests in the Burrows",
+        "cost": {
+          "leaves": 1000,
+          "amber": 20,
+          "glowstone": 6
+        },
+        "mods": {
+          "loot_mult": 1.25
+        }
+      },
+      "pet_lantern": {
+        "slot": "pet",
+        "name": "Glowworm Lantern",
+        "note": "Traps and spore bombs glow 0.3 s earlier in the Burrows",
+        "cost": {
+          "leaves": 800,
+          "amber": 10,
+          "glowstone": 6
+        },
+        "mods": {
+          "trap_warn": 0.3
+        }
+      },
+      "pet_charm": {
+        "slot": "pet",
+        "name": "Ember Charm",
+        "note": "Your pet's sparks hit 60% harder in the Burrows",
+        "cost": {
+          "leaves": 1200,
+          "amber": 14,
+          "glowstone": 8,
+          "heartwood": 1
+        },
+        "mods": {
+          "pet_dmg": 0.6
+        }
+      },
+      "pet_bell": {
+        "slot": "pet",
+        "name": "Dew Bell",
+        "note": "+2 health for the cat in the Burrows",
+        "cost": {
+          "leaves": 900,
+          "amber": 12,
+          "glowstone": 4
+        },
+        "mods": {
+          "hp": 2
+        }
+      }
+    }
+  },
+  "camp_name": "the Hearthtree",
+  "market": {
+    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for leaves). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade.",
+    "sells": [
+      {
+        "id": "berries",
+        "amount": 2,
+        "leaves": 30
+      },
+      {
+        "id": "herbs",
+        "amount": 2,
+        "leaves": 30
+      },
+      {
+        "id": "honey",
+        "amount": 1,
+        "leaves": 40
+      },
+      {
+        "id": "fish",
+        "amount": 1,
+        "leaves": 25
+      },
+      {
+        "id": "amber",
+        "amount": 1,
+        "leaves": 60,
+        "after_missions": true
+      },
+      {
+        "id": "glowstone",
+        "amount": 1,
+        "leaves": 120,
+        "after_missions": true
+      },
+      {
+        "id": "heartwood",
+        "amount": 1,
+        "leaves": 400,
+        "after_missions": true
+      }
+    ],
+    "buys": [
+      {
+        "id": "amber",
+        "amount": 1,
+        "leaves": 25,
+        "after_missions": true
+      },
+      {
+        "id": "glowstone",
+        "amount": 1,
+        "leaves": 50,
+        "after_missions": true
+      },
+      {
+        "id": "heartwood",
+        "amount": 1,
+        "leaves": 150,
+        "after_missions": true
+      }
+    ]
+  },
+  "enemy_roles": {
+    "_note": "Phase G1b: what each kind does in a squad. light: fast, many; fighter: charges; tank: in front, soaks; support: stays behind (shoots, heals, drums); leader: an elite that leads a squad.",
+    "thornling": "light",
+    "moth": "light",
+    "raccoon": "light",
+    "puffball": "light",
+    "mole": "light",
+    "boar": "fighter",
+    "brute": "tank",
+    "stump": "tank",
+    "beetle": "tank",
+    "snail": "tank",
+    "pitcher": "support",
+    "frog": "support",
+    "crow": "support",
+    "chief": "leader"
+  },
+  "squads": {
+    "_note": "Phase G1b (approved by the owner 20 Nov 2026): a wave is a list of squads, small teams with roles. members: kind and n = [min, max]. from_mission: the mission (1-based) it first appears in. A squad comes down one road together: the tank (or the fighter, or the first member) leads, light ones keep pace, support stays a few steps behind; near the camp they break off. Elite waves: squads led by the mission's elite. Boss wave: the boss with the mission's boss_escort squads.",
+    "scouts": {
+      "name": "Scouts",
+      "members": [
+        {
+          "kind": "thornling",
+          "n": [
+            3,
+            4
+          ]
+        }
+      ],
+      "from_mission": 1
+    },
+    "chief_band": {
+      "name": "Chief's Band",
+      "members": [
+        {
+          "kind": "chief",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            3,
+            3
+          ]
+        }
+      ],
+      "from_mission": 1,
+      "elite": true
+    },
+    "boar_raid": {
+      "name": "Boar Raid",
+      "members": [
+        {
+          "kind": "boar",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            2,
+            2
+          ]
+        }
+      ],
+      "from_mission": 2
+    },
+    "brute_wall": {
+      "name": "Brute Wall",
+      "members": [
+        {
+          "kind": "brute",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            3,
+            3
+          ]
+        }
+      ],
+      "from_mission": 3
+    },
+    "stump_siege": {
+      "name": "Stump Siege",
+      "members": [
+        {
+          "kind": "stump",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            3,
+            3
+          ]
+        }
+      ],
+      "from_mission": 4
+    },
+    "bandits": {
+      "name": "Bandits",
+      "members": [
+        {
+          "kind": "raccoon",
+          "n": [
+            2,
+            2
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            2,
+            2
+          ]
+        }
+      ],
+      "from_mission": 5
+    },
+    "moth_cloud": {
+      "name": "Moth Cloud",
+      "members": [
+        {
+          "kind": "moth",
+          "n": [
+            3,
+            3
+          ]
+        }
+      ],
+      "from_mission": 7
+    },
+    "moth_escort": {
+      "name": "Moth Escort",
+      "members": [
+        {
+          "kind": "brute",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "moth",
+          "n": [
+            2,
+            2
+          ]
+        }
+      ],
+      "from_mission": 7
+    },
+    "spitter_nest": {
+      "name": "Spitter Nest",
+      "members": [
+        {
+          "kind": "pitcher",
+          "n": [
+            2,
+            2
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            2,
+            2
+          ]
+        }
+      ],
+      "from_mission": 8
+    },
+    "choir": {
+      "name": "Choir",
+      "members": [
+        {
+          "kind": "frog",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "crow",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "thornling",
+          "n": [
+            2,
+            2
+          ]
+        },
+        {
+          "kind": "boar",
+          "n": [
+            1,
+            1
+          ]
+        }
+      ],
+      "from_mission": 9
+    },
+    "shield_wall": {
+      "name": "Shield Wall",
+      "members": [
+        {
+          "kind": "beetle",
+          "n": [
+            2,
+            2
+          ]
+        },
+        {
+          "kind": "mole",
+          "n": [
+            2,
+            2
+          ]
+        }
+      ],
+      "from_mission": 10
+    },
+    "crystal_creep": {
+      "name": "Crystal Creep",
+      "members": [
+        {
+          "kind": "snail",
+          "n": [
+            1,
+            1
+          ]
+        },
+        {
+          "kind": "puffball",
+          "n": [
+            2,
+            2
+          ]
+        }
+      ],
+      "from_mission": 11
+    }
+  }
+}

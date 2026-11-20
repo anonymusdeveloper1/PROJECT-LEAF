@@ -1,0 +1,359 @@
+extends Node
+## Save (autoload): everything the player owns, kept in user://leaf_save.json. Saved after every purchase and every
+## stage. `-- --fresh` starts from nothing; the automated test uses its own file so it never touches a real save.
+
+signal changed
+
+var path := "user://leaf_save.json"
+var leaves := 0
+var timber := 0
+var camp_level := 1
+var stations := {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0}   # 0 = not there yet
+var stats := {"damage": 0, "draw": 0, "range": 0, "health": 0, "speed": 0, "magnet": 0}
+var bows := {"twig": 1}                             # bows owned and their level
+var bow := "twig"                                   # the one in the cat's paw
+var claimed: Array = []                             # patch indices taken back from the Gloom
+var spots := {}                                     # (unused, kept for old saves)
+var items := {"tower": 0, "spikes": 0}             # bought pieces not placed yet (Phase G2: never barricades; an older
+                                                   # save's are refunded as leaves by defences.gd)
+var placed: Array = []                              # built in the world: towers and spikes [{"type", "x", "z", "rot",
+                                                   # "wreck"?}]; Phase G2 barricade rows {"type": "barricade", "slot":
+                                                   # [road, spot], "row": pieces, "wrecks"?: each piece's kept share of
+                                                   # health, -1 = whole} (an older save's pieces become rows, defences.gd)
+var def_levels := {"barricade": 1, "tower": 1, "spikes": 1}   # one level for all pieces of a kind
+var flags := {}                                     # what the first stage has shown already, and the like
+var best_night := 0
+var stages_won := 0
+var stages_lost := 0
+var riding := false                                # on Thistle
+var ruined: Array = []                             # buildings knocked down by enemies: they do nothing until repaired
+var fire_ruined := false                           # the camp fell: the campfire is ashes until it is rebuilt
+var missions_done: Array = []                      # ids of the missions won at least once
+var mount_look := "thistle"                        # which look rides in the mount slot (same numbers for all)
+var pet_look := "sprig"                            # which look fills the pet slot
+var mount_skin := "natural"                        # the look's colours (balance.json looks[].skins)
+var pet_skin := "natural"
+var mission_run := {}                              # a mission under way: {"mission": index, "chapter": the chapter to
+                                                   # start from}, saved at every chapter break; {} = none
+# Phase C: the Moss Warden, the garden, cooking and fishing. No timestamps anywhere: nothing moves on while the game is
+# closed (plants grow per wave held, a dish lasts one chapter).
+var guardian_look := "moss_warden"                 # which look fills the guardian slot (same numbers for all)
+var guardian_skin := "natural"
+var guardian_post := -1                            # -1 guards the camp, 0-3 holds that trail
+var garden: Array = _empty_garden()                # 6 plots: {"crop": id or "", "grow": steps, "wet": waves left}
+var pantry := {"berries": 0, "herbs": 0, "honey": 0, "fish": 0, "goldfish": 0}
+var meal_ready := ""                               # the dish waiting in the pot (a recipe id)
+var meal_on := ""                                  # the dish eaten this chapter
+var fish_log := {}                                 # catch id -> how many caught
+var fish_dry := 0                                  # catches since the last rare one (the pity counter)
+# Phase D: the Gloom Raids. No timestamps anywhere: the meter fills only while the game runs, and a raid that was
+# coming (or under way) comes back at its warning.
+var shards := 0                                    # Gloom shards: earned in play only, never sold
+var raids := {}                                    # Gloom Raids state; filled from RAIDS_DEFAULT
+var wear := {}                                     # building id -> share of health lost in raids (0..0.95, steps of 0.05)
+var unlocks: Array = []                            # bought with shards: "watch:lookout", "watch:tracker",
+                                                   # "skin:mount:thistle:gloomlit", "fire:shardfire", ...
+var fire_look := ""                                # "" or "shardfire"
+var burrow_keys := 0                               # Hollow keys (0-3): a bonus only (a boon at the start of a run); earned in
+                                                   # play (raids held, replays won, first clears); never refilled by time
+var save_v := 2                                    # save format version (1 = before Phase D)
+# Phase E: the Burrows. No timestamps anywhere: a run in progress waits at the Hollow while the game is closed.
+var mats := {"amber": 0, "glowstone": 0, "heartwood": 0}   # Burrows materials
+var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}
+var burrow_run := {}                               # a run under way (burrow.gd); {} = none
+var attach := {"owned": [], "mount": "", "pet": ""}   # attachments for the mount and the pet (Burrows only), bought in play
+var endgame_slot := false                          # debug builds: the separate "endgame" test save is in use (never the real one)
+const ENDGAME_PATH := "user://leaf_save_endgame.json"
+const ENDGAME_MARK := "user://endgame_slot.txt"   # while this exists, a debug build keeps opening the endgame slot
+
+const RAIDS_DEFAULT := {
+	"meter": 0.0,          # 0..100; fills only while the game runs
+	"plan": {},            # the next raid, made at stir: {type, lanes, level, leader, first, seed}
+	"pending": false,      # the meter is full: the raid is announced and not over (warning, waves, restarts)
+	"warn_left": 0.0,      # warning seconds left (on load clamped to warning.min..max)
+	"run": {},             # the pending raid's progress: {wave_done, losses, fire, fire_went_out, rebuilt, ready, revealed}
+	"renown": 0, "held": 0, "lost": 0, "perfect": 0, "streak": 0, "best_streak": 0,
+	"since_elite": 0, "elite_turn": 0, "last_types": [], "last_lanes": [],
+	"first_done": false,   # the first raid has been fought
+	"last_lost": false,    # the last raid was lost (the Watch says the next one will be gentler)
+}
+const RAID_INTS := ["renown", "held", "lost", "perfect", "streak", "best_streak", "since_elite", "elite_turn"]
+
+
+static func _empty_garden() -> Array:
+	var g: Array = []
+	for i in 6:
+		g.append({"crop": "", "grow": 0, "wet": 0})
+	return g
+
+
+func _ready() -> void:
+	raids = RAIDS_DEFAULT.duplicate(true)
+	var args := Data.args()
+	# the debug endgame start (Phase E): `--endgame` (also from files/test_args.txt on the phone) opens a separate save as
+	# if every mission were won; it stays on until `--endgame-off`. The real save is never touched meanwhile.
+	if args.has("--endgame-off") and FileAccess.file_exists(ENDGAME_MARK):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(ENDGAME_MARK))
+	if args.has("--autotest"):
+		path = "user://leaf_save_test.json"
+	elif OS.is_debug_build() and not args.has("--endgame-off"):
+		if args.has("--endgame") or FileAccess.file_exists(ENDGAME_MARK):
+			endgame_slot = true
+			path = ENDGAME_PATH
+			if not FileAccess.file_exists(ENDGAME_MARK):
+				var mk := FileAccess.open(ENDGAME_MARK, FileAccess.WRITE)
+				if mk:
+					mk.store_string("endgame test save on: launch with --endgame-off to go back to the real save\n")
+	if endgame_slot and (args.has("--fresh") or not FileAccess.file_exists(path)):
+		_endgame_seed()
+		save_game()
+	elif args.has("--fresh"):
+		save_game()
+	else:
+		load_game()
+
+
+func load_game() -> void:
+	if not FileAccess.file_exists(path):
+		return
+	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(d) != TYPE_DICTIONARY:
+		return
+	leaves = int(d.get("leaves", 0))
+	timber = int(d.get("timber", 0))
+	camp_level = int(d.get("camp_level", 1))
+	for k in d.get("stations", {}):
+		stations[k] = int(d["stations"][k])
+	for k in d.get("stats", {}):
+		stats[k] = int(d["stats"][k])
+	bows = {}
+	for k in d.get("bows", {"twig": 1}):
+		bows[k] = int(d["bows"][k])
+	bow = String(d.get("bow", "twig"))
+	claimed = []
+	for c in d.get("claimed", []):
+		claimed.append(int(c))
+	spots = d.get("spots", {})
+	for k in spots:
+		spots[k]["level"] = int(spots[k]["level"])
+	for k in d.get("items", {}):
+		items[k] = int(d["items"][k])
+	placed = []
+	var pl = d.get("placed", [])
+	if typeof(pl) == TYPE_ARRAY:
+		for sp in pl:
+			if typeof(sp) == TYPE_DICTIONARY and sp.has("type"):
+				placed.append(sp)                      # each kind's fields are read with defaults (defences.gd)
+	for k in d.get("def_levels", {}):
+		def_levels[k] = int(d["def_levels"][k])
+	flags = d.get("flags", {})
+	best_night = int(d.get("best_night", 0))
+	stages_won = int(d.get("stages_won", 0))
+	stages_lost = int(d.get("stages_lost", 0))
+	riding = bool(d.get("riding", false))
+	ruined = []
+	for c in d.get("ruined", d.get("crusted", [])):
+		ruined.append(String(c))
+	fire_ruined = bool(d.get("fire_ruined", false))
+	mount_look = String(d.get("mount_look", "thistle"))
+	pet_look = String(d.get("pet_look", "sprig"))
+	mount_skin = String(d.get("mount_skin", "natural"))
+	pet_skin = String(d.get("pet_skin", "natural"))
+	missions_done = []
+	for c in d.get("missions_done", []):
+		missions_done.append(String(c))
+	mission_run = {}
+	var run = d.get("mission_run", {})
+	if typeof(run) == TYPE_DICTIONARY and run.has("mission"):
+		mission_run = {"mission": int(run["mission"]), "chapter": int(run.get("chapter", 0))}
+	# Phase C (an older save has none of these: the defaults stay)
+	guardian_look = String(d.get("guardian_look", "moss_warden"))
+	guardian_skin = String(d.get("guardian_skin", "natural"))
+	guardian_post = int(d.get("guardian_post", -1))
+	garden = _empty_garden()
+	var gd = d.get("garden", [])
+	if typeof(gd) == TYPE_ARRAY:
+		for i in mini(gd.size(), 6):
+			if typeof(gd[i]) == TYPE_DICTIONARY:
+				garden[i] = {"crop": String(gd[i].get("crop", "")), "grow": int(gd[i].get("grow", 0)), "wet": int(gd[i].get("wet", 0))}
+	var pd = d.get("pantry", {})
+	if typeof(pd) == TYPE_DICTIONARY:
+		for k in pd:
+			pantry[String(k)] = int(pd[k])
+	meal_ready = String(d.get("meal_ready", ""))
+	meal_on = String(d.get("meal_on", ""))
+	if meal_on != "":
+		# the run starts again at the chapter's start, so the dish being eaten goes back into the pot
+		if meal_ready == "":
+			meal_ready = meal_on
+		meal_on = ""
+	fish_log = {}
+	var fl = d.get("fish_log", {})
+	if typeof(fl) == TYPE_DICTIONARY:
+		for k in fl:
+			fish_log[String(k)] = int(fl[k])
+	fish_dry = int(d.get("fish_dry", 0))
+	# Phase D (an older save has none of these: the defaults stay; raids.restore_on_load() migrates it)
+	shards = maxi(0, int(d.get("shards", 0)))
+	raids = _load_raids(d.get("raids", {}))
+	wear = {}
+	var wd = d.get("wear", {})
+	if typeof(wd) == TYPE_DICTIONARY:
+		for k in wd:
+			wear[String(k)] = clampf(float(wd[k]), 0.0, 0.95)
+	unlocks = []
+	for u in d.get("unlocks", []):
+		unlocks.append(String(u))
+	fire_look = String(d.get("fire_look", ""))
+	burrow_keys = clampi(int(d.get("burrow_keys", 0)), 0, 3)
+	save_v = int(d.get("save_v", 1))
+	# Phase E (an older save has none of these: the defaults stay; ids added later keep their defaults)
+	mats = {"amber": 0, "glowstone": 0, "heartwood": 0}
+	var md = d.get("mats", {})
+	if typeof(md) == TYPE_DICTIONARY:
+		for k in md:
+			mats[String(k)] = maxi(0, int(md[k]))
+	burrows = {}
+	var bd = d.get("burrows", {})
+	if typeof(bd) == TYPE_DICTIONARY:
+		for k in bd:
+			if typeof(bd[k]) == TYPE_DICTIONARY:
+				var st := burrow_stats(String(k))
+				for f in st:
+					st[f] = maxi(0, int(bd[k].get(f, 0)))
+	burrow_run = {}
+	var rd = d.get("burrow_run", {})
+	if typeof(rd) == TYPE_DICTIONARY:
+		burrow_run = rd                                # burrow.gd checks it (version, step) when the game starts
+	attach = {"owned": [], "mount": "", "pet": ""}
+	var ad = d.get("attach", {})
+	if typeof(ad) == TYPE_DICTIONARY:
+		for a in ad.get("owned", []):
+			attach["owned"].append(String(a))
+		attach["mount"] = String(ad.get("mount", ""))
+		attach["pet"] = String(ad.get("pet", ""))
+
+
+## The debug endgame start: a camp as if all 15 missions were won (home level 5, a grown cat, some leaves, timber and
+## shards, the Burrows open). The Moss Warden is not there: it is found in the Burrows, as in a real game. Phase F: the
+## Training Target and the Bow Bench at 5 and every other building at the top home 5 allows, so the new caps (stats and
+## bows by the Target's and the Bench's level) never hold the endgame tester back.
+func _endgame_seed() -> void:
+	leaves = 8000
+	timber = 300
+	camp_level = 5
+	stations = {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 1}
+	var st: Dictionary = Data.b.get("stations", {})
+	for id in ["target", "bench", "well", "cottage", "stall", "garden"]:
+		stations[id] = mini(camp_level, (st.get(id, {}).get("levels", [{}, {}, {}]) as Array).size())
+	stats = {"damage": 9, "draw": 9, "range": 6, "health": 9, "speed": 8, "magnet": 5}
+	bows = {"twig": 10, "sunwood": 9, "volley": 6}
+	bow = "sunwood"
+	claimed = [0, 1, 2, 3]
+	items = {"tower": 3, "spikes": 2}
+	placed = []
+	var bar: Dictionary = Data.b.get("defences", {}).get("barricade", {})
+	var per := int(bar.get("row", {}).get("pieces", 3))
+	for ln in 4:                                     # Phase G2: a barricade row on every road (was 4 pieces to place)
+		placed.append({"type": "barricade", "slot": [ln, 2], "row": per})
+	def_levels = {"barricade": 3, "tower": 3, "spikes": 3}
+	missions_done = []
+	for i in Data.mission_count():
+		missions_done.append(String(Data.mission(i)["id"]))
+	stages_won = Data.mission_count()
+	flags = {}
+	for f in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done", "told_horn", "told_chapter", "told_go_out",
+			"told_barricade", "told_ride", "told_hide", "told_garden", "told_cook", "told_fish", "told_feed", "told_raids", "hollow_open"]:
+		flags[f] = true
+	pantry = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3, "goldfish": 0}
+	shards = 60
+	raids = RAIDS_DEFAULT.duplicate(true)
+	raids["meter"] = 20.0
+	save_v = 2
+	burrow_keys = 3
+	mats = {"amber": 0, "glowstone": 0, "heartwood": 0}
+	burrows = {}
+	burrow_run = {}
+	attach = {"owned": [], "mount": "", "pet": ""}
+
+
+## A Burrow's counters (made with zeros the first time it is asked for).
+func burrow_stats(id: String) -> Dictionary:
+	if not burrows.has(id) or typeof(burrows[id]) != TYPE_DICTIONARY:
+		burrows[id] = {"depth": 0, "runs": 0, "won": 0, "falls": 0, "best": 0}
+	return burrows[id]
+
+
+func add_mat(id: String, n: int) -> void:
+	mats[id] = maxi(0, int(mats.get(id, 0)) + n)
+
+
+## The Gloom Raids state from the save: RAIDS_DEFAULT with the saved keys merged over it, every value cast.
+func _load_raids(rd) -> Dictionary:
+	var r: Dictionary = RAIDS_DEFAULT.duplicate(true)
+	if typeof(rd) != TYPE_DICTIONARY:
+		return r
+	r["meter"] = clampf(float(rd.get("meter", 0.0)), 0.0, 100.0)
+	r["pending"] = bool(rd.get("pending", false))
+	r["warn_left"] = float(rd.get("warn_left", 0.0))
+	r["first_done"] = bool(rd.get("first_done", false))
+	r["last_lost"] = bool(rd.get("last_lost", false))
+	for k in RAID_INTS:
+		r[k] = int(rd.get(k, 0))
+	for k in ["last_types", "last_lanes"]:
+		var a: Array = []
+		for v in rd.get(k, []):
+			a.append(int(v) if k == "last_lanes" else String(v))
+		r[k] = a
+	var plan = rd.get("plan", {})
+	var types: Dictionary = Data.b.get("gloom_raids", {}).get("types", {})
+	if typeof(plan) == TYPE_DICTIONARY and not plan.is_empty() and types.has(String(plan.get("type", ""))):
+		var lanes: Array = []
+		for ln in plan.get("lanes", []):
+			lanes.append(int(ln))
+		r["plan"] = {"type": String(plan["type"]), "lanes": lanes, "level": int(plan.get("level", 1)),
+			"leader": String(plan.get("leader", "")), "first": bool(plan.get("first", false)), "seed": int(plan.get("seed", 1)),
+			"called": bool(plan.get("called", false))}
+		var run = rd.get("run", {})
+		if typeof(run) == TYPE_DICTIONARY and not run.is_empty():
+			r["run"] = {"wave_done": int(run.get("wave_done", 0)), "losses": int(run.get("losses", 0)), "fire": float(run.get("fire", 1.0)),
+				"fire_went_out": bool(run.get("fire_went_out", false)), "rebuilt": bool(run.get("rebuilt", false)),
+				"last_stand": bool(run.get("last_stand", false)), "ready": bool(run.get("ready", false)),
+				"revealed": bool(run.get("revealed", false)), "started": bool(run.get("started", false))}
+	else:
+		r["pending"] = false                               # no plan (or a kind that is gone): nothing is coming
+		r["run"] = {}
+		r["warn_left"] = 0.0
+	return r
+
+
+## quiet: write the file without the `changed` signal (the meter's steps and pause saves: the open card stays as it is).
+func save_game(quiet := false) -> void:
+	var d := {
+		"leaves": leaves, "timber": timber, "camp_level": camp_level, "stations": stations, "stats": stats,
+		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "def_levels": def_levels, "flags": flags, "best_night": best_night,
+		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
+		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,
+		"pantry": pantry, "meal_ready": meal_ready, "meal_on": meal_on, "fish_log": fish_log, "fish_dry": fish_dry,
+		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look, "burrow_keys": burrow_keys,
+		"save_v": save_v,
+		"mats": mats, "burrows": burrows, "burrow_run": burrow_run, "attach": attach,
+	}
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(d, "  "))
+	if not quiet:
+		changed.emit()
+
+
+func add_leaves(n: int) -> void:
+	leaves += n
+	changed.emit()
+
+
+func flag(k: String) -> bool:
+	return bool(flags.get(k, false))
+
+
+func set_flag(k: String) -> void:
+	flags[k] = true

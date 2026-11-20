@@ -1,0 +1,66 @@
+{
+ "_note": "size_m = [x width, y depth, z height] in metres, Blender axes (Godot: x, z, y). Fronts face Blender -Y (Godot +Z). Origin on the ground at the footprint centre unless origin says centre. collision null = walk-through / no blocking footprint.",
+ "group": "village",
+ "props": [
+  {
+   "name": "wishing_well",
+   "file": "wishing_well.glb",
+   "size_m": [
+    1.58,
+    1.52,
+    2.0
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.62
+   },
+   "tris": 2833,
+   "notes": "Round well of mossy grey stones with water inside, leaf-shingle roof on two posts, crank (+X side) with rope and a wooden bucket. Front faces -Y. marker_ring on the ground in front (-Y).",
+   "markers": [
+    "marker_ring"
+   ],
+   "origin": "ground centre"
+  },
+  {
+   "name": "mushroom_cottage",
+   "file": "mushroom_cottage.glb",
+   "size_m": [
+    2.36,
+    2.39,
+    2.63
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.95
+   },
+   "tris": 2134,
+   "notes": "Mushroom house: red cap with cream spots, cream stem walls, round wooden door with a step on the front (-Y), two round glowing windows (bright yellow faces), chimney at the back right, flowers at the base. marker_ring on the ground in front of the door.",
+   "markers": [
+    "marker_ring"
+   ],
+   "origin": "ground centre"
+  },
+  {
+   "name": "market_stall",
+   "file": "market_stall.glb",
+   "size_m": [
+    1.87,
+    1.02,
+    2.38
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     1.8,
+     0.9
+    ]
+   },
+   "tris": 2254,
+   "notes": "Wooden market stall, counter faces -Y. Green-and-cream striped awning on four posts, sign with a golden leaf, wicker baskets of apples, carrots (two more carrots lie on the counter for the hare) and turnips. marker_ring on the ground in front of the counter.",
+   "markers": [
+    "marker_ring"
+   ],
+   "origin": "ground centre"
+  }
+ ]
+}

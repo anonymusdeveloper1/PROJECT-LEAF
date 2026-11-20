@@ -1,0 +1,371 @@
+{
+  "_note": "size_m = [width (X), height, depth] in metres, Godot axis order (Blender X, Z, Y). collision = footprint seen from above: box size_m = [x, depth], or circle radius_m. Front faces Blender -Y (Godot +Z). Origin on the ground at the footprint centre.",
+  "props": [
+    {
+      "name": "campfire_1",
+      "file": "campfire_1.glb",
+      "size_m": [
+        0.94,
+        0.65,
+        0.94
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.47
+      },
+      "tris": 503,
+      "notes": "flame is a separate object (origin at its base) for flicker; marker_ring in front (-Y)",
+      "parts": [
+        "flame"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "campfire_2",
+      "file": "campfire_2.glb",
+      "size_m": [
+        1.35,
+        0.98,
+        1.34
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.68
+      },
+      "tris": 1046,
+      "notes": "stone fire pit; flame is a separate object (origin at its base); marker_ring in front (-Y)",
+      "parts": [
+        "flame"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "log_seat",
+      "file": "log_seat.glb",
+      "size_m": [
+        1.01,
+        0.41,
+        0.45
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.0,
+          0.4
+        ]
+      },
+      "tris": 116,
+      "notes": "half-log bench, seat height 0.33 m"
+    },
+    {
+      "name": "home_hut",
+      "file": "home_hut.glb",
+      "size_m": [
+        2.8,
+        2.68,
+        2.31
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.15,
+          1.85
+        ]
+      },
+      "tris": 1925,
+      "notes": "wooden hut with a leaf-thatched roof, arched door and two round windows facing -Y; marker_ring in front of the door",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "home_treehouse",
+      "file": "home_treehouse.glb",
+      "size_m": [
+        5.52,
+        6.6,
+        4.08
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 1.3
+      },
+      "tris": 3606,
+      "notes": "giant tree with a treehouse, lookout and banner; rope ladder on the -Y side, marker_ring at its foot; banner origin on the flag pole axis at the top of the cloth",
+      "parts": [
+        "banner"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "bow_bench_1",
+      "file": "bow_bench_1.glb",
+      "size_m": [
+        1.62,
+        1.14,
+        0.71
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.6,
+          0.7
+        ]
+      },
+      "tris": 576,
+      "notes": "simple workbench with a bow and a bucket of arrows; work side -Y; marker_ring in front",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "bow_bench_2",
+      "file": "bow_bench_2.glb",
+      "size_m": [
+        2.67,
+        1.86,
+        0.78
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.6,
+          0.8
+        ]
+      },
+      "tris": 1341,
+      "notes": "workbench with a bow rack (3 bows), lantern, arrows and a green leaf cloth; work side -Y; marker_ring in front",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "bow_bench_3",
+      "file": "bow_bench_3.glb",
+      "size_m": [
+        2.45,
+        2.3,
+        1.58
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.4,
+          1.5
+        ]
+      },
+      "tris": 2216,
+      "notes": "fletcher's workshop: canopy over the back, bow rack with 3 bows (gold, thorny green, red) at the front right; work side -Y; marker_ring in front",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "target_1",
+      "file": "target_1.glb",
+      "size_m": [
+        0.87,
+        1.35,
+        0.86
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          0.85,
+          0.8
+        ]
+      },
+      "tris": 284,
+      "notes": "straw training target on an easel, faces -Y; marker_ring where the cat stands to shoot",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "target_2",
+      "file": "target_2.glb",
+      "size_m": [
+        2.24,
+        1.5,
+        1.77
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.2,
+          1.6
+        ]
+      },
+      "tris": 1223,
+      "notes": "roped-off training patch with a straw target and a straw dummy; entrance at the front (-Y); marker_ring in front of the entrance",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "leaf_basket",
+      "file": "leaf_basket.glb",
+      "size_m": [
+        0.83,
+        0.64,
+        0.85
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.42
+      },
+      "tris": 456,
+      "notes": "woven basket overflowing with golden leaves; marker_ring in front (-Y)",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "leaf_chest",
+      "file": "leaf_chest.glb",
+      "size_m": [
+        1.07,
+        1.0,
+        1.04
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.0,
+          0.65
+        ]
+      },
+      "tris": 764,
+      "notes": "iron-banded chest, lid open (fixed), overflowing with golden leaves; marker_ring in front (-Y)",
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "timber_pile",
+      "file": "timber_pile.glb",
+      "size_m": [
+        0.91,
+        0.73,
+        1.23
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          0.95,
+          1.2
+        ]
+      },
+      "tris": 288,
+      "notes": "stack of cut logs, cut ends face the front (-Y)"
+    },
+    {
+      "name": "fence_twig",
+      "file": "fence_twig.glb",
+      "size_m": [
+        2.18,
+        0.8,
+        0.17
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.15,
+          0.2
+        ]
+      },
+      "tris": 524,
+      "notes": "free-standing 2.0 m piece along X with a post at each end (x=+-1.0; both posts are identical, so they merge when pieces meet end to end or at an angle); camp side -Y"
+    },
+    {
+      "name": "palisade",
+      "file": "palisade.glb",
+      "size_m": [
+        2.35,
+        1.62,
+        0.37
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.3,
+          0.34
+        ]
+      },
+      "tris": 486,
+      "notes": "free-standing 2.0 m piece of pointed logs along X with a thick post at each end (x=+-1.0; identical posts merge when pieces meet); camp side -Y (rope in front, beams behind)"
+    },
+    {
+      "name": "palisade_stone",
+      "file": "palisade_stone.glb",
+      "size_m": [
+        2.46,
+        1.78,
+        0.56
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          2.44,
+          0.54
+        ]
+      },
+      "tris": 596,
+      "notes": "free-standing 2.0 m piece: pointed logs on a two-course stone base, a thick post on a stone pillar at each end (x=+-1.0; identical, they merge when pieces meet); camp side -Y"
+    },
+    {
+      "name": "lantern_post",
+      "file": "lantern_post.glb",
+      "size_m": [
+        0.59,
+        1.6,
+        0.25
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.15
+      },
+      "tris": 234,
+      "notes": "post with a hanging lantern; glass faces are lantern_glow (the game adds the glow)"
+    },
+    {
+      "name": "flower_bed",
+      "file": "flower_bed.glb",
+      "size_m": [
+        1.05,
+        0.59,
+        0.41
+      ],
+      "collision": {
+        "shape": "box",
+        "size_m": [
+          1.05,
+          0.4
+        ]
+      },
+      "tris": 298,
+      "notes": "wooden planter with purple lupins and yellow flowers"
+    },
+    {
+      "name": "signpost",
+      "file": "signpost.glb",
+      "size_m": [
+        0.9,
+        1.53,
+        0.28
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 0.15
+      },
+      "tris": 266,
+      "notes": "post with three arrow signs; readable side faces -Y, arrows point left/right and slightly back (+Y)"
+    }
+  ]
+}

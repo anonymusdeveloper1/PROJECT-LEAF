@@ -1,0 +1,79 @@
+{
+  "id": "frog",
+  "fps": 30,
+  "height_m": 1.0,
+  "radius_m": 0.36,
+  "aim_height_m": 0.5,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.8,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.0,
+      "loop": false
+    },
+    "Cast": {
+      "seconds": 1.0,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 1.6,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.499
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.467
+    },
+    "Cast": {
+      "cast": 0.5
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.cloak_R.1",
+      "end": "jig.cloak_R.3",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.4,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.cloak_BR.1",
+      "end": "jig.cloak_BR.3",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.4,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.cloak_BL.1",
+      "end": "jig.cloak_BL.3",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.4,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.cloak_L.1",
+      "end": "jig.cloak_L.3",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.4,
+      "radius": 0.06
+    }
+  ],
+  "tris": 4948
+}

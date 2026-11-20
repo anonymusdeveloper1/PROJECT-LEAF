@@ -1,0 +1,74 @@
+{
+  "id": "thistle",
+  "fps": 30,
+  "height_m": 1.88,
+  "radius_m": 0.41,
+  "aim_height_m": 0.8,
+  "clips": {
+    "Idle": {
+      "seconds": 2.4,
+      "loop": true
+    },
+    "Run": {
+      "seconds": 0.4,
+      "loop": true
+    },
+    "Thump": {
+      "seconds": 1.1,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Run": 3.75
+  },
+  "events": {
+    "Thump": {
+      "impact": 0.667
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.ear_l.1",
+      "end": "jig.ear_l.3",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.1,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.ear_r.1",
+      "end": "jig.ear_r.3",
+      "stiffness": 3.0,
+      "drag": 0.4,
+      "gravity": 0.1,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.2",
+      "stiffness": 2.5,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.12
+    },
+    {
+      "root": "jig.tassel_l.1",
+      "end": "jig.tassel_l.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.04
+    },
+    {
+      "root": "jig.tassel_r.1",
+      "end": "jig.tassel_r.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.04
+    }
+  ],
+  "tris": 5694,
+  "saddle_height_m": 1.003,
+  "saddle_bone": "saddle"
+}

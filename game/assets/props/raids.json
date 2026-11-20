@@ -1,0 +1,115 @@
+{
+ "_note": "size_m = [x width, y depth, z height] in metres, Blender axes (Godot: x, z, y). Fronts face Blender -Y (Godot +Z). Origin on the ground at the footprint centre (the Watch keeps the old signpost's origin, on the post). collision = footprint seen from above (box size_m = [x, y], circle radius_m); null = walk-through. parts = child nodes the game moves or hides, origin at their pivot. The Phase D Gloom Raid props (docs/PHASE_D_SPEC.md section 19).",
+ "group": "raids",
+ "props": [
+  {
+   "name": "signpost_watch",
+   "file": "signpost_watch.glb",
+   "size_m": [
+    0.9,
+    0.4,
+    2.0
+   ],
+   "collision": {
+    "shape": "circle",
+    "radius_m": 0.2
+   },
+   "tris": 1364,
+   "notes": "The Watch (camp signpost once raids are open): the old signpost face for face (same origin on the post, readable side -Y, swaps in place) with a cradle on top holding a big curled cream horn (bell to +Y, north), a twig cage under the left arm with the crystal column, three ribbon hooks on the crossbar front, a flag socket on its right end. Parts, all children of the root: `fill` = the violet crystal column, origin at its base (scale its local Y, Godot, 0.06..1.0), 0.476 m tall; `horn` origin at the cradle (blow bounce); `lookout_flag` (green pennant on a stick, origin at the stick foot) and `tracker_bell` (bronze bell on an iron eye, origin at the eye) - hide each until owned; `ribbon_1` gold, `ribbon_2` green, `ribbon_3` white (origin at the hook) - hide until streaks 3, 5, 10. The GLB has every part visible: the game hides them.",
+   "parts": [
+    "fill",
+    "horn",
+    "lookout_flag",
+    "tracker_bell",
+    "ribbon_1",
+    "ribbon_2",
+    "ribbon_3"
+   ],
+   "origin": "ground centre"
+  },
+  {
+   "name": "gloom_shard",
+   "file": "gloom_shard.glb",
+   "size_m": [
+    0.12,
+    0.1,
+    0.18
+   ],
+   "collision": null,
+   "tris": 72,
+   "notes": "Gloom shard pickup / level 4 cap crystal: one faceted violet crystal standing on its lower tip, pale lilac core facets in violet frames, a thin gold glint on the front-right edge. Origin at the lower tip (ground); its centre is 0.09 m up. Front facet faces -Y.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "rubble_pile",
+   "file": "rubble_pile.glb",
+   "size_m": [
+    0.59,
+    0.49,
+    0.24
+   ],
+   "collision": null,
+   "tris": 223,
+   "notes": "Wear rubble at a building's foot: broken planks, two stones and three small violet crystal chips on a dusty patch. Walk-through (no blocking).",
+   "origin": "ground centre"
+  },
+  {
+   "name": "barricade_shard",
+   "file": "barricade_shard.glb",
+   "size_m": [
+    3.01,
+    0.72,
+    0.93
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     3.0,
+     0.6
+    ]
+   },
+   "tris": 1168,
+   "notes": "Level 4 road barricade (Shardstone): the thorn hedge rebuilt on a low footing of dressed grey stones between five posts crowned with violet-white shards (two more shards set into the front of two posts), four crystal-tipped stakes leaning out to the front, pale thorns and a few shard thorns on the hedge. Spans the trail along X; the front (-Y, Godot +Z) faces the enemies (world.gd barricade_slots() turns local +Z toward the woods). Origin on the ground at the centre of the wall.",
+   "origin": "ground centre"
+  },
+  {
+   "name": "acorn_tower_4",
+   "file": "acorn_tower_4.glb",
+   "size_m": [
+    1.76,
+    1.88,
+    3.15
+   ],
+   "collision": {
+    "shape": "box",
+    "size_m": [
+     1.4,
+     1.4
+    ]
+   },
+   "tris": 1496,
+   "notes": "Level 4: the level 3 tower (stone base, lantern, gold-banded crossbow, leaf banner) with a crown of pale shard crystals standing out of the roof ring, a crystal lens in a gold ring on two struts over the loaded acorn (part of `turret`, turns with it), pale green vines climbing the front posts and binding the back posts. Faces no camera from 12 degrees up can see were dropped. Lookout tower, front faces -Y, ladder at the back (+Y). `turret` = the crossbow, origin on its vertical turning axis at the top of the fixed collar, aims -Y; rotate it about its local up axis. `marker_shoot` (child of turret) = bolt tip, where the acorn leaves. `banner` origin at its hanging rod (swing it about local X).",
+   "parts": [
+    "turret",
+    "banner"
+   ],
+   "markers": [
+    "marker_shoot"
+   ],
+   "origin": "ground centre"
+  },
+  {
+   "name": "thorn_spikes_4",
+   "file": "thorn_spikes_4.glb",
+   "size_m": [
+    1.28,
+    0.98,
+    0.39
+   ],
+   "collision": null,
+   "tris": 989,
+   "notes": "Ground trap (walk-over, no blocking). Trap area ~1.4 x 1.0 m. Level 4: the level 3 thorn bed with eight violet crystal thorns among the wooden stakes.",
+   "origin": "ground centre"
+  }
+ ]
+}

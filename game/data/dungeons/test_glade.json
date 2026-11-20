@@ -1,0 +1,36 @@
+{
+  "_note": "A tiny test dungeon that ends in a treasure clearing instead of a boss (the autotest's --dungeontreasure plays it; it is in no Burrow's list). Same format as old_hollow.json.",
+  "id": "test_glade",
+  "name": "The Test Glade",
+  "version": 1,
+  "spine": [[0.0, 3.0, 2.2], [0.0, -3.0, 2.0], [1.5, -10.0, 2.0], [1.0, -17.0, 2.2], [-0.5, -24.0, 2.0], [0.0, -31.0, 2.2]],
+  "clearings": [
+    {"id": "wayin", "at": [0.0, 0.0], "r": 5.0},
+    {"id": "camp", "at": {"s": 18.0}, "r": 5.0},
+    {"id": "end", "at": {"s": -0.01}, "r": 6.0}
+  ],
+  "branches": [],
+  "fights": [
+    {"id": "camp", "name": "A small camp", "at": {"in": "camp"}, "wake_r": 6.0,
+     "pack": {"spots": [[-1.5, 0.0], [1.5, 0.0], [0.0, -1.6]], "base": 3, "per_level": 0.0, "first_run": ["thornling", "thornling", "thornling"]}}
+  ],
+  "checkpoints": [{"id": "wayin", "name": "The way in", "at": [0.0, 0.4], "r": 3.0}],
+  "wayin": {"hollow": [0.0, 4.7], "home_ring": [0.0, 2.6], "start": [0.0, 0.6]},
+  "chests": [],
+  "traps": [],
+  "end": {"type": "treasure", "chest": {"in": "end", "z": -1.0}, "lift": {"in": "end", "x": -3.6, "z": -2.4}},
+  "stones": [],
+  "holes": [{"in": "camp", "x": 3.2, "z": -1.0}],
+  "ferns": [],
+  "lanterns": {"every": 10.0, "from": 6.0, "skip": [], "extra": []},
+  "mushroom_rings": [{"in": "end", "r": 6.8, "n": 12}],
+  "crystals": [],
+  "props": [],
+  "woods": {"seed": 77, "spacing": 2.6, "band": 9.0},
+  "fireflies": 20,
+  "theme": {"sky": "#070C1C", "fog": "#0E1830", "fog_density": 0.007, "ambient": "#6A7FC0", "ambient_energy": 0.85,
+            "moon": "#A9C0FF", "moon_energy": 0.7, "fill_energy": 0.14,
+            "ground": "#42523F", "ground_far": "#26302A", "moss": "#55704D", "path": "#9A8F78", "path_dark": "#857C68", "arena": "#8A8270",
+            "water": "#0D2633", "water_glint": "#3FB7C4", "mud": "#3A3A30", "woods_night": 1.0,
+            "lantern": "#FFB35C", "mushroom": "#4FE3C6", "crystal": "#A774FF", "fireflies": "#D6FF7A", "halo": "#FFC877", "ember": "#FF5A2A"}
+}

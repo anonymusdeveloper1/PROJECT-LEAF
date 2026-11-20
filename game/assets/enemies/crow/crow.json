@@ -1,0 +1,79 @@
+{
+  "id": "crow",
+  "fps": 30,
+  "height_m": 1.502,
+  "radius_m": 0.5,
+  "aim_height_m": 0.75,
+  "clips": {
+    "Idle": {
+      "seconds": 2.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 0.8,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.8,
+      "loop": false
+    },
+    "Drum": {
+      "seconds": 1.0,
+      "loop": true
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 2.2,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.5
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.367
+    },
+    "Drum": {
+      "beat": 0.333
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.tuft.1",
+      "end": "jig.tuft.3",
+      "stiffness": 2.5,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.cape_L.1",
+      "end": "jig.cape_L.2",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.6,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.cape_B.1",
+      "end": "jig.cape_B.2",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.6,
+      "radius": 0.08
+    },
+    {
+      "root": "jig.cape_R.1",
+      "end": "jig.cape_R.2",
+      "stiffness": 1.6,
+      "drag": 0.5,
+      "gravity": 0.6,
+      "radius": 0.08
+    }
+  ],
+  "tris": 4588
+}

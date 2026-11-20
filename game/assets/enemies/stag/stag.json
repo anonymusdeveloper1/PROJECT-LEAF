@@ -1,0 +1,119 @@
+{
+  "id": "stag",
+  "fps": 30,
+  "height_m": 3.002,
+  "radius_m": 0.9,
+  "aim_height_m": 1.25,
+  "clips": {
+    "Idle": {
+      "seconds": 3.0,
+      "loop": true
+    },
+    "Walk": {
+      "seconds": 1.2,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 1.2,
+      "loop": false
+    },
+    "Windup": {
+      "seconds": 0.9,
+      "loop": false
+    },
+    "Charge": {
+      "seconds": 0.6,
+      "loop": true
+    },
+    "Slam": {
+      "seconds": 1.5,
+      "loop": false
+    },
+    "Roar": {
+      "seconds": 2.0,
+      "loop": false
+    },
+    "Hit": {
+      "seconds": 0.5,
+      "loop": false
+    },
+    "Die": {
+      "seconds": 2.0,
+      "loop": false
+    }
+  },
+  "ground_speed_m_per_s": {
+    "Walk": 0.85,
+    "Charge": 6.0
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.5
+    },
+    "Slam": {
+      "impact": 0.9
+    },
+    "Roar": {
+      "roar": 0.6
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.3",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.3,
+      "radius": 0.1
+    },
+    {
+      "root": "jig.antleaf_l.1",
+      "end": "jig.antleaf_l.2",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.antleaf_r.1",
+      "end": "jig.antleaf_r.2",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.antleaf2_l.1",
+      "end": "jig.antleaf2_l.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.antleaf2_r.1",
+      "end": "jig.antleaf2_r.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.05
+    },
+    {
+      "root": "jig.chestleaf_l.1",
+      "end": "jig.chestleaf_l.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.06
+    },
+    {
+      "root": "jig.chestleaf_r.1",
+      "end": "jig.chestleaf_r.1",
+      "stiffness": 1.5,
+      "drag": 0.3,
+      "gravity": 0.6,
+      "radius": 0.06
+    }
+  ],
+  "tris": 11544
+}

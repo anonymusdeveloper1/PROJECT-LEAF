@@ -1,0 +1,45 @@
+{
+  "id": "sprig",
+  "fps": 30,
+  "height_m": 0.421,
+  "radius_m": 0.16,
+  "aim_height_m": 0.2,
+  "clips": {
+    "Idle": {
+      "seconds": 0.6,
+      "loop": true
+    },
+    "Fly": {
+      "seconds": 0.4,
+      "loop": true
+    },
+    "Attack": {
+      "seconds": 0.4667,
+      "loop": false
+    }
+  },
+  "events": {
+    "Attack": {
+      "hit": 0.25
+    }
+  },
+  "spring_chains": [
+    {
+      "root": "jig.tail.1",
+      "end": "jig.tail.5",
+      "stiffness": 2.0,
+      "drag": 0.4,
+      "gravity": 0.2,
+      "radius": 0.02
+    },
+    {
+      "root": "jig.flower.1",
+      "end": "jig.flower.2",
+      "stiffness": 2.5,
+      "drag": 0.35,
+      "gravity": 0.1,
+      "radius": 0.012
+    }
+  ],
+  "tris": 2864
+}

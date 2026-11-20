@@ -1,0 +1,71 @@
+{
+  "_note": "size_m = [width (X), height, depth] in metres, Godot axis order (Blender X, Z, Y). collision = footprint seen from above: box size_m = [x, depth], or circle radius_m. Front faces Blender -Y (Godot +Z). Origin on the ground at the footprint centre.",
+  "props": [
+    {
+      "name": "home_tree_4",
+      "file": "home_tree_4.glb",
+      "size_m": [
+        5.96,
+        7.2,
+        3.99
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 1.5
+      },
+      "tris": 5331,
+      "notes": "level-4 tree home: the treehouse grown, deck at 2.5 m with the cabin (door faces -Y), a round moss-roofed room up on the left with the banner, rope bridge to a lantern balcony on the right; rope ladder hangs at the front right, marker_ring at its foot; window and lantern glass in `glow`; banner origin on its pole at the top of the cloth",
+      "parts": [
+        "glow",
+        "banner"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "home_tree_5",
+      "file": "home_tree_5.glb",
+      "size_m": [
+        7.44,
+        8.43,
+        4.92
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 1.7
+      },
+      "tris": 5791,
+      "notes": "level-5 tree home: round door (front left) and shop counter with striped awning (front right) at the foot of the trunk, marker_ring in front of the counter; deck with the cabin at 2.7 m, spiral stairs to a round room at 4.3 m (right), lookout room with the banner at 5.4 m (left); window and lantern glass in `glow`; banner origin on its pole at the top of the cloth",
+      "parts": [
+        "glow",
+        "banner"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    },
+    {
+      "name": "home_tree_6",
+      "file": "home_tree_6.glb",
+      "size_m": [
+        8.25,
+        9.24,
+        5.34
+      ],
+      "collision": {
+        "shape": "circle",
+        "radius_m": 1.9
+      },
+      "tris": 5941,
+      "notes": "level-6 grand tree hall: big round door (front left) and shop counter with striped awning (front right) at the foot, marker_ring in front of the counter; cabin deck at 2.9 m, spiral stairs to a horseshoe deck at 4.9 m with two round rooms and the banner; window, lantern glass and the glowing golden leaves in `glow`; banner origin on its pole at the top of the cloth",
+      "parts": [
+        "glow",
+        "banner"
+      ],
+      "markers": [
+        "marker_ring"
+      ]
+    }
+  ]
+}

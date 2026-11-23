@@ -3,6 +3,10 @@
 The owner approved the plan ("the plan is good") and gave the last answers on 20 November 2026. This is the concrete
 version to build from.
 
+**23 Nov 2026.** G1–G4 and the session's follow-up fixes and outfits are on the owner's phone (installed at 01:52).
+The branch `feature/g3-g4-bows-saddlery-outfits` was committed and merged into `development` on 23 Nov.
+See `docs/CHANGES.md` for the session record. G5 is still to do.
+
 - **Order:** it is built in 5 steps (G1–G5). Each step ends with an APK on the owner's phone.
 - **Numbers:** every number is a first guess, kept in `game/data/balance.json` and tuned by play.
 - **Nothing extra:** nothing outside this plan is added without the owner's yes (CLAUDE.md).
@@ -25,11 +29,10 @@ version to build from.
   - rush waves are faster instead of bigger;
   - new limits on wave size and tanks.
 
-**Phase F's archery stays and grows.** The goal lists, the mission gates, and the Training Target and Bow Bench at 5
-levels stay as built.
+**Phase F's archery stays and grows.** The goal lists and the five station levels stay. The next mission opens
+when the previous one is won, at any Hearthtree level.
 - **The Training Target:** stays as built. It trains Damage, Draw speed and Range, and gets the shop-style card in G2.
-- **The Bow Bench:** becomes **the Bow Shop** in G3, with five bows to buy, upgrade and equip, and new bow and arrow
-  designs.
+- **The Bow Bench:** became **the Bow Shop** in G3. The cat starts with Twig and can buy three more bows.
 - **The looks of Target levels 3–5 and Bench levels 4–5:** made by the owner in Meshy from the concept images already
   sent. Stand-ins are used until then. When the files come, Claude finishes them in Blender and puts them in.
 
@@ -42,15 +45,15 @@ levels stay as built.
 | The soft-lock and timber | Must be fixed first: the game can't be allowed to get stuck. |
 | Waves | No more waves that are trivially easy, and no more crowds of tanks. |
 | The campfire house | One name for the tree home and the campfire: **the Hearthtree** (it can be renamed any time). |
-| Bows | A **Bow Shop**: each bow is bought, upgraded (its own damage levels) and equipped, with exactly one bow equipped. Each bow has its own design, arrows and special. **Claude designs the bows and arrows in Blender** (the one model exception). |
+| Bows | A **Bow Shop**: each bow is bought, upgraded (its own damage levels) and equipped, with exactly one bow equipped. Each bow has its own design and arrows. **Claude designs the bows and arrows in Blender**. |
 | Cards | **Everything** looks like a proper shop: item cards with a picture, name, short text, price and one button. |
 | Market | **Offline only**, inside the game: trade with Bramble. No online auction. |
 | Pet and Market | Both open at **Hearthtree level 2**. |
 | Mounts | **Thistle is free for everyone.** Paid mounts (looks only) come **later**, not in this update: the foundation comes first. |
-| The Saddlery | The new mount building, after **mission 8**. **Everything is earned, never paid.** Four **skills** (Stomp, Ram and two new ones Claude designs and animates) and three **attachments** (Fire-spitter, Mossweave Saddle, Saddlebags). The player can **combine as many as they want**: everything owned works at once. It is built last. |
+| The Saddlery | Build after **mission 8** at **Hearthtree 2**. Learn four skills and buy three attachments by playing. Learned skills can all trigger while riding. The mount wears one attachment at a time. |
 | Barricades | Not bought in the shop. Built in **rows of 3** at the road spots, breaking visibly, repairable. |
 | Acorn towers | A downed tower can always be repaired. |
-| The Wishing Well | Stays, and becomes **automatic**: it keeps everything mended a little in the background so nothing dies. It is upgraded, never clicked. Manual repairs still work. |
+| The Wishing Well | Automatic. It mends damaged things to full. Fully broken things still need a repair or a mission win. |
 | Pay-to-win | **Never.** That is a rule. |
 
 ---
@@ -191,7 +194,10 @@ from the north". It is clear what to shoot first: the healer behind the wall, th
 **1. The Hearthtree.**
 - The tree home and the campfire are named "the Hearthtree" everywhere (cards, tips, goals, docs).
 - The fire is still the thing enemies attack and the camp's safe light.
-- Growing it works as Phase F built it: goal lists, the price, then the next missions open.
+- Growing it takes goals and payment. Hearthtree 2–5 ask for missions 1, 5, 9 and 12. Mission access follows
+  wins alone. Upgrade prices rise at each level (see the price table in `docs/GAME_GUIDE.md`, part 3).
+- A ruined Hearthtree costs 10% to repair, with a 20-leaf minimum and caps of 900 leaves and 30 timber.
+- A camp fall takes 30% of the leaves gained in the lost chapter, up to the leaves the cat holds.
 - The models stay.
 
 **2. The pet at Hearthtree level 2.**
@@ -218,7 +224,9 @@ from the north". It is clear what to shoot first: the healer behind the wall, th
 - The shop no longer sells barricades.
 - Each road keeps its **3 build spots** (12 in all). Tap a spot to build a **row of 3 pieces** across the road: **90
   leaves and 5 timber**.
-- **How many rows you can have:** Hearthtree 1: 2 rows, 2: 3, 3: 5, 4: 7, 5: 9, 6 and up: 12.
+- **Pads open as the Hearthtree grows.** After mission 1, the four gates open at Hearthtree 1 and the middle pads
+  at 3. The far pads on Fernwood and Bandit Thicket open at 4. The far pads on the left open at 5.
+  The two right-hand roads each have three evenly spaced pads. Built rows move with their roads when camp grows.
 - **Each piece breaks on its own, visibly:**
   - whole;
   - **cracked** below 50% (darker, tilted);
@@ -226,7 +234,8 @@ from the north". It is clear what to shoot first: the healer behind the wall, th
 
   Enemies walk through the gap a broken piece leaves.
 - **Repair:**
-  - tap the row: pay 30% of the row's build price for each broken piece, less for cracked ones;
+  - tap a built row at any time, even during a wave. A broken piece costs 30% of the row price. A damaged piece
+    costs its missing share of that price, with a 50% floor for a cracked piece;
   - a mission won mends everything free (as today);
   - the Well mends a little all the time (6).
 - The barricade's upgrade levels (log → stone → thorn → shard → heartwood) stay. They are bought on the Hearthtree's
@@ -234,18 +243,17 @@ from the north". It is clear what to shoot first: the healer behind the wall, th
 - **Old saves:** placed barricades become rows at their road spots. Leftover pieces in the bag are refunded as leaves.
 
 **5. Tower repair.**
-- A knocked-down acorn tower shows a **Repair** badge. Tap it and pay **30% of what the tower cost** (build plus
-  upgrades), in leaves and timber, and it stands up at full health.
+- Tap a knocked-down acorn tower's **Repair** badge between waves. It stands at full health for the same leaf
+  price as that tower's share of **Mend the defences**.
 - A mission won mends it free.
 
 **6. The Wishing Well, automatic.**
 - No more wishing. You never tap the Well to use it; its card only upgrades it (levels 1–3, as today, never above the
   Hearthtree).
-- **Between waves:** the campfire, every building, barricade piece and tower slowly mends up to **60% / 75% / 90%** of
-  its health (Well level 1 / 2 / 3).
-- **During waves:** they all mend **0.25% / 0.5% / 1% of their health every second**, so the camp holds on longer.
+- **Between waves:** damaged buildings, the fire, barricade pieces and towers mend to full at **3% / 6% / 10%**
+  of max health a second (Well levels 1 / 2 / 3).
+- **During waves:** they mend **0.5% / 1% / 2%** a second.
 - **Broken things** (at 0) are **not** brought back by the Well. They need a repair (tap) or a mission won.
-- You can still repair anything to full yourself at any time.
 - It opens when it does today (after 4 missions won) and stays in the goal lists as today.
 
 **7. Shop-style cards everywhere.**
@@ -267,15 +275,16 @@ from the north". It is clear what to shoot first: the healer behind the wall, th
 - `stations.gd`: the cards, Hearthtree naming, the Market, the Well.
 - `defences.gd`: rows, damage stages, repair, Well mending.
 - `data.gd`, `save.gd`: old saves.
-- `balance.json`: `market`, barricade `row`, rows by Hearthtree level, `repair_share`, `well` passive numbers.
-- **Tests:** `--smoke`, `--homegoals`, and a new `--campg` mode (rows, repair, the Well, the Market).
+- `balance.json`: `market`, `stations.camp.levels`, `raid.leaves_share`, `gloom_raids.repair`, `well.passive` and
+  `defences.barricade` (`row`, `rings_by_home`, `pad_rule`, `repair_share`).
+- **Tests:** `--smoke`, `--homegoals`, `--fightf`, `--rows`, `--campg` and `--layout`.
 
 ---
 
 ### G3: the Bow Shop and new bows
 
-**What you'll see:** the Bow Bench becomes the **Bow Shop**, with a card for each bow: buy, upgrade, equip. Five bows,
-each with its own look, arrows and special.
+**Built 21 Nov 2026, retuned 22 Nov.** The Bow Bench became the **Bow Shop**. The shop has four bows, each with
+its own arrows and shot effects. Thorn Volley and Foxfire are hidden.
 
 **1. How the shop works.**
 - The cat always has **exactly one** bow equipped. It starts with the Twig Bow.
@@ -286,45 +295,42 @@ each with its own look, arrows and special.
 
 **2. The bows.**
 
-| Bow | Special | Arrows | Opens at | Price to buy |
+| Bow | Opens at | Leaves / timber | Base damage | Trade-off |
 |---|---|---|---|---|
-| **Twig Bow** | A normal bow | Plain wooden arrows, white fletching | The start (owned) | (free) |
-| **Sunwood Longbow** | The arrow **goes through** the first enemy and hits the one behind; +1.5 m range | Long golden arrows with a narrow tip | Bow Shop level 2 | 250 leaves, 10 timber |
-| **Ember Bow** (new) | **Fire arrows**: the enemy hit burns for 3 s, taking 25% of the hit's damage each second | Dark arrows with a glowing ember tip and a short flame trail | Bow Shop level 3 | 600 leaves, 25 timber |
-| **Thorn Volley** | **3 arrows in a fan**, each 65% damage | Small green thorn darts | Bow Shop level 4 | 1,200 leaves, 40 timber |
-| **Foxfire Bow** | Goes through **two** enemies; +1 m range | Pale-blue foxfire arrows | After the missions | as today (leaves and Burrow materials) |
+| **Twig Bow** | Start (owned) | Free | 1.0x | The original bow. Normal range and draw. |
+| **Sunwood Longbow** | Bow Shop 2 | 400 / 15 | 1.15x | Pierces one enemy and adds 1.5 m range. Draw takes 10% longer. |
+| **Ember Bow** | Bow Shop 3 | 900 / 30 | 1.3x | Burns for 3 s at 25% of the hit's damage per second. Range is 0.8 m shorter. |
+| **Frost Bow** | Bow Shop 5 | 1,600 / 50 | 1.45x | Slows enemies and freezes on the third hit. Draw takes 25% longer. |
+
+Owning Frost is a goal for Hearthtree 6.
 
 **3. The designs: Claude in Blender** (the owner's permission for bows).
-- Each bow gets its own chunky, low-poly design in the game's colours:
-  - **Twig:** plain wood with a leaf-wrapped grip.
-  - **Sunwood:** a tall golden longbow with a sun disc.
-  - **Ember:** dark red wood with glowing ember cracks.
-  - **Thorn Volley:** a green vine bow with thorns.
-  - **Foxfire:** pale wood with blue wisps.
+- The shop bows have their own low-poly designs: Twig's original wood, Sunwood's gold, Ember's glowing cracks
+  and Frost's pale blue ice. Claude also made models for Thorn Volley and Foxfire before their shop tiles were hidden.
 - Each bow is fitted to the cat's existing bow bones (`SK_CatBow`), so drawing and shooting still bend it right. Each
   arrow is its own small model.
-- Pictures of all five from the game camera go to the owner **before** they go in.
-- The same models make the bow pictures on the shop cards.
+- The owner approved the models. The same models make the pictures on the shop cards.
+- Updated Idle, Walk, Run and Shoot in `CatRanger.glb` improve the on-foot bow carry. `bow_face.gd` rolls her
+  paw in place so the bowstring faces her chest while she carries it.
 
 **Technical:**
 - Bow meshes skinned to the cat rig's bow bones; `player.gd` swaps the bow mesh instead of tinting it; arrow meshes
-  are picked per bow in `bolt.gd`.
-- The Ember burn is in `enemy.gd`.
+  are picked per bow in `arrow.gd`.
+- Burn, slow and freeze are in `enemy.gd`. Release, trail and hit effects are in `fx.gd`.
 - `stations.gd`: the Bow Shop card.
-- `balance.json`: `bows.ember`, per-bow `burn` and `price`.
-- **Tests:** `--smoke` and a new `--bowshop` mode (buy, upgrade, equip, pierce, burn, fan).
+- `balance.json`: `bows` (`craft`, `cost`, `draw_mult`, `range_bonus`, `burn`, `frost`, `fx`), `cat.min_range_m`
+  and `cat.bow_face_max_deg`.
+- **Tests:** `--smoke` and `--bowshop` (61 passes).
 
 ---
 
-### G4: the Saddlery (mount skills and attachments, after mission 8)
+### G4: the Saddlery (mount skills and attachments)
 
-**What you'll see:**
-- after mission 8 a new building, **the Saddlery**, can be built;
-- it teaches the mount **skills** and makes **attachments** for it;
-- everything you own works together while you ride.
+**Built 21 Nov 2026, updated 22 Nov.** The Saddlery teaches mount skills and makes attachments.
+Each learned skill can trigger while riding. Only the worn attachment is active.
 
 **1. The building.**
-- Buildable after **mission 8** is won. Its level follows the Hearthtree (up to 5).
+- Buildable after **mission 8** is won, at **Hearthtree level 2**. Its level follows the Hearthtree (up to 5).
 - It uses a **stand-in model** (the Bow Bench, tinted brown) until the owner makes one in Meshy.
 - It has two shelves of item cards: **Skills** and **Attachments**.
 - Every skill and attachment is bought (learned) once, then upgraded (levels 1–5, capped by the Saddlery's level), with
@@ -345,39 +351,52 @@ each with its own look, arrows and special.
 | **Pounce** (new) | Every 9 s: leaps (with the cat) onto the biggest group of enemies within 6 m and lands with a 2.5 m blast, 40 damage, stunning them for 1 s | +40% damage, +0.1 s stun |
 | **Bellow** (new) | Every 12 s, when 4 or more enemies are within 4 m: a mighty call that stuns them for 1.5 s (bosses 0.5 s); for 3 s they take 20% more damage | +0.2 s stun, +5% damage taken |
 
-**4. Attachments** (worn all the time; all can be worn together):
+**4. Attachments** (wear one at a time):
 
 | Attachment | What it does (level 1) | Per level |
 |---|---|---|
 | **Fire-spitter** | Every 3 s, a short cone of fire in front of the mount (2.5 m) when enemies are close: they burn, 8 damage a second for 2 s | +40% damage |
 | **Mossweave Saddle** | The mount has 15% more health | +15% (level 5: +75%) |
-| **Saddlebags** | Kills drop 5% more leaves (missions and Burrows) | +5% (level 5: +25%) |
+| **Saddlebags** | Kills drop 5% more leaves (missions, raids and Burrows) | +5% (level 5: +25%) |
 
-**5. Combine freely.**
-- There are no slots. Everything the player owns is active at once.
-- The balance is kept by prices and levels, not by limits. Prices are first guesses: a skill or attachment costs about
-  800–1,500 leaves and 30–60 timber to learn.
+**5. Wearing gear.**
+- Own all three and swap the worn attachment free between waves. The first bought is put on automatically.
+- Claude made all three attachment models for each mount in Blender. Only the worn one appears on the mount.
+  Thunder Shoes stay on the Stable as Gloomwood gear.
 
 **6. Animations: Claude in Blender**, on the two mounts' existing rigs. Each skill has its own move for each mount:
 - **Thistle:** Stomp (exists, today's Thump), Ram (new: a head-down dash), Pounce (new), Bellow (new: rears up and calls).
 - **Bramblewool:** Ram (exists), Stomp (new: rears and slams its front hooves), Pounce (new), Bellow (new).
 
-That is **6 new animations**. The Fire-spitter is shown with a fire effect (no model) until the owner makes one in
-Meshy, if wanted.
+That is **6 new animations**. The cat bobs and leans with the mount and jolts with skills. She carries the bow upright
+and tilted toward her. She shoots only ahead, so turn the mount to face foes behind you. The mount takes the hits
+and has an amber health bar. The cat leans away to reduce head overlap. Some overlap remains during Thistle's Bellow.
 
 **Technical:**
 - `mount.gd`: the skills, attachments and timers.
 - A new card in `stations.gd`.
-- `balance.json`: `saddlery`, `mount_skills`, `mount_attachments`; the old `attachments` mount items move here.
-- `save.gd`: skills and attachments owned, old saves.
-- The animations live in the mounts' clip json.
-- **Tests:** `--smoke` and a new `--saddlery` mode.
+- `ride_motion.gd`, `player.gd` and `lifebar.gd`: seated motion, forward aim and the mount's health bar.
+- `balance.json`: `stations.saddlery`, `saddlery`, `mount_skills`, `mount_attachments` and the `mount` riding keys.
+- `save.gd` stores skills, owned attachments and the one worn. The animations ship in the mounts' GLBs and clip lists.
+- **Tests:** `--smoke` and `--saddlery` (52 passes).
+
+---
+
+### Follow-up: Tailor's Nook (built 23 Nov 2026)
+
+At Hearthtree 3, build the outfit shop for 1,500 leaves and 40 timber. Original Ranger is free. Dusk Ranger and
+Nightfall Ranger cost 3,000 and 6,000 leaves. They change looks only and their cloaks move with the cat.
+The review fixed the Nook's footprint and interaction ring, assigned health to buildings built mid-fight,
+blocked sales for missing outfit models and matched the clips to the loaded model. See `docs/GAME_GUIDE.md`,
+part 11, for the files and tests (`--tailor` 63 passes, `--layout` 132).
 
 ---
 
 ### G5: tuning by the owner's play
 - Mission by mission on the phone: wave limits, timber, the prices of bows, skills and attachments, the Well's mending.
 - Paid mounts (looks only) are a later update, after this foundation.
+- Later ideas: mount skills earned in dungeons, two or three more mission bosses, and paid outfits using premium
+  currency. Still open: buildings can hide the cat when she walks behind them.
 
 ---
 
@@ -385,10 +404,11 @@ Meshy, if wanted.
 
 | What | Who | Until then |
 |---|---|---|
-| 5 bows and 5 arrows | **Claude, in Blender** (allowed) | The tinted bow of today |
-| 6 mount skill animations | **Claude, in Blender** on the existing rigs | The mount's existing moves |
+| Bow and arrow models | **Claude, in Blender** | Built. Four bows are available in the shop. |
+| 6 mount skill animations | **Claude, in Blender** on the existing rigs | Built |
 | The Saddlery building | **The owner, in Meshy** | The Bow Bench model, tinted |
-| The Fire-spitter on the mount (if wanted) | **The owner, in Meshy** | A fire effect only |
+| Fire-spitter, Mossweave Saddle and Saddlebags | **Claude, in Blender** | Built for both mounts |
+| Tailor's Nook and cat outfits | **The owner, in Meshy**. Claude rebuilt damaged mesh parts to match. | Built |
 | Training Target levels 3–5, Bow Bench levels 4–5 (from Phase F; concept images sent 19 Nov) | **The owner, in Meshy** | Target level 2's model, Bench level 3's model |
 | The Gloom Totem and the Golden Grub (from Phase F; concept images sent 19 Nov) | **The owner, in Meshy** | Gloom crystal props; a small gold mole |
 | Everything else (the Hearthtree, the Market, barricades, rubble, towers, the Well) | Existing models | — |
@@ -397,7 +417,7 @@ Meshy, if wanted.
 
 | | What |
 |---|---|
-| **Removed** | Timber needed to relight the ashes. The +25% enemies in rush waves. Waves topped up with more bodies. Buying barricades in the shop. Wishing at the Well. Thistle's and Bramblewool's built-in moves. The Market Stall paying 60 leaves for 5 timber. |
-| **Added** | Timber for each wave held. Buying timber, food and materials at the Market. Wave size and tank limits. Barricade rows with visible damage and repair. Tower repair. The automatic Well. Shop-style item cards. The Bow Shop and the Ember Bow. Five bow and arrow designs. The Saddlery with 4 skills (Stomp, Ram, Pounce, Bellow) and 3 attachments (Fire-spitter, Mossweave Saddle, Saddlebags). 6 mount animations. |
-| **Changed** | The home and campfire are "the Hearthtree". The pet and the Market open at Hearthtree level 2. Thistle comes free with the Market. Double chest timber. Missions 7–10 retuned. The Burrow saddle and bags become Saddlery attachments that work everywhere. |
-| **Kept** | Goal lists and mission gates. The Training Target. The roads. The Golden Grub. The Gloom Totem. Pitchers and Frogs shooting from afar. The pay bonuses. The 30% leaf loss when the camp falls. The Gloom Raids. The Burrows. The pet attachments. |
+| **Removed** | Mission gates by Hearthtree level. Timber needed to relight the ashes. The +25% enemies in rush waves. Waves topped up with more bodies. Buying barricades in the shop. Wishing at the Well. Built-in mount moves. The Market Stall paying 60 leaves for 5 timber. |
+| **Added** | Timber for each wave held. Buying timber, food and materials. Wave size and tank limits. Barricade rows and tower repair. The automatic Well. Shop cards, the Bow Shop (including Ember and Frost), the Saddlery's four skills, three attachments and six new animations, and the Tailor's Nook with cat outfits. |
+| **Changed** | Tree home and fire are the Hearthtree. The pet and Market open at Hearthtree 2, with Thistle free. Double chest timber. Missions 7–10 retuned. Saddlery gear works wherever it is worn. A camp fall takes 30% of the lost chapter's leaf gains. |
+| **Kept** | Hearthtree goal lists. The Training Target. The roads. The Golden Grub. The Gloom Totem. Pitchers and Frogs shooting from afar. The pay bonuses. The Gloom Raids. The Burrows. The pet attachments. |

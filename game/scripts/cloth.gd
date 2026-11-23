@@ -1,10 +1,11 @@
 extends Node3D
-## Cloth for the Cat Ranger: the hood, the capelet and the skirt of the tunic.
+## Cloth for the Cat Ranger: hood, capelet, tunic skirt and the outfit cloaks.
 ##
-## The model has 25 small cloth bones (assets/CatRanger_clips.json, "cloth_bones"): two down the back of the hood,
+## The original model has 25 small cloth bones (assets/cat/CatRanger_clips.json, "cloth_bones"): two down the back of the hood,
 ## five round its face opening, five chains of two on the capelet plus one over each upper arm, and six round the skirt. The clips do not move them. Godot's
 ## SpringBoneSimulator3D does, every frame, from what the body is doing: each bone is a little pendulum with
 ## weight, air drag and a weak pull back to how the cloth was modelled.
+## Dusk and Nightfall Ranger add two chains of two bones from the hips to the cloak hem.
 ##
 ##   Resting on the body   Every bone has a "floor": a plane fixed to the body bone it hangs from (head, chest or
 ##                         hips), lying where the cloth lies at rest. Gravity pulls the cloth down onto it, so it
@@ -54,6 +55,8 @@ const FEEL := {
 	"hood_tip": [0.04, 0.11, 0.020, 85.0, 28.0, 0.003, 1.0, 0.0],
 	"cape_top": [0.05, 0.11, 0.012, 68.0, 20.0, 0.003, 1.0, 0.0],
 	"cape_hem": [0.02, 0.11, 0.012, 85.0, 25.0, 0.003, 1.0, 0.0],
+	"cloak_top": [0.04, 0.12, 0.015, 50.0, 8.0, 0.003, 0.20, 0.0],
+	"cloak_hem": [0.02, 0.12, 0.015, 65.0, 14.0, 0.003, 0.28, 0.0],
 	"skirt": [0.03, 0.12, 0.015, 50.0, 22.0, 0.003, 0.45, 0.0],     # the whole panel follows its bone now: less wind does the same
 	# the cloth over each upper arm, by the elbow: it rides on the arm and mostly stays put
 	"cape_arm": [0.14, 0.05, 0.012, 45.0, 12.0, 0.003, 0.25, 0.0],
@@ -68,6 +71,8 @@ const FEEL := {
 const LIMBS := [
 	["arm.L", "upper_arm.L", 0.050, "cape"], ["arm.R", "upper_arm.R", 0.050, "cape"],
 	["leg.L", "thigh.L", 0.062, "skirt"], ["leg.R", "thigh.R", 0.062, "skirt"],
+	["cloak_leg.L", "thigh.L", 0.062, "cloak"], ["cloak_leg.R", "thigh.R", 0.062, "cloak"],
+	["cloak_shin.L", "shin.L", 0.055, "cloak"], ["cloak_shin.R", "shin.R", 0.055, "cloak"],
 ]
 
 var skeleton: Skeleton3D
@@ -87,7 +92,7 @@ var _has_last := false
 
 func setup(sk: Skeleton3D) -> bool:
 	skeleton = sk
-	var INFO: String = preload("res://scripts/player.gd").hero_base() + "_clips.json"
+	var INFO: String = preload("res://scripts/player.gd").hero_clips()     # 23 Nov 2026: the outfit's, else the original's
 	var info = JSON.parse_string(FileAccess.get_file_as_string(INFO))
 	if typeof(info) != TYPE_DICTIONARY or not info.has("cloth_bones"):
 		push_warning("cloth: no cloth_bones in " + INFO)
@@ -163,8 +168,17 @@ func _fit_rate() -> void:
 		fit.every = [3, 2, 1][Quality.level]
 
 
+## 23 Nov 2026: the cloth is taken off with its model (player.apply_skin swaps the hero's model): it stops listening to
+## that skeleton.
+func detach() -> void:
+	if skeleton != null and is_instance_valid(skeleton) and skeleton.skeleton_updated.is_connected(_on_skeleton_updated):
+		skeleton.skeleton_updated.disconnect(_on_skeleton_updated)
+
+
 func _on_skeleton_updated() -> void:
 	# the simulated pose only exists inside the skeleton's update; afterwards the bones go back to the clip's pose
+	if not skeleton.is_inside_tree():
+		return                                      # a model being taken away (an outfit swap)
 	if measure:
 		for b in bones:
 			b["lift"] = _lift_now(b)
@@ -201,6 +215,8 @@ func _kind(n: String) -> String:
 		return "hood_top" if n.ends_with(".1") else "hood_tip"
 	if n.begins_with("cape"):
 		return "cape_top" if n.ends_with(".1") else "cape_hem"
+	if n.begins_with("cloak"):
+		return "cloak_top" if n.ends_with(".1") else "cloak_hem"
 	return "skirt"
 
 
@@ -298,9 +314,11 @@ func _add_plane(prefix: String, b: Dictionary, at: Transform3D, colour: Color) -
 
 
 func _add_limbs() -> Array:
-	# capsules along the upper arms and thighs. Each is made no fatter than leaves the resting cloth untouched.
+	# Capsules along the upper arms, thighs and shins. Each leaves the resting cloth untouched.
 	var out := []
 	for l in LIMBS:
+		if not bones.any(func(b): return String(b["name"]).begins_with(l[3])):
+			continue
 		var bone := skeleton.find_bone(l[1])
 		if bone < 0:
 			continue
@@ -310,7 +328,7 @@ func _add_limbs() -> Array:
 		var next := -1                                 # the bone the limb goes on with: not a cloth bone hung on it
 		for k in kids:
 			var kid := skeleton.get_bone_name(k)
-			if not (kid.begins_with("cape.") or kid.begins_with("hood.") or kid.begins_with("skirt.")):
+			if not (kid.begins_with("cape.") or kid.begins_with("hood.") or kid.begins_with("skirt.") or kid.begins_with("cloak.")):
 				next = k
 				break
 		if next < 0:

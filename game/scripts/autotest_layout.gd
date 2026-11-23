@@ -33,7 +33,7 @@ const CLEAR_ZONE := Rect2(-1.5, 0.8, 3.0, 5.2)     # the ground just south of th
 const FIRE_CLEAR := 1.9                            # open ground round the campfire: no footprint nearer than this
 const TAN50 := 1.19                                # the camera looks down at 50 degrees
 const CAT_H := 0.35                                # a cat is hidden when its body at this height is covered
-const IDS := ["target", "bench", "cottage", "stall", "well"]
+const IDS := ["target", "bench", "cottage", "stall", "well", "tailor"]   # 23 Nov 2026: and the Tailor's Nook
 
 
 func run() -> bool:
@@ -61,6 +61,8 @@ func run() -> bool:
 func _layout() -> void:
 	main.player.invincible = true
 	t._veteran(14)                                  # missions 1-14 won: the stall, the cottage, the well, garden, fishing
+	Save.stations["saddlery"] = 1                  # 23 Nov 2026: the Saddlery and the Tailor's Nook too, so the Nook is
+	Save.stations["tailor"] = 1                    # checked against every building round it (at every home level)
 	main.stations.free_guardian()                   # the stone and its ring show
 	for id in ["target", "bench"]:
 		Save.stations[id] = 3                       # the biggest models (they are capped by the home level below)

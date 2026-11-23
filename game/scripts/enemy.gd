@@ -118,6 +118,9 @@ var _steer_to := Vector3.ZERO
 var mods := {}                                # a Burrow boss's own tuning from its map's "end" (missions keep the kind's own)
 var enraged := false                          # a Burrow boss at low health (mods.enrage_at): faster, a second slam ring
 var _vuln_k := 1.5                            # the damage taken while _vuln_t > 0 (a pillar's daze, a boar's missed charge)
+# G4: a mount's Bellow (mount.gd): it takes bellow_k more damage from every hit and burn while bellow_t > 0
+var bellow_t := 0.0
+var bellow_k := 0.0
 # Phase F: missions (boar daze, ranged sieges, the Golden Grub, Gloom Totems)
 var _ai := ""                                 # how it thinks: info "ai", else its id
 var totem_t := 0.0                            # near a Gloom Totem (it refreshes this): faster and tougher while > 0
@@ -136,6 +139,22 @@ var _scan_t := 0.0                            # ... next look round for foes to 
 var _pulse: Node3D                            # ... its crystals, breathing slowly
 var _sq_on := false                           # Phase G1b: keeping its squad's formation now (_think decides, _squad_steer steers)
 var _sq_prev := Vector3.INF                   # ... where its leader was the frame before (the leader's pace)
+var last_dealt := 0.0                         # G3: the damage the last hit() really did (after shields, dazes, totems)
+var burn_t := 0.0                             # G3, the Ember Bow: seconds it still burns (ignite)
+var burn_per_s := 0.0                         # ... the damage it takes each second while burning
+var burn_ticks := 0                           # ... burn damage dealt so far: how many times (for the tests)
+var burn_dealt := 0.0                         # ... and how much in all
+var _burn_acc := 0.0                          # ... seconds burnt since the last tick
+var _burn_fx: CPUParticles3D                  # ... the flames on it (Fx.embers), made the first time it burns
+# 22 Nov 2026, the Frost Bow's ice (chill): slowed by each ice hit; the hits_to_freeze-th hit while slowed freezes it
+var chill_t := 0.0                            # seconds it stays slowed (each ice hit starts them again)
+var chill_slow := 0.0                         # ... how much slower it moves and attacks meanwhile (0.5 = at half speed)
+var chill_hits := 0                           # ... ice hits in a row while slowed (the count; 0 again when it freezes)
+var freeze_t := 0.0                           # seconds it stays frozen solid: no moving, no attacking
+var freezes := 0                              # ... how many times it froze (for the tests)
+var _frost_on := 0                            # the frost look showing: 0 none, 1 chilled, 2 frozen
+var _frost_fx: CPUParticles3D                 # ... snow sparkles round it (Fx.frost_motes)
+var _ice: MeshInstance3D                      # ... its ice shell while frozen (Fx.ice_shell)
 
 
 func setup(kind: String, patch_index: int, strength: float) -> void:
@@ -502,13 +521,28 @@ func _event(clip: String, ev: String, fallback: float) -> float:
 func _physics_process(delta: float) -> void:
 	if dead or main.frozen:
 		return
+	if burn_t > 0.0:
+		_burn_tick(minf(delta, 0.1))                    # G3: Ember fire (frame time, never a clock)
+		if dead:
+			return
+	_vuln_t = maxf(0.0, _vuln_t - delta)
+	if bellow_t > 0.0:
+		bellow_t = maxf(0.0, bellow_t - minf(delta, 0.1))   # G4: frame time, never a clock
+		if bellow_t <= 0.0:
+			bellow_k = 0.0
+	if chill_t > 0.0 or freeze_t > 0.0:
+		_frost_tick(minf(delta, 0.1))                   # 22 Nov 2026: the Frost Bow's ice (frame time, never a clock)
+		if freeze_t > 0.0:
+			_frozen_frame(delta)                        # frozen solid: nothing moves, nothing attacks
+			return
+		if chill_t > 0.0:
+			delta *= 1.0 - chill_slow                   # chilled: its whole life runs slower (walking, attacks, timers)
 	_t += delta
 	_cd = maxf(0.0, _cd - delta)
 	_cd2 = maxf(0.0, _cd2 - delta)
 	_cd3 = maxf(0.0, _cd3 - delta)
 	_cd4 = maxf(0.0, _cd4 - delta)
 	_boost_t = maxf(0.0, _boost_t - delta)
-	_vuln_t = maxf(0.0, _vuln_t - delta)
 	if not awake:
 		_sleep_tick(delta)
 		return
@@ -522,7 +556,7 @@ func _physics_process(delta: float) -> void:
 	position += _knock * delta
 	_knock = _knock.lerp(Vector3.ZERO, 1.0 - exp(-8.0 * delta))
 	_hit_flash = maxf(0.0, _hit_flash - delta)
-	Props.set_param(_body, "flash", clampf(_hit_flash * 8.0, 0.0, 1.0))
+	Props.set_param(_body, "flash", clampf(_hit_flash * 8.0 + (Fx.CHILL_FLASH if chill_t > 0.0 else 0.0), 0.0, 1.0))
 	match state:
 		"attack", "slam", "roar", "grab", "spores", "heal", "cast", "orbs", "hex", "summon", "spit", "burst", "drum", "lob", "bite":
 			_do_action(delta)
@@ -609,6 +643,8 @@ func _physics_process(delta: float) -> void:
 		anim.speed_scale = clampf(spd / maxf(ref * _scale, 0.05), 0.5, 2.2)
 	elif anim:
 		anim.speed_scale = 1.0
+	if anim and chill_t > 0.0:
+		anim.speed_scale *= 1.0 - chill_slow            # 22 Nov 2026: chilled, its clips play slower too (set afresh above every frame)
 
 
 ## How fast it walks now: spikes slow it; a Raccoon's smoke sprint, a Crow Drummer's beat and a Gloom Totem nearby
@@ -1056,6 +1092,42 @@ func stagger(daze_s: float) -> void:
 	_act_target = null
 	if anim and anim.has_animation("Hit"):
 		_play("Hit", 0.05)
+
+
+## G4: stunned for secs by a mount's Pounce or Bellow (mount.gd gives bosses their shorter time): it stands dazed
+## (state "daze", the way any daze ends) and does nothing. Only a foe that is awake and walking, chasing, attacking or
+## already dazed (never mid-charge, mid-special, digging or blinking), never a Gloom Totem or anything anchored. A
+## longer daze already on is kept.
+func stun(secs: float) -> void:
+	if dead or secs <= 0.0 or not awake or anchored or _ai == "totem":
+		return
+	if not (state in ["walk", "chase", "attack", "daze"]):
+		return
+	_act_t = (0.8 - secs) if state != "daze" else minf(_act_t, 0.8 - secs)
+	state = "daze"
+	_act_target = null
+	if anim and anim.has_animation("Hit"):
+		_play("Hit", 0.05)
+
+
+## G4: knocked aside by a mount's Ram: pushed along dir at `speed` m/s (the push fades within a moment, as a hit's does;
+## the heavy ones a third as far). Never a boss, anything anchored, or a foe mid-charge, mid-dash or mid-pounce.
+func shove(dir: Vector3, speed: float) -> void:
+	if dead or boss or anchored or speed <= 0.0 or state in ["charge", "dash", "pounce", "dig", "emerge", "blink"]:
+		return
+	var d := Vector3(dir.x, 0.0, dir.z)
+	if d.length() < 0.001:
+		return
+	_knock = d.normalized() * speed * (0.33 if id in ["brute", "snail", "beetle"] else 1.0)
+
+
+## G4: shaken by a mount's Bellow: for secs it takes `extra` more damage (a share) from every hit and burn. A second
+## call while one is on keeps the longer time and the bigger share.
+func bellowed(secs: float, extra: float) -> void:
+	if dead or secs <= 0.0:
+		return
+	bellow_t = maxf(bellow_t, secs)
+	bellow_k = maxf(bellow_k, extra)
 
 
 ## What an enemy can hit that is not the cat: a building or the campfire (towers and barricades have their own
@@ -2028,6 +2100,7 @@ func _totem_burst() -> void:
 
 # ---------------------------------------------------------------- getting hit
 func hit(direction: Vector3, amount := 10.0) -> void:
+	last_dealt = 0.0
 	if dead or state == "blink" or ((state == "dig" or state == "emerge") and not _body.visible):
 		return
 	if has_meta("squad_leader") and main.player != null:
@@ -2047,11 +2120,14 @@ func hit(direction: Vector3, amount := 10.0) -> void:
 				Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.35, 0), "Block!", Color(0.65, 0.9, 1.0))
 	if _vuln_t > 0.0:
 		amount *= _vuln_k                               # dazed by a pillar or a missed charge: the weak spot
+	if bellow_t > 0.0:
+		amount *= 1.0 + bellow_k                        # G4: shaken by a mount's Bellow
 	if totem_t > 0.0:
 		amount *= 1.0 - totem_armor                     # a Gloom Totem nearby (Phase F)
 	if not awake:
 		wake()
 	hp -= amount
+	last_dealt = maxf(amount, 0.0)
 	if not enraged and mods.has("enrage_at") and hp > 0.0 and hp <= max_hp * float(mods["enrage_at"]):
 		_enrage()
 	_hit_flash = 0.12
@@ -2062,11 +2138,14 @@ func hit(direction: Vector3, amount := 10.0) -> void:
 	if id == "raccoon" and carried > 0 and _boost_t <= 0.0 and hp > 0.0:
 		Fx.smoke(main, global_position)
 		_boost_t = 1.2
-	if not anchored and not boss and state != "charge" and state != "dash" and state != "pounce":
+	var solid := freeze_t > 0.0                         # 22 Nov 2026: frozen solid, a hit neither pushes it nor makes it flinch
+	if not solid and not anchored and not boss and state != "charge" and state != "dash" and state != "pounce":
 		var push := direction
 		push.y = 0.0
 		_knock = push.normalized() * (0.8 if id in ["brute", "snail", "beetle"] else 2.4)
-	if anim == null:
+	if solid:
+		pass
+	elif anim == null:
 		Fx.boing(_body, 0.15)
 	elif not boss and (state == "walk" or state == "chase") and anim.has_animation("Hit") and amount >= max_hp * 0.3:
 		_play("Hit", 0.05)
@@ -2076,8 +2155,165 @@ func hit(direction: Vector3, amount := 10.0) -> void:
 		_die()
 
 
+# ---------------------------------------------------------------- G3: Ember fire
+## Sets it burning (an Ember arrow's hit, arrow.gd): for `seconds` it takes `per_s` damage every second (per_s is the
+## bow's share_per_s x that hit's damage). A new hit restarts the burn with the new numbers; the tick keeps its rhythm.
+## Bosses burn too. Burn damage is the cat's damage like an arrow's: a kill by fire pays the same (_die).
+func ignite(seconds: float, per_s: float) -> void:
+	if dead or seconds <= 0.0 or per_s <= 0.0:
+		return
+	if burn_t <= 0.0:
+		_burn_acc = 0.0
+	burn_t = seconds
+	burn_per_s = per_s
+	_burn_look(true)
+
+
+## The burn's frame time (clamped, and not called while the game is frozen): one tick of burn_per_s each whole second;
+## when it runs out, the part of a second left over hurts its share, so a full burn deals seconds x per_s.
+func _burn_tick(dt: float) -> void:
+	var step := minf(dt, burn_t)
+	burn_t -= step
+	_burn_acc += step
+	while _burn_acc >= 1.0 and not dead:
+		_burn_acc -= 1.0
+		_burn_hurt(burn_per_s)
+	if burn_t <= 0.0:
+		burn_t = 0.0
+		if _burn_acc > 0.001 and not dead:
+			_burn_hurt(burn_per_s * _burn_acc)
+		_burn_acc = 0.0
+		_burn_look(false)
+
+
+func _burn_hurt(amount: float) -> void:
+	if dead or amount <= 0.0:
+		return
+	if bellow_t > 0.0:
+		amount *= 1.0 + bellow_k                        # G4: shaken by a mount's Bellow
+	hp -= amount
+	burn_dealt += amount
+	burn_ticks += 1
+	_hit_flash = maxf(_hit_flash, 0.06)
+	if amount >= 0.5:
+		Fx.number(main, global_position + Vector3(0, aim_height * 2.0 + 0.3, 0), amount, Color(1.0, 0.6, 0.25))
+	if not enraged and mods.has("enrage_at") and hp > 0.0 and hp <= max_hp * float(mods["enrage_at"]):
+		_enrage()
+	if hp <= 0.0:
+		_die()
+
+
+## The flames on a burning enemy (Fx.embers, a few rising sparks, scaled by the graphics level).
+func _burn_look(on: bool) -> void:
+	if on and (_burn_fx == null or not is_instance_valid(_burn_fx)):
+		_burn_fx = Fx.embers(self, radius * 0.6, 10, 0.55, clampf(radius / 0.3, 0.8, 2.0))
+		_burn_fx.position = Vector3(0, aim_height, 0)
+	if _burn_fx != null and is_instance_valid(_burn_fx):
+		_burn_fx.emitting = on
+
+
+# ---------------------------------------------------------------- 22 Nov 2026: the Frost Bow's ice
+## Chilled by an ice arrow (the Frost Bow; arrow.gd passes the bow's Data.bow_frost: slow, seconds, hits_to_freeze,
+## freeze_s, boss_freeze_s). For `seconds` it moves and attacks `slow` slower (0.5: at half speed), with a frosty blue
+## look; each hit starts the seconds again. The hits_to_freeze-th hit in a row while it is chilled freezes it solid for
+## freeze_s (a boss, or anything on the boss bar, boss_freeze_s): it stands still and does nothing, icy and pale in an
+## ice shell, then the count starts over. Hits while it is frozen keep it chilled for after but do not count. Its timers
+## run on frame time and stop while the game is frozen (_physics_process). Never a Gloom Totem.
+func chill(cfg: Dictionary) -> void:
+	var secs := float(cfg.get("seconds", 0.0))
+	if dead or secs <= 0.0 or _ai == "totem":
+		return
+	var was := chill_t > 0.0
+	chill_t = secs
+	chill_slow = clampf(float(cfg.get("slow", 0.0)), 0.0, 0.95)
+	if freeze_t <= 0.0:
+		chill_hits = (chill_hits + 1) if was else 1
+		if chill_hits >= maxi(1, int(cfg.get("hits_to_freeze", 3))):
+			chill_hits = 0
+			var fs := float(cfg.get("boss_freeze_s" if is_boss() else "freeze_s", 0.0))
+			if fs > 0.0:
+				freeze_t = fs
+				freezes += 1
+				_knock = Vector3.ZERO
+	_frost_look()
+
+
+## A boss for the ice: a boss kind, or anything on the boss bar (a Burrow's boss, a raid's leader).
+func is_boss() -> bool:
+	return boss or (main != null and main.hud != null and main.hud.get("boss") == self)
+
+
+## The ice's frame time (clamped by the caller): the freeze runs out, then the chill; the count is lost with the chill.
+func _frost_tick(dt: float) -> void:
+	freeze_t = maxf(0.0, freeze_t - dt)
+	chill_t = maxf(0.0, chill_t - dt)
+	if chill_t <= 0.0:
+		chill_hits = 0
+	_frost_look()
+
+
+## A frame frozen solid: no step, no push, no clip; a pale icy sheen (and a hit's flash on top).
+func _frozen_frame(delta: float) -> void:
+	_knock = Vector3.ZERO
+	_hit_flash = maxf(0.0, _hit_flash - delta)
+	Props.set_param(_body, "flash", clampf(Fx.FROZEN_FLASH + _hit_flash * 8.0, 0.0, 1.0))
+	if anim:
+		anim.speed_scale = 0.0
+
+
+## Its own tint without the ice's (a stand-in model's balance.json tint, a Gloom Totem's violet).
+func _base_tint() -> Color:
+	if info.has("tint"):
+		return Color.html(String(info["tint"]))
+	if _ai == "totem" and not ResourceLoader.exists("res://assets/enemies/%s/%s.glb" % [_model_id, _model_id]):
+		return Color(0.88, 0.72, 1.0)
+	return Color(1, 1, 1)
+
+
+## The ice's look, changed only when it changes: chilled (a frosty blue tint and snow sparkles), frozen (paler and icy,
+## an ice shell popping on), neither (its own colours; a thawing enemy's shell shatters).
+func _frost_look() -> void:
+	var want := 2 if freeze_t > 0.0 else (1 if chill_t > 0.0 else 0)
+	if want == _frost_on or _body == null:
+		return
+	var was := _frost_on
+	_frost_on = want
+	var tint := _base_tint()
+	Props.set_param(_body, "tint", tint * (Fx.FROZEN_TINT if want == 2 else (Fx.CHILL_TINT if want == 1 else Color(1, 1, 1))))
+	if want > 0 and (_frost_fx == null or not is_instance_valid(_frost_fx)):
+		_frost_fx = Fx.frost_motes(self, radius * 0.7, 6)
+		_frost_fx.position = Vector3(0, aim_height, 0)
+	if _frost_fx != null and is_instance_valid(_frost_fx):
+		_frost_fx.emitting = want > 0
+	if want == 2:
+		if _ice == null or not is_instance_valid(_ice):
+			_ice = Fx.ice_shell(self, radius, float(info.get("height", 0.6)))
+			_ice.position.y = fly_h if flyer else 0.0
+		Fx.hit_burst(main, global_position + Vector3(0, aim_height, 0), Vector3.FORWARD, {"hit": "ice", "hit_n": 10,
+			"hit_colors": ["#FFFFFF", "#BFEAFF", "#7CC8F0"]})
+		if anim:
+			anim.speed_scale = 0.0
+	elif was == 2:
+		if _ice != null and is_instance_valid(_ice):
+			_ice.queue_free()
+		_ice = null
+		Fx.shatter(main, global_position + Vector3(0, aim_height, 0), radius)
+	Props.set_param(_body, "flash", [0.0, Fx.CHILL_FLASH, Fx.FROZEN_FLASH][want])   # (its frames keep it up, a hit's flash on top)
+
+
+## Gone: the ice comes off at once (a frozen one shatters).
+func _frost_clear() -> void:
+	chill_t = 0.0
+	freeze_t = 0.0
+	chill_hits = 0
+	_frost_look()
+
+
 func _die() -> void:
 	dead = true
+	burn_t = 0.0
+	_burn_look(false)
+	_frost_clear()
 	remove_from_group("enemies")
 	remove_from_group("foes")
 	remove_from_group("bonus")
@@ -2086,7 +2322,7 @@ func _die() -> void:
 	if _in_area():
 		main.area.on_enemy_died(self)               # in a Burrow: the run pays (leaves, amber, dew) and counts the fight
 	else:
-		var value := int(info["leaves"]) + carried
+		var value := Data.saddlebag_leaves(int(info["leaves"])) + carried   # G4: the Saddlebags add to the kill's own leaves
 		main.drop_leaves(global_position, value)
 	Sfx.play("pop", -6.0)
 	Fx.kill(main, global_position + Vector3(0, aim_height, 0), _color)

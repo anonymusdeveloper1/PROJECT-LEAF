@@ -995,7 +995,8 @@ func _topup() -> void:
 	st._upgrade_bow()
 	_x("the bow to 12", int(Save.bows["sunwood"]) == 12, {"bows": Save.bows})
 	st._craft("foxfire")
-	_x("the Foxfire Bow crafted and in the paw", Save.bows.has("foxfire") and Save.bow == "foxfire")
+	_x("the Foxfire Bow is hidden from the Bow Shop for now (22 Nov 2026): not on the card, not sold", not Save.bows.has("foxfire") and Save.bow == "sunwood"
+		and not _row_texts(st._card_bench()).contains("Foxfire"))
 	Save.camp_level = 4
 	st._upgrade_defence("tower")
 	_x("tower level 5 refused at home level 4", main.defences.level("tower") == 4)
@@ -1030,19 +1031,24 @@ func _topup() -> void:
 	await t._wait(1.2)
 	await t._shot("topup_home8")
 	var stall := _row_texts(st._card_stall())
-	_x("the Stable sells attachments", stall.contains("Saddle"), {"rows": stall})
-	st._buy_attach("mount_saddle")
+	_x("the Stable sells attachments (G4: the Thunder Shoes; the saddle and bags moved to the Saddlery)", stall.contains("Thunder Shoes") and not stall.contains("Saddle"), {"rows": stall})
+	st._buy_attach("mount_shoes")
 	st._buy_attach("pet_bell")
-	_x("bought and worn", Save.attach["mount"] == "mount_saddle" and Save.attach["pet"] == "pet_bell")
+	_x("bought and worn", Save.attach["mount"] == "mount_shoes" and Save.attach["pet"] == "pet_bell")
+	# G4: the Mossweave Saddle is a Saddlery attachment (+15% a level) and works everywhere, camp and runs alike
 	var mmax: int = main.mount.max_hp()
 	var cmax: int = Data.cat_max_hp()
+	Save.saddlery["attach"]["saddle"] = 2
+	var msaddle: int = main.mount.max_hp()
+	_x("the Saddlery's saddle (level 2) gives the mount +30% health at camp", msaddle == roundi(mmax * 1.3) and Data.mount_hp_mult() == 1.3, {"mount": msaddle, "was": mmax})
 	var r = _r()
 	await _enter(1)
-	_x("in a run: the saddle's mount health and the bell's cat health", main.mount.max_hp() == int(mmax * 1.5) and Data.cat_max_hp() == cmax + 2,
-		{"mount": main.mount.max_hp(), "was": mmax, "cat": Data.cat_max_hp()})
+	_x("in a run: the saddle's mount health still there, and the bell's cat health", main.mount.max_hp() == msaddle and Data.cat_max_hp() == cmax + 2,
+		{"mount": main.mount.max_hp(), "was": msaddle, "cat": Data.cat_max_hp()})
 	await r._leave("back")
 	await t._wait(0.4)
-	_x("back at camp: no Burrows help", main.mount.max_hp() == mmax and Data.cat_max_hp() == cmax)
+	_x("back at camp: no Burrows help (the saddle stays: it is the Saddlery's)", main.mount.max_hp() == msaddle and Data.cat_max_hp() == cmax)
+	Save.saddlery["attach"].erase("saddle")
 	await t._shot("topup_stall_card")
 
 

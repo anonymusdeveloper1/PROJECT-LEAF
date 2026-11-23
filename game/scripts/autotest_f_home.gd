@@ -2,9 +2,11 @@ extends Node
 ## Phase F: the home's goals and the mission gates (`-- --autotest --fresh --homegoals`), run from autotest.gd. Each
 ## check logs "EXPECT PASS <what>" or "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: the numbers
 ## come from balance.json and no fight is played.
-##   (a) a fresh save: home 2's goals not met; mission 3 locked (it needs home 2) even with missions 1-2 won
+##   (a) a fresh save: home 2's goals not met; no mission needs a bigger Hearthtree (the owner, 21 Nov 2026), so with
+##       missions 1-2 won mission 3 is open at home 1; Hearthtree 2-6 ask for missions 1, 5, 9, 12, 15 (one earlier
+##       since 21 Nov 2026), and home 2's 'Win mission 1' is ticked once mission 1 is won
 ##   (b) home 2's list met (stations, stats, bow) -> its Grow row lights up, growing works and takes the price ->
-##       mission 3 unlocked on the signpost
+##       mission 3 still on the signpost
 ##   (c) a won mission is not unlocked (no replays) and not on the signpost; a saved run of one stays playable
 ##   (d) caps: Training Target 1 -> damage 4, Target 2 at home 2 -> 6 (the Bench the same for bows); Target and Bench
 ##       offer levels up to 5, never above the home; their levels 3-5 / 4-5 reuse the top models
@@ -123,19 +125,52 @@ func _fresh_save() -> void:
 		{"goals": g2.map(func(g): return "%s [%s]" % [g["progress"], g["station"]])})
 	_x("a fresh save: home 2's goals are not met", not Data.home_goals_met(2) and not Data.home_can_grow())
 	_x("a fresh save: mission 1 is unlocked, mission 2 not yet", Data.mission_unlocked(0) and not Data.mission_unlocked(1))
-	_x("mission 3 needs home 2 (balance.json needs_home)", Data.mission_needs_home(2) == 2, {"needs_home": Data.mission_needs_home(2)})
+	var needs: Array = range(Data.mission_count()).map(func(i): return Data.mission_needs_home(i))
+	_x("no mission needs a bigger Hearthtree (balance.json needs_home all 1)", needs.all(func(n): return n == 1), {"needs_home": needs})
+	# 21 Nov 2026: each Hearthtree level asks for one mission earlier (2 -> 1, 3 -> 5, 4 -> 9, 5 -> 12; 6-8 kept)
+	var asks: Array = []
+	for lv in range(2, 7):
+		var ms: Array = Data.home_goals(lv).filter(func(g): return String(g["type"]) == "mission")
+		asks.append(int(ms[0]["need"]) if ms.size() == 1 else -1)
+	_x("Hearthtree 2-6 ask for missions 1, 5, 9, 12 and 15", asks == [1, 5, 9, 12, 15], {"asks": asks})
+	# 22 Nov 2026: Thorn Volley is hidden from the Bow Shop, and the Frost Bow needs Bow Shop 5, so Hearthtree 6 asks for it; no goal needs a hidden bow
+	var bow5: Array = Data.home_goals(6).filter(func(g): return String(g["type"]) == "bow_owned")
+	var hidden_goals: Array = []
+	for lvd in Data.b["stations"]["camp"]["levels"]:
+		for g in (lvd as Dictionary).get("goals", []):
+			if String(g.get("type", "")) in ["bow", "bow_owned"] and Data.bow_hidden(String(g.get("id", ""))):
+				hidden_goals.append(g)
+	var frost_ok := Data.home_goals(5).filter(func(g): return String(g["type"]) == "bow_owned").is_empty()
+	_x("Hearthtree 6 (not 5) asks for 'Frost Bow owned', and no Hearthtree goal asks for a hidden bow", bow5.size() == 1 and String(bow5[0]["text"]) == "Frost Bow owned"
+		and frost_ok and hidden_goals.is_empty(), {"bow6": bow5.map(func(g): return g["text"]), "hidden": hidden_goals})
+	# no goal asks for a bow (or a Bow Shop level) the Hearthtree level before it cannot give (the Shop is capped by station_max_level)
+	var reach_bad: Array = []
+	var levels_all: Array = Data.b["stations"]["camp"]["levels"]
+	var prices_up := true
+	for lv in range(2, levels_all.size() + 1):
+		var prev_cap_home := lv - 1
+		var shop_max := mini((Data.b["stations"]["bench"]["levels"] as Array).size(), prev_cap_home)
+		for g in (levels_all[lv - 1] as Dictionary).get("goals", []):
+			if String(g.get("type", "")) == "bow_owned" and int(Data.bow_info(String(g["id"]))["bench_level"]) > shop_max:
+				reach_bad.append("%s at home %d" % [g["id"], lv])
+		if lv > 2:
+			prices_up = prices_up and int((levels_all[lv - 1] as Dictionary).get("leaves", 0)) > int((levels_all[lv - 2] as Dictionary).get("leaves", 0)) \
+				and int((levels_all[lv - 1] as Dictionary).get("timber", 0)) > int((levels_all[lv - 2] as Dictionary).get("timber", 0))
+	_x("no Hearthtree goal asks for a bow the Bow Shop cannot sell by then; each Hearthtree level costs more leaves and timber than the one before", reach_bad.is_empty() and prices_up,
+		{"bad": reach_bad})
+	var mg := Data.home_goals(2).filter(func(g): return String(g["text"]) == "Win mission 1")
+	_x("a fresh save: the 'Win mission 1' goal is not ticked yet", mg.size() == 1 and not bool(mg[0]["done"]), {"goals": Data.home_goals(2).map(func(g): return g["progress"])})
+	_win_upto(1)
+	mg = Data.home_goals(2).filter(func(g): return String(g["text"]) == "Win mission 1")
+	_x("mission 1 won: the 'Win mission 1' goal is ticked, the list still not met", mg.size() == 1 and bool(mg[0]["done"]) and not Data.home_goals_met(2))
 	_win_upto(2)
-	_x("missions 1-2 won: mission 3 is next but locked at home 1", Data.next_mission() == 2 and not Data.mission_unlocked(2),
+	_x("missions 1-2 won: mission 3 is next and open at home 1", Data.next_mission() == 2 and Data.mission_unlocked(2),
 		{"next": Data.next_mission(), "home": Save.camp_level})
-	var mg := Data.home_goals(2).filter(func(g): return String(g["text"]) == "Win mission 2")
-	_x("the 'Win mission 2' goal is ticked, the list still not met", mg.size() == 1 and bool(mg[0]["done"]) and not Data.home_goals_met(2))
 	var rows := _sign_rows()
-	_x("the signpost shows mission 3 locked: 'Needs the Hearthtree at level 2' and a Go button", rows.size() >= 1
-		and String(rows[0]["note"]).contains("Needs the Hearthtree at level 2") and String(rows[0]["label"]) == "Go" and String(rows[0]["text"]).begins_with("3."),
-		{"rows": _texts(rows), "note": String(rows[0]["note"]) if rows.size() > 0 else ""})
-	_x("the locked signpost lists the missing goals", rows.size() >= 2 and String(rows[1]["note"]).contains("/"), {"rows": _texts(rows)})
+	_x("the signpost offers mission 3 to fight at home 1", rows.size() == 1 and String(rows[0]["text"]).begins_with("3.")
+		and String(rows[0]["label"]) == "Fight" and bool(rows[0]["enabled"]), {"rows": _texts(rows)})
 	main.stations.refresh()
-	_x("the signpost has no '!' while the next mission is locked", not main.stations.rings["sign"].pulse)
+	_x("the signpost shows its '!' (the next mission is open)", main.stations.rings["sign"].pulse)
 	Save.leaves = 99999
 	Save.timber = 9999
 	main.stations._grow_camp()
@@ -163,7 +198,7 @@ func _grow_to_2() -> void:
 	await t._wait(0.4)
 	_x("growing the home works: level 2, the price taken", Save.camp_level == 2 and Save.leaves == 37 and Save.timber == 3,
 		{"home": Save.camp_level, "leaves": Save.leaves, "timber": Save.timber})
-	_x("mission 3 unlocked at home 2", Data.mission_unlocked(2))
+	_x("mission 3 still open at home 2", Data.mission_unlocked(2))
 	var rows := _sign_rows()
 	_x("the signpost offers mission 3 to fight", rows.size() == 1 and String(rows[0]["text"]).begins_with("3.") and String(rows[0]["label"]) == "Fight"
 		and bool(rows[0]["enabled"]), {"rows": _texts(rows)})
@@ -255,7 +290,7 @@ func _home_card() -> void:
 			if String(r["label"]) != "":
 				n_go += 1
 	_x("a met goal has a tick and no button, a missing one its progress and Go / Show", marks_ok and n_go > 0, {"buttons": n_go})
-	# the first goal with Go: the signpost ("Win mission 6"), the cat walks there and its card opens
+	# the first goal with Go: the signpost ("Win mission 5"), the cat walks there and its card opens
 	var go_i := -1
 	for i in goals.size():
 		if String(rows[i]["label"]) == "Go":

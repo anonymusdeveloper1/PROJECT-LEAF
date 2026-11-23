@@ -1022,11 +1022,11 @@ func _glow_at(row: Control, y: float) -> void:
 	row.create_tween().tween_property(row, "modulate", Color(1, 1, 1), 0.9)
 
 
-## A marker's card. While a wave is on only the signpost works: the shops and stations open between waves.
+## A marker's card. While a wave is on only the signpost and the barricade rows' markers (repair) work: the shops and stations open between waves.
 func _spec(ring) -> Dictionary:
 	var spec: Dictionary = ring.builder.call()
 	var f = main.fight
-	if f.active and f.in_wave and ring != main.stations.rings.get("sign"):
+	if f.active and f.in_wave and ring != main.stations.rings.get("sign") and not String(ring.key).begins_with("road_"):
 		return {"title": spec.get("title", ""), "sub": "A wave is on! This opens again between waves.", "rows": [],
 			"anchor": spec.get("anchor", Vector3.ZERO)}
 	return spec
@@ -1337,7 +1337,8 @@ func _place_card() -> void:
 
 # ---------------------------------------------------------------- Phase G2: the shop tiles (20 Nov 2026)
 ## The things to buy on a card are shop tiles (the user: "It should be like a whole shop store"), a row
-## {"kind": "item", "icon", "title", "text", "stats": [[name, 0..1], ...], "badge", "cost", "label", "enabled", "action"}.
+## {"kind": "item", "icon", "title", "text", "stats": [[name, 0..1], ...], "badge", "cost", "label", "enabled", "action"}
+## (G3: an optional "picture", a res:// image path shown instead of the icon when the file exists: the bows' pictures).
 ## Consecutive item rows make one grid: 2 tiles a row on a phone, 3 once the dialog holds 3 of about TILE_MIN_W; a lone
 ## last tile sits on the left. Every tile of a grid has the same size and layout, top to bottom: the icon in a soft
 ## rounded square (the badge a pill in the tile's top corner), the name on one line (smaller, then "...", when long),
@@ -1456,6 +1457,9 @@ func _item_tile(it: Dictionary, n_stats: int, priced: bool, buttons: bool, inner
 	sq.offset_bottom = PIC
 	top.add_child(sq)
 	var raw = it.get("icon", "")
+	var own_pic := _picture(str(it.get("picture", "")))   # G3: a tile's own picture (a bow's), over its icon
+	if own_pic != null:
+		raw = own_pic
 	var pic := TextureRect.new()
 	pic.texture = icon(raw)
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -1559,7 +1563,7 @@ func _letter(title: String) -> Label:
 	return l
 
 
-## A tile's badge: a small pill in its top right corner (green Equipped / Built, blue Owned, orange New, gold Max, red
+## A tile's badge: a small pill in its top right corner (green Equipped / Built / Worn, blue Owned, orange New, gold Max, red
 ## Broken, wood for the rest: Level 3/5 ...). A long one gets a smaller font so it keeps clear of the icon.
 func _pill(text: String, inner_w: float) -> PanelContainer:
 	var p := PanelContainer.new()
@@ -1588,7 +1592,7 @@ func _pill(text: String, inner_w: float) -> PanelContainer:
 
 func _pill_tone(text: String) -> String:
 	var b := text.to_lower()
-	if b.begins_with("equipped") or b.begins_with("built") or b.begins_with("in use"):
+	if b.begins_with("equipped") or b.begins_with("built") or b.begins_with("in use") or b.begins_with("worn"):
 		return "green"
 	if b.begins_with("owned"):
 		return "blue"
@@ -1885,6 +1889,19 @@ func icon(k) -> Texture2D:
 ## icon(k) has a real picture for k (an unknown id gets the plain disc).
 func _icon_known(k) -> bool:
 	return k is Texture2D or OWN_ICONS.has(str(k)) or UiIcons.known(str(k))
+
+
+var _pictures := {}                     # G3: res:// path -> its texture (null when the file is not there)
+
+
+## G3: a shop tile's own picture, the row key "picture" (a res:// path, e.g. res://assets/ui/bows/bow_sunwood.png),
+## loaded once and kept. null when the row has none or the file is not there: the tile then shows its "icon".
+func _picture(path: String) -> Texture2D:
+	if path == "":
+		return null
+	if not _pictures.has(path):
+		_pictures[path] = (load(path) as Texture2D) if ResourceLoader.exists(path) else null
+	return _pictures[path]
 
 
 ## A faceted gem: a diamond (amber) or a rounded pebble (glowstone), light left facet, dark outline (64 x 64).

@@ -28,13 +28,15 @@ script folder and change it there. Never edit another model's folder.
 
 ## Rules on this PC
 
-- Work on D: only (C: is nearly full). Set `TEMP` and `TMP` to `D:\DevCache\tmp` for every Blender run. Work files go
-  in `D:\DevCache\tmp\<id>\`.
-- Blender 5.2 is `D:\Blender\blender.exe`. Run it headless only (`-b ... --python-exit-code 1 -P script -- args`).
+- Work files go in `D:\DevCache\tmp\<id>\`. C: has room again since 21 Nov 2026, so setting `TEMP` and `TMP` to
+  `D:\DevCache\tmp` for Blender runs is optional.
+- Blender 5.3 is `D:\Blender\blender.exe`. Run it headless only (`-b ... --python-exit-code 1 -P script -- args`).
   Do NOT use or start the Blender MCP or the live Blender (socket port 9876).
 - Do NOT run Godot. Other agents are building other models at the same time: write only inside your own folders.
-- System Python 3 has numpy and Pillow. In Git Bash, write scripts to files with the Write tool rather than heredocs
-  with quotes.
+- Python (checked 21 Nov 2026, after the Windows reinstall): the system has only a 32-bit Python 3.15
+  (`py -3.15-32`), without numpy or Pillow, and `python` / `python3` open the Microsoft Store. Blender's own Python has
+  numpy (no Pillow), so run numpy steps inside Blender. Ask the owner before installing anything. In Git Bash, write
+  scripts to files with the Write tool rather than heredocs with quotes.
 
 ## Quality bar
 

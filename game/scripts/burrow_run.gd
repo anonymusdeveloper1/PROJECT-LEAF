@@ -933,7 +933,9 @@ func on_enemy_died(e) -> void:
 			if owns(p.global_position):
 				get_tree().create_timer(0.6).timeout.connect(p.call_home)
 		return
-	var lv := int(round(float(info.get("leaves", 0)) * leaf_mult() * float(Data.run_mods.get("loot_mult", 1.0))))
+	# G4: the Saddlebags (a Saddlery attachment now, working everywhere) add to a kill's leaves; loot_mult is the old
+	# Burrows-only bags' (none since G4) and any boon's
+	var lv := Data.saddlebag_leaves(int(round(float(info.get("leaves", 0)) * leaf_mult() * float(Data.run_mods.get("loot_mult", 1.0)))))
 	if lv > 0:
 		main.drop_leaves(at, lv)
 	var dr: Dictionary = cfg()["drops"]

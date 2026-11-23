@@ -93,6 +93,8 @@ func mission_needs_home(i: int) -> int:
 
 ## Can mission i start now? Only the next mission to win, once the home is big enough for it, or a mission with a saved
 ## run (a chapter break, or a camp fall: a run already started stays playable). Won missions are done: no replays.
+## Since 21 Nov 2026 every mission's needs_home is 1 (the owner: missions never wait for a Hearthtree upgrade), so in
+## practice the next mission opens as soon as the one before it is won.
 func mission_unlocked(i: int) -> bool:
 	if i < 0 or i >= mission_count():
 		return false
@@ -181,7 +183,7 @@ func station_open(id: String) -> bool:
 
 
 ## The stations bought on the Hearthtree's card (a goal for one not built yet points there).
-const SHOP_BUILT := ["target", "bench", "well", "cottage", "stall"]
+const SHOP_BUILT := ["target", "bench", "well", "cottage", "stall", "saddlery", "tailor"]
 
 
 ## The mission (index) whose win gives building id ("garden": mission 1's index), -1 when none gives it.
@@ -253,7 +255,7 @@ func _goal(g: Dictionary) -> Dictionary:
 			have = int(Save.bows.get(bid, 0))
 			need = lv
 			text = "%s lv %d" % [bn, lv]
-			prog = ("%s lv %d/%d" % [bn, have, lv]) if have > 0 else ("Craft the %s, then lv %d" % [bn, lv])
+			prog = ("%s lv %d/%d" % [bn, have, lv]) if have > 0 else ("Buy the %s, then lv %d" % [bn, lv])
 			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
 		"bow_any":
 			for k in Save.bows:
@@ -266,8 +268,8 @@ func _goal(g: Dictionary) -> Dictionary:
 			var oid := String(g.get("id", ""))
 			var on := String(bow_info(oid)["name"])
 			have = 1 if Save.bows.has(oid) else 0
-			text = "%s crafted" % on
-			prog = "Craft the %s" % on
+			text = "%s owned" % on
+			prog = "Buy the %s" % on
 			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
 		"towers":
 			need = int(g.get("count", 1))
@@ -431,8 +433,8 @@ func stat_cap(id: String) -> int:
 	return cap
 
 
-## The highest bow level now: bow_cap_by_bench_level at the Bow Bench's level (Phase F: 5 levels, 4/6/8/9/10);
-## 12 once the Burrows are open and the bench allows 10.
+## The highest bow level now: bow_cap_by_bench_level at the Bow Shop's level (station "bench"; Phase F: 5 levels,
+## 4/6/8/9/10); 12 once the Burrows are open and the shop allows 10.
 func bow_cap() -> int:
 	var caps: Array = b["bow_cap_by_bench_level"]
 	var cap := int(caps[clampi(station_level("bench"), 0, caps.size() - 1)])
@@ -476,12 +478,45 @@ func bow_top(bid: String) -> int:
 	return n
 
 
-## A bow's craft price as a cost dictionary (balance.json may give a number of leaves or a dictionary).
+## A bow's price on the Bow Shop as a cost dictionary (balance.json "craft": a number of leaves, or a dictionary of
+## currencies such as {"leaves": 250, "timber": 10}; only real currencies are kept, never 0s).
 func craft_cost(bid: String) -> Dictionary:
 	var c = bow_info(bid).get("craft", 0)
-	if typeof(c) == TYPE_DICTIONARY:
-		return (c as Dictionary).duplicate()
-	return {"leaves": int(c)}
+	if typeof(c) != TYPE_DICTIONARY:
+		return {"leaves": int(c)} if int(c) > 0 else {}
+	var out := {}
+	for k in CURRENCIES:
+		if int((c as Dictionary).get(k, 0)) > 0:
+			out[k] = int(c[k])
+	return out
+
+
+## G3: a bow's Ember fire ({"seconds", "share_per_s"}: the enemy hit burns for seconds, taking share_per_s x the hit's
+## damage each second); {} for a bow without fire.
+func bow_burn(bid: String) -> Dictionary:
+	var f = bow_info(bid).get("burn", {})
+	return (f as Dictionary).duplicate() if typeof(f) == TYPE_DICTIONARY else {}
+
+
+## 22 Nov 2026: the Frost Bow's ice ({"slow", "seconds", "hits_to_freeze", "freeze_s", "boss_freeze_s"}: each hit slows
+## the enemy, the hits_to_freeze-th hit while it is slowed freezes it; enemy.gd chill); {} for a bow without ice.
+func bow_frost(bid: String) -> Dictionary:
+	var f = bow_info(bid).get("frost", {})
+	return (f as Dictionary).duplicate() if typeof(f) == TYPE_DICTIONARY else {}
+
+
+## 22 Nov 2026: a bow kept out of the Bow Shop for now (balance.json "hidden": Thorn Volley, Foxfire). It is not sold and
+## its tile is not shown, but a save that owns it still sees it (Owned / Equipped) and can use it.
+func bow_hidden(bid: String) -> bool:
+	return bool(bow_info(bid).get("hidden", false))
+
+
+## 22 Nov 2026: a bow's shooting effects (balance.json "fx", read by fx.gd: colours, kinds and particle counts); {} if none.
+func bow_fx(bid: String) -> Dictionary:
+	if bid == "" or not (b["bows"] as Dictionary).has(bid):
+		return {}
+	var f = bow_info(bid).get("fx", {})
+	return f if typeof(f) == TYPE_DICTIONARY else {}
 
 
 ## The highest level a station can have now: its level list's size (Target and Bench 5, most others 3), never above the
@@ -516,8 +551,14 @@ func cat_speed() -> float:
 
 
 func cat_range() -> float:
-	return float(b["cat"]["range"]) + float(stat_info("range")["per_level"]) * _lv("range") \
-		+ float(bow_info(Save.bow)["range_bonus"])
+	# a bow's range_bonus may be negative (Ember); never below cat.min_range_m
+	return maxf(float(b["cat"].get("min_range_m", 2.0)), float(b["cat"]["range"]) + float(stat_info("range")["per_level"]) * _lv("range") \
+		+ float(bow_info(Save.bow)["range_bonus"]))
+
+
+## 22 Nov 2026: a bow's draw_mult (default 1.0) multiplies the time a draw and shot take: 1.25 = 25% slower.
+func bow_draw_mult(id: String) -> float:
+	return maxf(0.1, float(bow_info(id).get("draw_mult", 1.0)))
 
 
 func cat_draw() -> float:
@@ -836,7 +877,8 @@ func burrow_fights(id: String) -> int:
 	return (dungeon(burrow_map_id(id)).get("fights", []) as Array).size()
 
 
-## The attachments worn now (the mount's and the pet's, balance.json attachments): Burrows-only help.
+## The attachments worn now (the mount's and the pet's, balance.json attachments): Burrows-only help. G4: the mount's
+## saddle and bags moved to the Saddlery (mount_attachments, below); only the Thunder Shoes are left in the mount slot.
 func attachments_on() -> Array:
 	var out: Array = []
 	var all: Dictionary = b.get("attachments", {}).get("items", {})
@@ -845,3 +887,250 @@ func attachments_on() -> Array:
 		if id != "" and all.has(id) and (Save.attach.get("owned", []) as Array).has(id):
 			out.append(all[id])
 	return out
+
+
+# ---------------------------------------------------------------- G4: the Saddlery (the mount's skills and attachments)
+## The Saddlery's own rules (balance.json saddlery: gap_s, free_stomp, old_attachments, stand_in). The building's price
+## and levels are stations.saddlery, like any station's.
+func saddlery_cfg() -> Dictionary:
+	return b.get("saddlery", {})
+
+
+## The Saddlery's level (0 while it is not built). It caps the level of every skill and attachment.
+func saddlery_level() -> int:
+	return int(Save.stations.get("saddlery", 0))
+
+
+## One shelf of the Saddlery: "skills" (balance.json mount_skills.items: stomp, ram, pounce, bellow) or "attach"
+## (mount_attachments.items: fire_spitter, saddle, saddlebags), in the card's order. Save.saddlery has the same two parts.
+func saddle_items(part: String) -> Dictionary:
+	var blk: Dictionary = b.get("mount_skills" if part == "skills" else "mount_attachments", {})
+	return blk.get("items", {})
+
+
+func saddle_info(part: String, id: String) -> Dictionary:
+	return saddle_items(part).get(id, {})
+
+
+## How far skill or attachment id is learned: 0 = not yet, else its level (1-5).
+func saddle_level(part: String, id: String) -> int:
+	return int((Save.saddlery.get(part, {}) as Dictionary).get(id, 0))
+
+
+func skill_level(id: String) -> int:
+	return saddle_level("skills", id)
+
+
+func attach_level(id: String) -> int:
+	return saddle_level("attach", id)
+
+
+## 22 Nov 2026 (the owner's rule): the mount owns any of its attachments but wears one at a time, or none. The one it
+## wears now: Save.saddlery "worn" when that one is owned, else "".
+func worn_attach() -> String:
+	var id := String(Save.saddlery.get("worn", ""))
+	return id if id != "" and attach_level(id) >= 1 else ""
+
+
+## Attachment id's level when the mount wears it, else 0. Only the worn one acts: the Fire-spitter fires, the Mossweave
+## Saddle's health and the Saddlebags' leaves count (mount_hp_mult, leaf_bonus, mount.gd).
+func worn_level(id: String) -> int:
+	return attach_level(id) if worn_attach() == id else 0
+
+
+## What a save that owns attachments but wears none of them (one from before the one-worn rule) puts on: the highest
+## level it owns; on a tie the first in saddlery.worn_tie_order (the Saddlebags). "" when it owns none.
+func best_owned_attach() -> String:
+	var order: Array = []
+	for id in saddlery_cfg().get("worn_tie_order", []):
+		order.append(String(id))
+	for id in saddle_items("attach"):
+		if not order.has(String(id)):
+			order.append(String(id))
+	var best := ""
+	var best_lv := 0
+	for id in order:
+		var lv := attach_level(String(id))
+		if lv > best_lv:
+			best_lv = lv
+			best = String(id)
+	return best
+
+
+## Its top level (the length of its price list: 5).
+func saddle_top(part: String, id: String) -> int:
+	return (saddle_info(part, id).get("price", []) as Array).size()
+
+
+## What reaching level lv costs (lv 1: learning it), its currencies only (needs_burrows is not money); {} past the top.
+func saddle_price(part: String, id: String, lv: int) -> Dictionary:
+	var prices: Array = saddle_info(part, id).get("price", [])
+	var out := {}
+	if lv < 1 or lv > prices.size():
+		return out
+	var p: Dictionary = prices[lv - 1]
+	for k in CURRENCIES:
+		if int(p.get(k, 0)) > 0:
+			out[k] = int(p[k])
+	return out
+
+
+## Level lv asks for Burrow materials, and is sold only once the Burrows are open (after the missions).
+func saddle_needs_burrows(part: String, id: String, lv: int) -> bool:
+	var prices: Array = saddle_info(part, id).get("price", [])
+	return lv >= 1 and lv <= prices.size() and bool((prices[lv - 1] as Dictionary).get("needs_burrows", false))
+
+
+## Why the next level of id cannot be bought now, money aside ("" when it can): "built" (no Saddlery, or it is in
+## ruins), "max" (at its top), "cap" (the Saddlery's level holds it back), "burrows" (the next level needs the Burrows).
+func saddle_block(part: String, id: String) -> String:
+	if saddlery_level() <= 0 or Save.ruined.has("saddlery"):
+		return "built"
+	var lv := saddle_level(part, id)
+	if lv >= saddle_top(part, id):
+		return "max"
+	if lv + 1 > saddlery_level():
+		return "cap"
+	if saddle_needs_burrows(part, id, lv + 1) and not burrows_open():
+		return "burrows"
+	return ""
+
+
+## base grown by level lv: x (1 + share x (lv - 1)) when share_key is in info, + add x (lv - 1) when add_key is.
+func _grown(info: Dictionary, base_key: String, share_key: String, add_key: String, lv: int) -> float:
+	var v := float(info.get(base_key, 0.0))
+	var n := float(maxi(lv, 1) - 1)
+	if share_key != "" and info.has(share_key):
+		v *= 1.0 + float(info[share_key]) * n
+	if add_key != "" and info.has(add_key):
+		v += float(info[add_key]) * n
+	return v
+
+
+## A skill's damage at level lv (Stomp, Ram, Pounce: +40% a level).
+func skill_damage(id: String, lv: int) -> float:
+	return _grown(saddle_info("skills", id), "damage", "damage_per_level", "", lv)
+
+
+## A skill's stun at level lv, seconds (Pounce 1 s +0.1 a level, Bellow 1.5 s +0.2).
+func skill_stun(id: String, lv: int) -> float:
+	return _grown(saddle_info("skills", id), "stun_s", "", "stun_add_per_level", lv)
+
+
+## Bellow: the extra share of damage the stunned enemies take at level lv (0.2, +0.05 a level).
+func skill_taken(id: String, lv: int) -> float:
+	return _grown(saddle_info("skills", id), "taken", "", "taken_add_per_level", lv)
+
+
+## The Fire-spitter's burn at level lv, damage a second (8, +40% a level).
+func fire_burn_per_s(lv: int) -> float:
+	return _grown(saddle_info("attach", "fire_spitter"), "burn_per_s", "burn_per_level", "", lv)
+
+
+## The Mossweave Saddle: the mount's health x this (1 + 0.15 a level; 1 when it is not worn).
+func mount_hp_mult() -> float:
+	return 1.0 + float(saddle_info("attach", "saddle").get("hp_per_level", 0.0)) * worn_level("saddle")
+
+
+## The Saddlebags: the extra share of leaves kills drop (0.05 a level; 0 when they are not worn).
+func leaf_bonus() -> float:
+	return float(saddle_info("attach", "saddlebags").get("leaves_per_level", 0.0)) * worn_level("saddlebags")
+
+
+var _bag_acc := 0.0                  # G4: the Saddlebags' fractions of a leaf, carried from kill to kill
+
+
+## G4: the leaves a kill drops (n) with the Saddlebags: n x (1 + leaf_bonus()), the fractions added up from kill to kill,
+## so the bonus pays on small kills too. n itself without the bags.
+func saddlebag_leaves(n: int) -> int:
+	var k := leaf_bonus()
+	if n <= 0 or k <= 0.0:
+		return n
+	_bag_acc += float(n) * k
+	var extra := int(floor(_bag_acc + 0.0001))
+	_bag_acc = maxf(0.0, _bag_acc - float(extra))
+	return n + extra
+
+
+## The order the mount tries its ready skills in (balance.json mount_skills.priority, then any not listed).
+func skill_priority() -> Array:
+	var items := saddle_items("skills")
+	var out: Array = []
+	for id in (b.get("mount_skills", {}) as Dictionary).get("priority", []):
+		if items.has(String(id)) and not out.has(String(id)):
+			out.append(String(id))
+	for id in items:
+		if not out.has(String(id)):
+			out.append(String(id))
+	return out
+
+
+## The shortest time between two of the mount's moves (saddlery.gap_s).
+func saddle_gap() -> float:
+	return float(saddlery_cfg().get("gap_s", 0.6))
+
+
+# ---------------------------------------------------------------- 23 Nov 2026: the cat's outfits (the Tailor's Nook)
+## The outfits (balance.json cat_skins), looks only: each is a whole hero model with the CatRanger skeleton and clips.
+## "original" is always owned and the default. Prices are in each outfit's `currency` (today "leaves"); a currency the
+## game cannot pay with yet (not in CURRENCIES: a premium one, later) leaves the outfit unbuyable, never free.
+const CAT_SKIN_DEFAULT := "original"
+
+
+## The outfit ids in balance.json's order (the Tailor's Nook shows them in this order).
+func cat_skin_ids() -> Array:
+	var out: Array = []
+	for k in b.get("cat_skins", {}):
+		if not String(k).begins_with("_"):
+			out.append(String(k))
+	if not out.has(CAT_SKIN_DEFAULT):
+		out.push_front(CAT_SKIN_DEFAULT)
+	return out
+
+
+## Outfit id's entry ({} for an unknown id; the original has a stand-in entry if balance.json lacks it).
+func cat_skin(id: String) -> Dictionary:
+	var all: Dictionary = b.get("cat_skins", {})
+	if all.has(id) and typeof(all[id]) == TYPE_DICTIONARY:
+		return all[id]
+	if id == CAT_SKIN_DEFAULT:
+		return {"name": "Original Ranger", "short": "", "price": 0, "currency": "leaves", "model": ""}
+	return {}
+
+
+func cat_skin_name(id: String) -> String:
+	return String(cat_skin(id).get("name", id))
+
+
+## What outfit id costs: {currency: price} ({} when it is free).
+func cat_skin_cost(id: String) -> Dictionary:
+	var info := cat_skin(id)
+	var n := int(info.get("price", 0))
+	if n <= 0:
+		return {}
+	return {String(info.get("currency", "leaves")): n}
+
+
+## An outfit can be sold when its model is available and the game can take its currency.
+func cat_skin_buyable(id: String) -> bool:
+	return CURRENCIES.has(String(cat_skin(id).get("currency", "leaves"))) \
+		and (id == CAT_SKIN_DEFAULT or cat_skin_model(id) != "")
+
+
+func cat_skin_owned(id: String) -> bool:
+	return id == CAT_SKIN_DEFAULT or Save.cat_skins_owned.has(id)
+
+
+## Outfit id's hero model (a res:// .glb) when its file exists, else "" (the original look is used).
+func cat_skin_model(id: String) -> String:
+	if id == CAT_SKIN_DEFAULT:
+		return ""
+	var path := String(cat_skin(id).get("model", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return ""
+	return path
+
+
+## Outfit id's tile picture (res://assets/ui/cat_skins/<id>.png); the tile uses it only when the file exists.
+static func cat_skin_picture(id: String) -> String:
+	return "res://assets/ui/cat_skins/%s.png" % id

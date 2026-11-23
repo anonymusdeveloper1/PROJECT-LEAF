@@ -30,6 +30,11 @@ extends Node
 ##                   weight, Thornlings come while the tanks wait, a tank comes once one falls; the Last Stand with too
 ##                   little timber: rebuild_cost() is leaves (the banner says so) and the fire is rebuilt for them; the
 ##                   wave held pays its timber (x the pay scale)
+##   _fall_gain      (21 Nov 2026) a camp fall takes raid.leaves_share of the leaves gained in that chapter only: 1000
+##                   leaves saved before mission 1 are safe; the chapter's gain (a pickup, wave pay; a spend does not
+##                   lower it) is kept through a save, a reload and the run resumed; the banner shows the real amount;
+##                   the next try counts from 0; a chapter break's chest and the break's own leaves are not the next
+##                   chapter's; never more than the cat holds
 ##   _live_squad     (G1b) mission 9 for real, its queue a Choir: it comes out all at once near one spawn point; on the
 ##                   march its light members keep within about 3 m of their spot by the leader and never run ahead of
 ##                   it, its support stays behind the leader; then the leader falls and the rest carry on alone
@@ -56,6 +61,7 @@ func run() -> bool:
 	await _gate()
 	await _live_wave()
 	await _live_limits()
+	await _fall_gain()
 	await _live_squad()
 	await _first_win()
 	await _gloom()
@@ -631,7 +637,7 @@ func _gate() -> void:
 	Save.missions_done = []
 	Save.mission_run = {}
 	f.skip_gate = false
-	f.start_mission(5)                                      # mission 6: not the next one, and it needs a bigger home
+	f.start_mission(5)                                      # mission 6: not the next one (no mission waits for the home since 21 Nov 2026)
 	var started: bool = f.active
 	if started:
 		t._reset_fight()
@@ -777,6 +783,84 @@ func _live_limits() -> void:
 	_x("mission 9: the wave held pays %d timber and the toast says so" % want_t,
 		cleared and Save.timber == tim0 + want_t and int(f.last_pay.get("timber", 0)) == want_t and toast.contains("+%d timber" % want_t),
 		{"cleared": cleared, "timber": [tim0, Save.timber], "pay": f.last_pay, "toast": toast})
+	t._reset_fight()
+	Save.mission_run = {}
+	Save.save_game()
+	await t._wait(0.3)
+
+
+# ---------------------------------------------------------------- a camp fall takes only the chapter's gain
+## Mission 1 for real, nothing spawning (the fight's physics off: only what the test does). See the header (_fall_gain).
+func _fall_gain() -> void:
+	var f = main.fight
+	var share := float(Data.b["raid"]["leaves_share"])
+	Save.missions_done = []
+	Save.mission_run = {}
+	Save.fire_ruined = false
+	Save.raids["pending"] = false
+	for p in get_tree().get_nodes_in_group("pickups"):     # leaves left on the ground by the tests before: a fall
+		p.remove_from_group("pickups")                      # sweeps them home, which would muddy the sums
+		p.queue_free()
+	Save.leaves = 1000
+	f.mission = -1
+	f.start_mission(0)
+	f.set_physics_process(false)
+	if not _x("fall: mission 1 starts with 1000 leaves saved and nothing gained yet", f.active and f.chapter_gain() == 0 and Save.leaves == 1000,
+			{"run": Save.mission_run, "leaves": Save.leaves}):
+		f.set_physics_process(true)
+		t._reset_fight()
+		return
+	main.collect_leaves(120, Vector3(0, 0, 2))               # a pickup
+	Save.add_leaves(80)                                     # wave pay
+	Data.pay({"leaves": 150})                               # spent in the chapter: it was still gained
+	_x("fall: the chapter's gain counts what came in (200), a spend does not lower it", f.chapter_gain() == 200 and Save.leaves == 1050,
+		{"gain": f.chapter_gain(), "leaves": Save.leaves})
+	# a save, the app closed and opened again, the run resumed from the signpost
+	Save.save_game()
+	t._reset_fight()
+	Save.load_game()
+	main.defences.relink_saved()
+	_x("fall: the gain is in the run's save (read back: 200)", int(Save.mission_run.get("gain", -1)) == 200 and Save.leaves == 1050 and not Save.count_gain,
+		{"run": Save.mission_run, "leaves": Save.leaves})
+	f.start_mission(0)
+	f.set_physics_process(false)
+	_x("fall: the run resumed at its chapter keeps it", f.active and f.chapter() == 0 and f.chapter_gain() == 200, {"gain": f.chapter_gain(), "run": Save.mission_run})
+	Save.add_leaves(100)
+	var before := Save.leaves
+	var want := mini(before, int(floor(300 * share)))
+	f.camp_falls()
+	var sub := String(main.hud._banner_s.text)
+	_x("fall: the Gloom takes %d%% of the chapter's 300 leaves (%d), never the 1000 saved before; the banner says so" % [int(round(share * 100.0)), want],
+		Save.leaves == before - want and int(f.last_fall_lost) == want and sub.contains("-%d leaves" % want),
+		{"leaves": [before, Save.leaves], "lost": f.last_fall_lost, "banner": sub})
+	_x("fall: the chapter's next try counts from 0", int(Save.mission_run.get("gain", -1)) == 0 and int(Save.mission_run.get("chapter", -1)) == 0
+		and not Save.count_gain, {"run": Save.mission_run})
+	# the next try, then a chapter break: its chest and the break's own leaves are not the next chapter's
+	Save.fire_ruined = false
+	main.world.set_fire_out(false)
+	main.stations.set_fire_out(false)
+	f.start_mission(0)
+	f.set_physics_process(false)
+	Save.add_leaves(50)
+	f.wave = f.chapter_waves()
+	f.in_wave = false
+	f._chapter_done(0)
+	var g_break: int = f.chapter_gain()
+	Save.add_leaves(40)                                     # a sale in the break
+	_x("fall: a chapter break saves the next chapter with nothing gained, and the break's leaves are not counted",
+		f.on_break and g_break == 0 and f.chapter_gain() == 0 and int(Save.mission_run.get("chapter", -1)) == 1, {"gain": [g_break, f.chapter_gain()], "run": Save.mission_run})
+	f.next_phase_now()
+	Save.add_leaves(60)
+	_x("fall: chapter 2 counts from its first wave (60)", f.in_wave and f.chapter() == 1 and f.chapter_gain() == 60, {"gain": f.chapter_gain(), "wave": f.wave})
+	Data.pay({"leaves": Save.leaves - 10})                  # spent down to 10 leaves
+	var want2 := mini(10, int(floor(60 * share)))
+	f.camp_falls()
+	_x("fall: never more than the cat holds (%d of the %d due)" % [want2, int(floor(60 * share))], Save.leaves == 10 - want2 and int(f.last_fall_lost) == want2,
+		{"leaves": Save.leaves, "lost": f.last_fall_lost})
+	Save.fire_ruined = false
+	main.world.set_fire_out(false)
+	main.stations.set_fire_out(false)
+	f.set_physics_process(true)
 	t._reset_fight()
 	Save.mission_run = {}
 	Save.save_game()

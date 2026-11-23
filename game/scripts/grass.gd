@@ -56,6 +56,8 @@ func build(world) -> void:
 	for id in ["stone", "garden", "fishing"]:                    # Phase C: a dict of its own, never the VILLAGE one
 		if int(Save.stations.get(id, 0)) > 0:
 			keep_out.append([world.station_pos(id), {"stone": 1.0, "garden": 1.5, "fishing": 0.8}[id]])
+	if int(Save.stations.get("tailor", 0)) > 0:                   # 23 Nov 2026: the Tailor's Nook
+		keep_out.append([world.station_pos("tailor"), 1.4])
 	for bd in Data.burrow_list():                                  # Phase E: each Burrow's hollow and its ring, in their own list
 		var en: Dictionary = bd["entrance"]
 		keep_out.append([Vector3(float(en["pos"][0]), 0, float(en["pos"][2])), float(en.get("grass_keep_out", 2.4))])

@@ -1,6 +1,10 @@
-# Project LEAF: where we are (20 November 2026, after Phase E, the camp layout and HUD, the Gloomwood, the night road, Tap to open, Phase F, Phase G1, and G1b and G2)
+# Project LEAF: where we are (23 November 2026)
 
 **The full description of the game as it is now: `docs/GAME_GUIDE.md`.**
+
+**23 Nov 2026.** Committed on `feature/g3-g4-bows-saddlery-outfits` and merged into `development`.
+The APK for the full update was installed on the owner's phone at 01:52. The before and after saves match.
+See `docs/CHANGES.md` for the complete 21–23 Nov entry.
 
 Read this first when work starts again. The full design is `GAME_PLAN.md` section 0 (Draft 7). Step-by-step build
 notes are in `docs/PHASE_A_PROGRESS.md`. Each phase has its spec in `docs/PHASE_C_SPEC.md`, `PHASE_D_SPEC.md` and
@@ -10,8 +14,9 @@ notes are in `docs/PHASE_A_PROGRESS.md`. Each phase has its spec in `docs/PHASE_
 
 | Part | What it is |
 |---|---|
+| Tailor's Nook and cat outfits (23 Nov 2026) | Build the outfit shop at Hearthtree 3 for 1,500 leaves and 40 timber. Original Ranger is free, Dusk Ranger costs 3,000 leaves and Nightfall Ranger costs 6,000. Outfits are looks only. Each new cloak swings on four cloth bones. Codex review fixes and the shop are covered by `--tailor` (63 passes) and `--layout` (132). |
 | Phase A | Missions, enemies that attack buildings, the campfire Last Stand and rebuild, the camp falling, barricades and tower spots |
-| Low-end phones | Low / Medium / High graphics, picked by the game and changeable on the Shop card; the forest culled in cells; one shadow map; a faster cloth fit; the OpenGL fallback; `--perf` benchmark (`docs/PERFORMANCE.md`) |
+| Low-end phones | Low / Medium / High graphics, picked by the game and changeable on the Shop card; the forest culled in cells; one shadow map; a faster cloth fit; `--perf` benchmark (`docs/PERFORMANCE.md`) |
 | A2 | Missions of 15 waves (missions 1–5) or 20 waves (6–15) in chapters of 5: elite waves, a boss at the end, 15 s breathers, chapter breaks that save ("Go on" / "Give up"), wave pay and chapter chests, a flee rule so a wave can never hang |
 | A3 | Health bars over the cat and the mount; the mount takes hits while ridden |
 | B | Home levels 4–6 with new campfires (hearth, bonfire, crystal brazier) and bigger tree homes; colour skins for every mount and pet ("Colours" row) |
@@ -19,19 +24,24 @@ notes are in `docs/PHASE_A_PROGRESS.md`. Each phase has its spec in `docs/PHASE_
 | E | The Burrows. **Built** 18 November 2026, steps E0-E10 on the PC; notes in `docs/PHASE_A_PROGRESS.md`, "Phase E". The Old Hollow south of the camp (sealed from the first mission won, open after the last), free and unlimited entry (a Hollow key only adds a boon), traps, the Leaf Dash (a flick, Burrows only), the new monsters on stand-ins, the satchel (a knock-out keeps half), boons, saving and resuming a run, the mount and the pet going down with the cat (Feed and a Snack button), the Moss Warden freed from its Gloom seal behind the first boss, mastery 11-12, the Foxfire Bow, level-5 defences, the Warden's level 4 (leaves), home levels 7-8 (Burrow materials), attachments for the mount and the pet, and a debug endgame start. Its room runs (den, forks, doors, room templates) were **replaced the same evening** by the row below |
 | Burrows as paths | **Built** 18 November 2026, evening, from the user's word ("a path to the boss, like World of Warcraft"): `docs/DUNGEON_SPEC.md`; notes in `docs/PHASE_A_PROGRESS.md`, "The Gloomwood (dungeon rework, 18 Nov 2026)". The Old Hollow leads into **the Gloomwood**, one continuous wood at night built from `game/data/dungeons/old_hollow.json` (`dungeon_map.gd`, `burrow_run.gd`): a 144 m path from the way in past nine fights (six with HUD pips: the sleeping camp, the burrow holes, the Glowcap clearing, the bramble bend, the bridge with its moths and elite, the old oak; plus three ambushes), the nook's Gloom-bound chest, the rolling logs and their chest, the Moonwell (spring, boon, root lift home) and the arena gate, to Mossback (about 9,900 health at level 1, `hp_mult` 2.2; enrages below 35%; up to 6 adds) in a stone-circle arena whose roots close behind the cat, then the chest, the Warden's seal on the first clear and the lift home. Replays are levels 1, 2, 3... (other monster pools, bigger packs, snappers from 2, elites from level 1 at 30%, the boss Gloomtouched from 4). Checkpoints at the way in, the Moonwell and the gate ("Go back in" starts there). Night look that needs no lights (glowing faces, halos and pools, fireflies; three lantern lights on Medium and High). Reworked on 19 November as a night road (see the next row). A map can end in a treasure instead of a boss. Tests in `game/scripts/autotest_e.gd` (`--dungeon` and others, `game/README.md`) |
 | Night road and harder | **Built** 19 November 2026 (notes in `docs/PHASE_A_PROGRESS.md`, "Night road and harder"). The Gloomwood's floor is one night plane (`night_floor.gd`: flagstones, cobbles, planks, puddles, torches, lanterns; a stone-circle arena with a carved sigil, rune stones and giant swords). Much harder: strength 3.0 at level 1, +1 damage, bigger packs, elites from level 1, three ambushes, `max_alive` 8 / 12 / 12 (Low / Medium / High), the Moonwell heals 40% of the cat's health, pay up 25%. Raids do not come while the cat is in the Gloomwood: the meter and warnings wait. |
-| Phase F | **Built** 19 November 2026 (plan: `docs/PHASE_F_PLAN.md`; described in `docs/GAME_GUIDE.md`). Tested on the PC with `--smoke` and the three new modes; **NOT yet on the phone**. Home goals for homes 2-8 (the home grows only when every goal is met and the price is paid; the home's card has a "Grow the home" section with Go / Show buttons and the badge shows "!"), mission gates by home level, **no replays**, much bigger win rewards, the Training Target and Bow Bench at 5 levels (caps 4/6/8/9/10), stat and bow prices +30%, Range +0.2 m a level. Missions: roads in patterns (surround, pincer, rush; mission 1 teaches them; the top bar says where the next wave comes from), bursts, no easy waves, real last chapters for missions 6, 13 and 15, an easier mission 2 and softer boars with a daze after a missed charge. Reasons to move: Pitchers and Frogs shoot from beyond the cat's reach, the Golden Grub, the Gloom Totem, and pay bonuses for a quick clear, an intact wave and going on early. The Gloom fades a step per mission won. Tests `--homegoals`, `--fightf`, `--enemyf`. Older tests that start a won mission or one past the gate need `fight.skip_gate`. |
-| Phase G1 | **Built** 20 Nov 2026 (the fixes, step G1 of `docs/PHASE_G_PLAN.md`; described in `docs/GAME_GUIDE.md`, part 11). Tested on the PC with `--smoke`, `--fightf` and `--homegoals`; the APK goes to the phone next. Waves hold many enemies but few on the field (10, 12 or 14 at once; tanks 1, 2 or 3); a held wave pays timber; chapter chests pay 2, 4, 4 and 6 timber; the Market Stall buys and sells 5 timber; the campfire can always be lit again. |
-| G1b and G2 (New, 20 Nov 2026) | **Built** 20 Nov 2026 (`docs/PHASE_G_PLAN.md`; described in `docs/GAME_GUIDE.md`, "Phase G1b and G2"). **G1b:** waves are squads (12 squads, roles, the squad rules, squads move as one road group); mission 1's first win gives 60 leaves. **G2, the Hearthtree:** the tree home and its campfire are called the Hearthtree; the Market (Thistle free) and the Mushroom Cottage (Sprig) come at Hearthtree level 2; barricades are rows of 3 on the 12 road spots (rows 2, 3, 5, 7, 9, 12 by home level), each piece breaks on its own and repairs by tap; tower repair; the Wishing Well works by itself; shop cards are tiles in a grid with 32 code-drawn icons (`ui_icons.gd`). Tested on the PC: `--smoke` OK, `--fightf` 55 pass, `--homegoals` 45, `--rows` 46, `--campg` 45, `--enemyf` 22, `--cards` 55; no failures. The APK was built 15:43; it is NOT on the phone yet. |
+| Phase F | **Built** 19 November 2026 (plan: `docs/PHASE_F_PLAN.md`; described in `docs/GAME_GUIDE.md`). Tested on the PC with `--smoke` and the three new modes. Home goals for homes 2-8 (the home grows only when every goal is met and the price is paid; the home's card has a "Grow the home" section with Go / Show buttons and the badge shows "!"), mission gates by home level (**removed 21 Nov 2026**: no mission waits for the Hearthtree any more), **no replays**, much bigger win rewards, the Training Target and Bow Bench at 5 levels (caps 4/6/8/9/10), stat and bow prices +30%, Range +0.2 m a level. Missions: roads in patterns (surround, pincer, rush; mission 1 teaches them; the top bar says where the next wave comes from), bursts, no easy waves, real last chapters for missions 6, 13 and 15, an easier mission 2 and softer boars with a daze after a missed charge. Reasons to move: Pitchers and Frogs shoot from beyond the cat's reach, the Golden Grub, the Gloom Totem, and pay bonuses for a quick clear, an intact wave and going on early. The Gloom fades a step per mission won. Tests `--homegoals`, `--fightf`, `--enemyf`. Older tests that start a won mission need `fight.skip_gate`. |
+| Phase G1 | **Built** 20 Nov 2026 (the fixes, step G1 of `docs/PHASE_G_PLAN.md`; described in `docs/GAME_GUIDE.md`, part 11). Tested on the PC with `--smoke`, `--fightf` and `--homegoals`. Waves hold many enemies but few on the field (10, 12 or 14 at once; tanks 1, 2 or 3); a held wave pays timber; chapter chests pay 2, 4, 4 and 6 timber; the Market Stall buys and sells 5 timber; the campfire can always be lit again. |
+| G1b and G2 (New, 20 Nov 2026) | **Built** 20 Nov 2026 (`docs/PHASE_G_PLAN.md`; described in `docs/GAME_GUIDE.md`, "Phase G1b and G2"). **G1b:** waves are squads (12 squads, roles, the squad rules, squads move as one road group); mission 1's first win gives 60 leaves. **G2, the Hearthtree:** the tree home and its campfire are called the Hearthtree; the Market (Thistle free) and the Mushroom Cottage (Sprig) come at Hearthtree level 2; barricades are rows of 3 on the 12 road spots (see Barricade placement below), each piece breaks on its own and repairs by tap; tower repair; the Wishing Well works by itself; shop cards are tiles in a grid with 32 code-drawn icons (`ui_icons.gd`). Tested on the PC: `--smoke` OK, `--fightf` 55 pass, `--homegoals` 45, `--rows` 46, `--campg` 45, `--enemyf` 22, `--cards` 55; no failures. |
+| G3 (21–22 Nov 2026) | **Built** 21 Nov, retuned 22 Nov. The Bow Bench is the **Bow Shop**. Four bows: Twig (the original, free), Sunwood (Bow Shop 2), Ember (3) and Frost (5). Thorn Volley and Foxfire are hidden. Claude made the bow and arrow models in Blender with the owner's approval. Buy, upgrade and equip on the shop card. Shots have their own effects. `--bowshop` passed 61 checks. See `docs/GAME_GUIDE.md`, parts 3 and 11. |
+| G4 (21–22 Nov 2026) | **Built** 21 Nov, updated 22 Nov. The Saddlery opens after mission 8 at Hearthtree 2. Learn Stomp, Ram, Pounce and Bellow. Wear one of Fire-spitter, Mossweave Saddle and Saddlebags at a time. Claude made the gear and six new mount animations in Blender. The cat moves in the saddle, carries her bow upright and shoots ahead. The mount takes the hits and has an amber health bar. `--saddlery` passed 52 checks. Backup `D:\DevCache\backup\pre_g4_20261121`. |
+| Loop fixes (New, 22 Nov 2026, loop fixes) | **Built** 22 Nov 2026 (described in `docs/GAME_GUIDE.md`, part 11, "Loop fixes (22 Nov 2026)"). Five fixes from a loop check on 21 Nov: a camp fall takes 30% of the leaves gained in the lost chapter only; Hearthtree 2 to 5 need one mission earlier (missions 1, 5, 9, 12); the Hearthtree's repair is capped (10%, at most 900 leaves and 30 timber); a knocked-down tower's repair costs what "Mend the defences" costs for it; the Saddlery needs Hearthtree level 2. Tested on the PC: `--smoke` OK, `--homegoals` 46, `--rows` 48, `--campg` 47, `--saddlery` 46, `--fightf` 64, `--laststand` 1, `--raidloss` 12 pass and 2 old failures. Backup `D:\DevCache\backup\pre_loopfix_20261121`. |
+| Bow and Hearthtree balance (New, 22 Nov 2026) | **Built** 22 Nov 2026 (described in `docs/GAME_GUIDE.md`, part 3 and part 11, "Bow and Hearthtree balance (22 Nov 2026)"). Timber prices changed at Hearthtree 3 and 5–8, and level 5 costs more leaves. Both prices now rise at every level. The Bow Shop sells four bows: Twig (free), Sunwood Longbow (Bow Shop 2), Ember Bow (Bow Shop 3), Frost Bow (Bow Shop 5), each with a pro and a con; Thorn Volley and Foxfire are hidden. Per-bow `draw_mult` and a 2.0 m range floor (`cat.min_range_m`). The Frost goal moved to Hearthtree 6. Tested on the PC: `--bowshop` 61 pass, `--homegoals` 48 pass, `--smoke` OK. |
+| Barricades and the Well (22 Nov 2026) | Repair rows even during a wave. The price depends on the missing health of each piece. The Wishing Well mends damaged things back to full (3%, 6%, 10% a second between waves and 0.5%, 1%, 2% in waves). Pads open by Hearthtree level and the card explains when Build is off. `--campg` passed 49 checks. |
+| Barricade placement (22 Nov 2026) | After mission 1, gates open at Hearthtree 1, middle pads at 3, right far pads at 4 and left far pads at 5. Fernwood and Bandit Thicket each have three evenly spaced pads. Each left middle pad sits near a bend. Built rows keep their saved pads and move with the roads when the Hearthtree grows. `--rows` passed 94 checks. |
+| Cat bow carry (22 Nov 2026) | Updated on-foot clips in `CatRanger.glb`. `bow_face.gd` rolls the paw in place to keep the bowstring facing the cat's chest. |
 | Tap to open | **Built** 19 November 2026 (notes in `docs/PHASE_A_PROGRESS.md`, "Tap to open"). No ground rings (never walk onto a ring to open a card): a leaf-pin badge with an icon floats over each usable thing (small far away, big and glowing in reach, a rim glow on the thing, a "!" when something is new). A tap on it, or on the thing, opens its card; out of reach the cat walks there first. Cards are dialogs in the middle of the screen with an X; a tap outside or the back button closes them. Attack arrows at the screen's edge (during waves, raids and the Gloomwood) show where foes off the screen come from. Tests `--taps`, `--arrows`; `--layout` and `--hudcheck` tap. |
 | Layout + HUD | **Built** 18 November 2026 on the PC, from the user's phone play (notes in `docs/PHASE_A_PROGRESS.md`, "Camp layout and HUD"). The camp round the campfire: open ground round the fire and straight south of it, the home beside it, the Training Target and Bow Bench east of the fire, the Mushroom Cottage and Market Stall south-east, each on its own path, the Wishing Well on the lake's near shore (the lake beside the camp, not in it); nothing tall stands just south of where the cat walks. The HUD keeps the middle of the screen for the cat: one slim top bar (riches, the dish, the fight's bar and status; the phone's safe area kept), the boss bar, banners and toasts just under it, tips and the hint just above the bottom buttons, cards (docked sheets then; centred dialogs with an X since Tap to open), smaller and quicker pickup numbers. Tests `--layout`, `--layoutsave=1/2`, `--hudcheck` (`game/scripts/autotest_layout.gd`). |
 | D | The Gloom Raids after every mission is won. **Built** 18 November 2026, steps D1–D9 and D11 on the PC; notes are in `docs/PHASE_A_PROGRESS.md`, "Phase D". It covers: the meter (fills only while playing); the Watch on the signpost; four raid kinds with a 30–60 s warning; the Gloom Herald (the Crow Drummer at 1.25x until its model comes) and the rout; shards and what they buy (Shardstone level 4, Lookout, Tracker, Gloomlit, Shardfire, selling to Bramble); wear, Patch, "Mend all"; nothing happens while the game is closed. |
 
-**The phone (19 November 2026):** the latest APK (19 Nov 2026, 09:44) holds all of this: the Gloomwood as a night road,
-much harder, Tap to open with the attack arrows, the home at its fixed spot and the moved lake. A copy is on the
-owner's Desktop as `ProjectLEAF_2026-11-19.apk`. It was NOT installed by adb this time, because the phone was not
-connected. The phone runs the owner's real save, with the endgame test save switched off. (The phone before that had
-the camp layout and HUD build of 18 Nov, 20:02; the save was copied to
-`D:\DevCache\backup\phone_save_20261118_before_layout.json` first.)
+**Earlier phone builds.** The 19 Nov 2026, 09:44 APK included the Gloomwood night road, Tap to open, attack
+arrows, the fixed home spot and the moved lake. That APK was copied to the owner's Desktop as
+`ProjectLEAF_2026-11-19.apk` while the phone was disconnected. The camp layout build of 18 Nov, 20:02 had
+already been installed after backing up the save to `D:\DevCache\backup\phone_save_20261118_before_layout.json`.
 
 **19 November 2026, from the user's phone play:**
 - The home stands in **one spot at every level**, `world.HOME_SPOT` (-4.6, 0, 0.25): west of the fire, with open ground
@@ -46,7 +56,7 @@ the camp layout and HUD build of 18 Nov, 20:02; the save was copied to
 
 ## The Burrows (Phase E and the Gloomwood): what is left
 
-- **The user plays the Gloomwood on the phone** (the 19 Nov APK has it, to be installed): is the path long enough, are
+- **The user plays the Gloomwood on the phone**: is the path long enough, are
   the fights and Mossback (about 9,900 health) right at level 1, does the night read on the S24's screen? To try it
   without winning 15 missions, use the debug endgame start (below).
 - **Rough spots still open:** the log-trap warning shows as a flat orange bar; some dark road patches look like holes;
@@ -74,22 +84,36 @@ the camp layout and HUD build of 18 Nov, 20:02; the save was copied to
 
 ## Next
 
+- **G5:** play the 23 Nov APK on the phone and tune the prices, fights and Well by play.
+- **Open question:** buildings never fade, so the cat can be hidden behind them, including behind the Tailor's Nook.
+- **Thistle's Bellow:** the riding clearance fix reduced overlap. The last PC sweep still measured about 7 cm of
+  overlap during Bellow. A smaller head throw in the clip is still open.
+- **Later:** earning mount skills in dungeons is an idea. Paid outfits using premium currency and two or three
+  more mission bosses are also for later.
+
 **Everything done on 19–20 Nov 2026, and what is left:** `docs/SESSION_LOG_2026-11-19_20.md`.
 
 - **Phase G (20 Nov 2026): the plan is AGREED** (`docs/PHASE_G_PLAN.md`, version 3). Build order:
   - G1: **built 20 Nov 2026**. The fixes: no timber to relight the ashes, timber each wave and to buy, wave size and tank limits. On the phone since 20 Nov (14:2x).
   - G1b: **built 20 Nov 2026**. Structured waves (squads). Mission 1's first win gives 60 leaves.
   - G2: **built 20 Nov 2026**. The Hearthtree; the Market (Thistle free) and the Cottage (Sprig) at level 2; barricade rows; tower repair; the automatic Well; shop-style cards.
-  - G3: the Bow Shop, the Ember Bow, and 5 bow and arrow models by Claude.
-  - G4: the Saddlery. 4 skills and 3 attachments, earned only, all combinable.
-  - G5: tuning.
+  - G3: **built 21 Nov 2026**. The Bow Shop's final four-bow lineup was set on 22 Nov.
+  - G4: **built 21 Nov 2026**. The Saddlery has four skills and three attachments. One attachment is worn at a time.
+  - G5: tuning by the owner's play. This is next.
 
-  The owner's phone save is soft-locked at mission 9 until G1 is on the phone.
+  The 20 Nov G1 build cleared the earlier mission 9 soft-lock by letting the cat relight the fire for 40 leaves.
+  That install's backup was `D:\DevCache\backup\phone_save_20261120_before_g1.json`.
 
-0. **Built 20 Nov 2026: G1b and G2, tested on the PC.** The APK waits for the phone, then the owner plays. After that, G3 (the Bow Shop and new bows).
-   - The G1b and G2 APK was built at 15:43 and is not on the phone yet. Before it is installed, the phone's save is backed up to `D:\DevCache\backup\phone_save_20261120_before_g2.json`.
-   - On the phone now: Phase F plus G1 (20 Nov 2026, 14:2x). The save was backed up first to `D:\DevCache\backup\phone_save_20261120_before_g1.json`: home 3, 8 missions won, the campfire in ashes, 2,129 leaves, 1 timber. That was the soft-lock; G1 lets it relight for 40 leaves.
-   - An old endgame save keeps its old levels until `--endgame --fresh`.
+  **21 Nov 2026, from the owner's play:** a second soft-lock. Mission 11 needed Hearthtree level 4, the owner (mission
+  10 won, about 8,000 leaves) could not afford it, and without replays fighting was the only way to earn leaves. Fixed
+  on the PC: every mission's `needs_home` is 1 in `balance.json`, so missions never wait for the Hearthtree.
+  `--homegoals` 44 pass, `--smoke` OK. **On the phone since 21 Nov 2026, 21:29** (the save was backed up first to
+  `D:\DevCache\backup\phone_save_20261121_before_nogate\`: Hearthtree 3, 7,462 leaves, 96 timber, 10 missions won;
+  unchanged after the install).
+
+  Phase G1b and G2 were built on 20 Nov. The 23 Nov APK includes them and the later loop fixes.
+  An old endgame save keeps its old levels until `--endgame --fresh`.
+
 1. To try the raids and the Burrows without winning 15 missions: put a line `--endgame` in the app's
    `files/test_args.txt` (debug builds only; a separate save, see below).
 2. The Meshy models for the Burrows creatures when the user makes them, then a balance pass by play; later dungeons
@@ -108,7 +132,9 @@ the camp layout and HUD build of 18 Nov, 20:02; the save was copied to
 
 ## Waiting on the user (Meshy models)
 
-- **New Phase F models, made by the owner in Meshy** (the owner's rule: Claude never models).
+- **New (21 Nov 2026, G4): the Saddlery building**, made by the owner in Meshy. Until it comes, the Bow Bench model is
+  used, tinted brown. Claude's Fire-spitter, Mossweave Saddle and Saddlebags models are already in the game.
+- **New Phase F models, made by the owner in Meshy** (see `CLAUDE.md` for the modelling and repair rules).
   - Until they come, the game uses stand-ins:
     - the Golden Grub: a small gold mole (its concept image is `concepts/enemies5/01_golden_grub.png`);
     - the Gloom Totem: Gloom props;
@@ -171,6 +197,8 @@ Concept images are made and were sent; the game uses stand-ins until the models 
     `--burrowsave`, `--hollow`, `--dash`, `--traps`, `--burrowfoes`, `--topup`, `--burrowhooks` (in
     `game/scripts/autotest_e.gd`; see `game/README.md`). Phase E's room modes are gone with the rooms.
   - New (20 Nov 2026, G1b and G2): `--rows`, `--campg`, `--cards` (in `game/scripts/autotest_g2_*.gd`; `--cards` at 480x1040 with `--safe-top=73 --safe-bottom=42`); `--fightf` now checks squads.
+  - G3, G4 and outfits: `--bowshop`, `--saddlery` and `--tailor` (see `docs/GAME_GUIDE.md`, Test modes).
+  - Known old results: `--topup` 8 failures and `--raidloss` 2 failures (see `docs/CHANGES.md`).
   - the layout and the HUD: `--layout`, `--layoutsave=1/2`, `--hudcheck` (in `game/scripts/autotest_layout.gd`); run
     them at 540x960 and 540x1170; `--safe-top=N --safe-bottom=N` (HUD pixels) fake the phone's bars
   - **If the PC's screen is off or asleep, add `--disable-vsync` before `--`**: otherwise Godot runs at about 4 frames a
@@ -181,12 +209,28 @@ Concept images are made and were sent; the game uses stand-ins until the models 
   "Endgame test save". `--endgame --fresh` starts it over.
 - APK: run from inside `game\` (the output path is relative to the project, so the APK lands in
   `game\build\ProjectLEAF.apk`): `--headless --path . --export-debug "Android" build/ProjectLEAF.apk`. Then
-  `adb -s RFCX2035YHT install -r game\build\ProjectLEAF.apk`. adb is not on PATH: it is
+  `adb -s RFCX2035YHT install -r game\build\ProjectLEAF.apk`. adb is not on PATH: the Android SDK puts it in
   `C:\Users\marti\AppData\Local\Android\Sdk\platform-tools\adb.exe`. The adb daemon often restarts after an export, so
   run `adb wait-for-device` first.
+  - **Set up again 21 Nov 2026** (after the Windows reinstall): the SDK (build-tools 36.0.0), Android Studio's Java,
+    the Godot 4.7.2 export templates and the Samsung USB Driver 1.9.5.0. The local `tools/build_apk.ps1` fills blank
+    Java and SDK paths in Godot's settings and uses environment variables for the existing debug keystore.
+    With `-Install`, it backs up the phone's save using ADB `run-as`, installs, and compares the save hashes.
+    Routine ADB stderr is allowed. The 23 Nov backup is `D:\DevCache\backup\phone_save_20261123_0152`.
 - Phone tests: put arguments one per line in the app's `files/test_args.txt` (debug builds only), via `run-as`.
-- Blender 5.2 headless only: `D:\Blender\blender.exe -b`. Never use the user's open Blender or port 9876.
+- Blender 5.3 (`D:\Blender` points to `C:\Program Files\Blender Foundation\Blender 5.3`): headless
+  (`D:\Blender\blender.exe -b`), or live in the Blender that `tools/start_blender_mcp.ps1` opens, through the MCP bridge
+  on port 9876 (`py -3.15-32 tools/blender_mcp.py` runs Blender scripts there). Leave the owner's open Blender alone.
+  Agents working side by side use headless Blender (`CLAUDE.md`).
+- Godot MCP (21 Nov 2026): local server `godot` in `.mcp.json`, from `tools/mcp/`, runs against Godot 4.7.2.
+- Python (21 Nov 2026): only a 32-bit Python 3.15 through `py`, without numpy or Pillow. Blender's own Python has numpy.
+- Git (21 Nov 2026): since the Windows reinstall, git refuses this folder ("dubious ownership"), because the folder's
+  owner is the old Windows account. A one-off `git -c "safe.directory=D:/Projects/Project LEAF" <command>` works. The
+  lasting fix, `git config --global --add safe.directory "D:/Projects/Project LEAF"`, is the owner's call (not done).
 - Concept images: `tools/gen_concepts.ps1` (Codex CLI) with the Cat Ranger concept sheet as the style reference.
+  Codex CLI (21 Nov 2026): not on PATH; it comes with the Codex desktop app (Store package `OpenAI.Codex`,
+  `app\resources\codex.exe`, codex-cli 0.171, signed in with ChatGPT). The script finds it by itself. Codex also
+  reviewed this update and supplied fixes and docs as patches from its read-only workspace.
 - Backups:
   - `D:\DevCache\backup\pre_phase_c_20261118_0246`
   - `D:\DevCache\backup\pre_phase_d_20261118_0420`

@@ -11,11 +11,13 @@ const SIZE := 128                       # pixels; shown at 48-56 HUD px (about 8
 ## Every picture drawn here, by id (a shop tile's "icon").
 const IDS := ["bow", "target", "damage", "draw", "range", "heart", "speed", "magnet", "berries", "herbs", "honey", "fish",
 	"goldfish", "tower", "barricade", "spikes", "well", "home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair",
-	"settings", "market", "stone", "flame", "chest", "sign"]
-## Other names for the same pictures.
+	"settings", "market", "stone", "flame", "chest", "sign", "stomp", "ram", "pounce", "bellow", "saddlebags", "tailor", "outfit"]
+## Other names for the same pictures. G4: the Saddlery's tiles: the skills have their own, the Fire-spitter the flame,
+## the Mossweave Saddle the saddle (the Saddlery's own picture), the Saddlebags their own.
 const ALIAS := {"health": "heart", "hp": "heart", "stall": "market", "cottage": "pet", "nest": "pet", "saddlery": "mount",
 	"hearthtree": "home", "guardian": "stone", "fire": "flame", "campfire": "flame", "sunberries": "berries",
-	"graphics": "settings", "mend": "repair", "signpost": "sign"}
+	"graphics": "settings", "mend": "repair", "signpost": "sign", "saddle": "mount", "fire_spitter": "flame",
+	"bags": "saddlebags", "needle": "tailor", "cat_skin": "outfit"}
 
 ## The marker badges' art (marker.gd's ART, the same drawings), in their 120 x 150 view round (60, 58); the gold fish
 ## is the badge's fish in gold.
@@ -257,6 +259,57 @@ static func _art(k: String) -> String:
 <rect x="15" y="10" width="34" height="15" rx="3.5" fill="#A3ACB2" stroke="#4A4F55" stroke-width="3.5"/>
 <path d="M19 14.5 H40" stroke="#FFFFFF" stroke-opacity="0.6" stroke-width="2.5" stroke-linecap="round"/>
 </g>""" + ("""<polygon points="%s" fill="#FFD54A" stroke="#C98A12" stroke-width="1.5" stroke-linejoin="round"/>""" % _star(49.0, 50.0, 8.0, 3.0, 4))
+		"stomp":                                    # G4: a hoof slamming down in a shockwave ring
+			return """<ellipse cx="32" cy="51" rx="27" ry="8" fill="none" stroke="#F2B640" stroke-width="3.5"/>
+<ellipse cx="32" cy="51" rx="16" ry="4.5" fill="none" stroke="#C9813A" stroke-width="3"/>
+<path d="M19 46 C17 31 22 15 32 13 C42 15 47 31 45 46 Z" fill="#8A5A2B" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M26 46 C25 38 28 29 32 28 C36 29 39 38 38 46 Z" fill="#5B3417"/>
+<path d="M24 22 Q27 17 31 16" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M6 31 L13 35 M58 31 L51 35 M10 18 L16 24 M54 18 L48 24" stroke="#5B3417" stroke-width="3" stroke-linecap="round"/>"""
+		"ram":                                      # G4: a ram's head with curled horns
+			return """<path d="M23 21 C11 16 5 29 11 38 C15 44 24 43 24 36 C24 31 18 31 18 35" fill="none" stroke="#5B3417" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M23 21 C11 16 5 29 11 38 C15 44 24 43 24 36 C24 31 18 31 18 35" fill="none" stroke="#C9813A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M41 21 C53 16 59 29 53 38 C49 44 40 43 40 36 C40 31 46 31 46 35" fill="none" stroke="#5B3417" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M41 21 C53 16 59 29 53 38 C49 44 40 43 40 36 C40 31 46 31 46 35" fill="none" stroke="#C9813A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M24 19 Q32 13 40 19 L38 47 Q32 56 26 47 Z" fill="#F2E6CF" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<circle cx="28.5" cy="31" r="2.6" fill="#5B3417"/><circle cx="35.5" cy="31" r="2.6" fill="#5B3417"/>
+<path d="M29 46 Q32 48.5 35 46" stroke="#5B3417" stroke-width="2.5" fill="none" stroke-linecap="round"/>"""
+		"pounce":                                   # G4: a leap's arc landing in a burst
+			return ("""<polygon points="%s" fill="#FFD54A" stroke="#E0692E" stroke-width="2.5" stroke-linejoin="round"/>""" % _star(49.0, 51.0, 11.0, 5.0, 8)) + """
+<path d="M7 52 Q20 4 44 37" fill="none" stroke="#5B3417" stroke-width="8" stroke-linecap="round"/>
+<path d="M7 52 Q20 4 44 37" fill="none" stroke="#C9813A" stroke-width="3.5" stroke-linecap="round"/>
+<path d="M48.5 44 L37.6 39.6 L46.6 31.9 Z" fill="#C9813A" stroke="#5B3417" stroke-width="3" stroke-linejoin="round"/>
+<path d="M4 58 H22" stroke="#5B3417" stroke-opacity="0.5" stroke-width="3" stroke-linecap="round"/>"""
+		"bellow":                                   # G4: a mighty call: an open mouth and its sound waves
+			return """<circle cx="17" cy="32" r="11" fill="#C9813A" stroke="#5B3417" stroke-width="3.5"/>
+<ellipse cx="20" cy="33" rx="4.5" ry="6" fill="#5B3417"/>
+<path d="M32 21 Q39 32 32 43" fill="none" stroke="#5B3417" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M40 14 Q51 32 40 50" fill="none" stroke="#E0692E" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M48 7 Q63 32 48 57" fill="none" stroke="#F2B640" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M11 27 Q13 23 17 22.5" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="2.5" fill="none" stroke-linecap="round"/>"""
+		"saddlebags":                               # G4: a leather bag with its strap, a golden leaf peeking out
+			return """<path d="M35 28 C35 20 41 14 50 14 C49 22 44 28 35 28 Z" fill="#F2B640" stroke="#8A5A12" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M36.5 26.5 Q42 20 48 16" stroke="#8A5A12" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<path d="M14 26 Q32 8 50 26" fill="none" stroke="#5B3417" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M11 27 H53 L50 54 Q49 58 45 58 H19 Q15 58 14 54 Z" fill="#A8692E" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M11 27 H53 V37 Q32 44 11 37 Z" fill="#C9813A" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<rect x="28" y="35" width="8" height="9" rx="2" fill="#F2B640" stroke="#5B3417" stroke-width="2.5"/>
+<path d="M17 43 V52" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="2.5" stroke-linecap="round"/>"""
+		"tailor":                                   # 23 Nov 2026: the Tailor's Nook: a spool of thread and a threaded needle
+			return """<rect x="12" y="20" width="26" height="30" fill="#9B6BD6" stroke="#5B3417" stroke-width="3.5"/>
+<path d="M16 28 H34 M16 35 H34 M16 42 H34" stroke="#6E44A8" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="6" y="12" width="38" height="9" rx="3" fill="#B87434" stroke="#5B3417" stroke-width="3.5"/>
+<rect x="6" y="49" width="38" height="9" rx="3" fill="#B87434" stroke="#5B3417" stroke-width="3.5"/>
+<path d="M38 24 Q46 10 53 10" fill="none" stroke="#9B6BD6" stroke-width="3" stroke-linecap="round"/>
+<path d="M56 5 L46 59" stroke="#5B3417" stroke-width="7" stroke-linecap="round"/>
+<path d="M56 5 L46 59" stroke="#E4E9EC" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="54.7" cy="11" rx="1.2" ry="3" fill="#5B3417" transform="rotate(10 54.7 11)"/>"""
+		"outfit":                                   # 23 Nov 2026: an outfit: a hooded ranger's cloak with a leaf clasp
+			return """<path d="M32 6 C20 6 14 15 14 25 L8 56 Q32 62 56 56 L50 25 C50 15 44 6 32 6 Z" fill="#5DA83A" stroke="#3E6B1F" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M22 27 C22 18 26 13 32 13 C38 13 42 18 42 27 C42 33 38 36 32 36 C26 36 22 33 22 27 Z" fill="#2E3A2A" stroke="#3E6B1F" stroke-width="3"/>
+<path d="M32 36 V57" stroke="#3E6B1F" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M32 44 C27 44 25 40 25 37 C29 37 32 39 32 44 Z M32 44 C37 44 39 40 39 37 C35 37 32 39 32 44 Z" fill="#F2B640" stroke="#8A5A12" stroke-width="1.8" stroke-linejoin="round"/>
+<path d="M18 26 Q17 18 23 12" stroke="#FFFFFF" stroke-opacity="0.45" stroke-width="2.5" fill="none" stroke-linecap="round"/>"""
 		"settings":                                 # a cog
 			return ("""<polygon points="%s" fill="#C9813A" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>""" % _gear(32.0, 32.0, 20.0, 27.0, 8)) + """
 <circle cx="32" cy="32" r="13" fill="none" stroke="#A8692E" stroke-width="3"/>

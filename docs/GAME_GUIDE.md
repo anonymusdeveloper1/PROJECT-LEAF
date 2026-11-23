@@ -1,6 +1,6 @@
 # Project LEAF: the game guide
 
-20 November 2026. This is the one place that describes the game as it is now. Parts 1 to 10 are for the owner, in
+23 November 2026. This is the one place that describes the game as it is now. Parts 1 to 10 are for the owner, in
 plain words. Part 11 is for whoever works on the code next. Part 12 lists the other documents.
 
 The code (`game/scripts/`) and the numbers (`game/data/balance.json`) win when they disagree with this guide. If you
@@ -57,8 +57,9 @@ awning, a lake beside it. The Gloom is violet crystal. The Gloomwood is a night 
 - **Never pay-to-win.** Money will only buy looks, and Burrow-only helpers that can also be earned by playing
   (part 9). None of the money side is built yet.
 
-The owner plays it on a Samsung Galaxy S24. The phone has the G1 build from 20 November 2026, afternoon (Phase F and
-G1). The build with G1b and G2 is ready on the PC and is not on the phone yet.
+The owner plays on a Samsung Galaxy S24. The APK with the full update was installed at
+01:52 on 23 Nov 2026. The changes were committed on `feature/g3-g4-bows-saddlery-outfits` and merged into
+`development` that day (see `docs/CHANGES.md`).
 
 ---
 
@@ -71,17 +72,17 @@ G1). The build with G1b and G2 is ready on the PC and is not on the phone yet.
 | Move | Press anywhere on the screen and drag. A joystick appears under your thumb and goes away when you lift it. |
 | Shoot | Automatic. The cat turns to the nearest enemy in range (5.5 m at the start) and keeps shooting, also while walking. |
 | Hide | Stand in tall grass or a bush, outside the camp. Enemies can't see the cat. After 1.5 s hidden, the next shot is an **Ambush**: double damage. Not while riding. |
-| Ride | Tap **Ride** (once Thistle has come). The cat is faster and Thistle thumps enemies that crowd in. Tap **Walk** to get off. |
+| Ride | Tap **Ride** once Thistle has come. The cat is faster, the mount takes the hits, and she shoots ahead only. Turn the mount to face enemies behind you. Its skills come from the Saddlery. Tap **Walk** to get off. |
 | Feed | When the mount is knocked out, Ride turns into **Feed** (2 Sunberries). |
 | Leaf Dash | **Gloomwood only.** Flick your thumb quickly as you lift it. The cat dashes 3 m and nothing can hurt it during the dash. Dash through an attack at the last moment (a **close call**) and the next arrow hits double. It recharges in 1.4 s; an arc under the health bar shows it. |
 | Build | Buy a defence in the shop. A button such as "Barricade ×2" appears at the bottom. Tap it, walk the see-through piece to where you want it, tap **Place**, then **Done**. **New (G2): barricades are not built this way.** Tap a road marker instead (see the next block). |
-| Barricade row (G2) | **New (20 Nov 2026, G2).** Each of the 12 road spots (3 per road) has a small marker. Tap it to build a **row of 3 pieces** for 90 leaves and 5 timber. Tap a built row to repair it. |
+| Barricade row | After mission 1, tap an open road pad to build a **row of 3 pieces** for 90 leaves and 5 timber between waves. Pads open as the Hearthtree grows. Tap a built row to repair it at any time, including during a wave. See Defences. |
 | Use a building | Tap it (see below). Its card opens. Tap a green button to buy. |
 | Grow the home | Open the Hearthtree's card (the Shop). **New (Phase F):** the top section, "Grow the home", lists the goals. Tap **Go** on a goal and the card closes and the cat walks to the building that sells it, or tap **Show** to scroll the card to that row. |
 
 On a PC: WASD or the arrow keys move, the mouse works as a finger, and Space dashes.
 
-The camp's cards work only **between waves**. During a wave they say so; the signpost still works.
+Most camp cards work between waves. During a wave, the signpost and built barricade rows can still be tapped.
 
 > **New (19 Nov 2026): tap to open.** Walking near something opens nothing, and there are no glowing ground rings.
 > Each usable thing has a small leaf-shaped pin with an icon over it: small and dim far away, bigger and glowing with
@@ -114,7 +115,7 @@ The camp's cards work only **between waves**. During a wave they say so; the sig
   and stays about 3.5 s), then **toasts** (one-line news) and the status line ("Rebuilding the campfire...",
   "Hidden in the grass").
 - **Over the cat**: a red health bar. A hit drains it, and the part just lost shows grey for a moment. While riding,
-  a thinner bar under it shows the mount's health. The Moss Warden has its own moss-green bar.
+  a thinner amber bar under it shows the mount's health. The Moss Warden has its own moss-green bar.
 - **Bottom**: the buttons (Ride or Walk, Feed, Snack in the Gloomwood, defences to place, Place and Done). Just above
   them: the **tip** (each tip shows once, often with a gold arrow pointing where to go) and the "Drag anywhere to
   move" hint.
@@ -135,10 +136,12 @@ it and straight south of it.
   between it and the fire.
 - **South-west**: the **lake**, beside the camp and not in it. The **Wishing Well** stands on its near shore, the
   **Fishing Spot** on its south shore. Lily pads, a little dock, fireflies, now and then a jumping fish.
-- **East**: the **Training Target** close to the fire, then the **Bow Bench**. Further east, past the firelight, the
+- **East**: the **Training Target** close to the fire, then the **Bow Shop** (New, 21 Nov 2026, G3: it was the Bow Bench). Further east, past the firelight, the
   **Guardian Stone**.
 - **South-east**: the **Mushroom Cottage** and the **Market** (Bramble the hedgehog trader stands by it). **New (G2):**
-  the Market is called the Market, not the Market Stall, and both come at Hearthtree level 2.
+  the Market is called the Market, not the Market Stall, and both come at Hearthtree level 2. **New (21 Nov 2026, G4):**
+  the **Saddlery** stands south-east past the Market, on its own path.
+  The **Tailor's Nook** stands farther east, past the Mushroom Cottage.
 - **South**: the **garden**. Further south, at the woods' edge, **the Old Hollow**, the way into the Gloomwood.
 - On the campfire's north-east rim: the **cooking pot**.
 
@@ -160,7 +163,7 @@ In a fight, enemies go for the campfire last but hardest. If it is destroyed, th
 ### The Hearthtree and the shop
 
 The tree home and its campfire are both called **the Hearthtree** (New, G2; the level names stay).
-The home's counter is the **shop**. It sells: the Training Target and the Bow Bench; the cat's own Health, Move speed
+The home's counter is the **shop**. It sells: the Training Target and the Bow Shop (New, 21 Nov 2026, G3: it was the Bow Bench); the cat's own Health, Move speed
 and Leaf magnet; acorn towers and thorn spikes, and their levels; "Mend the defences"; growing the home (see the goals
 above); and the **Graphics** setting (Auto, Low, Medium, High). After the missions, "Mend all" sits at the top when
 anything is damaged.
@@ -173,8 +176,8 @@ anything is damaged.
 
 ### Home levels
 
-The home level caps everything: no station and no defence can be a higher level than the home. Station levels stop
-at 3 (the Training Target and the Bow Bench go to 5); from home level 4 on, the home itself grows.
+The home level caps each station and defence. Most stations stop at level 3. The Training Target, Bow Shop and
+Saddlery go to 5. From home level 4 on, the home itself grows.
 
 > **New (19 Nov 2026, Phase F): home goals.** Each home level from 2 to 8 has a **goal list**. The home grows only
 > when **every goal is met and the price is paid**. Once mission 1 is won, the home's card has a **"Grow the home"**
@@ -186,34 +189,41 @@ at 3 (the Training Target and the Bow Bench go to 5); from home level 4 on, the 
 |---|---|---|---|---|---|
 | 1 | Shed | | 4.0 m | 120 | 2 |
 | 2 | Hut | 500 leaves, 20 timber | 5.0 m | 300 | 3 |
-| 3 | Treehouse | 3,500 leaves, 60 timber | 6.0 m | 600 | 4 |
+| 3 | Treehouse | 3,500 leaves, 40 timber | 6.0 m | 600 | 4 |
 | 4 | Big Treehouse | 9,000 leaves, 60 timber | 6.5 m | 900 | 5 |
-| 5 | Great Tree Home | 8,000 leaves, 60 timber | 7.0 m | 1,300 | 6 |
-| 6 | Tree Hall | 15,000 leaves, 200 timber, 20 amber, 8 glowstone | 7.5 m | 1,800 | 7 |
-| 7 | Old Oak Hall | 25,000 leaves, 90 timber, 60 amber, 24 glowstone, 5 heartwood | 7.6 m | 2,400 | 8 |
-| 8 | Heart Oak | 40,000 leaves, 135 timber, 90 amber, 45 glowstone, 9 heartwood | 7.7 m | 3,000 | 9 |
+| 5 | Great Tree Home | 10,500 leaves, 80 timber | 7.0 m | 1,300 | 6 |
+| 6 | Tree Hall | 15,000 leaves, 110 timber, 20 amber, 8 glowstone | 7.5 m | 1,800 | 7 |
+| 7 | Old Oak Hall | 25,000 leaves, 150 timber, 60 amber, 24 glowstone, 5 heartwood | 7.6 m | 2,400 | 8 |
+| 8 | Heart Oak | 40,000 leaves, 200 timber, 90 amber, 45 glowstone, 9 heartwood | 7.7 m | 3,000 | 9 |
+
+**New (22 Nov 2026): new prices for homes 3, 5, 6, 7 and 8** (leaves and timber; they were 3,500/60, 8,000/60, 15,000/200, 25,000/90 and 40,000/135). Homes 2 and 4 are unchanged, and so are the Burrow materials. Each level costs more than the one before.
 
 The goals (all of them must be met). The mission that ends each step is the first goal:
 
-| Home | Goals | Opens |
+| Home | Goals | Missions usually played at this level (not required since 21 Nov 2026) |
 |---|---|---|
-| 2 | Mission 2 won. Training Target and Bow Bench built. Damage 4, Draw speed 2, Health 3. Twig Bow level 4. | Missions 3 to 6 |
-| 3 | Mission 6 won (Mossback). Target, Bench, Cottage and Market at 2; Wishing Well built. Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Missions 7 to 10 |
-| 4 | Mission 10 won (the Shield Wall). Target, Bench, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Missions 11 to 13 |
-| 5 | Mission 13 won (the Owl Witch). Target and Bench at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9; Thorn Volley owned. 5 towers at level 3; Thorn Spikes level 3. | Missions 14 and 15 |
-| 6 | All 15 missions won. The Gloomwood cleared once. Target and Bench at 5. Every stat at 10. A bow at level 10. | The raids and the Burrows go on |
+| 2 | Mission 1 won (First Embers). Training Target and Bow Shop built. Damage 4, Draw speed 2, Health 3. Twig Bow level 4. | Missions 3 to 6 |
+| 3 | Mission 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2; Wishing Well built. Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Missions 7 to 10 |
+| 4 | Mission 9 won (Croaking Choir). Target, Bow Shop, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Missions 11 to 13 |
+| 5 | Mission 12 won (Two Fronts). Target and Bow Shop at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9. (New, 22 Nov 2026: Thorn Volley is hidden, so it is no longer a goal here.) 5 towers at level 3; Thorn Spikes level 3. | Missions 14 and 15 |
+| 6 | All 15 missions won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the Burrows go on |
 | 7 | Gloomwood level 2 beaten | |
 | 8 | Gloomwood level 3 beaten | |
 
-**Mission gates:** missions 1 and 2 are played at home 1; missions 3 to 6 need home 2; 7 to 10 need home 3; 11 to 13
-need home 4; 14 and 15 need home 5.
+**New (22 Nov 2026, loop fixes): each Hearthtree level asks for one mission earlier.** Home 2 needs mission 1 won (was 2),
+home 3 mission 5 (was 6), home 4 mission 9 (was 10), home 5 mission 12 (was 13). Home 6 still needs mission 15, and
+homes 7 and 8 are unchanged. So a player stuck on an act's last mission (a boss) can grow the Hearthtree first, if they can pay.
+
+**No mission gates (the owner, 21 Nov 2026).** Missions never wait for a Hearthtree upgrade: the next mission opens as
+soon as the one before it is won, whatever the Hearthtree's level. Before this change, the owner reached mission
+11 without enough leaves for Hearthtree 4 and could not play the next mission to earn more. Growing the Hearthtree
+still needs its goals and its price, and still opens the Market, the Cottage and more barricade rows.
 
 Levels 4 to 6 each have their own campfire: a stone hearth, a great bonfire, a crystal brazier. Levels 7 and 8 show
 level 6's home and campfire until their own models are made.
 
-**New (20 Nov 2026, G2): rows and the Market.** The Mushroom Cottage (Sprig) and the Market (Thistle) can be built at
-Hearthtree level 2. The number of barricade rows allowed grows with the Hearthtree: 2, 3, 5, 7, 9 and 12 in all (see
-Defences). Old saves keep their buildings.
+**Rows and the Market.** The Mushroom Cottage (Sprig) and the Market (Thistle) can be built at Hearthtree level 2.
+Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each road's layout.
 
 ### The buildings
 
@@ -221,28 +231,53 @@ Defences). Old saves keep their buildings.
 |---|---|---|
 | Signpost | Start the next mission, "Go" between waves, "Go on" or "Give up" a saved mission. No replays. After the missions it becomes **the Watch** (part 7). | From the start |
 | Training Target | Damage, Draw speed and Range for the cat (Range from level 2). 5 levels. | Shop, after mission 1's first wave |
-| Bow Bench | Bow levels; craft new bows. 5 levels. | Shop, after mission 1 is won |
-| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, attachments) is on the Market's card. **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25; after all missions also amber for 60, glowstone for 120 and heartwood for 400. **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the missions amber, glowstone and heartwood. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
+| Bow Shop | **New (21 Nov 2026, G3): the Bow Bench is now the Bow Shop** (same place, same model). One card with a tile per bow, one button each: **Upgrade** for the equipped bow, **Equip** for an owned bow (between waves only; during a wave it says "Between waves"), **Buy** for a bow not owned yet (or "Needs Bow Shop level N"). Buying equips the bow if no wave is on. Each bow keeps its own level. Bow levels; 5 levels. See part 11 for the bows' data. **New (22 Nov 2026):** the shop has four bows, in the table below the buildings. | Shop, after mission 1 is won |
+| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25; after all missions also amber for 60, glowstone for 120 and heartwood for 400. **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the missions amber, glowstone and heartwood. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
 | Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for mission 3. |
-| Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: between waves up to 60%, 75% or 90% of their health (Well level 1, 2 or 3), at 3% a second. In a wave, +0.25%, 0.5% or 1% of their health a second. Broken things, ruins and the ashes need a repair, or a mission won. Its card shows this and its upgrade. | Shop, after 4 missions won |
+| Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
+| Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Levels 4 and 5 also need Burrow materials, after the missions. Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 missions are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 missions first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
+| Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. | Shop, after 4 missions won |
 | Garden and cooking pot | Grow food and cook dishes (part 6) | Gift for winning mission 1, with 4 Sunberries |
 | Fishing Spot | Fishing at the lake (part 6) | Gift for winning mission 6 |
 | Guardian Stone | The Moss Warden's home: its post, colours and upgrades (part 5) | Appears when the Warden is freed |
 | The Old Hollow | The way into the Gloomwood (part 8) | Sealed with Gloom crystals from the first mission won; opens with mission 15's first win |
 
 Most buildings have levels 1 to 3 (bought on their own card, never above the home level). **New (Phase F):** the
-Training Target and the Bow Bench have **5 levels**. The station level caps what it sells: Target (or Bench) level
+Training Target and the Bow Shop have **5 levels**. The station level caps what it sells: Target (or Bow Shop) level
 1 to 5 lets each stat (or bow) reach level 4, 6, 8, 9 or 10. Health, Move speed and Leaf magnet use the home level
-instead. Target levels 3 to 5 show the second Target model, and Bench levels 4 and 5 the third Bench model, until the
+instead. Target levels 3 to 5 show the second Target model, and Bow Shop levels 4 and 5 the third Bow Shop model, until the
 owner decides how new models are made. Range now grows 0.2 m per level (it was 0.3).
+
+### The bows (New, 22 Nov 2026)
+
+The Bow Shop sells four bows. Each costs more and hits harder than the one before, and each has a pro and a con. A bow
+unlocks when the Bow Shop reaches its level (the Hearthtree caps that level). At Bow Shop level 5 every bow can be
+bought. Bow Shop 4 raises the bow level cap but unlocks no new bow. Thorn Volley and Foxfire stay hidden.
+
+| Bow | Unlocks | Cost | Damage | Draw | Pro | Con |
+|---|---|---|---|---|---|---|
+| Twig Bow | From the start | Free | 1.0x | Normal | Original bow, normal range | No special |
+| Sunwood Longbow | Bow Shop 2 | 400 leaves, 15 timber | 1.15x | Takes 10% longer | Goes through 1 enemy and reaches 1.5 m farther | Slower draw |
+| Ember Bow | Bow Shop 3 | 900 leaves, 30 timber | 1.3x | Normal | Sets enemies burning | 0.8 m shorter range |
+| Frost Bow | Bow Shop 5 | 1,600 leaves, 50 timber | 1.45x | Takes 25% longer | Slows enemies and freezes on the third hit | Slowest draw |
+
+The Training Target still trains the cat's general Damage, Draw speed and Range; the cat handles every bow better.
+Better bows are how damage grows later. Each bow's own level-ups are still bought at the Bow Shop; Frost's level-ups
+cost about 1.3x Ember's. Each bow has its own arrow, release burst, trail and hit effect.
 
 **Buildings can be broken.** In a wave, enemies attack buildings. A building at 0 health is a **ruin**: it does
 nothing until it is repaired (a ruined home closes the shop, a ruined stall means no riding, and so on). Winning a
 mission mends every ruin for free.
 
-> **New (20 Nov 2026, G2): tower repair.** A knocked-down acorn tower shows a repair marker. Tap it to repair the tower
-> for 30% of what it cost (leaves, plus 1 timber per 30 leaves). When the camp falls, ruins stay and cost about 30% of what the building cost to
-repair. After the missions, raids also leave **wear** (part 7).
+> **New (20 Nov 2026, G2): tower repair.** A knocked-down acorn tower shows a repair marker. Tap it to repair the tower.
+> **New (22 Nov 2026, loop fixes): the tower's repair costs the same as "Mend the defences" for that tower**, leaves
+> only (for example 27 leaves in the missions, 41 after the missions, at tower level 2). It was 30% of the tower and its
+> upgrades, plus timber.
+>
+> **New (22 Nov 2026, loop fixes): the Hearthtree's repair is capped.** A knocked-down Hearthtree costs 10% of what it
+> cost, at least the `ruin_min` minimum, at most 900 leaves and 30 timber, in the missions too (for example Hearthtree 4:
+> 900 leaves and 14 timber; it was 3,930 leaves and 42 timber). Other buildings keep the 30% price for a ruin. After the
+> missions, raids also leave **wear** (part 7).
 
 ---
 
@@ -253,8 +288,8 @@ repair. After the missions, raids also leave **wear** (part 7).
 Go to the signpost. Its card ("To the woods") shows the next mission: its waves and its enemies. Tap **Fight**.
 
 > **New (19 Nov 2026, Phase F): no replays.** A won mission is done, and the signpost offers only the next one (or a
-> saved run: "Go on" / "Give up"). If the next mission needs a bigger home, the card says "Needs home level X (yours
-> is Y)", lists the missing goals, and has a **Home** button. A one-time tip after a win explains a locked mission.
+> saved run: "Go on" / "Give up"). **New (21 Nov 2026): no mission needs a bigger home any more**, so the signpost
+> always offers the next mission (the "Needs home level X" card and its one-time tip are still in the code, unused).
 > After a lost chapter the hint says "Spend your leaves on the goals at your home, then try again." After all 15
 > missions the signpost is the Watch. The old "strength" note on the card is gone.
 
@@ -366,17 +401,41 @@ within 7 m, then the **nearest building** within 9 m, then the **campfire**.
 
 | Defence | Where it goes | What it does | Opens |
 |---|---|---|---|
-| Barricade row (New, G2: 90 leaves and 5 timber for 3 pieces) | Tap a road marker: 3 per trail, 12 in all | Blocks the road: enemies must break each piece | Rows allowed by Hearthtree level: 2, 3, 5, 7, 9, 12 |
+| Barricade row (90 leaves and 5 timber for 3 pieces) | Tap a road marker. Each road has a gate, a middle pad and a far pad. | Blocks the road until enemies break a piece | After mission 1. The four gates are available at Hearthtree 1, the middle pads at 3, and the far pads at 4 on the right and 5 on the left. |
 | Acorn tower (90 leaves) | Anywhere free; how many is set by the home level (2 to 9) | Shoots acorns at enemies near it; enemies go for towers right after barricades | After 2 missions |
 | Thorn spikes (70 leaves) | Anywhere free | Hurt and slow whatever walks over them | After 3 missions |
 
-> **New (20 Nov 2026, G2): barricade rows.** Each piece breaks on its own. Below 50% health it is cracked (darker and
-> leaning). At 0 it falls flat, with rubble, and enemies pass the gap. Tap a row to repair it: 30% of the row's cost per
-> broken piece, half per cracked piece. A won mission mends all the free repairs. Old saves: placed barricades became
-> rows, and bag pieces were refunded as leaves.
+> Each piece breaks on its own. Below 50% health it cracks, darkens and leans. At 0 it falls flat and enemies pass
+> through the gap. Tap the row to repair it. Winning a mission repairs the defences for free.
+>
+> **Barricade placement (22 Nov 2026).** Each pad lies across the curve of its own road.
+>
+> - **Hearthtree 1–2.** The gate pad on each road is 2.4 m along the road from the firelight (4 pads in all).
+> - **Hearthtree 3.** The middle pad opens (8 pads in all). On the right it sits halfway along the road between the
+>   gate and far pad. On the left it sits on the outer bend, at least 5 m along the road from the gate.
+> - **Hearthtree 4.** The far pads open on the two roads to the right of the campfire, Fernwood and Bandit Thicket.
+>   These pads are 0.8 m closer to camp than the far pads on the left (10 pads in all).
+> - **Hearthtree 5 and up.** The far pads on the left open (12 pads in all).
+>
+> Empty pads show a marker once they open. Build between waves and tap built rows to repair them at any time.
+> Existing rows keep their road and pad and move with it, including when the Hearthtree grows. Rows built on a
+> now-locked pad in an older save still work and can be repaired.
+>
+> **New (22 Nov 2026): the card says why Build is off.** When Build can't be pressed, the card gives the reason in plain
+> words: "A wave is on: build between waves"; "Needs 90 leaves and 5 timber" (the price); or "Barricades open later".
+> The old "N of M rows" badge and "Grow the Hearthtree for more rows" are gone. The barricade tip ends "...More spots
+> open as the Hearthtree grows." (History: the 20 Nov limit of 2, 3, 5, 7, 9 and 12 rows is replaced by this.)
+>
+> **New (22 Nov 2026): repairs work any time.** A built row's marker stays tappable in a wave, and its Repair is enabled.
+> Building new rows and repairing towers still happen only between waves. The price per piece is 30% (`repair_share`)
+> of the row's build price, times:
+> - broken: 1;
+> - cracked: its missing share of health, at least 0.5 (it was a flat 0.5 before, which let a nearly broken piece be
+>   mended cheaply in a wave);
+> - hurt but not cracked: its missing share of health.
 
-All acorn towers and thorn spikes share one level, bought in the shop and capped by the home level. The barricade's
-level (log, stone wall, thorn gate, and so on) is upgraded on the Hearthtree's card. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
+All acorn towers and thorn spikes share one level, bought in the shop and capped by the home level. Buying a barricade
+level on the Hearthtree's card makes every row tougher at once. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
 and opens after the missions; level 5 (Heartwood, Amber, Amber Thorns) costs Gloomwood materials. Broken defences are
 mended free when a mission is won; after a camp fall or a raid they stay broken until mended in the shop or with
 "Mend all".
@@ -395,14 +454,14 @@ mended free when a mission is won; after a camp fall or a raid they stay broken 
 |---|---|
 | The cat is knocked out while the fire burns | Nothing. It is back by the fire in 5 s. |
 | The mount is knocked out | It stays out until fed (2 Sunberries) or the next chapter break (part 5). |
-| The camp falls | The Gloom takes 30% of your unspent leaves. Ruins stay ruins. Broken defences stay broken. The campfire is ashes until you light it again at its spot (New, G1: 40 leaves and no timber, or free when you have fewer than 40 leaves; no mission starts before that). **The chapter starts over**, not the mission. A dish eaten this chapter goes back into the pot. No level is ever lost. |
+| The camp falls | **New (22 Nov 2026, loop fixes):** the Gloom takes 30% of the leaves gained since this chapter began (pickups, wave pay, bonuses and sales while playing the chapter), never more than you hold. Savings, completed chapter chests and gains during chapter breaks are safe. Ruins stay ruins. Broken defences stay broken. The campfire is ashes until you light it again at its spot (New, G1: 40 leaves and no timber, or free when you have fewer than 40 leaves; no mission starts before that). **The chapter starts over**, not the mission. A dish eaten this chapter goes back into the pot. No level is ever lost. |
 | You give up a mission | Its next try starts at wave 1. What you earned stays. |
 
 ### The 15 missions
 
 | # | Mission | Waves | Needs home | Trails | New threat | Ends with | First-win gift |
 |---|---|---|---|---|---|---|---|
-| 1 | First Embers | 15 | 1 | Fernwood | Thornlings (the tutorial) | Thornling Chief (a mini-boss) | Garden and pot, Bow Bench in the shop, 60 leaves (New, G1b: "+60 leaves for your first barricades"; it was 2 barricade pieces) |
+| 1 | First Embers | 15 | 1 | Fernwood | Thornlings (the tutorial) | Thornling Chief (a mini-boss) | Garden and pot, Bow Shop in the shop, 60 leaves (New, G1b: "+60 leaves for your first barricades"; it was 2 barricade pieces) |
 | 2 | Bramble Pack | 15 | 1 | Toadstool Dell | Bramble Boars | 2 boars | None (New, G2: the Market and Thistle come at Hearthtree level 2) |
 | 3 | Toadstool March | 15 | 2 | Bandit Thicket | Toadstool Brutes | 3 brutes | None (New, G2: the Cottage and Sprig come at Hearthtree level 2) |
 | 4 | Stumps at Dusk | 15 | 2 | Mossback's Den | Stump Golems | 3 stumps | |
@@ -419,8 +478,8 @@ mended free when a mission is won; after a camp fall or a raid they stay broken 
 | 15 | The Elder Thornstag | 20 | 5 | Thicket, Den | | **The Elder Thornstag** (boss) | Gloom Raids and the Old Hollow open |
 
 **New (Phase F): mission 2 is easier.** Fewer boars (none in waves 1 and 2), elite waves with 1, 1 and 2 boars, and a
-final wave of 2 boars. Boars are also softer (see the enemies table). Missions are gated by home level (see Home
-levels in part 3). Only missions 6, 13 and 15 end in a real boss. The owner wants 2 or 3 more bosses later (part 10).
+final wave of 2 boars. Boars are also softer (see the enemies table). Only missions 6, 13 and 15 end in a real boss.
+The owner wants 2 or 3 more bosses later (part 10).
 
 ### The enemies
 
@@ -455,14 +514,50 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 ### Thistle, the mount
 
 - Comes free with the Market (New, G2: at Hearthtree level 2). Tap **Ride** and it bounds over; the cat hops into the leaf saddle.
-- Riding: the cat runs 50%, 65% or 80% faster (by Market level) and keeps shooting. When enemies crowd in, Thistle
-  **thumps** the ground (a shockwave that hurts and pushes them back). The cat can't hide while riding.
-- **Thistle takes the hits** while the cat rides. Its health is the thin bar under the cat's.
+- Riding: the cat runs 50%, 65% or 80% faster (by Market level). She sways and leans with the mount, carries her
+  bow upright and tilted toward her, and shoots only ahead. Turn the mount to face enemies behind you.
+  She can't hide while riding. The mount uses the skills it learned at the Saddlery.
+- **Thistle takes the hits** while the cat rides. Its health is the thin amber bar under the cat's.
 - **Knocked out**, it throws the cat off. In a mission it stays out until you **feed** it 2 Sunberries with the Feed
   button (any time, even mid-wave; it comes back whole and the cat hops on) or until the next chapter break. In the
   Gloomwood it stays out until fed. Outside missions it rests 20 s and gets up by itself. With no food, the button
   says "No food".
 - It is whole again at every chapter break and when a mission ends.
+
+### The Saddlery: the mount's skills and attachments (New, 21 Nov 2026, G4)
+
+- Build it on the Hearthtree's card once 8 missions are won and the Hearthtree is at level 2 (part 3).
+  Buy skills and attachments with leaves and timber. Levels 4 and 5 also need Burrow materials. Item levels are
+  capped by the Saddlery's level.
+- **Skills.** The mount uses them by itself while the cat rides in a fight, each on its own timer. Never two at once: a
+  shared gap of 0.6 s.
+
+  | Skill | What it does (level 1) | Per level |
+  |---|---|---|
+  | **Stomp** | Every 4 s, when an enemy is within 1.6 m: a shockwave that reaches 2 m, 20 damage, a push | +40% damage |
+  | **Ram** | Every 7 s, when enemies are ahead within 4 m: a short charge, 35 damage to each enemy in the path, knocked aside | +40% damage |
+  | **Pounce** | Every 9 s: leaps with the cat onto the biggest group within 6 m, 2.5 m blast, 40 damage, 1 s stun (bosses 0.5 s) | +40% damage, +0.1 s stun |
+  | **Bellow** | Every 12 s, when 4 or more enemies are within 4 m: 1.5 s stun (bosses 0.5 s), and they take 20% more damage for 3 s | +0.2 s stun, +5% damage |
+
+  Stomp, Ram and Pounce miss flying enemies. Bellow reaches them.
+- **Attachments.** Own all three and wear one at a time. Only the one worn shows on the mount and gives its benefit.
+  The first one you buy is put on automatically. Swap owned attachments for free between waves at the Saddlery.
+
+  | Attachment | What it does (level 1) | Per level |
+  |---|---|---|
+  | **Fire-spitter** | Every 3 s, a 2.5 m cone of fire ahead when enemies are close: they burn, 8 damage a second for 2 s | +40% damage |
+  | **Mossweave Saddle** | The mount has 15% more health | +15% (level 5: +75%) |
+  | **Saddlebags** | Kills drop 5% more leaves (missions, raids and the Burrows) | +5% (level 5: +25%) |
+
+  The worn Saddlery attachment works in missions, raids and the Burrows. Claude made the models for both mounts.
+- **The mounts have no built-in move any more.** A mount carries the cat faster and takes the hits. Its fighting comes
+  from the Saddlery.
+- **Old saves.** A pre-G4 save with mission 8 won gets Stomp level 1. An old Mossweave Saddle becomes saddle level 3.
+  Old Saddlebags become level 5. If there is no worn choice in the save, the highest-level owned attachment goes on.
+  Ties go to Saddlebags, then Mossweave Saddle, then Fire-spitter.
+- **Animations** (Claude made them in Blender, on the owner's mount rigs; besides Idle, Run and Thump, which are
+  unchanged): Thistle has Stomp (a copy of its old Thump), Ram (a head-down dash), Pounce and Bellow (rears and calls).
+  Bramblewool has Stomp (rears and slams its hooves), Pounce and Bellow; its Ram is the old one.
 
 ### Sprig, the pet
 
@@ -475,10 +570,11 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 
 - **The Stable** (Market card): Thistle the hare or **Bramblewool** the ram. **The Nest** (cottage card): Sprig
   the leaf dragon or **Lumi** the fox kit. Every look does exactly the same: only the model, its move and its colours
-  differ (Thistle thumps, Bramblewool rams, for the same damage).
+  differ (the model and its animations).
 - **Colours** row: Natural, Snow, Midnight, Autumn, Golden and more, per look. All free while testing; sold later.
 - **Gloomlit** colours cost 60 Gloom shards per look. They are earned only, never sold.
-- **Attachments** (after the missions): see part 8.
+- **Attachments** (after the missions): see part 8. **New (21 Nov 2026, G4):** the mount's Mossweave Saddle, Saddlebags
+  and Fire-spitter are at the Saddlery (above).
 
 ### The Moss Warden, the camp's guardian
 
@@ -604,7 +700,7 @@ Raids start with the first win of mission 15. They come only while you are playi
   health raids took from it; it darkens and gets rubble piles at its foot).
 - Fix it with **Patch it up** on a building's card, "Mend the defences" in the shop, or **Mend all** (or **Mend
   some**, when you cannot pay for all) on the Watch card and at the top of the shop. Each mended thing springs back
-  with a flower ring. Ruin repairs after the missions are capped in price.
+  with a flower ring. Ruin repairs are capped in price (the Hearthtree's: part 3; New, 22 Nov 2026, loop fixes).
 - The Warden is knocked down by raids and gets up by itself.
 
 ### What shards buy (earned only, never sold)
@@ -719,13 +815,13 @@ drunk and the boon taken stay done.
 ### What materials buy
 
 - **Mastery**: levels 11 and 12 of Damage, Draw speed, Health and Move speed, and of every bow.
-- **The Foxfire Bow** (Bow Bench level 3; 2,000 leaves, 16 glowstone, 3 heartwood): goes through two enemies.
+- **The Foxfire Bow** (Bow Shop level 3; 2,000 leaves, 16 glowstone, 3 heartwood): goes through two enemies. (New, 22 Nov 2026: hidden, not sold; see the bows in part 3.)
 - **Level-5 defences**: Heartwood barricades, Amber towers, Amber Thorns.
 - **Home levels 7 and 8** (part 3).
-- **Attachments**, one worn per companion, helping **only in the Gloomwood**, bought and worn on the Stable and Nest
-  cards (they show on the card only, not yet on the models). For the mount: the Mossweave Saddle (50% more health),
-  Thunder Shoes (Thump 60% harder), Saddlebags (25% more loot). For the pet: the Glowworm Lantern (traps and spore
-  bombs glow 0.3 s earlier), the Ember Charm (sparks 60% harder), the Dew Bell (+2 health for the cat).
+- **Gloomwood attachments** are bought and worn on the Stable and Nest cards, one per companion. At the Stable,
+  **Thunder Shoes** make Stomp 60% stronger in the Gloomwood. At the Nest, the Glowworm Lantern makes traps and
+  spore bombs glow 0.3 s earlier, the Ember Charm makes sparks 60% harder, and the Dew Bell gives the cat +2 health.
+  The Mossweave Saddle and Saddlebags are Saddlery gear and work wherever the mount wears them.
 
 The Warden's level 4 costs leaves and timber, not materials (the owner's rule: guardian upgrades cost leaves).
 
@@ -753,7 +849,7 @@ boss: a map can end in a **treasure clearing** instead, and the owner wants some
 ```
 missions -> leaves and timber -> buildings (the home caps their level)
          -> the cat's stats and bows (each building caps them)
-         -> the home's goals are met -> the home grows -> the next missions open
+         -> the home's goals are met -> the home grows and the camp unlocks more options
 ```
 
 - **No replays.** Every win pays much more than before, so finishing a mission gives enough leaves to upgrade. The
@@ -762,18 +858,30 @@ missions -> leaves and timber -> buildings (the home caps their level)
 - **Win rewards (leaves)** for missions 1 to 15: 100, 180, 200, 300, 350, 700, 600, 700, 800, 900, 1,300, 1,400,
   2,000, 1,200, 1,500. Timber goes from 10 to 60.
 - **Prices.** Stat and bow prices are 30% higher than before. Home prices are in part 3.
-- **The camp fall** is unchanged (30% of unspent leaves). A lost chapter is played again, and its kills pay again.
+- **The camp fall** takes 30% of the leaves gained in the lost chapter only (New, 22 Nov 2026, loop fixes; it was 30% of
+  all unspent leaves). A lost chapter is played again, and its kills pay again.
 - **After the missions** the Gloom Raids and the Burrows are the endless play. The home is not maxed when the
   missions end: homes 6 to 8 are dear, and mastery, mending and food pull on the same leaves.
 
 ### Growing stronger
 
-The cat's stats (10 levels each, capped by the station, 4, 6, 8, 9 or 10 by the Target's level; Health, Move speed and Leaf magnet by the home level; most get 2 mastery levels after the missions), the bows (the
-Twig Bow to start; the Sunwood Longbow at Bench level 2 goes through an enemy and reaches further; the Thorn Volley at
-level 3 shoots three arrows; the Foxfire Bow in part 8), and the camp (part 3). Every exact price is in
+The cat's stats (10 levels each, capped by the station, 4, 6, 8, 9 or 10 by the Target's level; Health, Move speed and Leaf magnet by the home level; most get 2 mastery levels after the missions), the bows (**New, 22 Nov 2026:** the four shop bows in the table in part 3, Twig to start and Frost last; Thorn Volley and
+Foxfire are hidden), and the camp (part 3). Every exact price is in
 `game/data/balance.json`. When the player has everything, the game is done and the Gloomwood is there for fun.
 
-### The money plan (nothing of it is built yet)
+### Cat outfits
+
+Outfits from the Tailor's Nook change the cat's look and keep her stats the same. **Original Ranger** is free
+and owned from the start. **Dusk Ranger** costs 3,000 leaves and **Nightfall Ranger** costs 6,000 leaves.
+Nightfall changes the outfit while keeping the cat's orange fur and the tunic's bronze front.
+
+Buy an outfit between waves and the cat puts it on at once. If you buy during a wave, tap **Wear** between waves
+to put it on. Switching is free between waves, and the game saves what she wears.
+
+Paid outfits will use premium currency later. If the game cannot take an outfit's currency yet, its tile says
+**Coming later**.
+
+### The real-money plan
 
 The owner's rules (18 November 2026):
 
@@ -800,6 +908,7 @@ The game uses stand-ins until these come. Concept images are made. Put the Meshy
 
 | Model | Used as | Stand-in now | Concept image |
 |---|---|---|---|
+| Saddlery (New, 21 Nov 2026, G4) | The Saddlery building | The Bow Bench, tinted brown | None yet (made only when the owner asks) |
 | Gloom Herald | Raid leader | The Crow Drummer, 1.25 times bigger | `concepts/enemies4/01_gloom_herald.png` |
 | Grubling | Gloomwood | A small tinted Mole Sapper | `concepts/burrows/01_grubling.png` |
 | Glowcap | Gloomwood | A small teal Toadstool Brute | `concepts/burrows/02_glowcap.png` |
@@ -813,10 +922,10 @@ is no longer needed.
 
 ### Play on the phone
 
-- **New (20 Nov 2026, G1b and G2):** once the APK is on the phone, play it and check: do the squads read as teams on
-  the roads, are the barricade rows and the Hearthtree's tiles easy to use, and is the Wishing Well's pace right?
-- Play the Gloomwood once both changes land: is the road long enough, are the fights and Mossback right, does the
-  night read well on the S24's screen?
+- The 23 Nov APK is on the phone. Check whether squads read as teams, the barricade rows and camp cards are easy
+  to use, and the Wishing Well's pace feels right.
+- Play the Gloomwood: is the road long enough, are the fights and Mossback right, and does the night read well
+  on the S24's screen?
 - Check the top bar under the S24's real status bar and camera hole.
 - A balance pass by play: run length, boss times, materials per run, prices, raids, the Warden, the garden's pace.
 
@@ -825,6 +934,7 @@ is no longer needed.
 - **New models for Phase F.** The Golden Grub, the Gloom Totem and Training Target / Bow Bench levels 3 to 5 use
   existing models for now. The owner makes them in Meshy (part 11, Rules).
 - The money proposals in part 9.
+- Buildings never fade, so the cat can be hidden behind them. How to handle that is open.
 - The optional Moth Lantern and Bramble Snare (raid extras), only with the owner's yes.
 
 ### Later
@@ -833,7 +943,7 @@ is no longer needed.
   a dash whoosh, the Warden, garden and fishing); attachments shown on the models; the bug review held to the end.
 - Planned: more dungeons (some without a boss); more guardians, collected in dungeons, with guardian spots following
   the home level; bonds, fletching special arrows, decorating, daily and weekly tasks, an endless mode (Phase F);
-  islands by boat; the money side.
+  islands by boat, mount skills earned in dungeons, and paid outfits using premium currency.
 
 ---
 
@@ -841,7 +951,9 @@ is no longer needed.
 
 Godot 4.7.2, Mobile renderer with the OpenGL fallback on, portrait (viewport 720x1280, stretch `canvas_items`,
 aspect `expand`), capped at 60 fps (the cat's cloth simulation depends on the frame rate). GDScript only. The project
-is `game/` inside `D:\Projects\Project LEAF`. **It is not a git repository**: the backups below are the safety net.
+is `game/` inside `D:\Projects\Project LEAF`. **Since 20 Nov 2026 it is a git repository** holding only the game and
+the docs (see `CLAUDE.md`). The art pipeline, concepts and tools stay local, so the backups below are still their
+safety net.
 
 ### Architecture
 
@@ -910,7 +1022,7 @@ The design is `docs/PHASE_F_PLAN.md`. The numbers are all in `balance.json`.
     `needs_burrows` and `needs_depth` on homes 6 to 8 are kept for older code.
   - `stations.target` and `stations.bench`: 5 levels. `stat_cap_by_station_level` and `bow_cap_by_bench_level`:
     `[0, 4, 6, 8, 9, 10]`.
-  - `missions[i].needs_home` (the home level to start it), `reward` (leaves, timber), optional `strength_mult`,
+  - `missions[i].needs_home` (the home level to start it; **all 1 since 21 Nov 2026**, so no mission is gated), `reward` (leaves, timber), optional `strength_mult`,
     `elite_by_chapter`, `boss_adds`, `pool_first` with `first_waves`.
   - `mission.roads` (pattern shares, `favoured_weight`, `rush_count`, `rush_speed`, `teach_mission`,
     `teach_roads_by_chapter`), `mission.burst` (`size`, `spacing`), `mission.min_wave_ratio` (0.85),
@@ -960,10 +1072,10 @@ The design is `docs/PHASE_G_PLAN.md` (steps G1b and G2). The numbers are in `bal
   - `camp_name` in `balance.json`, and `Data.camp_name(cap)` for the name. Level names are unchanged.
   - The Mushroom Cottage and the Market have `needs_home` 2. The `market` block holds its sells, buys and prices. Thistle
     comes free with the Market. Old saves keep their buildings and pets.
-  - Barricades are rows on the 12 road spots (3 per road). The allowed rows follow the home level (2, 3, 5, 7, 9, 12).
-    Each piece has its own health: cracked below 50%, broken at 0. Repair costs 30% of the row's cost per broken piece,
-    half per cracked one. Old placed barricades became rows; bag pieces were refunded as leaves.
-  - Tower repair: a repair marker on a knocked-down tower, 30% of its cost.
+  - Barricades are rows on the 12 road spots (3 per road). Each piece cracks below 50% health and breaks at 0.
+    Old placed barricades became rows and bag pieces were refunded as leaves. The session's later pad and repair
+    rules are under "Barricades and the Well" below.
+  - Tower repair: a repair marker on a knocked-down tower. The badge price now matches Mend (see Loop fixes).
   - The Wishing Well is automatic (no wishes). Its heal percents and the rates in waves are in `balance.json`.
   - Shop cards: `ui_icons.gd` draws 32 icons in code. `hud.gd` has the row kinds `section` and `item` (items are tiles,
     two per row on a phone). A row is still `{text, note, cost, label, enabled, action, pulse}`, with `kind` for these two.
@@ -972,6 +1084,183 @@ The design is `docs/PHASE_G_PLAN.md` (steps G1b and G2). The numbers are in `bal
 - **Results on the PC:** `--smoke` OK, `--fightf` 55 pass, `--homegoals` 45, `--rows` 46, `--campg` 45, `--enemyf` 22,
   `--cards` 55; no failures.
 - **Backup** before G2: `D:\DevCache\backup\pre_phase_g2_20261120_1429`.
+
+### Phase G3: the Bow Shop (New, 21 Nov 2026, G3)
+
+The design is `docs/PHASE_G_PLAN.md` (step G3). The numbers are in `balance.json`.
+
+- **Data.**
+  - `stations.bench.name` is "Bow Shop" (the station id is still `bench`).
+  - The shop uses `bows` for Twig, Sunwood, Ember and Frost. Thorn Volley and Foxfire have data and assets and
+    are hidden in the shop. `Data.bow_burn` reads Ember's 3 s burn at 25% of the hit's damage per second.
+  - `Data.craft_cost` takes leaves and timber.
+- **Code.**
+  - `stations.gd`: `_card_bench` (the card), `_bow_tile` and `_bow_note` (the tiles and their badges), `_craft` (buy),
+    `_equip`, `_upgrade_bow`, `_locked`.
+  - `player.gd`: `apply_bow` swaps the bow model into the cat's `SK_CatBow` (`_bow_parts`, a named-bind skin). Glowing
+    parts use a second material `M_Glow` that keeps its glow (`Props.apply_vc_glow` / `Props.vc_surfaces`).
+  - `arrow.gd` picks the arrow model and applies the shot's effects. `enemy.gd` handles burn, slow and freeze.
+    `fx.gd` draws the release bursts, trails, hit effects and Frost's ice. A tile row may carry a `picture` in `hud.gd`.
+  - `CatRanger.glb` has revised Idle, Walk and Run carry poses and no bow spin after release in Shoot.
+    `bow_face.gd` rolls the paw in place to turn the string toward the chest when carrying, using
+    `cat.bow_face_max_deg`. During draw the animation already points the string at the cat.
+- **Files.**
+  - Bows `game/assets/cat/bows/bow_<id>.glb`, arrows `game/assets/cat/arrows/arrow_<id>.glb`, tile pictures
+    `game/assets/ui/bows/bow_<id>.png`.
+  - A bow or arrow without a file falls back to the cat's own bow tinted, and the plain CatRanger arrow.
+  - Claude made bow and arrow models in Blender under the owner's exception. The owner approved the first
+    set on 21 Nov 2026. Bows are skinned to two bow bones (`weapon.L` for the grip and `bowstring`), so drawing still
+    pulls the string. The limb tips bend about 2.5 cm at full draw.
+  - Blender pipeline `art/scripts/bows/` (`run_all.sh`), exports in `art/export/bows/`, pictures in
+    `art/previews/bows/`. These art folders stay local (not in git).
+- **Tests:** `--bowshop` (`game/scripts/autotest_g3_bow.gd`); see the test modes table.
+- **Results on the PC:** `--bowshop` passed 61 checks after the new balance and effects. `--smoke` completed.
+- **Backup** before G3: `D:\DevCache\backup\pre_g3_20261121`.
+
+### Phase G4: the Saddlery (New, 21 Nov 2026, G4)
+
+The design is `docs/PHASE_G_PLAN.md` (step G4). The numbers are in `balance.json`. What the player sees is in part 5
+("The Saddlery").
+
+- **Data.**
+  - `stations.saddlery` (the building), `saddlery` (its levels and prices), `mount_skills` (the four skills),
+    `mount_attachments` (the three attachments), `building_hp.saddlery`.
+  - The old `mount.thump_*` keys are kept but no longer used.
+  - Helpers in `data.gd`: `saddle_items`, `saddle_price`, `saddle_block`, `skill_damage`, `mount_hp_mult`, `leaf_bonus`,
+    `saddlebag_leaves`.
+- **Code.**
+  - `stations.gd`: `_card_saddlery` (the card with its sections Skills, Attachments, Upgrade), `_saddle_tile`, `_saddle_buy`.
+  - `mount.gd`: the skills and their timers, `try_move`, the Fire-spitter, the Pounce and Ram movement.
+  - `save.gd`: `Save.saddlery` holds `skills`, `attach` and `worn`. The worn attachment alone shows and
+    works. `migrate_saddlery()` handles old saves (see part 5).
+  - `enemy.gd`: `stun`, `shove`, `bellowed`. `fx.gd`: `fire_cone`, `bellow`. `ui_icons.gd`: icons stomp, ram, pounce,
+    bellow, saddlebags. `marker.gd`: the saddle badge. `world.gd`: the Saddlery spot (5, 0, 8).
+- **Riding and models.**
+  - `ride_motion.gd` makes the cat move with the saddle, lifts and tilts the carried bow, and eases her
+    away from sampled mount head and ear points. Forward aim uses `mount.aim_cone_deg` and
+    `aim_cone_keep_deg`. The movement and clearance use the `mount.ride_*` keys.
+  - `lifebar.gd` draws the amber mount bar. Mounts' GLBs and clip lists are under `assets/companions/`,
+    with Claude's six gear models in `attachments/` (three for each mount). The Blender scripts
+    and previews are in the local `art/` folders.
+- **Tests:** `--saddlery` (`game/scripts/autotest_g4_saddle.gd`); see the test modes table.
+- **Results on the PC:** `--saddlery` passed 52 checks. Add `--rideclear` to measure rider clearance.
+  See `docs/CHANGES.md` for the known `--topup` and `--raidloss` failures.
+- **Backup** before G4: `D:\DevCache\backup\pre_g4_20261121` (scripts, data, both mounts' files and `.blend`).
+
+### Loop fixes (22 Nov 2026) (New, 22 Nov 2026, loop fixes)
+
+A loop check on 21 Nov 2026 found three loops: a camp fall ate the savings needed for the Hearthtree (the owner's save
+was stuck that way), each act's last mission had to be won before the Hearthtree could grow, and two repair prices
+drained leaves. Five fixes, each approved by the owner:
+
+1. **A camp fall takes only the lost chapter's leaves.** The Gloom takes `raid.leaves_share` (30%) of the leaves gained
+   since the chapter began, never more than the cat holds. Code: `Save.leaves` has a setter that adds every rise to
+   `Save.mission_run["gain"]` while `Save.count_gain` is on (from a mission wave start to the chapter break, fall or end);
+   `fight.chapter_gain()`, `fight.last_fall_lost`. It survives a saved run and an app restart. Raids still take nothing.
+2. **Hearthtree goals one mission earlier:** `stations.camp.levels[1..4].goals`. Hearthtree 2 needs mission 1, 3 mission 5,
+   4 mission 9, 5 mission 12. Hearthtree 6 (mission 15), the Gloomwood and 7-8 are unchanged.
+3. **The Hearthtree's repair is capped:** 10% of its cost, at least `ruin_min`, at most 900 leaves and 30 timber, in the
+   missions too. Code: `gloom_raids.repair`. Other buildings keep the 30% price.
+4. **A knocked-down tower's repair badge costs what "Mend the defences" costs for that tower** (leaves only). Code:
+   `defences.gd` `mend_price(p)`. `defences.tower.repair_share` is no longer read.
+5. **The Saddlery needs Hearthtree level 2** (and 8 missions won). At Hearthtree 1 its tile says "Needs the Hearthtree at
+   level 2".
+
+- **Tests (PC):** `--smoke` OK, `--homegoals` 46, `--rows` 48, `--campg` 47, `--saddlery` 46, `--fightf` 64 (new fall-gain
+  checks), `--laststand` 1 (it runs again with `fight.skip_gate`), `--raidloss` 12 pass and 2 old failures (it tries to
+  replay a won mission, which is refused since Phase F).
+- **Backup** before the fixes: `D:\DevCache\backup\pre_loopfix_20261121`.
+
+### Bow and Hearthtree balance (22 Nov 2026) (New, 22 Nov 2026)
+
+The owner approved these balance changes, and Claude built them. The numbers are in part 3 (the Hearthtree prices and
+the bow table) and in `balance.json`.
+
+- **Data.**
+  - `stations.camp.levels`: the leaves and timber prices of Hearthtree levels 2 to 8, and the Frost Bow goal on level 6.
+  - `bows`: each shop bow has `draw_mult` (Twig 1.0, Sunwood 1.1, Ember 1.0, Frost 1.25; higher = longer draw time).
+  - `cat.min_range_m` (2.0 m): the floor for the cat's range.
+- **Code.**
+  - `Data.bow_draw_mult(id)`. `Data.cat_range()` applies the 2.0 m floor.
+  - `player.gd`: the draw speed is `Data.cat_draw() / Data.bow_draw_mult(Save.bow)`.
+  - `stations.gd` `_bow_note` builds each bow tile's pro and con.
+- **Tests (PC).** `--bowshop` 61 pass, `--homegoals` 48 pass, `--smoke` OK.
+
+### Barricades and the Well (22 Nov 2026) (New, 22 Nov 2026)
+
+Three changes and four review fixes, built and tested on the PC.
+
+- **Repairs any time.** A built row's marker stays visible and tappable in a wave, and its card's Repair is enabled.
+  Before, three checks blocked it in a wave: the markers were hidden, the tap card showed "A wave is on!", and
+  `repair_row` refused. Building rows and repairing towers stay between waves only. The price per piece is in part 4
+  (Defences).
+  - Code: `defences.gd` `_marks_state`, `repair_row`, `repair_row_cost` (the cracked-piece floor of 0.5 is new); `hud.gd`
+    `_spec` (the card).
+- **Pads follow each road.** `world.gd` uses `balance.json` `defences.barricade.pad_rule` to place the gate 2.4 m from
+  the firelight along the road and the far pad near the woods' edge. Fernwood and Bandit Thicket use `patches[].far_pad`
+  to bring the far pad toward camp and unlock it at Hearthtree 4. Their `even_barricade_spacing` setting puts the middle
+  pad halfway between the other two along the road. The left roads use the sharpest outer bend. Rows keep their saved
+  `[lane, index]`. When the Hearthtree grows, `main.on_camp_grown()`
+  rebuilds the roads and then calls `defences.rebuild()` to move the rows, collisions and markers with their pads.
+- **The Well mends to full.** Everything damaged but not broken goes back to full health by itself: the campfire, the
+  Hearthtree and buildings, barricade pieces and towers. `balance.json` `well.passive`: `between_by_level` (3%, 6%,
+  10% a second) and `regen_by_level` (0.5%, 1%, 2% a second in waves). The old `cap_by_level` (60/75/90%) and
+  `between_per_s` are gone. Code: `defences.gd` `well_mend`; `stations.gd` `well_between`; `hud.gd` for the card text.
+  A tower the Well mends to full loses its dark "wrecked" look (review fix 1).
+- **Review fixes (Opus code review):**
+  1. A tower the Well mends to full loses its dark "wrecked" look.
+  2. The cracked-piece price (see the first item).
+  3. `bow_face.gd` (turns the string toward the cat) now rolls the paw in place, so the wrist stays on the arm. It eases
+     its turn, keeps its direction near 180 degrees, and is off while fishing.
+  4. While riding, the cat's lean away from the mount's head is applied last, as one turn at the spine, so aiming no
+     longer undoes it.
+- **Riding overlap after fix 4** (negative = into the cat):
+
+  | Thistle move | Before | After |
+  |---|---|---|
+  | Stomp | -4.8 cm | +0.6 cm (clear) |
+  | Pounce | -8.2 cm | -2.2 cm |
+  | Bellow | -13.6 cm | -7.1 cm |
+
+  Bramblewool is clear in every move except Stomp at -0.1 cm. **Still open:** Thistle's Bellow overlaps the cat by
+  7.1 cm. A toned-down head throw in that mount animation would fix it (not done).
+- **Tests (PC):** `--rows` 57, `--campg` 49, `--layout` 118, `--saddlery` 52, `--smoke` OK.
+
+**Pads open by ring (New, 22 Nov 2026).** The owner chose this. The old row limit (2, 3, 5, 7, 9, 12 by home level) was
+replaced because the owner's save had 8 rows at Hearthtree 4, where the limit was 7, so every empty pad refused to build
+without saying why. Now `balance.json` `defences.barricade.rings_by_home` = [0, 1, 1, 2, 2, 3, 3, 3, 3] sets how many rings are open.
+The indices are 2 for the gate, 1 for the middle and 0 for the far pad. A road can open its far pad before the far ring.
+`rows_by_home` is no longer used. Code: `defences.gd` `rings_open()`, `pad_open(lane, idx)`, `pads_open_count()`,
+`build_row`, `_marks_state`, `_refresh_marks`, `_card_spot` and `_price_words()` (the plain reasons on the card);
+`row_cap()` and `row_room()` are removed; `main.gd` has the barricade tip. Old saves keep rows on closed pads.
+- **Final placement tests on PC.** `--rows` passed 94 checks, including the right-hand unlocks at Hearthtree 4 and
+  pad spacing and positions at every Hearthtree level.
+  `--layout` passed 118 checks through the game's own Hearthtree growth path. `--smoke` completed cleanly.
+
+### Tailor's Nook and cat outfits (23 Nov 2026)
+
+- `balance.json` holds the building price and unlock in `stations.tailor` and the outfit prices in `cat_skins`.
+  The outfit IDs are `original`, `dusk_ranger` and `nightfall_ranger`.
+- `stations.gd` builds the outfit card with `_card_tailor` and `_skin_tile` and handles buying and wearing with
+  `_buy_skin` and `_wear_skin`. `data.gd` has the `cat_skin_*` helpers. `save.gd` stores `cat_skin` and
+  `cat_skins_owned`. `settle_cat_skin` defaults older saves to Original Ranger and resets an invalid choice.
+- `player.gd` picks and checks the model with `hero_base` and `_hero_ok` and swaps it with `apply_skin`. A missing
+  or broken outfit model falls back to the original look. The outfits reuse the Cat Ranger's skeleton and animation
+  clips, so riding, bows, cloth and attachments keep working. Each outfit adds four cloth bones for its cloak
+  (`cloak.L.1`/`.2`, `cloak.R.1`/`.2`, on the hips; built by `art/scripts/cat_skins/cloak_bones.py`): `cloth.gd`
+  swings them (FEEL `cloak_top`/`cloak_hem`, thigh and shin capsules), and `cloth_fit.gd` keeps them off the legs
+  and tail and tucks the tunic's back flaps under the cloak. The original cat has no cloak bones and is unchanged.
+- The outfits follow the owner's Meshy designs. The cloaks and the Nook were rebuilt as clean geometry to match the
+  designs because the Meshy pieces were too broken to clean up. Sources are in `art/source/meshy/`, build scripts in
+  `art/scripts/cat_skins/` and exports in `art/export/cat_skins/`.
+- Outfit models and clips go at `res://assets/cat/skins/<id>.glb` and `res://assets/cat/skins/<id>_clips.json`.
+  Original Ranger uses the base hero model. Shop pictures go at `res://assets/ui/cat_skins/<id>.png`. The Nook
+  model is `res://assets/props/tailors_nook.glb`, and its spot in `world.gd` is `(8.9, 0, 5.2)`.
+- **Codex review fixes.** The Nook collision radius is 1.35 m (`stations.gd`) and its interaction ring is
+  1.95 m out on the camera's side (`world.gd`). An active fight gives newly built attackable stations their
+  full health. `Data.cat_skin_buyable` blocks purchases without a model file. `hero_clips()` follows the
+  model that actually loaded, including an Original Ranger fallback.
+- `--tailor` (`game/scripts/autotest_cat_skins.gd`) passed 63 checks. `--layout` passed 132 checks with the Nook.
 
 ### Graphics levels (`quality.gd`)
 
@@ -1014,7 +1303,7 @@ field with defaults (`d.get`); `save_v` is 2. A dish eaten mid-chapter goes back
 ### The debug endgame start
 
 Debug builds only. `--endgame` opens a **separate save** as if all 15 missions were won: home level 5, a grown cat
-(Training Target and Bow Bench at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, 3 Hollow keys, food, the Gloomwood open (the Warden still to be found). The HUD
+(Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, 3 Hollow keys, food, the Gloomwood open (the Warden still to be found). The HUD
 says "Endgame test save". It stays on at every launch until one launch with `--endgame-off`; then the real save is
 back, untouched. `--endgame --fresh` starts it over (an older endgame save keeps its old levels until then). On the phone, put the argument on a line in `files/test_args.txt`.
 Release builds ignore both.
@@ -1042,8 +1331,11 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | Gloom Raids | `autotest.gd` | `--raid` (with `--raid-small`, `--with-warden`), `--raidloss`, `--meter`, `--raidsave`, `--raidresume=1/2/3`, `--raidtypes`, `--wear`, `--shards`, `--raidintro`, `--raidshots`, `--raidperf`; flags `--raid-type=`, `--raid-warn=`, `--raid-meter=` |
 | The Gloomwood | `autotest_e.gd` | `--dungeon`, `--dungeonshots`, `--dungeonfall`, `--dungeonresume=1` then `=2`, `--boss`, `--dungeonperf`, `--dungeontreasure`, `--dungeonlevels`, `--dungeonstand` (`=god`, `=items`), `--dungeoncareful`, `--floormaps=<dir>`; kept from Phase E: `--burrowsave`, `--hollow`, `--dash`, `--traps`, `--burrowfoes`, `--topup`, `--burrowhooks` |
 | Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck`, `--taps`, `--arrows` |
-| Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (the goals, the gate, the home's card), `--fightf` (patterns, the teaching roads, no easy waves, the gate, a live wave with the grub and the bonuses, the Gloom fade), `--enemyf` (the boar's daze, the pitcher and frog standoff, the Golden Grub, the totem's buff) |
-| G1b and G2 (New, 20 Nov 2026) | `autotest_g2_def.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (barricade rows), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`); `--fightf` now checks squads |
+| Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (goals and mission access), `--fightf` (waves, squads, bonuses, Gloom fade and chapter losses), `--enemyf` (boars, support enemies, grub and totem) |
+| G1b and G2 | `autotest_g2_def.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (pads, repair, the Well), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
+| G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, upgrades, equipping, pierce, burn, frost, models and shot effects; 61 passes) |
+| G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments and riding; 52 passes); add `--rideclear` for the clearance sweep |
+| Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it
 gets its `.uid`.
@@ -1064,42 +1356,47 @@ cd "/d/Projects/Project LEAF/game"
 ```
 
 The APK lands in `game\build\ProjectLEAF.apk` (debug, signed, arm64 only, preset "Android" in `export_presets.cfg`).
-adb is not on PATH: it is `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`. The adb daemon often restarts after an
+adb is not on PATH: the Android SDK puts it in `%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe`. The adb daemon often restarts after an
 export, so run `adb wait-for-device` first, then `adb -s <serial> install -r game\build\ProjectLEAF.apk` (the S24's
 serial is in `docs/STATUS.md`). Before installing over the owner's game, copy the phone's save to
 `D:\DevCache\backup\phone_save_<date>.json` (for example `adb exec-out run-as com.projectleaf.game cat
 files/leaf_save.json > ...`). If the phone is on the endgame save and the owner wants the real one, put
 `--endgame-off` in `files/test_args.txt`.
 
+**Set up again after the Windows reinstall (21 Nov 2026).** The Android SDK is in `%LOCALAPPDATA%\Android\Sdk`
+(build-tools 36.0.0), Java is Android Studio's own (`jbr`), the Godot 4.7.2 export templates are installed, and the
+Samsung USB Driver 1.9.5.0 lets adb reach the S24. Builds are signed with the owner's saved Godot debug keystore, the
+same key as every earlier phone build. The local `tools/build_apk.ps1` fills blank Java and SDK paths in Godot's editor
+settings and passes keystore settings through environment variables. With `-Install`, it backs up via ADB `run-as`,
+installs and compares the save hashes. Routine ADB stderr messages no longer stop it.
+
 ### Backups
 
-Copies before each big change are in `D:\DevCache\backup\pre_*` (the latest: `pre_phase_g2_20261120_1429`, `pre_phase_g1_20261120_1359`, `pre_phase_f_20261119_1209`, `pre_homefix_20261119_0023`,
+Copies before each big change are in `D:\DevCache\backup\pre_*` (the latest: `pre_g4_20261121`, `pre_g3_20261121`, `pre_phase_g2_20261120_1429`, `pre_phase_g1_20261120_1359`, `pre_phase_f_20261119_1209`, `pre_homefix_20261119_0023`,
 `pre_markers_dungeon2_20261119_0052`, `pre_dungeon2_20261119_0053`); phone saves in `D:\DevCache\backup\phone_save_*`
 and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\`. Back up what you touch first.
 
-### Work in progress (19 to 20 Nov 2026)
+### Work in progress
 
-- **Phase G1 is built and tested on the PC** (20 Nov 2026), not yet on the phone. See "Phase G1" above.
-- **New (20 Nov 2026): G1b and G2 are built and tested on the PC.** The APK was built at 15:43 and waits for the phone.
-  See "Phase G1b and G2" above.
-
-- **Phase F is built and tested on the PC** (`--smoke` and the three Phase F modes), not yet on the phone. Every number
-  is a first guess, to be tuned by play. The Golden Grub (the mole, small and gold), the Gloom Totem (existing Gloom
-  props) and Target levels 3 to 5 / Bench levels 4 and 5 use existing models until the owner decides how new ones are
-  made.
+- Phase F and Phase G1 through G4 are on the phone in the 23 Nov build. G5 is tuning by the owner's play.
+- The Golden Grub, Gloom Totem and later Training Target and Bow Shop levels use the stand-ins listed above.
 - The Gloomwood's road and difficulty are in the live project; only `--dungeon` has been run since, so the full
   regression is still to do.
 
 ### Rules
 
-- **Work on D:, keep C: clear.** Builds, caches, downloads, renders and worktrees go on D:. Shared caches are in
-  `D:\DevCache`. Set TEMP and TMP to `D:\DevCache\tmp` for Godot, Blender and any big command.
-- **Never touch the owner's open Blender or port 9876.** Run Blender headless only: `D:\Blender\blender.exe -b`.
-- **3D models: the owner makes every one in Meshy** (their rule, 19 Nov 2026, in `CLAUDE.md`). Claude never models.
-  - Claude tells the owner what is needed and uses a stand-in until the file comes.
-  - Concept images (Codex CLI, `tools/gen_concepts.ps1`) are made only when the owner asks.
-  - Blender only finishes the owner's file (clean-up, colours, rig, animation, export), per `docs/ASSET_RULES.md` and
-    `docs/AGENT_BRIEF_MESHY.md`.
+- **Disks** (since 21 Nov 2026): C: has room again, so tools may keep their caches and temp files in their default
+  places on C:. The project, builds, backups and work files stay on D:. Old caches are in `D:\DevCache`, and the test
+  runners still set TEMP and TMP to `D:\DevCache\tmp`.
+- **Blender:** headless (`D:\Blender\blender.exe -b`), or live in the Blender that `tools/start_blender_mcp.ps1` opens,
+  through the local bridge on port 9876. `py -3.15-32 tools/blender_mcp.py` runs scripts in that window. Leave the
+  owner's own Blender alone. Agents working side by side stay headless.
+- **3D models** (`CLAUDE.md`): the owner makes models in Meshy. Claude may design bows, arrows and mount attachments
+  in Blender. Claude finishes the owner's meshes and can rebuild broken parts to match the design, as with the
+  outfit cloaks and the Nook. Concept images (`tools/gen_concepts.ps1`, Codex CLI) are made at the owner's request.
+- **Agents and review.** Haiku handles simple work, Sonnet well-specified tasks and Opus harder systems and balance.
+  End with an Opus or Codex review. Codex worked read-only for review, fixes and docs and supplied patches.
+- **Godot MCP** uses the local `.mcp.json` and `tools/mcp/` to connect to the Godot 4.7.2 console.
 - Keep the design rules: nothing moves while the game is closed; camp, not village; looks-only selling; nothing tall
   between the camera and where the cat can walk; nothing of the HUD in the middle third of the screen.
 - The owner tests on the phone: build complete and playable, keep testing light, and back up first.
@@ -1109,6 +1406,7 @@ and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\
 ## 12. Where to read more
 
 - `docs/STATUS.md`: where things stand, what is next, tools and paths. Read it first when work starts again.
+- `docs/CHANGES.md`: changes and checks for each merged branch.
 - `GAME_PLAN.md`: the whole design. Section 0 (Draft 7) holds the direction and the owner's decisions; it wins over
   the older sections below it.
 - `docs/PHASE_A_PROGRESS.md`: build notes for every phase, the choices made, and the test results.

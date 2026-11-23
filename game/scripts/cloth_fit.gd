@@ -32,6 +32,8 @@ const PANEL := {
 	"cape_top": [0.040, 0.14, -3.0, 62.0, 16.0],
 	"cape_hem": [0.045, 0.16, -10.0, 40.0, 18.0],
 	"cape_arm": [0.045, 0.07, -3.0, 38.0, 14.0],
+	"cloak_top": [0.062, 0.22, -3.0, 50.0, 8.0],
+	"cloak_hem": [0.072, 0.0, -10.0, 30.0, 14.0],
 	"hood_top": [0.050, 0.12, -3.0, 38.0, 14.0],
 	"hood_tip": [0.045, 0.12, -10.0, 45.0, 18.0],
 	"face_top": [0.022, 0.0, -3.0, 32.0, 18.0],
@@ -40,7 +42,9 @@ const PANEL := {
 }
 # which guards each kind of cloth is tested against
 const AGAINST := {
-	"skirt": ["thigh.L", "thigh.R", "shin.L", "shin.R", "tail.001", "tail.002", "hips"],
+	"skirt": ["thigh.L", "thigh.R", "shin.L", "shin.R", "tail.001", "tail.002", "hips", "cloak.L", "cloak.R"],
+	"cloak_top": ["thigh.L", "thigh.R", "tail.001", "tail.002", "hips"],
+	"cloak_hem": ["thigh.L", "thigh.R", "shin.L", "shin.R", "tail.001", "tail.002", "tail.003"],
 	"cape_top": ["upper_arm.L", "upper_arm.R", "forearm.L", "forearm.R", "quiver", "arrows", "chest", "shoulders"],
 	"cape_hem": ["upper_arm.L", "upper_arm.R", "forearm.L", "forearm.R", "quiver", "arrows", "chest", "shoulders"],
 	"cape_arm": ["forearm.L", "forearm.R", "quiver", "arrows"],     # of the forearms only its own arm's: see SAME_SIDE
@@ -55,7 +59,8 @@ const AGAINST := {
 # guard ending in .L): the cloth on one arm has nothing to do with the other arm
 const SAME_SIDE := ["cape_arm"]
 # guards that lie on top of the cloth: cloth that meets one is turned back toward the body, not pushed on through it
-const OVER := ["quiver", "arrows"]
+const OVER := ["quiver", "arrows", "cloak.L", "cloak.R"]
+const HEM_LIMIT := deg_to_rad(79.0)  # total swing from rest in the hips' frame
 
 
 ## One cloth bone, in typed fields (dictionary look-ups in the inner loop were slow), its tests grouped by guard.
@@ -75,6 +80,9 @@ class Piece:
 	var low: float
 	var high: float
 	var side: float
+	var cloak := false
+	var body_rest_dir := Vector3.ZERO # the cloak hem's resting direction in the hips' frame
+	var lining_guard := -1
 	var fix := Basis()              # its last correction, seen from what it hangs on (for the frames in between)
 	var fixed := false
 
@@ -89,25 +97,35 @@ var _ga := PackedVector3Array()     # the guards' end points this frame, in the 
 var _gab := PackedVector3Array()    # ... b - a
 var _ginv := PackedFloat32Array()   # ... 1 / |b - a|^2
 var _gover := PackedByteArray()     # 1 = the guard lies over the cloth (OVER)
+var _lining_out := PackedVector3Array() # lining guard's outward normal, or zero for other guards
+var _lining_up := PackedVector3Array()  # toward the sewn top of that panel
 var _pts := PackedVector3Array()    # a bone's samples this pass, relative to its head
 
 
 func setup(sk: Skeleton3D, cloth_bones: Array, guard_info: Array) -> void:
 	var index := {}
+	var lining := {}
 	for g in guard_info:
 		var bone := sk.find_bone(String(g["bone"]))
 		if bone < 0:
 			continue
-		index[String(g["name"])] = guards.size()
+		var guard_name := String(g["name"])
+		var is_lining := guard_name == "cloak.L" or guard_name == "cloak.R"
+		index[guard_name] = guards.size()
+		if is_lining:
+			lining[bone] = guards.size()
 		guards.append({"bone": bone, "a": _v(g["a"]), "b": _v(g["b"]), "r": float(g["r"]), "keep": bool(g["keep"]),
-				"over": String(g["name"]) in OVER})
+				"over": guard_name in OVER, "lining": is_lining})
 	_ga.resize(guards.size())
 	_gab.resize(guards.size())
 	_ginv.resize(guards.size())
 	_gover.resize(guards.size())
+	_lining_out.resize(guards.size())
+	_lining_up.resize(guards.size())
 	for i in guards.size():
 		_gover[i] = 1 if guards[i]["over"] else 0
 	var by_name := {}
+	var under_cloak: Array[Piece] = []
 	for c in cloth_bones:
 		var kind := String(c["kind"])
 		if not PANEL.has(kind):
@@ -117,12 +135,13 @@ func setup(sk: Skeleton3D, cloth_bones: Array, guard_info: Array) -> void:
 		var above := -1
 		var frame := sk.get_bone_global_rest(c["on"]).basis
 		if String(c["parent"]) != "" and by_name.has(String(c["parent"])):
-			above = bones[by_name[String(c["parent"])]].bone
+			above = by_name[String(c["parent"])]
 			frame = sk.get_bone_global_rest(above).basis
 		var length := float(c["length"])
 		var half := minf(float(panel[0]), length * 0.9)
 		var dip := -half * half / (2.0 * float(panel[1])) if float(panel[1]) > 0.0 else 0.0     # the panel curves toward the body
 		var pc := Piece.new()
+		var rear_flap: bool = c["name"] == "skirt.BL" or c["name"] == "skirt.BR"
 		for row in [[1.2, 1.0], [0.8, 0.9], [0.4, 0.75]]:      # three rows: the first is past the tip, the hem hangs lower
 			var y: float = length * row[0]
 			var x: float = half * row[1]
@@ -143,8 +162,13 @@ func setup(sk: Skeleton3D, cloth_bones: Array, guard_info: Array) -> void:
 				if kind in SAME_SIDE and sided and String(name).right(2) != String(c["name"]).right(2):
 					continue
 				var g: Dictionary = guards[index[name]]
+				if g["lining"] and not rear_flap:
+					continue
 				var home := sk.get_bone_global_rest(g["bone"])
-				var room := at.distance_to(Geometry3D.get_closest_point_to_segment(at, home * g["a"], home * g["b"]))
+				var offset := at - Geometry3D.get_closest_point_to_segment(at, home * g["a"], home * g["b"])
+				if g["lining"]:
+					offset = _lining_offset(offset, home.basis.z.normalized(), -home.basis.y.normalized())
+				var room := offset.length()
 				var radius := room - KEEP_SLACK if g["keep"] else minf(float(g["r"]) + MARGIN, room - 0.002)
 				if radius > 0.01:
 					if not by_guard.has(index[name]):
@@ -167,13 +191,41 @@ func setup(sk: Skeleton3D, cloth_bones: Array, guard_info: Array) -> void:
 		pc.low = deg_to_rad(float(panel[2]))
 		pc.high = deg_to_rad(float(panel[3]))
 		pc.side = deg_to_rad(float(panel[4]))
-		by_name[String(c["name"])] = bones.size()
-		bones.append(pc)
+		pc.cloak = kind == "cloak_top" or kind == "cloak_hem"
+		if kind == "cloak_hem":
+			pc.body_rest_dir = c["rest_dir"]
+		pc.lining_guard = lining.get(pc.bone, -1)
+		## Fit the rear skirt after the cloak so its tests see the corrected lining.
+		by_name[String(c["name"])] = pc.bone
+		if rear_flap and not lining.is_empty():
+			under_cloak.append(pc)
+		else:
+			bones.append(pc)
+	bones.append_array(under_cloak)
 	_pts.resize(9)
 
 
 func _v(a) -> Vector3:
 	return Vector3(float(a[0]), float(a[1]), float(a[2]))
+
+
+## Extend the lining collision outward so it still catches a flap that has crossed the capsule.
+## Give it a margin toward the seam, where the skirt tip rises as it swings out.
+func _lining_offset(offset: Vector3, outward: Vector3, up: Vector3) -> Vector3:
+	return offset - outward * maxf(offset.dot(outward), 0.0) - up * clampf(offset.dot(up), 0.0, MARGIN)
+
+
+func _update_guard(sk: Skeleton3D, i: int) -> void:
+	var g: Dictionary = guards[i]
+	var at := sk.get_bone_global_pose(g["bone"])
+	var a: Vector3 = at * (g["a"] as Vector3)
+	var ab: Vector3 = at * (g["b"] as Vector3) - a
+	_ga[i] = a
+	_gab[i] = ab
+	_ginv[i] = 1.0 / ab.length_squared() if ab.length_squared() > 1e-12 else 0.0
+	if g["lining"]:
+		_lining_out[i] = at.basis.z.normalized()
+		_lining_up[i] = -at.basis.y.normalized()
 
 
 func _process_modification_with_delta(_delta: float) -> void:
@@ -185,13 +237,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 		_reuse(sk)
 		return
 	for i in guards.size():
-		var g: Dictionary = guards[i]
-		var at := sk.get_bone_global_pose(g["bone"])
-		var a: Vector3 = at * (g["a"] as Vector3)
-		var ab: Vector3 = at * (g["b"] as Vector3) - a
-		_ga[i] = a
-		_gab[i] = ab
-		_ginv[i] = 1.0 / ab.length_squared() if ab.length_squared() > 1e-12 else 0.0
+		_update_guard(sk, i)
 	var before := {}
 	if check_restore:
 		last_out.clear()
@@ -225,21 +271,30 @@ func _process_modification_with_delta(_delta: float) -> void:
 				var a: Vector3 = _ga[g]
 				var ab: Vector3 = _gab[g]
 				var inv: float = _ginv[g]
+				var outward := _lining_out[g]
+				var up := _lining_up[g]
+				var lining := outward != Vector3.ZERO
 				# the whole panel is clear of this guard: none of its points can be inside it
-				if c.distance_to(a + ab * clampf((c - a).dot(ab) * inv, 0.0, 1.0)) - b.reach >= b.grmax[gi]:
+				var centre_offset := c - (a + ab * clampf((c - a).dot(ab) * inv, 0.0, 1.0))
+				if lining:
+					centre_offset = _lining_offset(centre_offset, outward, up)
+				if centre_offset.length() - b.reach >= b.grmax[gi]:
 					continue
 				for k in range(b.gstart[gi], b.gstart[gi + 1]):
 					var p: Vector3 = head + _pts[b.ps[k]]
 					var q: Vector3 = a + ab * clampf((p - a).dot(ab) * inv, 0.0, 1.0)     # nearest point on the guard's axis
-					var d := p.distance_to(q)
+					var offset := p - q
+					var d := _lining_offset(offset, outward, up).length() if lining else offset.length()
 					var r: float = b.pr[k]
-					var inside: float = r - d
-					if inside > worst and d > 0.0001:
+					var inside := r - d
+					if lining and inside > 0.0:
+						inside += maxf(offset.dot(outward), 0.0)
+					if inside > worst and (lining or d > 0.0001):
 						worst = inside
 						from = p - head
-						to = q + (p - q) * (r / d) - head
 						over = _gover[g] == 1
-			if from == Vector3.ZERO or to.length_squared() < 0.000001:
+						to = Vector3.ZERO if lining else q + offset * (r / d) - head
+			if from == Vector3.ZERO or (not over and to.length_squared() < 0.000001):
 				break
 			if over:                                        # under something: come back down by as much as it is in
 				var v := ref.inverse() * basis.y.normalized()
@@ -251,10 +306,17 @@ func _process_modification_with_delta(_delta: float) -> void:
 			else:
 				basis = Basis(Quaternion(from.normalized(), to.normalized())) * basis
 			changed = true
+		if b.cloak:
+			var limited := _cloak_limits(sk, b, basis, ref)
+			changed = changed or limited != basis
+			basis = limited
+		elif changed:
+			basis = _within(basis, ref, b.low, 3.2, 3.2)     # a guard may push the cloth out, never into the body
 		b.fixed = changed
 		if changed:
-			basis = _within(basis, ref, b.low, 3.2, 3.2)     # a guard may push the cloth out, never into the body
 			sk.set_bone_global_pose(b.bone, Transform3D(basis, head))
+			if b.lining_guard >= 0:
+				_update_guard(sk, b.lining_guard)
 			moved += 1
 			if every > 1:                                   # the turn it was given, seen from what it hangs on
 				var rt := ref.transposed()
@@ -270,13 +332,31 @@ func _process_modification_with_delta(_delta: float) -> void:
 ## correction moves with the body. It is off by at most a frame or two of swing.
 func _reuse(sk: Skeleton3D) -> void:
 	for b in bones:
-		if not b.fixed:
+		if not b.fixed and not b.cloak:
 			continue
 		var pose := sk.get_bone_global_pose(b.bone)
 		var hung: int = b.above if b.above >= 0 else b.on
 		var ref: Basis = sk.get_bone_global_pose(hung).basis.orthonormalized() * b.rel
-		var basis := (ref * b.fix * ref.transposed() * pose.basis.orthonormalized()).orthonormalized()
-		sk.set_bone_global_pose(b.bone, Transform3D(basis, pose.origin))
+		var input := pose.basis.orthonormalized()
+		var basis := (ref * b.fix * ref.transposed() * input).orthonormalized() if b.fixed else input
+		if b.cloak:
+			basis = _cloak_limits(sk, b, basis, ref)
+		if b.fixed or basis != input:
+			sk.set_bone_global_pose(b.bone, Transform3D(basis, pose.origin))
+
+
+## Preserve the sewn top's limits after collisions and on reused frames. The hem also inherits the top's swing.
+func _cloak_limits(sk: Skeleton3D, b: Piece, basis: Basis, ref: Basis) -> Basis:
+	var limited := _within(basis, ref, b.low, b.high, b.side)
+	if b.body_rest_dir == Vector3.ZERO:
+		return limited
+	var rest := (sk.get_bone_global_pose(b.on).basis * b.body_rest_dir).normalized()
+	var along := limited.y.normalized()
+	var off := rest.angle_to(along)
+	if off <= HEM_LIMIT:
+		return limited
+	var want := rest.slerp(along, HEM_LIMIT / off).normalized()
+	return Basis(Quaternion(along, want)) * limited
 
 
 func _within(basis: Basis, ref: Basis, low: float, high: float, side: float) -> Basis:

@@ -8,15 +8,21 @@ A low-poly 3D action game for Android, made in Godot 4.7.2 (`game/`). Read `docs
 
 - **Claude never models a 3D model**, in Blender or anywhere else. That covers characters, enemies, pets, mounts,
   buildings, props, and new looks for upgrade levels.
-- **The one exception (the owner, 20 November 2026): the cat's bows and their arrows.** Claude may design these in
-  Blender, fitted to the cat's bow bones. Show the owner pictures before they go in.
+- **The exceptions: the cat's bows and their arrows (the owner, 20 November 2026), and the mounts' attachments
+  (Fire-spitter, Mossweave Saddle, Saddlebags; the owner, 22 November 2026).** Claude may design these in Blender,
+  fitted to the cat's bow bones or the mounts' saddle bone. Show the owner pictures before they go in.
 - **When the game needs a new model,** tell the owner plainly what is needed: what it is, what it does in the game,
   and its rough size. The owner makes it with Meshy and puts the file in `art/source/meshy/`.
 - **Concept images** (Codex CLI, `tools/gen_concepts.ps1`) are made only when the owner asks for one.
 - **Until the model arrives,** the game uses a stand-in: an existing model or a tinted placeholder. Say which.
 - **Blender is used only to finish the owner's file:** clean-up, colours, rig, animation and export, following
-  `docs/ASSET_RULES.md` and `docs/AGENT_BRIEF_MESHY.md`. Run it headless only (`D:\Blender\blender.exe -b`). Never
-  touch the owner's open Blender or port 9876.
+  `docs/ASSET_RULES.md` and `docs/AGENT_BRIEF_MESHY.md`. When parts of the owner's Meshy mesh are too broken to clean,
+  Claude may rebuild those parts as clean geometry that follows the owner's design (the owner, 23 November 2026: the
+  outfit cloaks and the Tailor's Nook).
+- **How Claude runs Blender** (the owner, 21 November 2026): headless (`D:\Blender\blender.exe -b`), or live in the
+  Blender that `tools/start_blender_mcp.ps1` opens, through the MCP bridge on port 9876 (client:
+  `py -3.15-32 tools/blender_mcp.py`). Never touch a Blender the owner opened themselves. Agents working side by side
+  stay headless, so they don't clash in one live Blender.
 - When offering the owner a choice, say exactly what each choice does. The owner should never have to guess what
   "the split" or a button means.
 
@@ -44,8 +50,9 @@ Rules for running agents side by side:
 
 ## Working rules
 
-- **Work on D:, keep C: clear.** Builds, caches and temp files go on D:. Set TEMP and TMP to `D:\DevCache\tmp` for
-  Godot, Blender and any big command.
+- **Disks** (since the Windows reinstall, 21 Nov 2026): C: has room again, so tools may keep their caches and temp
+  files in their default places on C:. The project, builds, backups and work files (`D:\DevCache\tmp\<work>\`) stay on
+  D:. The test runners still set TEMP and TMP to `D:\DevCache\tmp`, which is fine.
 - **Back up before a big change** to `D:\DevCache\backup\pre_<work>_<date>`.
 - **Git** (from 20 Nov 2026):
   - the repo is https://github.com/anonymusdeveloper1/PROJECT-LEAF (public);

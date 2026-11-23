@@ -2,18 +2,19 @@ extends Node3D
 ## The camp's defences (Phase G2, 20 Nov 2026: barricades in rows of 3 built on the roads, repairs on the spot):
 ##   barricade  built on the roads in rows (barricade_row.gd), never bought in the shop. Each road has 3 spots
 ##              (world.barricade_slots(), 12 in all), each with a small marker (marker.gd): tap an empty one to build a
-##              row of barricade.row.pieces pieces across the road for row.cost; the Hearthtree holds rows_by_home rows.
+##              row of barricade.row.pieces pieces across the road for row.cost; the Hearthtree opens the pads ring by ring (rings_by_home).
 ##              Each piece has its own health and is hit on its own: whole, cracked below crack_at (darker, leaning),
 ##              broken at 0 (it falls flat by a little rubble pile, and enemies walk through the gap it leaves). Tap a
 ##              row to repair it: repair_share of the row's cost for each broken piece, half that for each cracked one.
 ##   tower      an acorn tower, bought in the shop and placed with the build button anywhere you like; how many you can
 ##              have is set by the home level. Enemies go for towers right after barricades. Knocked down, it tips over
-##              and shows a repair marker: tower.repair_share of what it cost (build and upgrades) stands it up again.
+##              and shows a repair marker: the leaves "Mend the defences" would ask for that tower stand it up again
+##              (mend_price, since 21 Nov 2026).
 ##   spikes     a thorn trap, bought and placed the same way, that hurts and slows whatever walks over it.
 ## Broken in a mission, barricades and towers are mended for free when the mission is won; when the camp falls, or
 ## after a Gloom Raid, the damage is kept ("wrecked") until mended (a row's or a tower's card, the shop, the Watch's
-## "Mend all"). The Wishing Well mends what is not broken (well_mend). The markers show only outside a wave and in the
-## camp (not below ground). Every piece of a kind shares one level, upgraded on the Hearthtree's card and capped by its
+## "Mend all"). The Wishing Well mends what is not broken (well_mend). The markers show in the camp (not below ground);
+## in a wave only the built rows' markers stay (a row's repair works at any time, 22 Nov 2026). Every piece of a kind shares one level, upgraded on the Hearthtree's card and capped by its
 ## level. Old saves: fences are refunded as leaves; placed barricades become rows at their road spots, and barricade
 ## pieces left in the bag are refunded as leaves (each its old price, barricade.piece).
 
@@ -301,7 +302,7 @@ func tower_cap() -> int:
 
 
 ## True if one more piece of this kind can be bought (towers are capped by the home; barricades are never bought now:
-## rows are built at the road spots, row_room).
+## rows are built at the open road pads).
 func room_for(type: String) -> bool:
 	match type:
 		"tower": return _count("tower") < tower_cap()
@@ -585,6 +586,24 @@ func repair_cost() -> int:
 func piece_mend_cost(p: Dictionary) -> int:
 	if not p["wrecked"]:
 		return 0
+	return _endgame_mend(p)
+
+
+## What "Mend the defences" (repair_cost) would ask for this one piece if it were the only one wrecked, whether it is
+## wrecked or only knocked down in a wave (21 Nov 2026: a downed tower's own repair marker costs this): during the
+## missions its piece price x raid.repair_share x the share it is missing (at least 5, rounded up); after them
+## (Data.raids_open) the endgame price, piece_mend_cost's rule. 0 when it is whole.
+func mend_price(p: Dictionary) -> int:
+	if p.is_empty() or float(p["hp"]) >= float(p["max_hp"]):
+		return 0
+	if Data.raids_open():
+		return _endgame_mend(p)
+	var piece := float(Data.defence_info(String(p["type"]))["piece"])
+	var cost := piece * float(Data.b["raid"]["repair_share"]) * (1.0 - float(p["hp"]) / float(p["max_hp"]))
+	return 0 if cost <= 0.0 else maxi(5, int(ceil(cost)))
+
+
+func _endgame_mend(p: Dictionary) -> int:
 	var r: Dictionary = Data.gr()["repair"]
 	var t := String(p["type"])
 	var missing := clampf(1.0 - float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0)
@@ -670,21 +689,37 @@ func row_cost() -> Dictionary:
 	return out
 
 
-## How many rows the Hearthtree holds at its level (barricade.rows_by_home).
-func row_cap() -> int:
-	var t = Data.defence_info("barricade").get("rows_by_home", [])
+## How many rings of road pads are open at the Hearthtree's level (barricade.rings_by_home), nearest the camp first:
+## ring 0 = the pad nearest the camp on each road (idx 2), ring 1 = the middle (idx 1), ring 2 = the far one (idx 0).
+func rings_open() -> int:
+	var t = Data.defence_info("barricade").get("rings_by_home", [])
 	if typeof(t) != TYPE_ARRAY or (t as Array).is_empty():
-		return main.world.barricade_slots().size()
+		return 3
 	return int(t[clampi(Save.camp_level, 0, (t as Array).size() - 1)])
+
+
+## The rings set the default unlocks. Some roads open their far pad a Hearthtree level earlier.
+func pad_open(lane: int, idx: int) -> bool:
+	if (2 - idx) < rings_open():
+		return true
+	if idx != 0 or lane < 0 or lane >= Data.patch_count():
+		return false
+	var far_pad: Dictionary = Data.patch(lane).get("far_pad", {})
+	var home := int(far_pad.get("home", 0))
+	return home > 0 and Save.camp_level >= home
+
+
+## How many of the road pads are open, and how many there are (the Hearthtree's card).
+func pads_open_count() -> int:
+	var n := 0
+	for s in main.world.barricade_slots():
+		if pad_open(int(s[2]), int(s[3])):
+			n += 1
+	return n
 
 
 func rows_built() -> int:
 	return rows.size()
-
-
-## True if one more row may be built.
-func row_room() -> bool:
-	return rows.size() < row_cap()
 
 
 ## The row at a road spot ({} when the spot is empty).
@@ -703,9 +738,9 @@ func row_damaged(row: Dictionary) -> bool:
 	return false
 
 
-## Builds a row at an empty road spot (its card's Build): row.cost paid, within the Hearthtree's cap. True if built.
+## Builds a row at an empty, open road pad (its card's Build): row.cost paid. True if built.
 func build_row(lane: int, idx: int) -> bool:
-	if _wave_on() or main.area != null or not unlocked("barricade") or not row_room() or not row_at(lane, idx).is_empty():
+	if _wave_on() or main.area != null or not unlocked("barricade") or not pad_open(lane, idx) or not row_at(lane, idx).is_empty():
 		return false
 	var s: Array = main.world.barricade_slot(lane, idx)
 	if s.is_empty() or not Data.pay(row_cost()):
@@ -725,14 +760,19 @@ func build_row(lane: int, idx: int) -> bool:
 
 
 ## A row's repair: repair_share of the row's build cost for each broken piece and half that for each cracked one,
-## rounded up ({} when only scuffed: free).
+## rounded up; a piece hurt but not yet cracked costs its missing share of health (22 Nov 2026).
 func repair_row_cost(row: Dictionary) -> Dictionary:
 	var share := float(Data.defence_info("barricade").get("repair_share", 0.3))
 	var units := 0.0
 	for p in row.get("pieces", []):
 		match piece_stage(p):
 			"broken": units += 1.0
-			"cracked": units += 0.5
+			"cracked":                              # at least half a piece, more the nearer it is to breaking (22 Nov review)
+				var mxc := maxf(float(p["max_hp"]), 1.0)
+				units += clampf(1.0 - float(p["hp"]) / mxc, 0.5, 1.0)
+			_:
+				var mx := maxf(float(p["max_hp"]), 1.0)
+				units += clampf(1.0 - float(p["hp"]) / mx, 0.0, 1.0)    # 22 Nov 2026: hurt, not cracked: its missing health
 	var out := {}
 	if units <= 0.0:
 		return out
@@ -746,7 +786,7 @@ func repair_row_cost(row: Dictionary) -> Dictionary:
 
 ## Repairs a row (its card's Repair): paid, every piece back to full health and standing. True if done.
 func repair_row(row: Dictionary) -> bool:
-	if row.is_empty() or _wave_on() or not row_damaged(row):
+	if row.is_empty() or not row_damaged(row):         # any time, in a wave too (22 Nov 2026)
 		return false
 	if not Data.pay(repair_row_cost(row)):
 		return false
@@ -766,23 +806,12 @@ func repair_row_at(lane: int, idx: int) -> bool:
 	return repair_row(row_at(lane, idx))
 
 
-## A knocked-down tower's repair: tower.repair_share of what it cost (its price plus the upgrades paid to its level),
-## in leaves and timber; costs paid in leaves only also ask a little timber (1 per repair_leaves_per_timber leaves).
-func tower_repair_cost(_p: Dictionary) -> Dictionary:
-	var info := Data.defence_info("tower")
-	var levels: Array = info.get("levels", [])
-	var leaves := float(info.get("piece", 0))
-	var timber := float(info.get("timber", 0))
-	for k in range(1, mini(level("tower"), levels.size())):
-		leaves += float(levels[k].get("upgrade", 0))
-		timber += float(levels[k].get("timber", 0))
-	var share := float(info.get("repair_share", 0.3))
-	var c := {"leaves": maxi(1, int(ceil(leaves * share - 0.0001)))}
-	if timber > 0.0:
-		c["timber"] = maxi(1, int(ceil(timber * share - 0.0001)))
-	else:
-		c["timber"] = maxi(1, int(round(float(c["leaves"]) / maxf(float(info.get("repair_leaves_per_timber", 30)), 1.0))))
-	return c
+## A knocked-down tower's repair (its marker's card): since 21 Nov 2026 the same leaves "Mend the defences" would ask
+## for this tower (mend_price: during the missions and after them alike), so the two never disagree. ({} for no tower.)
+func tower_repair_cost(p: Dictionary) -> Dictionary:
+	if p.is_empty():
+		return {}
+	return {"leaves": mend_price(p)}
 
 
 ## Stands a knocked-down tower up at full health (its card's Repair). True if done.
@@ -830,6 +859,8 @@ func well_mend(dt: float, regen_share: float, cap_share: float) -> void:
 			_dirty = true                           # its Save.placed entry is written within a second (_process)
 			if hp >= mx - 0.5:
 				p["wrecked"] = false
+				_show(p)                            # 22 Nov 2026 review: a mended tower loses its dark wrecked look too
+				continue
 		if p["type"] == "barricade" and _stage_of(hp, mx) != p["look"]:
 			_show(p)
 
@@ -894,23 +925,35 @@ func _make_tower_mark(p: Dictionary) -> void:
 	_tower_marks[id] = mk
 
 
-## 0: no markers (a wave is on, or the cat is below ground); 1: the downed towers' only; 2: the road spots' too (once
-## barricades are open).
+## 0: no markers (the cat is below ground); 1: the downed towers' only; 2: the open road pads' too (once barricades are
+## open); 3: a wave is on: only the built rows' markers (their repair works in a wave). Include the Hearthtree level
+## because pads on individual roads can open even when the number of open rings stays the same.
 func _marks_state() -> int:
-	if main.area != null or _wave_on():
-		return 0
-	return 2 if unlocked("barricade") else 1
+	var base := 1
+	if main.area != null:
+		base = 0
+	elif _wave_on():
+		base = 3 if unlocked("barricade") else 0        # in a wave: only the built rows' markers (to repair them)
+	elif unlocked("barricade"):
+		base = 2
+	return base + 10 * Save.camp_level
 
 
 func _refresh_marks() -> void:
-	var st := _marks_state()
-	_marks = st
+	var full := _marks_state()
+	_marks = full
+	var st := full % 10
 	for key in _spots:
-		_spots[key].visible = st == 2
+		var parts: PackedStringArray = String(key).split(":")
+		var ln := int(parts[0])
+		var ix := int(parts[1])
+		var built := not row_at(ln, ix).is_empty()
+		# a built row's marker always shows (even on a pad not open yet: an older save); an empty pad's only when open
+		_spots[key].visible = (st == 2 and (built or pad_open(ln, ix))) or (st == 3 and built)
 	for id in _tower_marks:
 		var mk = _tower_marks[id]
 		var p: Dictionary = _by_id.get(id, {})
-		var show := st >= 1 and not p.is_empty() and float(p["hp"]) <= 0.0
+		var show := (st == 1 or st == 2) and not p.is_empty() and float(p["hp"]) <= 0.0
 		if show and (not is_instance_valid(mk.obj) or mk.obj != p["node"]):
 			mk.attach(p["node"], "repair")             # over the tipped tower (a new level: its new model)
 		mk.visible = show
@@ -955,23 +998,39 @@ func _hp_bar(hp: float) -> float:
 	return clampf(hp / maxf(float(lv[lv.size() - 1].get("hp", hp)), 1.0), 0.05, 1.0)
 
 
-## A road spot's card: build a row there, or (built) the row's own card.
+## "90 leaves and 5 timber": a price in words.
+func _price_words(cost: Dictionary) -> String:
+	var bits: Array = []
+	for k in Data.CURRENCIES:
+		var n := int(cost.get(k, 0))
+		if n > 0:
+			bits.append("%d %s" % [n, Data.mat_name(String(k)) if k in Data.MATS else String(k)])
+	if bits.size() <= 1:
+		return "".join(bits)
+	return ", ".join(bits.slice(0, bits.size() - 1)) + " and " + String(bits[bits.size() - 1])
+
+
+## A road pad's card: build a row there, or (built) the row's own card. When Build can't be pressed the tile says why.
 func _card_spot(lane: int, idx: int) -> Dictionary:
 	var row := row_at(lane, idx)
 	if not row.is_empty():
 		return _card_row(row)
 	var s: Array = main.world.barricade_slot(lane, idx)
 	var at: Vector3 = s[0] if not s.is_empty() else Vector3.ZERO
-	var cap := row_cap()
-	var n := rows_built()
-	var room := n < cap
 	var mx := _max_hp("barricade")
+	var cost := row_cost()
+	var can := unlocked("barricade") and pad_open(lane, idx) and not _wave_on() and main.area == null
 	var it := _tile("barricade", "Barricade row", "%d pieces across the road · %d health each" % [pieces_per_row(), int(mx)],
-		row_cost(), "Build", room and not _wave_on() and unlocked("barricade"), build_row.bind(lane, idx), "", [["Health", _hp_bar(mx)]])
-	if not room:
-		it["text"] = "Grow %s for more rows" % _camp_name()
-		it["badge"] = "%d of %d rows" % [n, cap]
-	return {"title": "Road spot", "sub": "Barricade rows: %d of %d built" % [n, cap], "anchor": at + Vector3(0, 1.4, 0),
+		cost, "Build", can, build_row.bind(lane, idx), "", [["Health", _hp_bar(mx)]])
+	if not unlocked("barricade"):
+		it["text"] = "Barricades open later"
+	elif not pad_open(lane, idx):
+		it["text"] = "This pad opens as the %s grows" % _camp_name().trim_prefix("the ")
+	elif _wave_on():
+		it["text"] = "A wave is on: build between waves"
+	elif not Data.can_afford(cost):
+		it["text"] = "Needs %s" % _price_words(cost)
+	return {"title": "Road spot", "sub": "Barricade row on this road", "anchor": at + Vector3(0, 1.4, 0),
 		"rows": [{"kind": "section", "text": "Block the road"}, it]}
 
 
@@ -996,7 +1055,7 @@ func _card_row(row: Dictionary) -> Dictionary:
 		list.append(_tile("barricade", "Piece %d" % (int(p["k"]) + 1), txt, {}, "", false, Callable(), badge, [["Health", share]]))
 	if row_damaged(row):
 		list.append({"kind": "section", "text": "Repair"})
-		list.append(_tile("repair", "Repair the row", "Every piece back to full health", repair_row_cost(row), "Repair", not _wave_on(),
+		list.append(_tile("repair", "Repair the row", "Every piece back to full health", repair_row_cost(row), "Repair", true,
 			repair_row_at.bind(int(row["slot"][0]), int(row["slot"][1]))))
 	var root := row["root"] as Node3D
 	return {"title": "Barricade row", "sub": "Level %d · %d of %d pieces standing" % [level("barricade"), standing, ps.size()],

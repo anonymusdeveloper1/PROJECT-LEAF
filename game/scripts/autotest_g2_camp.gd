@@ -11,6 +11,8 @@ extends Node
 ##       cap between waves, never a broken thing or the ashes; no wish row, no "!" for wishing
 ##   (e) the Training Target and Bow Bench cards are made of item tiles (and section headings)
 ##   (f) an old save with the stall and cottage (gifts of missions 2 and 3) keeps them, with Thistle and Sprig
+##   (g) (21 Nov 2026) a ruined Hearthtree during the missions costs the after-the-missions price (gloom_raids.repair
+##       ruin_share, ruin_min, ruin_cap: at most 900 leaves and 30 timber); another building keeps raid.repair_share
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _at_ring, _press, _log)
 var main
@@ -26,6 +28,7 @@ func run() -> bool:
 	_well()
 	await _tiles()
 	_old_save()
+	_home_repair()
 	main.hud.hide_card()
 	return true
 
@@ -98,7 +101,7 @@ func _hearthtree_card() -> void:
 	_x("the Hearthtree's card is called the Hearthtree", String(spec["title"]) == ht, {"title": spec["title"]})
 	_x("its rows hold item tiles and section headings", _items(rows).size() >= 3 and rows.any(func(r): return _kind(r) == "section"),
 		{"rows": _titles(rows)})
-	_x("no 'Shop' on the card, and no 'your home'", not _words(rows).contains("Shop") and not _words(rows).to_lower().contains("your home")
+	_x("no 'Shop' (other than the Bow Shop) on the card, and no 'your home'", not _words(rows).replace("Bow Shop", "").contains("Shop") and not _words(rows).to_lower().contains("your home")
 		and not String(spec["sub"]).to_lower().contains("home"), {"sub": spec["sub"]})
 	var want := "%s level 2" % ht.trim_prefix("The ")
 	var grow: Array = rows.filter(func(r): return String(r.get("title", "")) == want)
@@ -247,8 +250,12 @@ func _well() -> void:
 		{"rows": _words(wr)})
 	_x("the Well's card says what it does and sells its next level", _words(wr).contains("between waves") and wr.any(func(r): return String(r.get("label", "")) == "Upgrade"))
 	_x("the Well's marker shows no '!' for wishing", not st.rings["well"].pulse)
-	var cap1: float = st.well_cap(1)
+	var bet1: float = st.well_between(1)
 	var reg1: float = st.well_regen(1)
+	_x("Well numbers: between waves 3/6/10% a second, in waves 0.5/1/2%", absf(bet1 - 0.03) < 1e-6 and absf(st.well_between(2) - 0.06) < 1e-6
+		and absf(st.well_between(3) - 0.10) < 1e-6 and absf(reg1 - 0.005) < 1e-6 and absf(st.well_regen(2) - 0.01) < 1e-6 and absf(st.well_regen(3) - 0.02) < 1e-6)
+	_x("the Well's card says it mends to full, between waves and in waves", _words(wr).contains("back to full") and _words(wr).contains("in waves")
+		and _words(wr).contains("broken things need a repair"), {"rows": _words(wr)})
 	# a breather of a mission, faked for these lines only (no frame passes while it is on)
 	var keep := {"active": f.active, "in_wave": f.in_wave, "on_break": f.on_break, "last_stand": f.last_stand, "gate_hp": f.gate_hp, "gate_max": f.gate_max}
 	var keep_hp: Dictionary = st.hp.duplicate()
@@ -265,23 +272,22 @@ func _well() -> void:
 		st.well_tick(0.1)
 	var g3s: float = f.gate_hp / f.gate_max
 	var h3s: float = float(st.hp["home"]) / full
-	_x("between waves: a hurt campfire and building mend toward the cap (3 s)", g3s > 0.2 + 0.01 and g3s <= cap1 + 0.0001 and h3s > 0.2 + 0.01 and h3s <= cap1 + 0.0001,
-		{"fire": snappedf(g3s, 0.001), "home": snappedf(h3s, 0.001), "cap": cap1})
+	_x("between waves: a hurt campfire and building mend by %s a second (3 s)" % st._pct(bet1), absf(g3s - (0.2 + bet1 * 3.0)) < 0.002 and absf(h3s - (0.2 + bet1 * 3.0)) < 0.002,
+		{"fire": snappedf(g3s, 0.001), "home": snappedf(h3s, 0.001)})
 	for k in 600:
 		st.well_tick(0.1)
 	var g60: float = f.gate_hp / f.gate_max
 	var h60: float = float(st.hp["home"]) / full
-	_x("between waves: they stop at the cap (%d%%), never above" % int(round(cap1 * 100.0)), absf(g60 - cap1) < 0.001 and absf(h60 - cap1) < 0.001,
+	_x("between waves: all the way to FULL at level 1, never above", absf(g60 - 1.0) < 0.0005 and absf(h60 - 1.0) < 0.0005 and g60 <= 1.0001 and h60 <= 1.0001,
 		{"fire": snappedf(g60, 0.001), "home": snappedf(h60, 0.001)})
-	f.gate_hp = 600.0 * 0.95
-	for k in 50:
+	Save.stations["well"] = 3
+	f.gate_hp = 600.0 * 0.5
+	for k in 10:
 		st.well_tick(0.1)
-	_x("between waves: above the cap stays as it is", absf(f.gate_hp - 600.0 * 0.95) < 0.001, {"fire": f.gate_hp})
-	Save.stations["well"] = 2
-	for k in 600:
+	_x("Well level 3: 10% a second between waves", absf(f.gate_hp / 600.0 - 0.6) < 0.002, {"fire": f.gate_hp / 600.0})
+	for k in 300:
 		st.well_tick(0.1)
-	_x("Well level 2: the cap rises (%d%%)" % int(round(st.well_cap(2) * 100.0)), absf(float(st.hp["home"]) / full - st.well_cap(2)) < 0.001 and st.well_cap(2) > cap1,
-		{"home": snappedf(float(st.hp["home"]) / full, 0.001)})
+	_x("Well level 3 also ends at full", absf(f.gate_hp - 600.0) < 0.01)
 	Save.stations["well"] = 1
 	# a wave: a little every second, up to full
 	f.on_break = false
@@ -292,7 +298,7 @@ func _well() -> void:
 		st.well_tick(0.1)
 	var gain: float = f.gate_hp / f.gate_max - 0.3
 	var hgain: float = float(st.hp["home"]) / full - 0.3
-	_x("in a wave: +%s a second" % st._pct(reg1), gain > 0.0 and absf(gain - reg1) < 0.0005 and absf(hgain - reg1) < 0.0005 and gain < st.well_rate(),
+	_x("in a wave: +%s a second" % st._pct(reg1), gain > 0.0 and absf(gain - reg1) < 0.0005 and absf(hgain - reg1) < 0.0005 and gain < bet1,
 		{"gain": snappedf(gain, 0.0001), "home": snappedf(hgain, 0.0001), "regen": reg1})
 	f.gate_hp = 600.0 * 0.999
 	for k in 100:
@@ -341,12 +347,12 @@ func _tiles() -> void:
 	var br: Array = st._card_bench()["rows"]
 	var only_b := br.all(func(r): return _kind(r) in ["item", "section"])
 	var twig: Dictionary = _tile_named(br, String(Data.bow_info(Save.bow)["name"]))
-	_x("the Bow Bench's card is made of item tiles, the bow in the paw 'Equipped'", only_b and _items(br).size() >= 3
-		and String(twig.get("badge", "")) == "Equipped" and String(twig.get("label", "")) == "Buy", {"rows": _titles(br)})
+	_x("the Bow Shop's card is made of item tiles, the bow in the paw 'Equipped'", only_b and _items(br).size() >= 3
+		and String(twig.get("badge", "")) == "Equipped" and String(twig.get("label", "")) == "Upgrade", {"rows": _titles(br)})
 	var bench_name := String(Data.b["stations"]["bench"]["name"])
 	# the Bench's own upgrade tile shares the bow icon: leave it out
 	var others: Array = _items(br).filter(func(r): return String(r.get("icon", "")) == "bow" and r != twig and not String(r.get("title", "")).begins_with(bench_name))
-	_x("every other bow is a Use or Craft tile", not others.is_empty() and others.all(func(r): return String(r["label"]) in ["Use", "Craft"]),
+	_x("every other bow is a Buy or Equip tile", not others.is_empty() and others.all(func(r): return String(r["label"]) in ["Equip", "Buy"]),
 		{"bows": others.map(func(r): return "%s %s" % [r["title"], r["label"]])})
 	await t._at_ring(st.rings["target"])
 	await t._wait(0.5)
@@ -378,3 +384,59 @@ func _old_save() -> void:
 	_x("the Hearthtree's card does not sell them again", _tile_named(rows, market).is_empty() and _tile_named(rows, cottage).is_empty())
 	var ride: Array = st._card_stall()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")
 	_x("the Market works at Hearthtree 1 (Ride is on)", ride.size() == 1 and bool(ride[0]["enabled"]))
+
+
+# ---------------------------------------------------------------- (g) the Hearthtree's repair during the missions
+## What a ruin of `id` has cost so far (the sum repair_cost takes its share of), from balance.json.
+func _spent(id: String) -> Dictionary:
+	var out := {"leaves": 0.0, "timber": 0.0}
+	if id == "home":
+		var levels: Array = Data.b["stations"]["camp"]["levels"]
+		out["leaves"] = 100.0
+		for k in range(1, mini(Save.camp_level, levels.size())):
+			out["leaves"] += float(levels[k].get("leaves", 0))
+			out["timber"] += float(levels[k].get("timber", 0))
+		return out
+	var s: Dictionary = Data.b["stations"][id]
+	out["leaves"] = float(s.get("build", {}).get("leaves", 0))
+	out["timber"] = float(s.get("build", {}).get("timber", 0))
+	var lv2: Array = s.get("levels", [])
+	for k in range(1, mini(int(Save.stations.get(id, 1)), lv2.size())):
+		out["leaves"] += float(lv2[k].get("leaves", 0))
+		out["timber"] += float(lv2[k].get("timber", 0))
+	return out
+
+
+func _home_repair() -> void:
+	var st = _st()
+	Save.missions_done = [String(Data.mission(0)["id"])]
+	var r: Dictionary = Data.gr()["repair"]
+	var cap: Dictionary = r["ruin_cap"]
+	var share := float(r["ruin_share"])
+	var cl0 := Save.camp_level
+	var ok := true
+	var seen := {}
+	var capped := false
+	for lv in [2, 4, 6]:
+		Save.camp_level = lv
+		var sp := _spent("home")
+		var want := {"leaves": clampi(int(ceil(sp["leaves"] * share)), int(r["ruin_min"]), int(cap["leaves"]))}
+		if sp["timber"] > 0.0:
+			want["timber"] = mini(int(ceil(sp["timber"] * share)), int(cap["timber"]))
+		var got: Dictionary = st.repair_cost("home")
+		seen[lv] = [got, want]
+		ok = ok and JSON.stringify(got) == JSON.stringify(want) and int(got["leaves"]) <= int(cap["leaves"]) and int(got.get("timber", 0)) <= int(cap["timber"])
+		capped = capped or int(got["leaves"]) == int(cap["leaves"])
+	_x("in the missions a ruined Hearthtree costs %d%% of what it cost, at most %d leaves and %d timber" % [int(round(share * 100.0)), int(cap["leaves"]), int(cap["timber"])],
+		not Data.raids_open() and ok and capped, {"by_level": seen})
+	Save.stations["stall"] = 2
+	var sp2 := _spent("stall")
+	var rs := float(Data.b["raid"]["repair_share"])
+	var want2 := {"leaves": maxi(10, int(ceil(sp2["leaves"] * rs)))}
+	if sp2["timber"] > 0.0:
+		want2["timber"] = int(ceil(sp2["timber"] * rs))
+	var got2: Dictionary = st.repair_cost("stall")
+	_x("another building (the Market) keeps the mission price (%d%% of what it cost)" % int(round(rs * 100.0)),
+		JSON.stringify(got2) == JSON.stringify(want2), {"got": got2, "want": want2})
+	Save.camp_level = cl0
+	st.refresh()

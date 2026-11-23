@@ -1,7 +1,7 @@
 extends Control
 ## The health bars over the cat's head (Draft 7, the user's design): flat and simple, just red, a little see-through
 ## so they hide nothing in a crowd. A hit drains the red, and the part just lost shows grey for a moment before it
-## goes. While the cat rides, a thinner bar of the same width right under it shows the mount's health (mount.gd).
+## goes. While the cat rides, a thinner amber bar of the same width right under it shows the mount's health (mount.gd).
 
 const W := 96.0                          # bar width, in HUD pixels (the HUD is 720 wide)
 const H := 11.0                          # the cat's bar
@@ -14,6 +14,7 @@ const BACK := Color(0.0, 0.0, 0.0, 0.3)
 const HOLD := 0.35                       # seconds the grey stays before it drains away
 const DRAIN := 1.6                       # share of the bar the grey drains per second
 
+const MOUNT := Color(0.98, 0.66, 0.16, 0.85)   # the mount's bar under the cat's (22 Nov 2026, the owner: its own colour, amber)
 const MOSS := Color(0.55, 0.8, 0.35, 0.85)     # the Moss Warden's bar (Phase C), over its head in a mission
 const W_WARDEN := 120.0
 const H_WARDEN := 7.0
@@ -71,7 +72,7 @@ func _draw() -> void:
 	var m = main.mount
 	var below := top.y + H
 	if p.riding and m != null and m.max_hp() > 0:
-		_bar(Rect2(top + Vector2(0, H + GAP), Vector2(W, H_MOUNT)), _bars["mount"])
+		_bar(Rect2(top + Vector2(0, H + GAP), Vector2(W, H_MOUNT)), _bars["mount"], MOUNT)
 		below += GAP + H_MOUNT
 	# Phase E: the Leaf Dash recharging, a small arc under the bars (hidden when it is ready or not available)
 	if main.has_method("dash_enabled") and main.dash_enabled() and p.has_method("dash_ready_frac"):

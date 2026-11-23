@@ -49,8 +49,9 @@ extends Node
 ## destroyed the cat is alone in the dark: the Last Stand. Once per chapter the cat can rebuild it (main.gd: stand on the
 ## ashes, pay rebuild_cost(): timber, or in a mission leaves when the timber is short); it comes back at 30%. The camp
 ## falls if the cat dies in the Last Stand or the fire is destroyed a second time (camp_falls): the Gloom takes a share
-## of the unspent leaves, ruined buildings and broken defences stay broken, the campfire stays ashes until it is
-## rebuilt, and the chapter starts over. No level is ever lost.
+## of the leaves gained since that chapter began (chapter_gain; since 21 Nov 2026 never the leaves saved before it),
+## ruined buildings and broken defences stay broken, the campfire stays ashes until it is rebuilt, and the chapter
+## starts over. No level is ever lost.
 ## Gloom Raids (Phase D) run here too, as mode "raid": raids.gd builds a mission-shaped spec and calls start_raid. Its
 ## warning is the breather before its first wave; it never reaches _win or _chapter_done, never writes the mission
 ## save fields, and a lost raid takes nothing (no leaves, no ashes): only the damage stays (raids.finish). A raid keeps
@@ -107,6 +108,7 @@ var _say: Array = []             # [title, colour, sub]
 var _early_pay := 0              # leaves paid for going on early, shown when the wave starts
 var last_pay: Dictionary = {}    # the last mission wave held: {"wave", "bonus", "quick", "intact", "timber"} (the tests read it)
 var barricade_gift := 0          # leaves the last win paid for the first barricades (mission 1's first win; the tests read it)
+var last_fall_lost := 0          # leaves the last camp fall took (camp_falls; the tests read it)
 
 
 func info() -> Dictionary:
@@ -249,8 +251,10 @@ func start_mission(i: int) -> void:
 	warning = false
 	mission = idx
 	var from_chapter := 0
+	var gain := 0
 	if int(Save.mission_run.get("mission", -1)) == mission:
 		from_chapter = clampi(int(Save.mission_run.get("chapter", 0)), 0, chapters() - 1)
+		gain = maxi(0, int(Save.mission_run.get("gain", 0)))   # a run resumed: what that chapter had gained stays counted
 	elif not Save.mission_run.is_empty():
 		Save.mission_run = {}                       # another mission was picked: the old run is given up
 	active = true
@@ -269,7 +273,7 @@ func start_mission(i: int) -> void:
 	_early_pay = 0
 	_say = []
 	_say_t = -1.0
-	_save_run(from_chapter)
+	_save_run(from_chapter, gain)
 	wave = from_chapter * chapter_waves()           # the wave before the chapter's first
 	main.stations.reset_hp()
 	main.on_stage_start()
@@ -281,9 +285,20 @@ func start_stage(i: int) -> void:
 	start_mission(i)
 
 
-func _save_run(c: int) -> void:
-	Save.mission_run = {"mission": mission, "chapter": c}
+## The run saved at the start of chapter c. `gain`: the leaves that chapter has gained so far (0 for a new chapter;
+## Save's leaves setter adds to it while the chapter is played, see chapter_gain).
+func _save_run(c: int, gain := 0) -> void:
+	Save.mission_run = {"mission": mission, "chapter": c, "gain": gain}
 	Save.save_game()
+
+
+## The leaves gained since this chapter began (Save.mission_run "gain"): every leaf that came in while the chapter was
+## played (Save.count_gain: kill drops, wave pay, bonuses, sales, anything), kept across an app restart with the run.
+## A held chapter's chest is safe (the next chapter starts at 0, _chapter_done); nothing is counted in a chapter break,
+## outside a mission, or in a Gloom Raid. A camp fall takes raid.leaves_share of it (camp_falls), so the leaves saved
+## before the chapter are safe.
+func chapter_gain() -> int:
+	return maxi(0, int(Save.mission_run.get("gain", 0)))
 
 
 ## The saved run is dropped: the mission starts from wave 1 next time.
@@ -314,6 +329,7 @@ func _start_wave(w: int) -> void:
 	_breather = 0.0
 	on_break = false
 	in_wave = true
+	Save.count_gain = mode != "raid"                # a mission chapter is played: its leaves count (chapter_gain)
 	var last := w == waves()
 	var elite := not last and w % chapter_waves() == 0 and mode != "raid"
 	if mode == "raid":
@@ -1720,6 +1736,7 @@ func _chapter_done(bonus: int, wave_tim := 0) -> void:
 	Save.timber += timber - wave_tim
 	main.raids.add_gloom("replay_chapter")      # once raids are open, a replay chapter feeds the Gloom meter
 	on_break = true
+	Save.count_gain = false                     # the break's leaves are safe; the next chapter counts from 0 (_save_run)
 	rebuilt = false
 	if last_stand:
 		last_stand = false
@@ -1884,16 +1901,20 @@ func cat_fell() -> void:
 		camp_falls()
 
 
-## The camp falls: a setback, not a reset. The run stays saved at the start of this chapter.
+## The camp falls: a setback, not a reset. The run stays saved at the start of this chapter. The Gloom takes
+## raid.leaves_share of the leaves gained in this chapter (chapter_gain), never more than the cat holds: the leaves
+## saved before it are safe. The chapter's next try counts from 0 again.
 func camp_falls() -> void:
 	if not active:
 		return
 	if mode == "raid":
 		_raid_over(false)                       # a lost Gloom Raid: only the damage stays (no leaves, no ashes)
 		return
+	Save.count_gain = false
 	var r: Dictionary = Data.b["raid"]
 	var bits: Array = []
-	var lost := int(floor(Save.leaves * float(r["leaves_share"])))
+	var lost := mini(Save.leaves, int(floor(chapter_gain() * float(r["leaves_share"]))))
+	last_fall_lost = maxi(0, lost)
 	if lost > 0:
 		Save.leaves -= lost
 		bits.append("-%d leaves" % lost)
@@ -1907,7 +1928,7 @@ func camp_falls() -> void:
 	main.world.set_fire_out(true)
 	main.stations.set_fire_out(true)
 	Save.stages_lost += 1
-	Save.mission_run = {"mission": mission, "chapter": chapter()}
+	Save.mission_run = {"mission": mission, "chapter": chapter(), "gain": 0}
 	main.set_riding(false)
 	Save.save_game()
 	Sfx.play("lose", -3.0)
@@ -1979,6 +2000,7 @@ func _end(won: bool) -> void:
 	active = false
 	in_wave = false
 	on_break = false
+	Save.count_gain = false
 	_breather = 0.0
 	_queue.clear()
 	_qinfo.clear()
@@ -2008,6 +2030,7 @@ func start_raid(spec: Dictionary, warn_s: float) -> bool:
 	active = true
 	in_wave = false
 	on_break = false
+	Save.count_gain = false                         # a raid never counts a chapter gain (a lost raid takes nothing)
 	last_stand = false
 	warning = true
 	rebuilt = bool(run.get("rebuilt", false))            # one rebuild per raid, kept across a restart

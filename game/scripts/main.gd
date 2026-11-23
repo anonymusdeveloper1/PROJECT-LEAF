@@ -450,7 +450,10 @@ func _update_grass(delta: float) -> void:
 
 
 # ---------------------------------------------------------------- what the cat shoots at
-func nearest_enemy(from: Vector3, max_dist: float):
+## The nearest foe within max_dist of from (or the Training Target's dummy when the cat stands in its ring and no foe is
+## near). 22 Nov 2026: with `ahead` (a flat direction, the mount's heading while the cat rides) only those within
+## `cone` radians either side of it count.
+func nearest_enemy(from: Vector3, max_dist: float, ahead := Vector3.ZERO, cone := PI):
 	var best = null
 	var best_d := max_dist
 	for e in get_tree().get_nodes_in_group("foes"):
@@ -459,12 +462,24 @@ func nearest_enemy(from: Vector3, max_dist: float):
 		var d: float = from.distance_to(e.global_position)
 		if not e.awake and d > float(Data.burrow_cfg()["wake_r"]):
 			continue                                    # Phase E: a sleeper far off is left asleep (walk up, or ambush it)
-		if d < best_d:
+		if d < best_d and in_cone(from, e.global_position, ahead, cone):
 			best_d = d
 			best = e
-	if best == null and stations.rings["target"].visible and stations.rings["target"].contains(player.global_position):
+	if best == null and stations.rings["target"].visible and stations.rings["target"].contains(player.global_position) \
+			and in_cone(from, stations.dummy.global_position, ahead, cone):
 		return stations.dummy
 	return best
+
+
+## 22 Nov 2026: whether `to` lies within `cone` radians either side of the flat direction `ahead`, seen from `from`
+## (always when ahead is zero or the cone is a full turn).
+static func in_cone(from: Vector3, to: Vector3, ahead: Vector3, cone: float) -> bool:
+	if ahead == Vector3.ZERO or cone >= PI:
+		return true
+	var d := Vector3(to.x - from.x, 0.0, to.z - from.z)
+	if d.length() < 0.001:
+		return true
+	return absf(wrapf(atan2(d.x, d.z) - atan2(ahead.x, ahead.z), -PI, PI)) <= cone
 
 
 func target_ok(t) -> bool:
@@ -695,7 +710,7 @@ func on_stage_end(_won: bool) -> void:
 		burrows.check_open()                            # the last mission's first win: the Old Hollow opens after the banners
 	if _won and not raid and Data.progress() == 1 and not Save.flag("told_barricade"):
 		Save.set_flag("told_barricade")
-		hud.tip("Barricades are open! Tap a barricade spot on a road to build a row there: it blocks the way.", null)
+		hud.tip("Barricades are open! Tap a barricade spot on a road near the camp to build a row there: it blocks the way. More spots open as the Hearthtree grows.", null)
 	# Phase F: the next act's first mission waits for a bigger home (told once, after the banners)
 	var nxt := Data.next_mission()
 	if _won and not raid and nxt < Data.mission_count() and not Data.mission_unlocked(nxt) and not Save.flag("told_home_goals"):
@@ -793,7 +808,8 @@ func set_riding(on: bool, show := true) -> void:
 		mount.come_to(player.global_position)
 		if show and not Save.flag("told_ride"):
 			Save.set_flag("told_ride")
-			hud.tip("Riding %s: faster, and it hits enemies that come close. You can't hide while riding." % Data.mount_name(), null)
+			hud.tip("Riding %s: faster, and it takes the hits for you. You shoot only ahead: turn %s to face enemies. You can't hide while riding." % [
+				Data.mount_name(), Data.mount_name()], null)
 	else:
 		Fx.dust(self, player.global_position, 6, 1.0)
 	hud.refresh_build()
@@ -886,6 +902,7 @@ func eat_snack() -> void:
 
 func on_camp_grown() -> void:
 	world.rebuild_camp()
+	defences.rebuild()                              # 22 Nov 2026: the pads and built rows follow the roads the bigger firelight reshaped
 	stations.refresh("all")
 	player.global_position = world.constrain(player.global_position, 0.3, false)
 	var names: Array = Data.b["home_names"]
@@ -930,7 +947,7 @@ func loss_hint() -> String:
 		return "Your arrows could hit harder: try the Training Target."
 	var bl := int(Save.bows[Save.bow])
 	if bl < Data.bow_cap() and bl < Data.bow_top(Save.bow) and Data.can_afford(Data.bow_cost(Save.bow, bl)):
-		return "Level up your bow at the Bow Bench."
+		return "Level up your bow at the Bow Shop."
 	if Save.camp_level < (Data.b["stations"]["camp"]["levels"] as Array).size() and not Data.home_goals_met(Save.camp_level + 1):
 		return "Spend your leaves on the goals at %s, then try again." % Data.camp_name()
 	return "You kept your leaves. Upgrade and try again!"

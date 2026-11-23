@@ -5,7 +5,8 @@ Godot 4.7.2, the mobile renderer, on Android phones in portrait. Blender is 5.2 
 
 ## This PC
 
-- Work on D:. C: is nearly full. Set `TEMP` and `TMP` to `D:\DevCache\tmp` for every Blender run.
+- Work files go on D: (`D:\DevCache\tmp\<id>\`). C: has room again since 21 Nov 2026, so setting `TEMP` and `TMP` to
+  `D:\DevCache\tmp` for Blender runs is optional.
 - Run Blender headless: `D:\Blender\blender.exe -b <file> --python-exit-code 1 -P <script.py> -- <args>`.
 - Use the Blender skills on this machine (Skill tool): `blender-core` first, then the skill for the task
   (`blender-game-optimization`, `blender-character-rigging`, `blender-animation`, `blender-export-pipelines`,

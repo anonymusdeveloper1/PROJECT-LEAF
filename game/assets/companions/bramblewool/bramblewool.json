@@ -16,6 +16,22 @@
     "Thump": {
       "seconds": 1.1,
       "loop": false
+    },
+    "Stomp": {
+      "seconds": 0.7,
+      "loop": false
+    },
+    "Ram": {
+      "seconds": 1.1,
+      "loop": false
+    },
+    "Pounce": {
+      "seconds": 1.0,
+      "loop": false
+    },
+    "Bellow": {
+      "seconds": 1.0,
+      "loop": false
     }
   },
   "ground_speed_m_per_s": {
@@ -24,6 +40,20 @@
   "events": {
     "Thump": {
       "impact": 0.533
+    },
+    "Ram": {
+      "dash": 0.3,
+      "impact": 0.533
+    },
+    "Stomp": {
+      "impact": 0.367
+    },
+    "Pounce": {
+      "leap": 0.367,
+      "impact": 0.667
+    },
+    "Bellow": {
+      "roar": 0.367
     }
   },
   "spring_chains": [

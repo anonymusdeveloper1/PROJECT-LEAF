@@ -432,15 +432,16 @@ func _run() -> void:
 	var slots: Array = main.world.barricade_slots()
 	var mine: Array = slots.filter(func(sl): return int(sl[2]) == lane0)
 	for k in mini(2, mine.size()):
-		var idx: int = mine.size() - 1 - k
-		var sl: Array = main.world.barricade_slot(lane0, idx)
+		var idx := 2                                     # the 4 nearest pads are the ones open at Hearthtree level 1-2
+		var lane_k: int = (lane0 + k) % 4
+		var sl: Array = main.world.barricade_slot(lane_k, idx)
 		await _go_to((sl[0] as Vector3) + ((sl[0] as Vector3).normalized() * -1.4), 0.4, 20.0)
 		await _wait(0.3)
 		for cur in main.defences.row_cost():
 			if Save.get(cur) != null and int(Save.get(cur)) < int(main.defences.row_cost()[cur]):
 				Save.set(cur, int(main.defences.row_cost()[cur]))      # a mission-1 run may leave too little timber
-		var built: bool = main.defences.build_row(lane0, idx)
-		_log("build_row", {"lane": lane0, "idx": idx, "built": built})
+		var built: bool = main.defences.build_row(lane_k, idx)
+		_log("build_row", {"lane": lane_k, "idx": idx, "built": built})
 		await _wait(0.5)
 		if k == 0:
 			await _shot("11_placing_barricade")
@@ -950,7 +951,9 @@ func _laststand() -> void:
 	Save.leaves = 1000
 	Save.timber = 40
 	await _wait(0.3)
+	main.fight.skip_gate = true                            # mission 2 is won here (no replays since Phase F): let it start
 	main.start_stage(1)
+	main.fight.skip_gate = false
 	await _wait(2.0)
 	main.fight.damage_fire(int(main.fight.gate_hp) + 1, Vector3(0, 0, -5))
 	await _wait(1.0)
@@ -969,8 +972,16 @@ func _laststand() -> void:
 		if pc["type"] == "barricade":
 			main.defences.hurt_piece(int(pc["id"]), 99999)
 			break
+	main.collect_leaves(100, Vector3(0, 0, 1.0))           # leaves picked up in this chapter
 	var before := Save.leaves
+	var gain: int = main.fight.chapter_gain()
 	main.fight.damage_fire(int(main.fight.gate_hp) + 1, Vector3(0, 0, -5))
+	# 21 Nov 2026: the fall takes raid.leaves_share of the leaves gained in this chapter only (the 1000 saved before it
+	# are safe), never more than the cat holds
+	var lost_want := mini(before, int(floor(gain * float(Data.b["raid"]["leaves_share"]))))
+	_expect("the camp fell: the Gloom took %d of the %d leaves this chapter gained, none of the 1000 saved before" % [lost_want, gain],
+		not main.fight.active and Save.fire_ruined and gain >= 100 and int(main.fight.last_fall_lost) == lost_want and before - lost_want >= 1000,
+		{"before": before, "gain": gain, "lost": main.fight.last_fall_lost})
 	await _wait(1.0)
 	_log("camp fell", {"active": main.fight.active, "fire_ruined": Save.fire_ruined, "leaves_before": before, "leaves_after": Save.leaves,
 		"ruined": Save.ruined, "wrecked": main.defences.wrecked_count(), "fire_out": main.world.fire_out})
@@ -2362,6 +2373,7 @@ func _reset_fight() -> void:
 	f.active = false
 	f.in_wave = false
 	f.on_break = false
+	Save.count_gain = false                            # as fight._end does: no chapter gain counted outside a fight
 	f.warning = false
 	f.last_stand = false
 	f._breather = 0.0
@@ -3144,6 +3156,12 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_g2_camp.gd"
 	elif a.has("--cards"):                              # Phase G2: the shop-style cards (and screenshots)
 		file = "res://scripts/autotest_g2_cards.gd"
+	elif a.has("--bowshop"):                            # Phase G3: the Bow Shop, the five bows, pierce, fan, burn
+		file = "res://scripts/autotest_g3_bow.gd"
+	elif a.has("--saddlery"):                           # Phase G4: the Saddlery, the mount's skills and attachments
+		file = "res://scripts/autotest_g4_saddle.gd"
+	elif a.has("--tailor"):                             # 23 Nov 2026: the Tailor's Nook and the cat's outfits
+		file = "res://scripts/autotest_cat_skins.gd"
 	if file == "":
 		return false
 	var e = load(file).new()

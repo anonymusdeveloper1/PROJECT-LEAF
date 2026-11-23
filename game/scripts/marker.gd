@@ -22,7 +22,7 @@ const REF_DIST := 20.0               # the camera distance the sizes are for (th
 const ICONS := {"shop": "bag", "target": "target", "bench": "bow", "sign": "flag", "well": "bucket", "cottage": "mushroom",
 	"stall": "awning", "fire": "flame", "stone": "stone", "garden": "sprout", "pot": "pot", "fishing": "fish",
 	"home": "home", "lift": "lift", "end_lift": "lift", "seal": "crystal", "barricade": "barricade",
-	"repair": "repair"}       # and hollow:*, chest_*, shrine_*, road_* (barricade), tower_* (repair)
+	"repair": "repair", "saddlery": "saddle", "tailor": "needle"}   # and hollow:*, chest_*, shrine_*, road_* (barricade), tower_* (repair)
 
 static var cat: Node3D               # the cat (main.gd): reach is measured to it
 static var _tex := {}                # "icon|colour" -> the badge's texture; also "halo", "ripple", "dot"
@@ -374,6 +374,19 @@ const ART := {
 <path d="M47 33 L47 83" stroke="#5B3417" stroke-width="2.5"/>
 <path d="M36 58 H84" stroke="#5B3417" stroke-width="4.5" stroke-linecap="round"/>
 <path d="M88 58 l-11 -7 v14 z" fill="#5B3417"/><path d="M36 58 l-4 -6 M36 58 l-4 6 M42 58 l-4 -6 M42 58 l-4 6" stroke="#D9483B" stroke-width="3" stroke-linecap="round"/>""",
+	"saddle": """<path d="M34 66 h52 l-4 16 h-44 z" fill="#5FA845" stroke="#3E6B1F" stroke-width="4" stroke-linejoin="round"/>
+<path d="M36 63 Q40 40 52 47 Q60 53 68 47 Q80 40 84 63 Z" fill="#B87434" stroke="#5B3417" stroke-width="4.5" stroke-linejoin="round"/>
+<path d="M50 47 Q52 35 59 35 Q65 35 65 42" fill="none" stroke="#5B3417" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M71 66 v11" stroke="#5B3417" stroke-width="3.5"/><path d="M65 77 h12 l-2 6 h-8 z" fill="#E8B84A" stroke="#5B3417" stroke-width="3" stroke-linejoin="round"/>""",
+	# 23 Nov 2026: the Tailor's Nook: a spool of purple thread, threaded through a needle
+	"needle": """<rect x="43" y="47" width="26" height="30" fill="#9B6BD6" stroke="#5B3417" stroke-width="4"/>
+<path d="M47 55 h18 M47 62 h18 M47 69 h18" stroke="#6E44A8" stroke-width="2.5" stroke-linecap="round"/>
+<rect x="37" y="39" width="38" height="9" rx="3" fill="#B87434" stroke="#5B3417" stroke-width="4"/>
+<rect x="37" y="76" width="38" height="9" rx="3" fill="#B87434" stroke="#5B3417" stroke-width="4"/>
+<path d="M69 51 Q77 37 84 37" fill="none" stroke="#9B6BD6" stroke-width="3" stroke-linecap="round"/>
+<path d="M86 31 L77 84" stroke="#5B3417" stroke-width="7" stroke-linecap="round"/>
+<path d="M86 31 L77 84" stroke="#E4E9EC" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="84.8" cy="37.5" rx="1.2" ry="3" fill="#5B3417" transform="rotate(10 84.8 37.5)"/>""",
 	"bucket": """<path d="M41 50 Q60 24 79 50" fill="none" stroke="#5B3417" stroke-width="4" stroke-linecap="round"/>
 <path d="M40 50 h40 l-6 33 h-28 z" fill="#B87434" stroke="#5B3417" stroke-width="4.5" stroke-linejoin="round"/>
 <path d="M42 61 h36 M44 73 h32" stroke="#5B3417" stroke-width="3"/>

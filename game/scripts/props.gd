@@ -55,6 +55,25 @@ static func apply_vc(n: Node) -> void:
 		apply_vc(c)
 
 
+## G3: like apply_vc, but a surface whose material is named M_Glow (the glowing bits of the bows and arrows: the sun
+## disc, the ember cracks, the foxfire wisps) keeps its own emissive material from the GLB, so it shines; every other
+## surface gets the shared colour shader.
+static func apply_vc_glow(n: Node) -> void:
+	if n is MeshInstance3D:
+		vc_surfaces(n as MeshInstance3D)
+	for c in n.get_children():
+		apply_vc_glow(c)
+
+
+static func vc_surfaces(mi: MeshInstance3D) -> void:
+	mi.material_override = null
+	if mi.mesh == null:
+		return
+	for i in mi.mesh.get_surface_count():
+		var m := mi.mesh.surface_get_material(i)
+		mi.set_surface_override_material(i, m if m != null and m.resource_name == "M_Glow" else vc())
+
+
 static func find_part(root: Node, part: String) -> Node3D:
 	if root.name == part or String(root.name).begins_with(part + "_") and part.begins_with("marker"):
 		return root as Node3D

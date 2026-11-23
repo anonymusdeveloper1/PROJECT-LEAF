@@ -10,7 +10,7 @@ extends Node
 ##   (b) the tiles' buttons: an affordable one runs its action and the card refreshes; an unaffordable or a disabled one
 ##       is grey and does nothing; a free one runs; the plain row's button still works
 ##   (c) the real cards opened by a tap, one by one, with screenshots (a veteran save with them all built): the
-##       Hearthtree, the Training Target, the Bow Bench, the Market and the Wishing Well: each fits the phone, shows
+##       Hearthtree, the Training Target, the Bow Shop, the Market and the Wishing Well: each fits the phone, shows
 ##       tiles, its tiles the same size and 2 a row, their buttons a thumb wide
 ##   (d) every icon id gives a picture (made once; every SVG loaded), an unknown id a plain round one, a texture is used
 ##       as it is; a sheet of them all (cards_icons.png)

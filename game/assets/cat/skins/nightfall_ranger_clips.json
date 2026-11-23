@@ -1,0 +1,500 @@
+{
+ "fps": 30,
+ "clips": {
+  "Idle": {
+   "frames": 90,
+   "seconds": 3.0,
+   "loop": true
+  },
+  "Walk": {
+   "frames": 24,
+   "seconds": 0.8,
+   "loop": true
+  },
+  "Run": {
+   "frames": 14,
+   "seconds": 0.4667,
+   "loop": true
+  },
+  "Aim": {
+   "frames": 10,
+   "seconds": 0.3,
+   "loop": false
+  },
+  "Shoot": {
+   "frames": 25,
+   "seconds": 0.8333,
+   "loop": true
+  }
+ },
+ "ground_speed_m_per_s": {
+  "Walk": 0.65,
+  "Run": 2.143
+ },
+ "shoot_events_s": {
+  "release": 0.3667,
+  "nock": 0.8
+ },
+ "files": {
+  "character": "CatRanger.glb",
+  "arrow": "CatRanger_Arrow.glb"
+ },
+ "bones": {
+  "arrow_on_string": "arrow",
+  "bow_hand": "weapon.L"
+ },
+ "forward": "Blender -Y = Godot +Z",
+ "cloth_bones": {
+  "hood.1": {
+   "length": 0.1124,
+   "on": "head",
+   "parent": ""
+  },
+  "hood.2": {
+   "length": 0.1246,
+   "on": "head",
+   "parent": "hood.1"
+  },
+  "hood.L.1": {
+   "length": 0.1027,
+   "on": "head",
+   "parent": ""
+  },
+  "hood.L.2": {
+   "length": 0.1063,
+   "on": "head",
+   "parent": "hood.L.1"
+  },
+  "hood.R.1": {
+   "length": 0.1027,
+   "on": "head",
+   "parent": ""
+  },
+  "hood.R.2": {
+   "length": 0.1063,
+   "on": "head",
+   "parent": "hood.R.1"
+  },
+  "hood.T": {
+   "length": 0.1081,
+   "on": "head",
+   "parent": ""
+  },
+  "cape.arm.L": {
+   "length": 0.0995,
+   "on": "upper_arm.L",
+   "parent": ""
+  },
+  "cape.arm.R": {
+   "length": 0.0995,
+   "on": "upper_arm.R",
+   "parent": ""
+  },
+  "cape.FL.1": {
+   "length": 0.0409,
+   "on": "chest",
+   "parent": ""
+  },
+  "cape.FL.2": {
+   "length": 0.0389,
+   "on": "chest",
+   "parent": "cape.FL.1"
+  },
+  "cape.BL.1": {
+   "length": 0.0776,
+   "on": "chest",
+   "parent": ""
+  },
+  "cape.BL.2": {
+   "length": 0.0731,
+   "on": "chest",
+   "parent": "cape.BL.1"
+  },
+  "cape.B.1": {
+   "length": 0.0673,
+   "on": "chest",
+   "parent": ""
+  },
+  "cape.B.2": {
+   "length": 0.063,
+   "on": "chest",
+   "parent": "cape.B.1"
+  },
+  "cape.BR.1": {
+   "length": 0.0771,
+   "on": "chest",
+   "parent": ""
+  },
+  "cape.BR.2": {
+   "length": 0.0733,
+   "on": "chest",
+   "parent": "cape.BR.1"
+  },
+  "cape.FR.1": {
+   "length": 0.039,
+   "on": "chest",
+   "parent": ""
+  },
+  "cape.FR.2": {
+   "length": 0.0382,
+   "on": "chest",
+   "parent": "cape.FR.1"
+  },
+  "skirt.L": {
+   "length": 0.1104,
+   "on": "hips",
+   "parent": ""
+  },
+  "skirt.R": {
+   "length": 0.1104,
+   "on": "hips",
+   "parent": ""
+  },
+  "skirt.FL": {
+   "length": 0.105,
+   "on": "hips",
+   "parent": ""
+  },
+  "skirt.BL": {
+   "length": 0.1064,
+   "on": "hips",
+   "parent": ""
+  },
+  "skirt.BR": {
+   "length": 0.1064,
+   "on": "hips",
+   "parent": ""
+  },
+  "skirt.FR": {
+   "length": 0.105,
+   "on": "hips",
+   "parent": ""
+  },
+  "cloak.L.1": {
+   "length": 0.1414,
+   "on": "hips",
+   "parent": ""
+  },
+  "cloak.L.2": {
+   "length": 0.1338,
+   "on": "hips",
+   "parent": "cloak.L.1"
+  },
+  "cloak.R.1": {
+   "length": 0.1415,
+   "on": "hips",
+   "parent": ""
+  },
+  "cloak.R.2": {
+   "length": 0.1338,
+   "on": "hips",
+   "parent": "cloak.R.1"
+  }
+ },
+ "guards": [
+  {
+   "name": "thigh.L",
+   "bone": "thigh.L",
+   "a": [
+    -0.0012,
+    -0.0,
+    -0.0001
+   ],
+   "b": [
+    -0.0012,
+    0.1618,
+    -0.0001
+   ],
+   "r": 0.0727,
+   "keep": false
+  },
+  {
+   "name": "thigh.R",
+   "bone": "thigh.R",
+   "a": [
+    0.0012,
+    -0.0,
+    -0.0001
+   ],
+   "b": [
+    0.0012,
+    0.1618,
+    -0.0001
+   ],
+   "r": 0.0727,
+   "keep": false
+  },
+  {
+   "name": "shin.L",
+   "bone": "shin.L",
+   "a": [
+    0.0,
+    -0.0,
+    -0.0155
+   ],
+   "b": [
+    0.0,
+    0.129,
+    -0.0155
+   ],
+   "r": 0.066,
+   "keep": false
+  },
+  {
+   "name": "shin.R",
+   "bone": "shin.R",
+   "a": [
+    -0.0,
+    -0.0,
+    -0.0155
+   ],
+   "b": [
+    -0.0,
+    0.129,
+    -0.0155
+   ],
+   "r": 0.066,
+   "keep": false
+  },
+  {
+   "name": "upper_arm.L",
+   "bone": "upper_arm.L",
+   "a": [
+    -0.0018,
+    -0.0,
+    0.0007
+   ],
+   "b": [
+    -0.0018,
+    0.1444,
+    0.0007
+   ],
+   "r": 0.0655,
+   "keep": false
+  },
+  {
+   "name": "upper_arm.R",
+   "bone": "upper_arm.R",
+   "a": [
+    0.0018,
+    -0.0,
+    0.0007
+   ],
+   "b": [
+    0.0018,
+    0.1444,
+    0.0007
+   ],
+   "r": 0.0655,
+   "keep": false
+  },
+  {
+   "name": "forearm.L",
+   "bone": "forearm.L",
+   "a": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "b": [
+    0.0,
+    0.1368,
+    0.0
+   ],
+   "r": 0.0585,
+   "keep": false
+  },
+  {
+   "name": "forearm.R",
+   "bone": "forearm.R",
+   "a": [
+    -0.0,
+    0.0,
+    -0.0
+   ],
+   "b": [
+    -0.0,
+    0.1368,
+    -0.0
+   ],
+   "r": 0.0585,
+   "keep": false
+  },
+  {
+   "name": "tail.001",
+   "bone": "tail.001",
+   "a": [
+    -0.0038,
+    -0.0,
+    -0.0
+   ],
+   "b": [
+    -0.0038,
+    0.1266,
+    -0.0
+   ],
+   "r": 0.0445,
+   "keep": false
+  },
+  {
+   "name": "tail.002",
+   "bone": "tail.002",
+   "a": [
+    0.0026,
+    0.0,
+    0.0
+   ],
+   "b": [
+    0.0026,
+    0.1267,
+    0.0
+   ],
+   "r": 0.0479,
+   "keep": false
+  },
+  {
+   "name": "quiver",
+   "bone": "chest",
+   "a": [
+    0.0003,
+    -0.0547,
+    -0.1454
+   ],
+   "b": [
+    0.1676,
+    0.1237,
+    -0.1986
+   ],
+   "r": 0.0621,
+   "keep": false
+  },
+  {
+   "name": "arrows",
+   "bone": "chest",
+   "a": [
+    0.2345,
+    0.1951,
+    -0.22
+   ],
+   "b": [
+    0.3126,
+    0.2784,
+    -0.2448
+   ],
+   "r": 0.038,
+   "keep": false
+  },
+  {
+   "name": "hips",
+   "bone": "hips",
+   "a": [
+    0.0,
+    0.04,
+    0.005
+   ],
+   "b": [
+    0.0,
+    -0.112,
+    0.005
+   ],
+   "r": 0.1,
+   "keep": true
+  },
+  {
+   "name": "chest",
+   "bone": "chest",
+   "a": [
+    -0.0,
+    -0.0594,
+    0.0095
+   ],
+   "b": [
+    0.0,
+    0.0881,
+    -0.0017
+   ],
+   "r": 0.09,
+   "keep": true
+  },
+  {
+   "name": "shoulders",
+   "bone": "chest",
+   "a": [
+    -0.125,
+    0.0724,
+    0.0025
+   ],
+   "b": [
+    0.125,
+    0.0724,
+    0.0025
+   ],
+   "r": 0.06,
+   "keep": true
+  },
+  {
+   "name": "head",
+   "bone": "head",
+   "a": [
+    -0.0,
+    0.1594,
+    0.0793
+   ],
+   "b": [
+    -0.0,
+    0.1594,
+    0.0793
+   ],
+   "r": 0.15,
+   "keep": true
+  },
+  {
+   "name": "tail.003",
+   "bone": "tail.003",
+   "a": [
+    0.0152,
+    0.0,
+    0.0
+   ],
+   "b": [
+    0.0152,
+    0.1173,
+    0.0
+   ],
+   "r": 0.0489,
+   "keep": false
+  },
+  {
+   "name": "cloak.L",
+   "bone": "cloak.L.1",
+   "a": [
+    -0.06,
+    0.086,
+    -0.004
+   ],
+   "b": [
+    0.06,
+    0.086,
+    -0.004
+   ],
+   "r": 0.012,
+   "keep": false
+  },
+  {
+   "name": "cloak.R",
+   "bone": "cloak.R.1",
+   "a": [
+    -0.06,
+    0.0861,
+    -0.004
+   ],
+   "b": [
+    0.06,
+    0.0861,
+    -0.004
+   ],
+   "r": 0.012,
+   "keep": false
+  }
+ ]
+}

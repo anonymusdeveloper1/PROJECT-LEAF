@@ -1,17 +1,18 @@
 extends Node
 ## Phase G2: barricade rows and tower repair (`-- --autotest --fresh --rows`), run from autotest.gd. Each check logs
 ## "EXPECT PASS <what>" or "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: the numbers come from
-## balance.json (defences.barricade: row, rows_by_home, crack_at, repair_share, piece; defences.tower.repair_share) and
-## no fight is played.
+## balance.json (defences.barricade: row, rings_by_home, crack_at, repair_share, piece; defences.tower.piece; for the
+## tower's Mend price raid.repair_share and gloom_raids.repair) and no fight is played.
 ##   (a) an old save (2 barricades placed, one of them wrecked, a second piece on one spot; 3 in the bag) loads as 2 rows
 ##       and a leaf refund; the bag and the build button have no barricades; rows load again from the save; pieces put
 ##       in the bag later (an older mission gift) are refunded too
-##   (b) every road spot has a marker; a tap on an empty one opens its card, whose Build makes a row (its cost taken);
-##       the Hearthtree's row cap is kept (the full card says to grow it)
+##   (b) the pads open as the Hearthtree grows (1-2: 4, 3: 8, 4: 10, 5+: 12); a row on a closed pad from an old save
+##       stays and can be repaired; every open empty pad can be built; the card explains why Build is disabled
 ##   (c) one piece hurt below crack_at: cracked (darker, tilted), the others whole; broken: flat, a rubble pile, no
 ##       collision, and a walker passes the gap (a whole piece still stops it)
 ##   (d) a row's repair costs its share (a broken piece and a cracked one) and mends every piece
-##   (e) a knocked-down tower tips over and shows its repair marker; its card repairs it for its share
+##   (e) a knocked-down tower tips over and shows its repair marker; its card repairs it for the Mend price (the same
+##       as "Mend the defences" for that tower alone, during the missions and after them)
 ##   (f) well_mend raises a cracked piece but never a broken one, clamps a long frame, stops at the cap, never above full
 ##   (g) screenshots: a row whole, cracked and broken; a road spot's, a row's and a downed tower's cards
 
@@ -30,6 +31,8 @@ func run() -> bool:
 	await _build()
 	await _damage()
 	await _repair()
+	_spacing()
+	await _wave_repair()
 	await _tower()
 	_well()
 	main.closeup = Vector3.ZERO
@@ -176,54 +179,128 @@ func _wrecked_at(row: Dictionary, share: float) -> bool:
 	return true
 
 
-# ---------------------------------------------------------------- (b) building rows, the cap
+# ---------------------------------------------------------------- (b) building rows: the pads open ring by ring
+func _vis_count(idx: int) -> int:
+	var n := 0
+	for key in d._spots:
+		var pr: PackedStringArray = String(key).split(":")
+		if int(pr[1]) == idx and d._spots[key].visible:
+			n += 1
+	return n
+
+
 func _build() -> void:
-	Save.placed = []
+	var old_lane := (lane + 1) % 4                                  # an old save's row on a far pad (not open at level 1)
+	Save.placed = [{"type": "barricade", "slot": [old_lane, 0], "row": d.pieces_per_row()}]
 	d.load_saved()
 	Save.camp_level = 1
 	Save.leaves = 1000
 	Save.timber = 100
-	main.hud.refresh()
+	main.hud.refresh_build()
 	await t._wait(0.3)
 	var cost: Dictionary = d.row_cost()
-	var caps: Array = _bi()["rows_by_home"]
-	var cap1 := int(caps[1])
+	var rings: Array = _bi()["rings_by_home"]
+	_x("rings_by_home is [0, 1, 1, 2, 2, 3, 3, 3, 3]", rings.map(func(v): return int(v)) == [0, 1, 1, 2, 2, 3, 3, 3, 3], {"rings": rings})
 	_x("a row costs balance.json barricade.row.cost", _same_cost(cost, _bi()["row"]["cost"]) and int(cost.get("leaves", 0)) > 0, {"cost": cost})
 	_x("every road spot has a marker (%d)" % main.world.barricade_slots().size(), d._spots.size() == main.world.barricade_slots().size()
 		and d._spots.size() == 12, {"spots": d._spots.size()})
-	var mk = d._spots.get(d._key(lane, 0))
-	_x("the road spots' markers show outside a wave, with the barricade badge", mk != null and mk.visible and String(mk.icon) == "barricade")
+	d._refresh_marks()
+	_x("level 1: the 4 nearest pads are open and no others", d.rings_open() == 1 and d.pads_open_count() == 4 and d.pad_open(lane, 2)
+		and not d.pad_open(lane, 1) and not d.pad_open(lane, 0))
+	_x("level 1: only the 4 nearest pads show a marker (+ the old save's row on a far pad)", _vis_count(2) == 4 and _vis_count(1) == 0 and _vis_count(0) == 1,
+		{"near": _vis_count(2), "mid": _vis_count(1), "far": _vis_count(0)})
+	# an old save's row on a pad that is not open yet: it stays, its marker shows, it can be repaired
+	var orow: Dictionary = d.row_at(old_lane, 0)
+	var omk = d._spots.get(d._key(old_lane, 0))
+	_x("an old save's row on a closed far pad stays and its marker shows", not orow.is_empty() and omk.visible and not d.pad_open(old_lane, 0))
+	_x("its tap opens the row's card (not a build card)", d._card_spot(old_lane, 0)["title"] == "Barricade row")
+	d.hurt_piece(int(orow["pieces"][0]["id"]), 999999)
+	var l_before := Save.leaves
+	_x("and it can be repaired", d.repair_row_at(old_lane, 0) and d.piece_stage(orow["pieces"][0]) == "whole" and Save.leaves < l_before)
+	Save.leaves = 1000
+	Save.timber = 100
+	var closed_card := _item(d._card_spot(lane, 1), "Build")
+	_x("a closed pad cannot be built, and nothing is paid", not d.build_row(lane, 1) and d.row_at(lane, 1).is_empty() and Save.leaves == 1000
+		and not closed_card.is_empty() and not bool(closed_card["enabled"]))
+	var mk = d._spots.get(d._key(lane, 2))
+	_x("an open pad's marker shows with the barricade badge", mk != null and mk.visible and String(mk.icon) == "barricade")
 	main.closeup = Vector3.ZERO
 	main.closeup_at = null
 	await t._at_ring(mk)
 	await t._wait(0.4)
-	_x("a tap on an empty spot opens its card", main.hud.card_ring() == mk, {"title": main.hud.card_title()})
+	_x("a tap on an empty open pad opens its card", main.hud.card_ring() == mk, {"title": main.hud.card_title()})
 	await t._shot("rows_card_spot")
-	var it := _item(mk.builder.call(), "Build")
-	_x("its card offers a barricade row", not it.is_empty() and bool(it["enabled"]) and _same_cost(it["cost"], cost), {"tile": it.get("title", "")})
+	var spec: Dictionary = mk.builder.call()
+	var it := _item(spec, "Build")
+	_x("its card offers a barricade row, with a plain sub line", not it.is_empty() and bool(it["enabled"]) and _same_cost(it["cost"], cost)
+		and String(spec["sub"]) == "Barricade row on this road" and not it.has("badge"), {"tile": it.get("title", ""), "sub": spec["sub"]})
 	if not it.is_empty():
 		(it["action"] as Callable).call()
 	main.hud.hide_card()
-	_x("Build makes a row there and takes its cost", not d.row_at(lane, 0).is_empty()
+	_x("Build makes a row there and takes its cost", not d.row_at(lane, 2).is_empty()
 		and Save.leaves == 1000 - int(cost.get("leaves", 0)) and Save.timber == 100 - int(cost.get("timber", 0)),
 		{"leaves": Save.leaves, "timber": Save.timber})
-	var spots := _spot_list()
-	var k := 1
-	while d.rows_built() < cap1 and k < spots.size():
-		d.build_row(int(spots[k][0]), int(spots[k][1]))
-		k += 1
+	# the card's reasons
+	var other := (lane + 3) % 4
 	var l0 := Save.leaves
-	var over: bool = d.build_row(int(spots[k][0]), int(spots[k][1]))
-	_x("the Hearthtree at level 1 holds %d rows: one more is refused and nothing is paid" % cap1,
-		d.rows_built() == cap1 and not over and Save.leaves == l0, {"rows": d.rows_built(), "leaves": [l0, Save.leaves]})
-	var full := _item(d._card_spot(int(spots[k][0]), int(spots[k][1])), "Build")
-	_x("then an empty spot's card says to grow the Hearthtree", not full.is_empty() and not bool(full["enabled"]) and String(full["text"]).contains("Grow"),
-		{"text": full.get("text", "")})
+	Save.leaves = 0
+	var poor := _item(d._card_spot(other, 2), "Build")
+	_x("too poor: the tile says what it needs", not bool(poor["enabled"]) and String(poor["text"]) == "Needs %d leaves and %d timber" % [int(cost["leaves"]), int(cost["timber"])],
+		{"text": poor.get("text", "")})
+	Save.leaves = l0
+	var f = main.fight
+	var keep := {"active": f.active, "in_wave": f.in_wave}
+	f.active = true
+	f.in_wave = true
+	var wv := _item(d._card_spot(other, 2), "Build")
+	_x("a wave is on: the tile says to build between waves", not bool(wv["enabled"]) and String(wv["text"]) == "A wave is on: build between waves", {"text": wv.get("text", "")})
+	f.active = keep["active"]
+	f.in_wave = keep["in_wave"]
+	var md := Save.missions_done
+	Save.missions_done = []
+	var cl := _item(d._card_spot(other, 2), "Build")
+	_x("barricades not open yet: the tile says so", not bool(cl["enabled"]) and String(cl["text"]) == "Barricades open later", {"text": cl.get("text", "")})
+	Save.missions_done = md
+	d._refresh_marks()
+	# every open empty pad can be built: the 4 nearest at level 1
+	for ln in 4:
+		if d.row_at(ln, 2).is_empty():
+			d.build_row(ln, 2)
+	_x("level 1: all 4 nearest pads are built", d.rows.size() == 5 and Save.leaves == 1000 - 4 * int(cost["leaves"]), {"rows": d.rows.size(), "leaves": Save.leaves})
+	_x("no 'N of M rows' badge any more", not String(_item(d._card_spot(lane, 1), "Build").get("badge", "")).contains("rows"))
+	# Level 3 opens the middle ring. Level 4 opens the far pads on the right, and level 5 opens the rest.
+	Save.leaves = 1000
+	Save.timber = 100
 	Save.camp_level = 3
-	var cap3 := int(caps[3])
-	var more: bool = d.build_row(int(spots[k][0]), int(spots[k][1]))
-	_x("at level 3 it holds %d: the row is built" % cap3, more and d.rows_built() == cap1 + 1 and cap3 > cap1)
-	_x("the row at the face-on road's last spot stands", not d.row_at(lane, 2).is_empty())
+	await t._wait(0.2)
+	_x("level 3: the 4 middle pads open (8 in all) and show", d.rings_open() == 2 and d.pads_open_count() == 8 and _vis_count(1) == 4 and _vis_count(0) == 1,
+		{"mid": _vis_count(1), "far": _vis_count(0)})
+	Save.camp_level = 4
+	await t._wait(0.2)
+	_x("level 4: 10 pads can be built", d.pads_open_count() == 10)
+	var built_mid := 0
+	for ln in 4:
+		if d.build_row(ln, 1):
+			built_mid += 1
+	_x("every open empty middle pad can be built", built_mid == 4 and d.rows.size() == 9, {"built": built_mid})
+	for ln in Data.patch_count():
+		var right: bool = main.world.patch_dir(ln).x > 0.0
+		var marker = d._spots[d._key(ln, 0)]
+		var was_built := ln == old_lane
+		_x("level 4: %s's far pad opens on the right or keeps its older row" % Data.patch(ln)["name"],
+			d.pad_open(ln, 0) == right and marker.visible == (right or was_built))
+		if not was_built:
+			_x("level 4: %s's empty far pad builds only on the right" % Data.patch(ln)["name"], d.build_row(ln, 0) == right)
+	Save.camp_level = 5
+	await t._wait(0.2)
+	_x("level 5: all 12 pads are open and show", d.rings_open() == 3 and d.pads_open_count() == 12 and _vis_count(0) == 4 and _vis_count(1) == 4 and _vis_count(2) == 4)
+	for ln in Data.patch_count():
+		if d.row_at(ln, 0).is_empty():
+			_x("level 5: %s's remaining far pad can be built" % Data.patch(ln)["name"], d.build_row(ln, 0))
+	_x("all 12 rows stand", d.rows.size() == 12)
+	Save.leaves = 1000
+	Save.timber = 100
+	_x("the row at the face-on road's nearest spot stands", not d.row_at(lane, 2).is_empty())
 
 
 # ---------------------------------------------------------------- (c) cracked, broken, the gap
@@ -311,6 +388,131 @@ func _repair() -> void:
 	_x("a whole row's card has no Repair", _item(d._card_spot(lane, 2), "Repair").is_empty())
 
 
+# ---------------------------------------------------------------- (g) spots spread out; repair in a wave (22 Nov 2026)
+func _spacing() -> void:
+	var gap := float(_bi().get("slot_gap_min", 2.5))
+	var rule: Dictionary = _bi()["pad_rule"]
+	var w = main.world
+	var keep_lv: int = Save.camp_level
+	for lv in range(1, 9):
+		Save.camp_level = lv
+		w.rebuild_camp()
+		var bad: Array = []
+		var rule_bad: Array = []
+		var gaps: Array = []
+		var slots: Array = w.barricade_slots()
+		for i in w.trails.size():
+			var ps: Array = [null, null, null]
+			for s in slots:
+				if int(s[2]) == i:
+					ps[int(s[3])] = s[0]
+			for k in range(1, 3):
+				var dd: float = (ps[k] as Vector3).distance_to(ps[k - 1])
+				gaps.append(snappedf(dd, 0.01))
+				if dd < gap:
+					bad.append([i, k, snappedf(dd, 0.01)])
+			# each pad sits where the rule says
+			var L: float = w.trail_length(i)
+			var gate_s: float = w.trail_progress(i, ps[2])
+			if absf((L - gate_s) - float(rule["near_from_end_m"])) > 0.15:
+				rule_bad.append(["gate", i, snappedf(L - gate_s, 0.01)])
+			var mid_s: float = w.trail_progress(i, ps[1])
+			if gate_s - mid_s < float(rule["mid_min_gap_from_gate_m"]) - 0.15:
+				rule_bad.append(["mid too close to the gate", i, snappedf(gate_s - mid_s, 0.01)])
+			var rr: float = Vector2((ps[0] as Vector3).x, (ps[0] as Vector3).z).length()
+			var far_pad: Dictionary = Data.patch(i).get("far_pad", {})
+			var from_woods := float(far_pad.get("in_from_woods_m", rule["far_in_from_woods_m"]))
+			if absf(rr - (w.WOODS_R - from_woods)) > 0.15:
+				rule_bad.append(["far", i, snappedf(rr, 0.01)])
+			if w.patch_dir(i).x > 0.0:
+				var far_s: float = w.trail_progress(i, ps[0])
+				if absf((gate_s - mid_s) - (mid_s - far_s)) > 0.05:
+					rule_bad.append(["uneven", i, snappedf(gate_s - mid_s, 0.01), snappedf(mid_s - far_s, 0.01)])
+				continue
+			var win: Array = rule["bend_window"]
+			var probe := float(rule["bend_probe_m"])
+			var best_a := -1.0
+			var best_s := 0.0
+			var s2: float = L * float(win[0])
+			while s2 <= L * float(win[1]) + 0.0001:
+				var a1: Vector3 = w.trail_point(i, s2) - w.trail_point(i, s2 - probe)
+				var a2: Vector3 = w.trail_point(i, s2 + probe) - w.trail_point(i, s2)
+				a1.y = 0.0
+				a2.y = 0.0
+				if absf(a1.angle_to(a2)) > best_a:
+					best_a = absf(a1.angle_to(a2))
+					best_s = s2
+				s2 += 0.05 * L
+			if absf(mid_s - minf(best_s, gate_s - float(rule["mid_min_gap_from_gate_m"]))) > 0.15:
+				rule_bad.append(["bend", i, snappedf(mid_s, 0.01), snappedf(best_s, 0.01)])
+		print("PADGAPS level %d (mid-far, gate-mid straight-line per road): %s" % [lv, str(gaps)])
+		for i in w.trails.size():
+			var row := []
+			for s in slots:
+				if int(s[2]) == i:
+					var pp: Vector3 = s[0]
+					row.append([int(s[3]), snappedf(Vector2(pp.x, pp.z).length(), 0.01), snappedf(w.trail_progress(i, pp), 0.01)])
+			print("PADPOS level %d road %d [index, dist_from_camp, along]: %s" % [lv, i, str(row)])
+		_x("level %d: the 3 spots on each road are at least %.1f m apart" % [lv, gap], bad.is_empty() and slots.size() == 12, {"bad": bad})
+		_x("level %d: every pad sits where pad_rule says" % lv, rule_bad.is_empty(), {"bad": rule_bad})
+	Save.camp_level = keep_lv
+	w.rebuild_camp()
+
+
+func _wave_repair() -> void:
+	var f = main.fight
+	var keep := {"active": f.active, "in_wave": f.in_wave}
+	Save.leaves = 5000
+	Save.timber = 200
+	var row: Dictionary = d.row_at(lane, 0)
+	var ps: Array = row["pieces"]
+	d.hurt_piece(int(ps[0]["id"]), 999999)                              # one broken
+	d.hurt_piece(int(ps[1]["id"]), int(ceil(float(ps[1]["max_hp"]) * 0.6)))   # one cracked
+	d.hurt_piece(int(ps[2]["id"]), int(round(float(ps[2]["max_hp"]) * 0.2)))  # one hurt, not cracked
+	f.active = true
+	f.in_wave = true
+	d._refresh_marks()
+	var mk = d._spots.get(d._key(lane, 0))
+	_x("in a wave a built row's marker stays", mk.visible)
+	var empty_vis := false
+	for key in d._spots:
+		var pr: PackedStringArray = String(key).split(":")
+		if d.row_at(int(pr[0]), int(pr[1])).is_empty() and d._spots[key].visible:
+			empty_vis = true
+	_x("in a wave empty spots show no marker", not empty_vis)
+	var spec: Dictionary = main.hud._spec(mk)
+	var it := _item(spec, "Repair")
+	_x("in a wave the tap opens the row's real card with an enabled Repair", not it.is_empty() and bool(it["enabled"]), {"sub": spec.get("sub", "")})
+	var cost: Dictionary = d.repair_row_cost(row)
+	var share := float(_bi()["repair_share"])
+	var pc: Dictionary = row["pieces"][1]                    # the cracked one: at least half a piece, more the nearer it is to breaking
+	var units := 1.0 + clampf(1.0 - float(pc["hp"]) / maxf(float(pc["max_hp"]), 1.0), 0.5, 1.0) + 0.2
+	var base: Dictionary = d.row_cost()
+	var want := {}
+	for k in base:
+		want[k] = int(ceil(float(base[k]) * share * units - 0.0001))
+	_x("repair price: a broken piece 1, a cracked one its missing share (at least 0.5), a hurt one its missing share", _same_cost(cost, want), {"got": cost, "want": want})
+	var l0 := Save.leaves
+	if not it.is_empty():
+		(it["action"] as Callable).call()
+	var whole := true
+	for p in ps:
+		whole = whole and float(p["hp"]) >= float(p["max_hp"]) - 0.01 and d.piece_stage(p) == "whole"
+	_x("the broken, the cracked and the hurt piece are repaired during a wave", whole and Save.leaves == l0 - int(cost.get("leaves", 0)), {"leaves": [l0, Save.leaves]})
+	# an empty spot cannot be built in a wave
+	var spots := _spot_list()
+	var free := []
+	for sp in spots:
+		if d.row_at(int(sp[0]), int(sp[1])).is_empty():
+			free = sp
+			break
+	if not free.is_empty():
+		_x("building a row stays closed in a wave", not d.build_row(int(free[0]), int(free[1])))
+	f.active = keep["active"]
+	f.in_wave = keep["in_wave"]
+	d._refresh_marks()
+
+
 # ---------------------------------------------------------------- (e) a knocked-down tower
 func _tower() -> void:
 	Save.def_levels["tower"] = 2
@@ -327,14 +529,27 @@ func _tower() -> void:
 	await t._wait(0.3)
 	_x("a knocked-down tower tips over and shows its repair marker", float(p["hp"]) <= 0.0 and absf((p["node"] as Node3D).rotation.z) > 0.1
 		and mk.visible and String(mk.icon) == "repair")
-	var spent := float(info["piece"])
-	for k in range(1, d.level("tower")):
-		spent += float(info["levels"][k].get("upgrade", 0))
-	var leaves := int(ceil(spent * float(info["repair_share"]) - 0.0001))
-	var want := {"leaves": leaves, "timber": maxi(1, int(round(leaves / float(info.get("repair_leaves_per_timber", 30)))))}
+	# 21 Nov 2026: the marker's repair costs what "Mend the defences" asks for this tower (leaves only): during the
+	# missions its piece price x raid.repair_share (it is missing all its health), at least 5
+	var share := float(Data.b["raid"]["repair_share"])
+	var want := {"leaves": maxi(5, int(ceil(float(info["piece"]) * share)))}
 	var got: Dictionary = d.tower_repair_cost(p)
-	_x("its repair: %d%% of what it cost (its price and upgrades), in leaves and a little timber" % int(round(float(info["repair_share"]) * 100.0)),
-		_same_cost(got, want), {"got": got, "want": want})
+	_x("its repair: the Mend price, %d%% of its piece price in leaves (no timber)" % int(round(share * 100.0)),
+		not Data.raids_open() and _same_cost(got, want), {"got": got, "want": want})
+	var mend := _mend_alone(p)
+	_x("Mend the defences with only this tower wrecked asks the same", mend == int(want["leaves"]), {"mend": mend, "badge": got})
+	# after the missions: the endgame mend rule (gloom_raids.repair), the badge and Mend still the same
+	var done0: Array = Save.missions_done.duplicate()
+	Save.missions_done = []
+	for i in Data.mission_count():
+		Save.missions_done.append(String(Data.mission(i)["id"]))
+	var r: Dictionary = Data.gr()["repair"]
+	var want_e := maxi(1, int(ceil(float(info["piece"]) * (1.0 + float(r["mend_per_level"]) * (d.level("tower") - 1)) * float(r["mend_share"]) - 0.0001)))
+	var got_e: Dictionary = d.tower_repair_cost(p)
+	var mend_e := _mend_alone(p)
+	_x("after the missions: the badge is the endgame Mend price (%d leaves), the same as Mend" % want_e,
+		Data.raids_open() and _same_cost(got_e, {"leaves": want_e}) and mend_e == want_e, {"got": got_e, "mend": mend_e, "want": want_e})
+	Save.missions_done = done0
 	await t._at_ring(mk)
 	await t._wait(0.4)
 	_x("a tap on its marker opens its card", main.hud.card_ring() == mk, {"title": main.hud.card_title()})
@@ -348,8 +563,21 @@ func _tower() -> void:
 	await t._wait(0.3)
 	_x("paid: the tower stands up at full health and its marker goes", float(p["hp"]) >= float(p["max_hp"]) - 0.01
 		and absf((p["node"] as Node3D).rotation.z) < 0.01 and not mk.visible and _has_tower_circle(p)
-		and Save.leaves == l0 - int(want["leaves"]) and Save.timber == t0 - int(want["timber"]),
+		and Save.leaves == l0 - int(want["leaves"]) and Save.timber == t0,
 		{"hp": p["hp"], "leaves": [l0, Save.leaves], "timber": [t0, Save.timber]})
+
+
+## What "Mend the defences" (defences.repair_cost) asks when p is the only wrecked piece: the others' wreck flags are
+## set aside for the sum and put back (nothing else changes).
+func _mend_alone(p: Dictionary) -> int:
+	var flags := {}
+	for q in d.pieces:
+		flags[int(q["id"])] = bool(q["wrecked"])
+		q["wrecked"] = int(q["id"]) == int(p["id"])
+	var c: int = d.repair_cost()
+	for q in d.pieces:
+		q["wrecked"] = flags[int(q["id"])]
+	return c
 
 
 func _has_tower_circle(p: Dictionary) -> bool:
@@ -391,4 +619,11 @@ func _well() -> void:
 		d.well_mend(0.1, 0.05, 2.0)
 	_x("and never above full", float(p2["hp"]) <= float(p2["max_hp"]) + 0.001 and float(p2["hp"]) >= float(p2["max_hp"]) - 0.01,
 		{"hp": p2["hp"], "max": p2["max_hp"]})
-	t._log("rows", {"rows": d.rows_built(), "cap": d.row_cap(), "pieces": d.pieces.size()})
+	# the Well brings a hurt piece to full between waves and never revives a broken one (cap 1.0 = full)
+	var pw: Dictionary = ps[0]
+	d.hurt_piece(int(pw["id"]), int(round(mx * 0.3)))
+	for i in 600:
+		d.well_mend(0.1, 0.03, 1.0)
+	_x("the Well brings a hurt piece all the way to full", absf(float(pw["hp"]) - mx) < 0.01 and d.piece_stage(pw) == "whole", {"hp": pw["hp"]})
+	_x("and the broken piece is still broken", float(p1["hp"]) <= 0.0 and d.piece_stage(p1) == "broken")
+	t._log("rows", {"rows": d.rows_built(), "open": d.pads_open_count(), "pieces": d.pieces.size()})

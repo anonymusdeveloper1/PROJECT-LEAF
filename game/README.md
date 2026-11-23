@@ -17,8 +17,10 @@ are in `../docs/ASSET_RULES.md`.
 - **Fight:** tap the signpost and start the next mission. Enemies come down the trails to the edge of the firelight and try to
   put out the campfire; the cat shoots by itself. Between waves, the signpost calls the next one. Small arrows at the
   screen's edge point toward foes off the screen (one per direction; one pulses when a building is hit from that side).
-- **Build:** buy road barricades, acorn towers and thorn spikes in the shop. Tap the build button, walk the ghost piece
-  where you want it (a barricade only at the glowing road spots) and tap Place.
+- **Build:** buy acorn towers and thorn spikes in the shop. Tap the build button, walk the ghost piece where you
+  want it and tap Place. After mission 1, tap an open road pad between waves to build a three-piece barricade for
+  90 leaves and 5 timber. Gate pads open at Hearthtree 1, middle pads at 3, and far pads at 4 on the right and 5 on
+  the left. Tap a built row to repair it, including during a wave.
 - **Upgrades are gated:** the home level (grown in the shop) caps every station and defence, and each station's level
   caps what it sells (see the plan, section 4).
 - **No replays (Phase F, 19 Nov 2026):** a won mission is done; the signpost offers only the next one. Every win pays
@@ -27,8 +29,8 @@ are in `../docs/ASSET_RULES.md`.
   grows only when every goal is met and the price is paid. The home's card has a "Grow the home" section: a tick or
   progress per goal, a Go button (walks the cat to the building that sells it) or Show, and the Grow button. The badge
   shows "!" when the home can grow.
-- **The gates:** missions 1-2 are played at home 1, 3-6 need home 2, 7-10 home 3, 11-13 home 4, 14-15 home 5. The
-  signpost says "Needs home level X (yours is Y)" with the missing goals. Home 2 needs mission 2 won, home 3 mission 6,
+- **No gates (21 Nov 2026):** every mission's `needs_home` is 1, so the next mission opens as soon as the one before it
+  is won (before, missions 3, 7, 11 and 14 needed home 2-5). Home 2 needs mission 2 won, home 3 mission 6,
   home 4 mission 10, home 5 mission 13, home 6 all 15 and the Gloomwood cleared once, homes 7 and 8 Gloomwood levels 2
   and 3.
 - **Roads and waves:** each wave is a surround (all four roads), a pincer (two) or a rush (one, with a banner); mission 1
@@ -91,7 +93,7 @@ Other modes (add after `--autotest --fresh`):
   sealed hollow from the first mission won, the reveal, the clearing and the path, the card's levels), `--dash` (the
   Leaf Dash, close calls, the flick gesture), `--traps` (log, thorns, crystal, spores, tide on the map; the logs'
   chest shut for a hurt cat), `--burrowfoes` (Grubling, Glowcap, Root Snapper, Amber Grub), `--topup` (mastery, the
-  Foxfire Bow, level-5 defences, the Warden's level 4, home levels 7 and 8, attachments), `--burrowhooks` (Phase C and
+  Foxfire Bow, level-5 defences, the Warden's level 4, home levels 7 and 8, the mount's attachments (moved to the Saddlery in G4)), `--burrowhooks` (Phase C and
   D hooks). Phase E's room-only modes (`--burrowroom`, `--burrow`, `--burrowfall`, `--burrowresume`,
   `--boss=bear|chief|grubber`, `--burrowtiers`, `--burrowperf`) are gone with the rooms (`--boss=...` now runs `--boss`).
 - The camp's layout and the HUD (18 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines; the tests are in
@@ -114,11 +116,20 @@ Other modes (add after `--autotest --fresh`):
   otherwise Godot crawls at a few frames a second and the timed tests fail.
 - Phase F (19 Nov 2026, home goals and fair missions; each logs `EXPECT PASS` / `EXPECT FAIL` lines; tests in
   `scripts/autotest_f_home.gd`, `autotest_f_fight.gd` and `autotest_f_enemy.gd`): `--homegoals` (the goals of every home
-  level, the gate, the home's card and its Go / Show rows, the badge), `--fightf` (patterns, the teaching roads, no easy
+  level, no mission gate, the home's card and its Go / Show rows, the badge), `--fightf` (patterns, the teaching roads, no easy
   waves, the gate, a live wave with the Golden Grub and the bonuses, the Gloom fade), `--enemyf` (the boar's daze, the
   pitcher and frog standoff, the Golden Grub, the totem's buff). `fight.skip_gate` (tests only) lets an older test start
   any mission; older tests that start a won mission (replays) or one past the home gate after `_veteran` fail or need it.
   Run them one after another, never in parallel (they share the test save).
+
+**New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
+upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
+bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Results on the PC: 34 pass.
+
+**New (21 Nov 2026, G4):** `--saddlery` (`scripts/autotest_g4_saddle.gd`): the Saddlery card, its skills and attachments
+(buying, upgrading, the caps by the Saddlery's level). Results on the PC: 44 pass. `--topup` was updated for the saddle
+that moved to the Saddlery: 15 pass, 8 fail. The 8 are older stat, bow, mastery and home-7-8 expectations from before
+Phase F's caps, not from G4.
 
 ## Debug start: the endgame (debug builds only)
 
@@ -145,12 +156,14 @@ real save is back, untouched. `--endgame --fresh` starts the endgame save over. 
 | `scripts/marker.gd` | A thing the cat can use: the leaf-shaped badge floating over it (its icon drawn from SVG in code), small and dim far away, big and glowing in reach with a rim glow on the thing, a "!" when something there is new; its reach |
 | `scripts/interact.gd` | Taps: a short touch that barely moves picks the marker (or the thing) under it and opens its card, or walks the cat there first |
 | `scripts/world.gd` | The map: light, sky and fog, ground, the firelight (the safe camp), trails, woods, the Gloom, collision |
-| `scripts/stations.gd` | The camp: the tree home and its shop card, the campfire's fire, Training Target, Bow Bench, signpost |
+| `scripts/stations.gd` | The camp: the tree home and its shop card, the campfire's fire, Training Target, Bow Shop (New, 21 Nov 2026, G3: the Bow Bench), the Saddlery (New, 21 Nov 2026, G4: its card and items), signpost |
+| `scripts/mount.gd` | New (21 Nov 2026, G4): the mount's skills (Stomp, Ram, Pounce, Bellow) and attachments (Fire-spitter, Mossweave Saddle, Saddlebags) on their own timers, and the Pounce and Ram movement; the mount has no built-in move of its own |
 | `scripts/defences.gd` | Road barricades, towers and spikes: buying, placing (the ghost; barricades at the road spots), levels, enemies hitting them |
 | `scripts/fight.gd` | Stages and waves, the campfire's health, winning and losing, the first stage's unlocks; Gloom Raids run here too (mode "raid") |
 | `scripts/raids.gd` | The Gloom Raids after the missions: the meter, the plan, the warning, pay, the camp check and Mend all, the Watch card, nothing while closed |
 | `scripts/enemy.gd` | All enemies: loads `assets/enemies/<id>/<id>.glb` and its JSON, or a placeholder; their behaviour |
-| `scripts/player.gd` | The Cat Ranger from the prototype, with upgrades, bows, respawn |
+| `scripts/player.gd` | The Cat Ranger from the prototype, with upgrades, bows, respawn; New (21 Nov 2026, G3): swaps the equipped bow's model into the cat's bow bones |
+| `scripts/arrow.gd` | New (21 Nov 2026, G3): the cat's arrows, one per bow (the Ember Bow's flame trail; `launch(..., burn, bow_id)`); a plain arrow when a bow has no file |
 | `scripts/hud.gd` | Leaves, timber, the fight, banners, tips and the cards (dialogs in the middle of the screen, with a close button) |
 | `scripts/threat_arrows.gd` | The arrows at the screen's edge toward foes off the screen in a wave, a raid or below ground |
 | `scripts/grass.gd` | Grass that bends away from whoever walks through it |

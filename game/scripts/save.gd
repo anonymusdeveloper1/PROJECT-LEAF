@@ -5,10 +5,20 @@ extends Node
 signal changed
 
 var path := "user://leaf_save.json"
-var leaves := 0
+var count_gain := false                            # not saved: on only while a mission chapter is played (fight.gd)
+# Every change to leaves goes through this setter (Save.leaves += n, add_leaves, Data.give, a pay...). While a mission
+# chapter is being played (count_gain, set by fight.gd) every rise is added to mission_run["gain"]: the leaves gained
+# since that chapter began (kill drops, wave pay, bonuses, sales: everything). A camp fall takes its share of
+# that only (fight.camp_falls); leaves saved before the chapter are safe.
+var leaves := 0:
+	set(v):
+		if count_gain and v > leaves and mission_run.has("mission"):
+			mission_run["gain"] = int(mission_run.get("gain", 0)) + v - leaves
+		leaves = v
 var timber := 0
 var camp_level := 1
-var stations := {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0}   # 0 = not there yet
+var stations := {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0,
+	"saddlery": 0, "tailor": 0}                        # 0 = not there yet (23 Nov 2026: the Tailor's Nook, "tailor")
 var stats := {"damage": 0, "draw": 0, "range": 0, "health": 0, "speed": 0, "magnet": 0}
 var bows := {"twig": 1}                             # bows owned and their level
 var bow := "twig"                                   # the one in the cat's paw
@@ -34,7 +44,9 @@ var pet_look := "sprig"                            # which look fills the pet sl
 var mount_skin := "natural"                        # the look's colours (balance.json looks[].skins)
 var pet_skin := "natural"
 var mission_run := {}                              # a mission under way: {"mission": index, "chapter": the chapter to
-                                                   # start from}, saved at every chapter break; {} = none
+                                                   # start from, "gain": leaves gained since that chapter began (see
+                                                   # leaves; an older save has none: 0)}, saved at every chapter
+                                                   # break; {} = none
 # Phase C: the Moss Warden, the garden, cooking and fishing. No timestamps anywhere: nothing moves on while the game is
 # closed (plants grow per wave held, a dish lasts one chapter).
 var guardian_look := "moss_warden"                 # which look fills the guardian slot (same numbers for all)
@@ -62,6 +74,16 @@ var mats := {"amber": 0, "glowstone": 0, "heartwood": 0}   # Burrows materials
 var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}
 var burrow_run := {}                               # a run under way (burrow.gd); {} = none
 var attach := {"owned": [], "mount": "", "pet": ""}   # attachments for the mount and the pet (Burrows only), bought in play
+# G4: the Saddlery. What the mount has learned and wears, id -> level (1-5): "skills" (stomp, ram, pounce, bellow) and
+# "attach" (fire_spitter, saddle, saddlebags). A save from before G4 (no "saddlery" key in its file) is brought over
+# once by migrate_saddlery(): the free Stomp and the old Burrows saddle and bags.
+# 22 Nov 2026 (the owner's rule): "worn" is the one attachment the mount wears ("" for none); only that one acts and
+# shows. A save with none of its owned ones marked worn wears its best one (settle_worn).
+var saddlery := {"skills": {}, "attach": {}, "worn": ""}
+# 23 Nov 2026: the cat's outfits (balance.json cat_skins; the Tailor's Nook). Looks only. "original" is always owned and
+# the default; an older save without these keys loads with them.
+var cat_skin := "original"                         # the outfit she wears
+var cat_skins_owned: Array = ["original"]          # the outfits bought (the original always in it)
 var endgame_slot := false                          # debug builds: the separate "endgame" test save is in use (never the real one)
 const ENDGAME_PATH := "user://leaf_save_endgame.json"
 const ENDGAME_MARK := "user://endgame_slot.txt"   # while this exists, a debug build keeps opening the endgame slot
@@ -165,7 +187,7 @@ func load_game() -> void:
 	mission_run = {}
 	var run = d.get("mission_run", {})
 	if typeof(run) == TYPE_DICTIONARY and run.has("mission"):
-		mission_run = {"mission": int(run["mission"]), "chapter": int(run.get("chapter", 0))}
+		mission_run = {"mission": int(run["mission"]), "chapter": int(run.get("chapter", 0)), "gain": maxi(0, int(run.get("gain", 0)))}
 	# Phase C (an older save has none of these: the defaults stay)
 	guardian_look = String(d.get("guardian_look", "moss_warden"))
 	guardian_skin = String(d.get("guardian_skin", "natural"))
@@ -232,6 +254,77 @@ func load_game() -> void:
 			attach["owned"].append(String(a))
 		attach["mount"] = String(ad.get("mount", ""))
 		attach["pet"] = String(ad.get("pet", ""))
+	# G4: the Saddlery (a file without the key is from before G4: it is brought over once, then saved with the key)
+	saddlery = {"skills": {}, "attach": {}, "worn": ""}
+	var sd = d.get("saddlery", null)
+	if typeof(sd) == TYPE_DICTIONARY:
+		for part in ["skills", "attach"]:
+			var pd2 = sd.get(part, {})
+			if typeof(pd2) == TYPE_DICTIONARY:
+				for k in pd2:
+					var lv := clampi(int(pd2[k]), 0, 5)
+					if lv > 0:
+						saddlery[part][String(k)] = lv
+		saddlery["worn"] = String(sd.get("worn", ""))
+	else:
+		migrate_saddlery()
+	settle_worn()
+	# 23 Nov 2026: the outfits (an older save has neither key: the original look, owned and worn)
+	cat_skins_owned = ["original"]
+	var so = d.get("cat_skins_owned", [])
+	if typeof(so) == TYPE_ARRAY:
+		for k in so:
+			if not cat_skins_owned.has(String(k)):
+				cat_skins_owned.append(String(k))
+	cat_skin = String(d.get("cat_skin", "original"))
+	settle_cat_skin()
+
+
+## 23 Nov 2026: she wears an outfit she owns that the game still sells (balance.json cat_skins), else the original.
+func settle_cat_skin() -> void:
+	if not cat_skins_owned.has("original"):
+		cat_skins_owned.push_front("original")
+	if cat_skin == "" or not cat_skins_owned.has(cat_skin) or Data.cat_skin(cat_skin).is_empty():
+		cat_skin = "original"
+
+
+## 22 Nov 2026: the mount wears one attachment at a time. When none of the ones it owns is marked worn (a save from
+## before that rule, which wore all of them), it wears the highest-level one it owns, the Saddlebags first on a tie
+## (Data.best_owned_attach); "" when it owns none.
+func settle_worn() -> void:
+	var w := String(saddlery.get("worn", ""))
+	if w != "" and int((saddlery["attach"] as Dictionary).get(w, 0)) >= 1:
+		return
+	saddlery["worn"] = Data.best_owned_attach()
+
+
+## G4: a save from before the Saddlery is brought over (load_game calls this when its file has no "saddlery" key):
+##   a save that had won mission saddlery.free_stomp.mission (8) gets that skill (Stomp) at its level (1), free, so the
+##   mount keeps the Thump it had (flag "g4_free_stomp"; the camp says so once, stations.catch_up_gifts)
+##   each old Burrows mount attachment it owned (saddlery.old_attachments: the Mossweave Saddle, the Saddlebags) becomes
+##   that Saddlery attachment at the level given there (flag "g4_old_attach"); one worn in the mount slot comes off
+##   (the slot keeps working for the Thunder Shoes)
+## It runs once: the next save writes the "saddlery" key.
+func migrate_saddlery() -> void:
+	var cfg: Dictionary = Data.b.get("saddlery", {})
+	var fs: Dictionary = cfg.get("free_stomp", {})
+	var mi := int(fs.get("mission", 8)) - 1
+	if not fs.is_empty() and mi >= 0 and mi < Data.mission_count() and missions_done.has(String(Data.mission(mi)["id"])):
+		var sid := String(fs.get("skill", "stomp"))
+		saddlery["skills"][sid] = maxi(int(saddlery["skills"].get(sid, 0)), int(fs.get("level", 1)))
+		set_flag("g4_free_stomp")
+	var old: Dictionary = cfg.get("old_attachments", {})
+	var owned: Array = attach.get("owned", [])
+	for oid in old:
+		var to: Array = old[oid]
+		if to.size() < 2:
+			continue
+		if owned.has(String(oid)):
+			var nid := String(to[0])
+			saddlery["attach"][nid] = maxi(int(saddlery["attach"].get(nid, 0)), clampi(int(to[1]), 1, 5))
+			set_flag("g4_old_attach")
+		if String(attach.get("mount", "")) == String(oid):
+			attach["mount"] = ""
 
 
 ## The debug endgame start: a camp as if all 15 missions were won (home level 5, a grown cat, some leaves, timber and
@@ -242,9 +335,11 @@ func _endgame_seed() -> void:
 	leaves = 8000
 	timber = 300
 	camp_level = 5
-	stations = {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 1}
+	stations = {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 1, "saddlery": 0,
+		"tailor": 0}
 	var st: Dictionary = Data.b.get("stations", {})
-	for id in ["target", "bench", "well", "cottage", "stall", "garden"]:
+	# G4: the Saddlery built, nothing learned; 23 Nov 2026: the Tailor's Nook built, only the original outfit owned
+	for id in ["target", "bench", "well", "cottage", "stall", "garden", "saddlery", "tailor"]:
 		stations[id] = mini(camp_level, (st.get(id, {}).get("levels", [{}, {}, {}]) as Array).size())
 	stats = {"damage": 9, "draw": 9, "range": 6, "health": 9, "speed": 8, "magnet": 5}
 	bows = {"twig": 10, "sunwood": 9, "volley": 6}
@@ -275,6 +370,9 @@ func _endgame_seed() -> void:
 	burrows = {}
 	burrow_run = {}
 	attach = {"owned": [], "mount": "", "pet": ""}
+	saddlery = {"skills": {}, "attach": {}, "worn": ""}
+	cat_skin = "original"
+	cat_skins_owned = ["original"]
 
 
 ## A Burrow's counters (made with zeros the first time it is asked for).
@@ -338,6 +436,8 @@ func save_game(quiet := false) -> void:
 		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look, "burrow_keys": burrow_keys,
 		"save_v": save_v,
 		"mats": mats, "burrows": burrows, "burrow_run": burrow_run, "attach": attach,
+		"saddlery": saddlery,
+		"cat_skin": cat_skin, "cat_skins_owned": cat_skins_owned,
 	}
 	var f := FileAccess.open(path, FileAccess.WRITE)
 	if f:

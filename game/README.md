@@ -5,6 +5,46 @@ are in `../docs/ASSET_RULES.md`.
 
 ## How it plays
 
+- **Random Raids only:** Defend Camp starts one continuous attack. Groups of 1–3 arrive across all four trails,
+  with no round breaks. A seeded roster and existing level increment are capped at 50 enemies including leaders
+  and summons; graphics-tier live limits still apply. Defeated IDs, summons and damage survive saves. Old cleared
+  waves get credit once. `--assault` / `--raidsave` covers 29 checks; Raid Missions retain their own wave rules.
+
+- **Signpost:** **Raid Missions** lists all 15 structured missions under To finish and Completed. Finished missions
+  can be replayed; unfinished ones open sequentially. **Random Raids** unlocks once all 15 are finished, while
+  the completed catalogue stays available. A saved run must be resumed or explicitly given up before another starts.
+  Missions descend from 15 to 1 in roomier cards with number badges, short status and one action. Opening and tab
+  changes animate the cards; buttons respond to presses, while unchanged live refreshes preserve the list and scroll.
+  Swipe over cards, badges or buttons to scroll; the signpost scrollbar is hidden. Verification: `--missions` covers
+  39 catalogue/replay/touch checks; `--homegoals` covers 48 progression checks.
+
+- **Acorn Towers:** each crossbow aims through 360° while its foundation stays fixed. Five upgrade looks reach
+  5/6/7/8/9 m and deal 8/14/24/36/44 damage. Larger classic Twig arrows change size and colours with every tier;
+  loading, bowstring draw, firing, recoil and the arrow's flight trail are visible.
+
+- **Raid Missions and waves:** start a Raid Mission at the signpost, then tap **Start wave** for each following wave. Every wave
+  waits as long as you need. Cleared waves save individually and numbering continues to 15 or 20; a restart or loss
+  keeps them cleared. Old chapter saves remain compatible. Five-wave supply chests stay. Wave completion pays
+  double the base leaf formula and timber; fresh enemy drops give 50% more golden leaves, rounded.
+
+- **Late bow upgrades:** levels 6–10 add 20% of base damage each and their leaf prices are about 25% lower.
+  Existing purchased levels gain the stronger damage automatically. The shop shows each next damage gain and cost.
+
+- **Outfits:** the Tailor's Nook sells teal Dusk Ranger and crimson/gold Ember Ranger (formerly Nightfall).
+  Existing Nightfall purchases become Ember Ranger. Riding speed is reduced 15% at every Market level.
+
+- **Bag:** tap Bag at the bottom-left for one grid of square item slots with icons and counts. Currency counts sit
+  above it. A preview shows the cat, seated on her current mount while riding. Tap a slot for its uses and actions.
+  Gameplay continues. Garden and cooking cards show owned food, recipes show Have and Need, and gathering and trading
+  show the resulting totals. In a dungeon, choose a quick-heal food or Auto, then use the labelled bottom button or
+  Eat in the Bag. Both share the same cooldown. Materials show At camp and This run amounts.
+- **Mounted aiming:** drag to turn the mount and run in that direction. The cat shoots across a strict 280-degree arc,
+  leaving an 80-degree gap behind. Rear-quarter shooting turns her torso and arms while the hips and legs face the mount.
+- **Fire-spitter:** the worn Saddlery attachment fires flame balls at the cat's arrow range and attack pace. Its firing
+  unit automatically tracks enemies while the mount follows the joystick. A hit splashes nearby enemies and burns them;
+  each upgrade increases both impact and burn damage by 40% of the base.
+  Shots have a hot round core, animated flame tail and sparks. Impacts leave flickering ground fire that fades out
+  after 3 seconds. Nearby hits refresh it; graphics quality limits patch and particle counts.
 - The game opens in the cat's camp: its tree home (whose counter is the shop) and the campfire. There is no menu.
   Between waves nothing can hurt the cat in the campfire's warm light, and no enemy can step into it; during a wave
   foes press in to the edge of the light and try to put out the fire.
@@ -14,26 +54,26 @@ are in `../docs/ASSET_RULES.md`.
   Tap a green button to buy; the X, a tap outside the dialog or the phone's back button close it. Walking near
   something opens nothing. A badge grows and glows when the cat is close enough, and shows a "!" when something there
   is new or affordable.
-- **Fight:** tap the signpost and start the next mission. Enemies come down the trails to the edge of the firelight and try to
+- **Fight:** tap the signpost and start the next raid. Enemies come down the trails to the edge of the firelight and try to
   put out the campfire; the cat shoots by itself. Between waves, the signpost calls the next one. Small arrows at the
   screen's edge point toward foes off the screen (one per direction; one pulses when a building is hit from that side).
 - **Build:** buy acorn towers and thorn spikes in the shop. Tap the build button, walk the ghost piece where you
-  want it and tap Place. After mission 1, tap an open road pad between waves to build a three-piece barricade for
+  want it and tap Place. After raid 1, tap an open road pad between waves to build a three-piece barricade for
   90 leaves and 5 timber. Gate pads open at Hearthtree 1, middle pads at 3, and far pads at 4 on the right and 5 on
   the left. Tap a built row to repair it, including during a wave.
 - **Upgrades are gated:** the home level (grown in the shop) caps every station and defence, and each station's level
   caps what it sells (see the plan, section 4).
-- **No replays (Phase F, 19 Nov 2026):** a won mission is done; the signpost offers only the next one. Every win pays
-  enough leaves to upgrade after it.
+- **Replays (23 Nov 2026):** completed Raid Missions remain available. Repeat completion pays the configured 50%
+  of the first-clear completion reward plus normal wave/chest rewards; unique progression and gifts never duplicate.
 - **Home goals:** each home level (2 to 8) has a goal list in `balance.json` (`stations.camp.levels[n].goals`). The home
   grows only when every goal is met and the price is paid. The home's card has a "Grow the home" section: a tick or
   progress per goal, a Go button (walks the cat to the building that sells it) or Show, and the Grow button. The badge
   shows "!" when the home can grow.
-- **No gates (21 Nov 2026):** every mission's `needs_home` is 1, so the next mission opens as soon as the one before it
-  is won (before, missions 3, 7, 11 and 14 needed home 2-5). Home 2 needs mission 2 won, home 3 mission 6,
-  home 4 mission 10, home 5 mission 13, home 6 all 15 and the Gloomwood cleared once, homes 7 and 8 Gloomwood levels 2
+- **No gates (21 Nov 2026):** every raid's `needs_home` is 1, so the next raid opens as soon as the one before it
+  is won (before, raids 3, 7, 11 and 14 needed home 2-5). Home 2 needs raid 2 won, home 3 raid 6,
+  home 4 raid 10, home 5 raid 13, home 6 all 15 and the Gloomwood cleared once, homes 7 and 8 Gloomwood levels 2
   and 3.
-- **Roads and waves:** each wave is a surround (all four roads), a pincer (two) or a rush (one, with a banner); mission 1
+- **Roads and waves:** each wave is a surround (all four roads), a pincer (two) or a rush (one, with a banner); raid 1
   teaches them. Enemies come in bursts and there are no easy waves. Pitchers and Frogs shoot from beyond the cat's reach;
   a Golden Grub and a Gloom Totem sometimes appear; a quick clear, an intact wave and going on early pay a bonus.
 
@@ -67,7 +107,7 @@ Other modes (add after `--autotest --fresh`):
   (the meter fills only from clamped live play and actions), `--raidsave` (closing mid-raid: it comes back at its
   warning), `--raidresume=1` (with `--fresh`), then `--raidresume=2`, then `--raidresume=3` (a real restart),
   `--raidtypes` (siege, sky, sneak, elite), `--wear` (wear, Patch, Mend some, Mend all), `--shards` (shards and what
-  they buy), `--raidintro` (the last mission's first win opens the raids), `--raidshots` (close-ups for review),
+  they buy), `--raidintro` (the last raid's first win opens the raids), `--raidshots` (close-ups for review),
   `--raidperf` (with `--quality=low|medium|high`). Debug flags: `--raid-small` (2 short waves), `--raid-type=siege|sky|sneak|elite`,
   `--raid-warn=S`, `--raid-meter=N`.
 - The Burrows (Phase E; dungeons as paths since docs/DUNGEON_SPEC.md; each logs `EXPECT PASS` / `EXPECT FAIL` lines;
@@ -90,7 +130,7 @@ Other modes (add after `--autotest --fresh`):
   dashes through telegraphs and backing off: it must win); `--floormaps=<dir>` saves the night floor's maps as
   pictures; kept from Phase E: `--burrowsave` (the save fields, currencies and
   costs, old saves, the reveal and the keys once, a Phase E room run closed kindly, nothing by time), `--hollow` (the
-  sealed hollow from the first mission won, the reveal, the clearing and the path, the card's levels), `--dash` (the
+  sealed hollow from the first raid won, the reveal, the clearing and the path, the card's levels), `--dash` (the
   Leaf Dash, close calls, the flick gesture), `--traps` (log, thorns, crystal, spores, tide on the map; the logs'
   chest shut for a hurt cat), `--burrowfoes` (Grubling, Glowcap, Root Snapper, Amber Grub), `--topup` (mastery, the
   Foxfire Bow, level-5 defences, the Warden's level 4, home levels 7 and 8, the mount's attachments (moved to the Saddlery in G4)), `--burrowhooks` (Phase C and
@@ -105,7 +145,7 @@ Other modes (add after `--autotest --fresh`):
   cat at each building before and after a tap), `--layoutsave=1` (with `--fresh`) then `--layoutsave=2` (an old save's
   tower and spikes on the new ground go back to the bag), `--hudcheck` (every card opened by a real tap as a dialog that
   fits inside the phone's bars, its X inside it, closed by its X or a tap outside, once by the back button; the
-  signpost, the Watch and a raid's warning, building, a mission with a boss bar, the Gloomwood's cards, pips and arena,
+  signpost, the Watch and a raid's warning, building, a raid with a boss bar, the Gloomwood's cards, pips and arena,
   nothing of the HUD mid-screen), `--taps` (taps and markers, 19 Nov 2026: walking near opens nothing, a drag ending
   on a marker or a long press opens nothing, a tap on empty ground does nothing, a tap in reach opens at once and a far
   one walks the cat there first, a drag stops that walk, a tap on the thing itself works, a drag on the dim moves
@@ -114,29 +154,40 @@ Other modes (add after `--autotest --fresh`):
   `interact.gd` and the dialogs see what a finger does. `--safe-top=N` / `--safe-bottom=N` (HUD pixels)
   try the phone's status bar and gesture bar on a PC. If the PC's screen is off, add `--disable-vsync` (before `--`):
   otherwise Godot crawls at a few frames a second and the timed tests fail.
-- Phase F (19 Nov 2026, home goals and fair missions; each logs `EXPECT PASS` / `EXPECT FAIL` lines; tests in
+- Phase F (19 Nov 2026, home goals and fair raids; each logs `EXPECT PASS` / `EXPECT FAIL` lines; tests in
   `scripts/autotest_f_home.gd`, `autotest_f_fight.gd` and `autotest_f_enemy.gd`): `--homegoals` (the goals of every home
-  level, no mission gate, the home's card and its Go / Show rows, the badge), `--fightf` (patterns, the teaching roads, no easy
-  waves, the gate, a live wave with the Golden Grub and the bonuses, the Gloom fade), `--enemyf` (the boar's daze, the
+  level, no raid gate, the home's card and its Go / Show rows, the badge), `--fightf` (patterns, the teaching roads, no easy
+  waves, manual starts, rewards, wave checkpoints, restart/loss retries, legacy saves, Gloom Raids, the gate, a live
+  wave with the Golden Grub and the bonuses, the Gloom fade; 90 passes), `--enemyf` (the boar's daze, the
   pitcher and frog standoff, the Golden Grub, the totem's buff). `fight.skip_gate` (tests only) lets an older test start
-  any mission; older tests that start a won mission (replays) or one past the home gate after `_veteran` fail or need it.
+  any raid; older tests that start a won raid (replays) or one past the home gate after `_veteran` fail or need it.
   Run them one after another, never in parallel (they share the test save).
 
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
-bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Results on the PC: 34 pass.
+bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Current PC result: 77 pass,
+including the stronger late upgrades, real arrow/burn damage and leaf affordability (23 Nov 2026).
 
 **New (21 Nov 2026, G4):** `--saddlery` (`scripts/autotest_g4_saddle.gd`): the Saddlery card, its skills and attachments
 (buying, upgrading, the caps by the Saddlery's level). Results on the PC: 44 pass. `--topup` was updated for the saddle
 that moved to the Saddlery: 15 pass, 8 fail. The 8 are older stat, bow, mastery and home-7-8 expectations from before
 Phase F's caps, not from G4.
 
+The supplies inventory is covered by `--inventory` (`scripts/autotest_inventory.gd`, 53 PC passes). It checks the shared
+slot grid, currency layout, cat and ridden-mount preview, touch input, food counts, harvesting, cooking, Market purchases,
+live enemy movement, healing, dungeon resume and older saves. Run after `--smoke`, sequentially, with `--disable-vsync` before `--`.
+
+Mounted targeting is covered by `--mountedaim` (`scripts/autotest_mounted_aim.gd`, 69 PC passes). It checks real arrows at wide
+bearings on both mounts, torso aiming above a forward-facing root, hips and feet, outfits with different bows,
+rear blind spots, left/right steering with the forward gait, target reacquisition, Ram direction and dismounting
+mid-shot. The Saddlery mode passed 94 checks, including flame-ball splash, upgrades, firing pace, arrow range and tracking while steering.
+
 ## Debug start: the endgame (debug builds only)
 
-The raids and the Burrows open only after all 15 missions are won. To play them at once, start a debug build with
+The raids and the Burrows open only after all 15 raids are won. To play them at once, start a debug build with
 `--endgame` (on the PC: `... -- --endgame`; on the phone: a line `--endgame` in the app's `files/test_args.txt`, as
 for the other phone test arguments). It opens a **separate save** (`user://leaf_save_endgame.json`), never the real
-one: every mission won, home level 5, a grown cat (Target and Bench at 5, Well, Cottage, Stall and Garden at 3; an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, 3 Hollow keys, food in
+one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well, Cottage, Stall and Garden at 3; an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, 3 Hollow keys, food in
 the pantry and the Burrows open (the Moss Warden is not there yet: it is found in the first Burrow). The HUD says
 "Endgame test save" at the top left. The slot stays on at every launch until a launch with `--endgame-off`; then the
 real save is back, untouched. `--endgame --fresh` starts the endgame save over. Release builds ignore both.
@@ -160,7 +211,7 @@ real save is back, untouched. `--endgame --fresh` starts the endgame save over. 
 | `scripts/mount.gd` | New (21 Nov 2026, G4): the mount's skills (Stomp, Ram, Pounce, Bellow) and attachments (Fire-spitter, Mossweave Saddle, Saddlebags) on their own timers, and the Pounce and Ram movement; the mount has no built-in move of its own |
 | `scripts/defences.gd` | Road barricades, towers and spikes: buying, placing (the ghost; barricades at the road spots), levels, enemies hitting them |
 | `scripts/fight.gd` | Stages and waves, the campfire's health, winning and losing, the first stage's unlocks; Gloom Raids run here too (mode "raid") |
-| `scripts/raids.gd` | The Gloom Raids after the missions: the meter, the plan, the warning, pay, the camp check and Mend all, the Watch card, nothing while closed |
+| `scripts/raids.gd` | The Gloom Raids after the raids: the meter, the plan, the warning, pay, the camp check and Mend all, the Watch card, nothing while closed |
 | `scripts/enemy.gd` | All enemies: loads `assets/enemies/<id>/<id>.glb` and its JSON, or a placeholder; their behaviour |
 | `scripts/player.gd` | The Cat Ranger from the prototype, with upgrades, bows, respawn; New (21 Nov 2026, G3): swaps the equipped bow's model into the cat's bow bones |
 | `scripts/arrow.gd` | New (21 Nov 2026, G3): the cat's arrows, one per bow (the Ember Bow's flame trail; `launch(..., burn, bow_id)`); a plain arrow when a bow has no file |

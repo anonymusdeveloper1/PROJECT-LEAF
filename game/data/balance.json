@@ -739,6 +739,12 @@
     "Old Oak Hall",
     "Heart Oak"
   ],
+  "bow_upgrade_curve": {
+    "_note": "23 Nov 2026: upgrades reaching bow levels 6-10 add 20% of the bow's base damage each; levels 2-5 and mastery 11-12 keep the bow's per_level increment (10%). Already-owned levels gain the stronger damage without buying them again. Leaf prices for upgrades reaching levels 6-10 were reduced about 25%, rounded to 5 leaves, in each bow's cost table. Craft prices, early upgrades, mastery materials, station gates and mission rewards are unchanged.",
+    "late_from_level": 6,
+    "late_to_level": 10,
+    "late_per_level": 0.2
+  },
   "bows": {
     "twig": {
       "name": "Twig Bow",
@@ -777,11 +783,11 @@
         58,
         84,
         117,
-        162,
-        221,
-        299,
-        403,
-        546
+        120,
+        165,
+        225,
+        300,
+        410
       ],
       "mastery": [
         {
@@ -840,11 +846,11 @@
         84,
         117,
         162,
-        221,
-        299,
-        403,
-        546,
-        728
+        165,
+        225,
+        300,
+        410,
+        545
       ],
       "mastery": [
         {
@@ -903,11 +909,11 @@
         117,
         162,
         221,
-        299,
-        403,
-        546,
-        728,
-        975
+        225,
+        300,
+        410,
+        545,
+        730
       ],
       "mastery": [
         {
@@ -970,11 +976,11 @@
         152,
         211,
         287,
-        389,
-        524,
+        290,
+        395,
+        535,
         710,
-        946,
-        1268
+        950
       ],
       "mastery": [
         {
@@ -1039,11 +1045,11 @@
         117,
         162,
         221,
-        299,
-        403,
-        546,
-        728,
-        975
+        225,
+        300,
+        410,
+        545,
+        730
       ],
       "mastery": [
         {
@@ -1104,11 +1110,11 @@
         117,
         162,
         221,
-        299,
-        403,
-        546,
-        728,
-        975
+        225,
+        300,
+        410,
+        545,
+        730
       ],
       "mastery": [
         {
@@ -1154,32 +1160,60 @@
     "tower": {
       "name": "Acorn Tower",
       "piece": 90,
+      "aim_turn_deg_per_s": 540,
+      "aim_tolerance_deg": 4,
+      "aim_pitch_deg": 88,
+      "load_s": 0.38,
+      "recover_s": 0.12,
+      "recoil_m": 0.06,
+      "arrow_load_back_m": 0.25,
+      "string_relax_m": 0.175,
+      "projectile_speed": 15.0,
+      "projectile_radius": 0.055,
+      "projectile_grace_s": 0.4,
+      "_note_arrows": "23 Nov 2026: full-circle yaw and vertical crossbow aim, a drawn bowstring and a visibly loaded enlarged Twig Bow arrow. All five existing tower models remain; the former fixed acorn is removed and the native string split out for animation. Arrows fly straight with swept collision and a readable trail. Damage/cadence/prices are retained; range grows 5/6/7/8/9 m. Arrow scale and tip/fletching colours change with every level. Tower base stays fixed.",
       "levels": [
         {
           "damage": 8,
           "every": 1.2,
           "range": 5.0,
+          "arrow_scale": 1.6,
+          "arrow_tip": "#B9C6CE",
+          "arrow_fletch": "#89BC4C",
+          "arrow_glow": 0.0,
           "upgrade": 0,
           "hp": 160
         },
         {
           "damage": 14,
           "every": 1.0,
-          "range": 5.5,
+          "range": 6.0,
+          "arrow_scale": 1.8,
+          "arrow_tip": "#E2F1F5",
+          "arrow_fletch": "#65CAD7",
+          "arrow_glow": 0.0,
           "upgrade": 220,
           "hp": 320
         },
         {
           "damage": 24,
           "every": 0.8,
-          "range": 6.0,
+          "range": 7.0,
+          "arrow_scale": 2.0,
+          "arrow_tip": "#F9C44E",
+          "arrow_fletch": "#F4E8B1",
+          "arrow_glow": 0.0,
           "upgrade": 500,
           "hp": 520
         },
         {
           "damage": 36,
           "every": 0.7,
-          "range": 6.5,
+          "range": 8.0,
+          "arrow_scale": 2.2,
+          "arrow_tip": "#C5A5FF",
+          "arrow_fletch": "#9377DF",
+          "arrow_glow": 0.45,
           "upgrade": 2400,
           "shards": 90,
           "hp": 800
@@ -1187,7 +1221,11 @@
         {
           "damage": 44,
           "every": 0.65,
-          "range": 7.0,
+          "range": 9.0,
+          "arrow_scale": 2.4,
+          "arrow_tip": "#FFAE35",
+          "arrow_fletch": "#FFE18C",
+          "arrow_glow": 0.65,
           "hp": 1000,
           "upgrade": 2800,
           "amber": 20,
@@ -1894,9 +1932,9 @@
     "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission, it throws the cat off and stays out until the cat feeds it (revive_food from the pantry, the HUD's Feed button, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
     "speed_by_level": [
       0,
-      1.5,
-      1.65,
-      1.8
+      1.275,
+      1.4025,
+      1.53
     ],
     "thump_damage_by_level": [
       0,
@@ -1916,9 +1954,9 @@
     "revive_food": {
       "berries": 2
     },
-    "_note_aim": "22 Nov 2026 (the owner): while riding, the cat shoots only ahead. She picks targets within aim_cone_deg either side of the mount's heading and never turns her body further than that; to shoot what is behind, the player turns the mount. A target she already holds is kept until it is aim_cone_keep_deg past the cone (so it does not flicker on the edge). On foot nothing changes.",
-    "aim_cone_deg": 80,
-    "aim_cone_keep_deg": 5,
+    "_note_aim": "23 Nov 2026 (owner's follow-up): the mount faces joystick travel and runs forward as before. The cat acquires and shoots only within aim_cone_deg either side of that heading (140 each side, a 280-degree arc). aim_cone_keep_deg is zero so held targets are released outside it; the rear blind spot is 80 degrees. Dedicated upper-body mounted Front, QuarterLeft/Right and RearLeft/Right shooting clips blend across this arc. The character root, pelvis and seated legs keep facing the mount; only the torso, shoulders, arms and head aim. The rear poses limit chest rotation and reposition both arms for an over-shoulder shot. Draw and release stay synchronized with Shoot. Pose values are authored animation data in assets/cat/mounted/shooting.res.",
+    "aim_cone_deg": 140,
+    "aim_cone_keep_deg": 0,
     "_note_ride": "22 Nov 2026 (the owner: 'the cat is stationary while riding; make the cat move'): how the seated cat moves (ride_motion.gd, all looks only, no gameplay). Angles in degrees. ride_follow: share of the saddle's own rocking (the mount's back as it bounds or trots) her hips take. ride_upright: share of that her back takes back again (she stays more upright than the saddle). ride_bob: how far her back gives (bends forward) with each bounce, degrees for every 10 cm the saddle jumps under her; ride_bob_hz, ride_bob_damp: how quickly that springs back (a spring: its speed in bounces a second, and its damping, 0..1). ride_lean: forward lean at full speed (ride_lean_full_mps). ride_turn: share of a balanced lean into turns, at most ride_turn_max. ride_sway: a slow sway while standing (ride_sway_hz sways a second). ride_jolt: the kick each skill gives her body, + forward, - back (pounce_land when a Pounce comes down); ride_jolt_hz, ride_jolt_damp: how it settles. ride_head_steady: share of all that her head does NOT follow (a rider's head stays level). ride_aim_steady: share of it her chest (and so her bow arms) does not follow while she aims, so drawing and aiming are untouched. ride_bow_*: how she carries the bow while seated and not shooting, measured from her carry pose of the moment: the bow hand lifted (lift_m), out to her side (out_m) and forward (fwd_m), the bow tipped forward (tilt_fwd) and its top out (tilt_out); if its lower tip would still hang lower than clear_m above the saddle, it tips further forward, by up to more_max degrees.",
     "ride_follow": 0.7,
     "ride_upright": 0.55,
@@ -1975,7 +2013,7 @@
     }
   },
   "gloom_raids": {
-    "_note": "Gloom Raids after every mission is won (Phase D, docs/PHASE_D_SPEC.md); not `raid` (the mission camp-falls numbers). The meter fills ONLY while the game runs: `meter.per_minute` points a minute while no fight is on, no raid is pending, the fire burns, the cat is up and the player touched the screen in the last `meter.idle_after` s (frame delta clamped to `meter.max_delta`), plus `meter.actions`, which never fill it past `meter.bump_cap`. Nothing reads the clock. At `meter.stir_at` the next raid is planned (its kind, trails, level and leader are fixed then); at `meter.full` it is pending and its warning (`warning`, always `warning.min`..`warning.max` s) starts when allowed. A raid is `waves` waves of lerp(count) (+1 per `count_per_level` raid levels) from its kind's pool; the last wave is cut to 60% and led by its leader (queue index `leader_at`); beating the leader routs the rest. Raid level = 1 + floor(max(0, camp score - level.camp_free) / level.camp_step) + floor(renown / level.renown_step), at most level.max (the first raid: - level.first_raid_minus). Renown +level.won_renown per raid held, -level.loss_renown per raid lost, 0..level.renown_cap. Strength = strength.base + strength.per_level x level, x (1 + strength.wave_ramp x (wave - 1)), the leader x leader_mult. Pay: shards round((pay.shards + pay.shards_per_level x level) x kind shards x (1 + pay.perfect if perfect + pay.ready if ready)); leaves pay.leaves + pay.leaves_per_level x level; timber pay.timber + floor(level / pay.timber_per_levels); keys pay.keys. A lost raid pays pay.lost_per_wave_held shards per wave held and takes nothing.",
+    "_note": "Random Raids after all Raid Missions: one continuous assault, started with Defend Camp. The live-play Gloom meter and preparation rules are unchanged. assault.count plus floor(level/count_per_level) sets a seeded roster, capped by assault.max_enemies (50 including its leader and boss summons). Groups of assault.group_size arrive across shuffled rounds of all four trails: assault.member_gap within groups, random assault.group_gap between them. The leader joins last and retains its rout. The existing per-quality live cap applies with no round breaks. Defeated member IDs and capped summons survive saves; legacy three-wave checkpoints reduce the remaining roster once. Camp/renown level, strength and completion rewards retain their existing formulas; loss consolation uses the defended proportion in legacy_waves shares. All timing uses live frame delta, never wall time.",
     "meter": {
       "full": 100,
       "per_minute": 10,
@@ -2008,7 +2046,17 @@
       "ten_left": 10,
       "point_s": 6
     },
-    "waves": 3,
+    "waves": 1,
+    "assault": {
+      "count": [36, 46],
+      "max_enemies": 50,
+      "group_size": [1, 3],
+      "group_gap": [1.1, 2.0],
+      "member_gap": 0.22,
+      "opening_delay": 1.0,
+      "legacy_waves": 3,
+      "test_count": [12, 12]
+    },
     "breather": 10,
     "count": [
       12,
@@ -5342,14 +5390,16 @@
   "mission": {
     "_note": "how every mission runs (Draft 7): `waves` waves in chapters of `chapter_waves`; every chapter's last wave is an elite wave (the mission's `elite` enemies, more each chapter) and the mission's last wave brings its `boss`. Wave w has count[0]..count[1] ordinary enemies from its chapter's pool, spawned every[0]..every[1] s apart, at strength (base_strength + strength_per_mission x mission) x (1 + wave_ramp x (w - 1)); at most `max_alive` at once. A `breather` (s) between waves; after a chapter the camp rests until the player goes on from the signpost, and the game is saved there. Pay: kills drop `kill_pay` of their leaves; a cleared wave pays (wave_bonus + wave_bonus_step x w) leaves; a chapter pays chest_leaves / chest_timber [chapter]; all of it x (1 + pay_per_mission x mission). The win pays the mission's `reward` (replays: `replay_reward` of it). The campfire can be rebuilt once per chapter (`rebuild_s` on the ashes, `rebuild_timber`) and comes back at `rebuild_hp`; at every chapter break it is fed back to full. If a wave's last `flee_left` enemies (no boss) go `flee_after` s without one coming or falling, they flee so the wave can end.",
     "chapter_waves": 5,
-    "breather": 15,
+    "breather": 0,
+    "_note_wave_control": "23 Nov 2026: campaign raids and Gloom Raids wait for the player to start every wave. Cleared campaign waves save wave_done, keeping continuous numbering across five-wave supply chests, app restarts and camp falls. Older chapter-only saves resume at that chapter's first wave. Wave-clear leaves and timber are doubled; enemy_leaf_mult increases fresh kill drops without multiplying stolen leaves. Early-start timer pay is retired.",
+    "enemy_leaf_mult": 1.5,
     "base_strength": 1.0,
     "strength_per_mission": 0.08,
     "wave_ramp": 0.05,
     "max_alive": 28,
     "kill_pay": 0.65,
-    "wave_bonus": 3,
-    "wave_bonus_step": 0.5,
+    "wave_bonus": 6,
+    "wave_bonus_step": 1.0,
     "chest_leaves": [
       25,
       40,
@@ -5398,7 +5448,7 @@
       "quick_per_foe_s": 3.0,
       "quick_share": 0.5,
       "intact_share": 0.5,
-      "early_per_s": 0.5
+      "early_per_s": 0.0
     },
     "golden_grub": {
       "from_mission": 1,
@@ -5454,7 +5504,7 @@
       },
       "boss_others_on_field": 8
     },
-    "timber_per_wave": 1,
+    "timber_per_wave": 2,
     "rebuild_leaves": 60,
     "_note_squads": "Phase G1b: mission waves are planned from the chapter's `squads` (weights) instead of its random `pool`, until the wave reaches its count from `count`. Rules (squad_rules): from mission mixed_from on, a wave holds at least min_types different squad types; from mission share_from on, no kind is more than max_kind_share of a wave; the chapter's first_waves still use only its first squad. A squad spawns together on one road only when the field has room for all of it and the tank limit allows it. Elites lead their own squads (the elite plus elite_escort light enemies from the chapter's squads). The boss wave: each `boss` entry plus the mission's boss_escort squads.",
     "squad_rules": {
@@ -5906,8 +5956,8 @@
       "model": "res://assets/cat/skins/dusk_ranger.glb"
     },
     "nightfall_ranger": {
-      "name": "Nightfall Ranger",
-      "short": "Ranger gear as dark as night",
+      "name": "Ember Ranger",
+      "short": "Crimson cloth, gold trim and cream lining",
       "price": 6000,
       "currency": "leaves",
       "model": "res://assets/cat/skins/nightfall_ranger.glb"
@@ -6665,7 +6715,7 @@
     }
   },
   "saddlery": {
-    "_note": "G4 (docs/PHASE_G_PLAN.md, 21 Nov 2026): the Saddlery's own rules (the building itself, its price, levels and needs_missions, is stations.saddlery). gap_s: the shortest time between two of the mount's moves (its skills and the Fire-spitter), so two never come in the same moment. free_stomp: a save from before G4 that had won mission `mission` gets that skill at `level`, once (the mount's old built-in Thump). old_attachments: the Burrows-only mount attachments that became Saddlery attachments, old id -> [new id, level] (the level whose numbers match the old item best: the saddle's +50% health -> level 3, +45%; the bags' +25% loot -> level 5, +25% leaves from kills). stand_in: until the owner's Meshy model comes, the Saddlery shows these models by its level, tinted (delete the block then). worn_tie_order (22 Nov 2026, one attachment worn at a time): a save that owns attachments but has none marked worn (one from before that rule) wears the highest-level one it owns; on a tie the first in this list wins (the Saddlebags).",
+    "_note": "G4 (docs/PHASE_G_PLAN.md, 21 Nov 2026): the Saddlery's own rules (the building itself, its price, levels and needs_missions, is stations.saddlery). gap_s: the shortest time between mount skills; the Fire-spitter has an independent firing clock matching the cat's current shooting interval. free_stomp: a save from before G4 that had won mission `mission` gets that skill at `level`, once (the mount's old built-in Thump). old_attachments: the Burrows-only mount attachments that became Saddlery attachments, old id -> [new id, level] (the level whose numbers match the old item best: the saddle's +50% health -> level 3, +45%; the bags' +25% loot -> level 5, +25% leaves from kills). stand_in: until the owner's Meshy model comes, the Saddlery shows these models by its level, tinted (delete the block then). worn_tie_order (22 Nov 2026, one attachment worn at a time): a save that owns attachments but has none marked worn (one from before that rule) wears the highest-level one it owns; on a tie the first in this list wins (the Saddlebags).",
     "gap_s": 0.6,
     "worn_tie_order": [
       "saddlebags",
@@ -6887,15 +6937,26 @@
     }
   },
   "mount_attachments": {
-    "_note": "G4: what the mount wears, made at the Saddlery, everywhere (missions, raids, the Burrows). 22 Nov 2026 (the owner's rule): the mount can own all three but wears ONE at a time, or none (Save.saddlery.worn); only the worn one acts and shows on the mount. Wear is free, between waves only; a bought one is worn at once when nothing is worn; only the worn one is upgraded. Bought and upgraded like the skills (price, needs_burrows, capped by the Saddlery's level). fire_spitter: every every_s, while the cat rides it in a fight and an enemy is in the cone in front of it (cone_m long, cone_deg each side), the enemies there burn: burn_per_s x (1 + burn_per_level x (level - 1)) every second for burn_s (enemy.ignite, the Ember Bow's fire); shown with a fire effect (22 Nov 2026: and, when its file exists, a model on the mount: res://assets/companions/attachments/<id>_<mount look>.glb on the saddle bone, the fire starting at its marker_nozzle; every attachment shows its model the same way). saddle (the Mossweave Saddle): the mount's health x (1 + hp_per_level x level). saddlebags: leaves dropped by kills x (1 + leaves_per_level x level), in missions, raids and the Burrows (the fractions add up from kill to kill).",
+    "_note": "G4: what the mount wears, made at the Saddlery, everywhere (missions, raids, the Burrows). 22 Nov 2026 (the owner's rule): the mount can own all three but wears ONE at a time, or none (Save.saddlery.worn); only the worn one acts and shows on the mount. Wear is free, between waves only; a bought one is worn at once when nothing is worn; only the worn one is upgraded. Bought and upgraded like the skills (price, needs_burrows, capped by the Saddlery's level). fire_spitter (23 Nov 2026): while ridden in combat it launches flame balls at the cat's current firing pace, independently of skill gaps. It assists the cat's focus or holds/acquires a foe in any direction within Data.cat_range(), measured from the cat. The firing unit swivels at aim_turn_deg_per_s and waits for aim_tolerance_deg alignment; the harness stays fixed. Flight uses projectile_speed and projectile_radius, with lifetime at least projectile_life_s and enough for the launch distance plus projectile_flight_grace_s; collision bursts around the hit enemy (blast_m plus each foe's radius), applying damage x (1 + damage_per_level x (level - 1)) once to each foe, then burn_per_s x (1 + burn_per_level x (level - 1)) for burn_s to survivors. Damage and burn retain companion meal boosts. Ball flight and impacts stop while gameplay is frozen. Visual effects share their meshes and materials (22 Nov 2026: and, when its file exists, a model on the mount: res://assets/companions/attachments/<id>_<mount look>.glb on the saddle bone, the fire starting at its marker_nozzle; every attachment shows its model the same way). saddle (the Mossweave Saddle): the mount's health x (1 + hp_per_level x level). saddlebags: leaves dropped by kills x (1 + leaves_per_level x level), in missions, raids and the Burrows (the fractions add up from kill to kill).",
     "items": {
       "fire_spitter": {
         "name": "Fire-spitter",
-        "text": "Spits a short cone of fire ahead",
+        "text": "Tracks enemies at the cat's arrow range and firing pace; flame balls burst on nearby enemies",
         "icon": "flame",
-        "every_s": 3,
-        "cone_m": 2.5,
-        "cone_deg": 35,
+        "aim_turn_deg_per_s": 720,
+        "aim_tolerance_deg": 6,
+        "damage": 8,
+        "damage_per_level": 0.4,
+        "blast_m": 1.25,
+        "projectile_speed": 8,
+        "projectile_radius": 0.14,
+        "projectile_life_s": 1.2,
+        "projectile_flight_grace_s": 0.25,
+        "ground_fire_s": 3.0,
+        "ground_fire_fade_s": 0.8,
+        "ground_fire_merge_m": 0.7,
+        "ground_fire_max_by_quality": [4, 6, 8],
+        "_note_visual_fire": "Animated fireball tongues and flame trail; impacts leave a visual ground fire for 3 s, fading during its last 0.8 s. Nearby hits refresh one patch. Counts are capped by graphics quality. Ground fire adds no damage beyond the existing impact and enemy burn, pauses with gameplay and clears on area changes.",
         "burn_s": 2,
         "burn_per_s": 8,
         "burn_per_level": 0.4,

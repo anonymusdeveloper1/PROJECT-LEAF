@@ -1,6 +1,132 @@
-# Project LEAF: where we are (23 November 2026)
+# Project LEAF: where we are (24 November 2026)
 
 **The full description of the game as it is now: `docs/GAME_GUIDE.md`.**
+
+**24 Nov 2026 · Skin concepts and identity workflow saved.** See
+[`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin
+concepts, exact image-generation prompts and direct renders of the shipping cat. The latest image restores the
+actual green eyes, angular muzzle, ear tufts, hands/paws and striped tail. Preserve the original character meshes
+when fitting clothing for an exact final identity match. These are design references only: Meshy generation was
+stopped by the computer-use URL safety check before submission. The new skin, effects and matching quiver remain
+authorized follow-up work; no new model has been generated or installed. The owner requested saving the session
+on GitHub's `development` branch, including the curated concept references under `docs/skin_concepts/`.
+
+**23 Nov 2026 · Random Raids are one continuous assault.** Only **Random Raids** changed; Raid Missions retain
+their 15/20 manually started waves, checkpoints and progression. Defend Camp starts one attack, with a seeded roster
+of 36–46 plus the existing level increment, capped at 50 including its leader and any boss summons. Groups of 1–3
+arrive across shuffled rotations of all four trails, 0.22 seconds apart within groups and 1.1–2 seconds between
+groups. Existing live-enemy caps prevent crowd spikes without creating round breaks. The leader arrives last and
+retains its rout. One victory pays one completion reward; partial defence still earns consolation. Defeated member
+IDs, summoned reinforcements and damage survive save/resume. Old cleared waves reduce the remaining roster once.
+Existing camp/renown strength scaling remains; expanded player-power scaling and recruited companions are future
+work. Checks passed: smoke, 29 `--assault`, 90 `--fightf`, 16 live-raid and 39 mission-menu checks. Ready/combat
+screenshots were visually checked; phone performance still needs owner testing.
+
+**23 Nov 2026 · Raid Mission touch scrolling fixed.** The new card backgrounds were intercepting swipe input.
+Card panels and action buttons now pass drags to the scroll container; number badges ignore touch input. Swiping
+over text, badges, card padding and locked/enabled buttons scrolls correctly. Dragging over Start cancels its tap;
+a deliberate tap still starts the mission. The signpost scrollbar is hidden at the owner's request while swipe
+scrolling remains enabled. Smoke and `--missions` (39 checks, including real finger events) passed. The gesture
+regressions reproduced the failure before the fix; layout/order, rewards and progression are unchanged.
+
+**23 Nov 2026 · Signpost layout and animation polish.** Raid Missions now descend from **15 to 1**, retaining
+To finish / Completed groups. Roomier rounded cards show a number badge, mission name, short status and one action.
+Header, tabs and list have more padding; empty groups are hidden. Opening or switching views gently fades and
+settles the cards; buttons respond to presses. Unchanged live refreshes retain the cards, scroll and animation state.
+Random Raids uses the same spacing. Gameplay, unlocks and rewards are unchanged. Smoke and `--missions` (30 checks)
+passed; fresh, partly completed and endgame layouts were visually checked at phone proportions.
+
+**23 Nov 2026 · Raid Missions catalogue and Random Raids navigation.** The owner clarified the names: the 15
+structured entries are **Raid Missions**; the recurring endgame attacks are **Random Raids**. The signpost now
+lists all Raid Missions under To finish / Completed, marks finished entries and permits Replay. Completed ones
+remain playable after the separate Random Raids view unlocks at 15 unique completions. Replays use existing
+repeat rewards and do not duplicate gifts/progress. Saved runs are protected from replacement; ashes and pending
+raids still block starting another fight. Smoke, `--missions` (26) and `--homegoals` (48) passed.
+See [`RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md`](RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md) for what is built and the
+agreed next combat direction: one simultaneous assault from all four directions, adapting to player/camp power,
+with guardian and later recruited-friend defence. The subsequent continuous-assault change is described above;
+the proposed expanded menu panels and player-power scaling remain future work.
+
+**23 Nov 2026 · dungeon and recruitment direction documented (planning only).** See
+[`DUNGEON_EXPEDITIONS_PLAN.md`](DUNGEON_EXPEDITIONS_PLAN.md) for the agreed direction: ten distinct dungeons as a
+release target, random expeditions, difficulty separate from location, changing runs, permanent discoveries,
+quest-recruited camp companions and replayable locations after a win or death. One playable dungeon exists today,
+the Gloomwood; Test Glade is development-only. Buddy roles/counts, quest details, difficulty formulas and death
+loot rules remain open. These features are not implemented. The owner's subsequent Raid Missions / Random Raids
+requirements and menu discussion are recorded separately in `RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md`.
+
+**23 Nov 2026 · Acorn Tower arrows and full-circle aim.** The five existing tower looks now have independently
+swivelling and pitching crossbows above fixed foundations. Each visibly loads an enlarged classic Twig Bow arrow,
+draws its native bowstring, releases, recoils and reloads. Arrows fly straight with a visible trail and swept
+collision. Levels reach 5 / 6 / 7 / 8 / 9 m; damage stays 8 / 14 / 24 / 36 / 44 with the existing cadence/prices.
+Arrow size grows 1.6× to 2.4× and tips/fletching progress through leaf/silver, pale blue, gold, violet and amber.
+The former baked-in acorns were removed and native strings separated; original vertex buffers, tower base meshes,
+materials and pivots are preserved. Damaged, broken, repaired and upgraded towers retain their existing rules.
+Legacy placed towers and owned levels gain the new behaviour automatically. PC verification passed `--smoke` and
+`--rows` (168 checks: defence repair plus all five tower levels, eight bearings each, close/range-edge shots and loading cycles).
+
+**23 Nov 2026 · Fire-spitter flame redesign.** Projectiles have a round, yellow-hot fire core, animated orange flame
+tails and flying sparks. Impacts spread a flame burst and a glowing ground scorch with low, flickering flames.
+Ground fire lasts 3 seconds after the last nearby impact, fading during the final 0.8 seconds; then flames and mark
+are removed. Repeated hits refresh one nearby patch. Graphics levels cap separate patches at 4 / 6 / 8 and scale
+particles. Ground effects pause with gameplay and clear on area changes. Burning enemies use the same animated
+flame silhouettes. Existing impact/splash damage, enemy burn duration, upgrades, target tracking and range are
+preserved; the ground effect is visual and adds no separate damage tick. New shaders and procedural effect quads
+use no new character/prop models or textures. Verification uses `--smoke` and `--saddlery` (110 checks).
+
+**23 Nov 2026 · player-started raids and more supplies.** Player-facing missions are now called raids; legacy IDs,
+save keys and code names remain compatible. Every wave waits for **Start wave** at the signpost, including Gloom
+Raid waves. Waiting never auto-starts combat or grants an early-start timer bonus. Wave-clear leaf formula and
+timber are doubled (6 + wave leaves and 2 timber before campaign scaling); fresh enemy drops gain 50%, rounded,
+without multiplying returned stolen leaves. Five-wave chests, enemy strength and first-clear rewards are retained.
+Each campaign wave now saves `wave_done`: restart or defeat retries the next uncleared wave, with continuous 1–15
+or 1–20 numbering. Older chapter-only saves still load. Active food survives a wave checkpoint. PC verification
+passed `--smoke` and `--fightf` (90 checks), including real drops, exact payouts, no duplicate pay, manual waits,
+save/reload, losses, 5→6, 19→20, legacy saves, final wins and Gloom Raid waiting/resume.
+
+**23 Nov 2026 · stronger, affordable late bow upgrades.** Bow levels 6–10 now each add 20% of base damage;
+early levels and mastery increments keep 10%. Existing levels receive the stronger damage without another purchase.
+Late upgrade leaf prices are about 25% lower. Ember level 5→9 costs 1,480 leaves (was 1,976); its level-9 hit at
+Damage 9 is 59.488 (was 48.672). The shop shows the next upgrade's actual percentage damage gain and price.
+The conservative first-clear leaf income of missions 13–14 is at least 5,773, excluding kills and bonuses. Shop 4 plus
+Ember 5→9 costs 3,480; even buying Ember and raising it from 1→9 plus Shop 4 costs 4,964. Mission rewards and boss
+attack patterns are unchanged. The extra post-charge damage window remains a possible later test.
+PC checks passed `--smoke` and `--bowshop` (77 checks), including insufficient/exact leaf balances and real arrow damage.
+
+**23 Nov 2026 · Ember Ranger and mount speed.** Nightfall Ranger is now **Ember Ranger**, with crimson clothing,
+warm gold trim and cream cloak lining, distinct from Dusk's teal. Its shop portrait is updated. The legacy
+`nightfall_ranger` ID and file paths preserve existing purchases and equipped saves. Only clothing atlas pixels
+changed; geometry, rig, weights, animations, fur, face and gear are preserved. Mounted travel is 15% slower at
+every Market level: speed multipliers are now 1.275 / 1.4025 / 1.53. The Market card shows the revised speed bonus.
+PC checks passed `--smoke` and `--tailor` (63 checks).
+
+**23 Nov 2026 · Fire-spitter flame balls.** Updated in the `development` working tree. The worn attachment launches
+visible flame balls from its nozzle at the cat's current firing pace, including draw upgrades, bow speed and meal boosts.
+The range also follows the cat's current arrow range, including bow and range upgrades. The firing unit swivels toward
+the cat's focused enemy or acquires another foe in any direction while the mount follows joystick travel. The collar
+and hangers stay fixed. Shots wait for the nozzle to line up, and flight time covers targets at the range edge.
+An impact damages the enemy and foes within 1.25 m, then burns survivors for 2 s. Level 1 deals 8 impact damage and
+8 burn damage per second; each upgrade adds 40% of the base to both. The attachment fires independently of skill gaps.
+Only riding in combat launches new balls. Projectiles stop when gameplay is frozen and missed shots expire.
+PC checks passed `--smoke` and `--saddlery` (94 checks). The debug APK is prepared for remote phone testing.
+
+**23 Nov 2026 · mounted torso-only aiming.** Updated in the `development` working tree after the owner's phone play.
+The mount faces joystick travel and uses its original forward Run animation. The cat shoots in a strict 280-degree
+arc (140 degrees either side), with an 80-degree rear gap. Held targets outside that arc are released. At the owner's request, Front,
+QuarterLeft/Right and RearLeft/Right clips now affect only the upper body. The root, pelvis and bent legs face the
+mount; the torso, shoulders, arms and head handle aiming. Chest rotation is bounded in the authored poses and the
+wrists are repositioned together for rear shots. The clips share one draw/release clock. PC verification uses
+`--smoke` and `--mountedaim` (69 passes), including strict arc boundaries and dismounting during a rear shot.
+The revised debug APK is built at `game/build/ProjectLEAF.apk` for remote phone testing. Screenshots cover shots near both arc edges and
+left/right steering on both mounts, plus both outfits with different bows.
+
+**23 Nov 2026 · supplies inventory.** Built in the `development` working tree. Bag uses a shared square grid for food,
+dishes, keys, materials and unplaced defences. Currency icons and counts sit above it. A live preview shows the cat,
+with her current mount while riding. Gameplay continues during use. The garden, pot, fishing and Market show clear
+owned totals and receipts. Select a dungeon healing food or use Auto. PC checks passed `--smoke` and `--inventory`
+(53 passes) at 480x1040 with safe areas. The revised debug APK is built at `game/build/ProjectLEAF.apk`.
+Phone verification awaits a connected device.
+See `docs/INVENTORY_PLAN.md`.
 
 **23 Nov 2026.** Committed on `feature/g3-g4-bows-saddlery-outfits` and merged into `development`.
 The APK for the full update was installed on the owner's phone at 01:52. The before and after saves match.

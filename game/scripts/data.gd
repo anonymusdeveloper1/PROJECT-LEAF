@@ -92,7 +92,7 @@ func mission_needs_home(i: int) -> int:
 
 
 ## Can mission i start now? Only the next mission to win, once the home is big enough for it, or a mission with a saved
-## run (a chapter break, or a camp fall: a run already started stays playable). Won missions are done: no replays.
+## run (a wave checkpoint or a camp fall). Completed raid missions are available for replay.
 ## Since 21 Nov 2026 every mission's needs_home is 1 (the owner: missions never wait for a Hearthtree upgrade), so in
 ## practice the next mission opens as soon as the one before it is won.
 func mission_unlocked(i: int) -> bool:
@@ -100,6 +100,8 @@ func mission_unlocked(i: int) -> bool:
 		return false
 	if Save.mission_run.has("mission") and int(Save.mission_run["mission"]) == i:
 		return true
+	if Save.missions_done.has(String(mission(i)["id"])):
+		return true                                   # completed raid missions remain available for replay
 	return i == next_mission() and mission_needs_home(i) <= Save.camp_level
 
 
@@ -222,8 +224,8 @@ func _goal(g: Dictionary) -> Dictionary:
 				if Save.missions_done.has(String(mission(i)["id"])):
 					have += 1
 			have = need if won else mini(have, need - 1)
-			text = "Win mission %d" % need
-			prog = "Win mission %d · %d/%d won" % [need, have, need]
+			text = "Finish Raid Mission %d" % need
+			prog = "Finish Raid Mission %d · %d/%d finished" % [need, have, need]
 			station = "sign"
 		"station":
 			var id := String(g.get("id", ""))
@@ -236,7 +238,7 @@ func _goal(g: Dictionary) -> Dictionary:
 				prog = "%s lv %d/%d" % [nm, have, lv]
 				station = id
 			elif gm >= 0:
-				prog = "%s: win mission %d" % [nm, gm + 1]
+				prog = "%s: finish Raid Mission %d" % [nm, gm + 1]
 				station = "sign"
 			else:
 				prog = ("Build the %s" % nm) if lv <= 1 else ("Build the %s, then lv %d" % [nm, lv])
@@ -403,6 +405,16 @@ func stat_info(id: String) -> Dictionary:
 
 func bow_info(id: String) -> Dictionary:
 	return b["bows"][id]
+
+
+## Bow upgrades are additive shares of base damage. The stronger late levels also apply to existing purchases.
+func bow_level_mult(id: String, level: int) -> float:
+	var curve: Dictionary = b["bow_upgrade_curve"]
+	var first := int(curve["late_from_level"])
+	var last := int(curve["late_to_level"])
+	var upgrades := maxi(0, level - 1)
+	var late := maxi(0, mini(level, last) - first + 1)
+	return 1.0 + float(bow_info(id)["per_level"]) * (upgrades - late) + float(curve["late_per_level"]) * late
 
 
 func defence_info(id: String) -> Dictionary:
@@ -573,7 +585,7 @@ func arrow_damage() -> float:
 	var bow := bow_info(Save.bow)
 	var bow_lv := int(Save.bows.get(Save.bow, 1))
 	return float(b["cat"]["damage"]) * (1.0 + float(stat_info("damage")["per_level"]) * _lv("damage")) \
-		* float(bow["damage"]) * (1.0 + float(bow["per_level"]) * (bow_lv - 1)) * (1.0 + meal_boost("damage")) \
+		* float(bow["damage"]) * bow_level_mult(Save.bow, bow_lv) * (1.0 + meal_boost("damage")) \
 		* (1.0 + float(run_mods.get("damage", 0.0)))
 
 
@@ -643,6 +655,32 @@ func catch_info(id: String) -> Dictionary:
 func item_name(id: String, n: int) -> String:
 	var names: Array = b["ingredients"].get(id, [id, id])
 	return String(names[0] if n == 1 else names[1])
+
+
+func food_known(id: String) -> bool:
+	if int(Save.pantry.get(id, 0)) > 0:
+		return true
+	match id:
+		"goldfish": return int(Save.fish_log.get("carp", 0)) > 0
+		"fish": return int(Save.stations.get("fishing", 0)) > 0 or not Save.fish_log.is_empty()
+	return b["ingredients"].has(id)
+
+
+func snack(id: String) -> Dictionary:
+	for entry in burrow_cfg().get("lunch", []):
+		if String(entry["item"]) == id:
+			return entry
+	return {}
+
+
+## Completed food changes and their resulting stock, shared by gathering, cooking and trading.
+func food_receipt(changes: Dictionary) -> String:
+	var bits: Array = []
+	var cap := int(b["cooking"]["pantry_cap"])
+	for id in changes:
+		var n := int(changes[id])
+		bits.append("%+d %s · now %d/%d" % [n, item_name(String(id), absi(n)), int(Save.pantry.get(id, 0)), cap])
+	return " · ".join(bits)
 
 
 func has_items(needs: Dictionary) -> bool:
@@ -1025,6 +1063,11 @@ func skill_taken(id: String, lv: int) -> float:
 ## The Fire-spitter's burn at level lv, damage a second (8, +40% a level).
 func fire_burn_per_s(lv: int) -> float:
 	return _grown(saddle_info("attach", "fire_spitter"), "burn_per_s", "burn_per_level", "", lv)
+
+
+## A flame ball's impact damage, also applied to enemies in its splash radius.
+func fire_damage(lv: int) -> float:
+	return _grown(saddle_info("attach", "fire_spitter"), "damage", "damage_per_level", "", lv)
 
 
 ## The Mossweave Saddle: the mount's health x this (1 + 0.15 a level; 1 when it is not worn).

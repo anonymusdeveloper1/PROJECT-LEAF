@@ -35,6 +35,11 @@ func run() -> bool:
 	await _wave_repair()
 	await _tower()
 	_well()
+	var towers = load("res://scripts/autotest_towers.gd").new()
+	towers.t = t
+	towers.main = main
+	add_child(towers)
+	await towers.run()
 	main.closeup = Vector3.ZERO
 	main.closeup_at = null
 	return true
@@ -547,7 +552,7 @@ func _tower() -> void:
 	var want_e := maxi(1, int(ceil(float(info["piece"]) * (1.0 + float(r["mend_per_level"]) * (d.level("tower") - 1)) * float(r["mend_share"]) - 0.0001)))
 	var got_e: Dictionary = d.tower_repair_cost(p)
 	var mend_e := _mend_alone(p)
-	_x("after the missions: the badge is the endgame Mend price (%d leaves), the same as Mend" % want_e,
+	_x("after the raids: the badge is the endgame Mend price (%d leaves), the same as Mend" % want_e,
 		Data.raids_open() and _same_cost(got_e, {"leaves": want_e}) and mend_e == want_e, {"got": got_e, "mend": mend_e, "want": want_e})
 	Save.missions_done = done0
 	await t._at_ring(mk)

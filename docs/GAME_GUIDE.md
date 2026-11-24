@@ -7,11 +7,11 @@ The code (`game/scripts/`) and the numbers (`game/data/balance.json`) win when t
 find a difference, fix the guide.
 
 Three changes landed on 19 November 2026 and are marked **New (19 Nov 2026)**: tap to open (with the attack arrows),
-the Gloomwood's night road, arena and harder fights, and **Phase F** (home goals, no replays, roads and patterns, fairer
+the Gloomwood's night road, arena and harder fights, and **Phase F** (home goals, progression, roads and patterns, fairer
 waves, reasons to move). The notes for the first two are at the end of `docs/PHASE_A_PROGRESS.md`; the plan for Phase F
 is `docs/PHASE_F_PLAN.md`.
 
-**New (20 Nov 2026, G1b and G2).** Mission waves now come as **squads** (small teams with roles), and the camp is
+**New (20 Nov 2026, G1b and G2).** Raid waves now come as **squads** (small teams with roles), and the camp is
 called **the Hearthtree**: its shop is a set of tiles, barricades are built in rows on the road spots, and the Wishing
 Well works by itself. Those parts are marked **(G1b)** or **(G2)**. The plan is `docs/PHASE_G_PLAN.md`.
 
@@ -26,17 +26,17 @@ itself. You move her, pick where to stand, and spend what you earn to grow the c
 
 **The loop.**
 
-1. **Missions.** 15 missions, each 15 or 20 waves long. Every wave pays golden leaves. Between waves you shop, build
-   and upgrade, so the camp and the cat grow during a mission. A player can spend about 20 minutes on mission 1.
-   **New (19 Nov 2026, Phase F): no replays.** A won mission is done. You go on to the next one, and every win pays
-   enough leaves to upgrade after it.
+1. **Raid Missions.** 15 structured missions, each 15 or 20 waves long. Every wave pays golden leaves. Between waves
+   you shop, build and upgrade. The signpost lists missions from 15 down to 1 in spacious numbered cards, grouped
+   into unfinished missions and completed ones marked Finished, with Replay. Cards animate on opening/tab changes.
+   Replays pay repeat rewards while first-clear progress and gifts stay one-time. Each new unique win opens the next mission.
 2. **The camp grows.** First wins bring new buildings, a mount (Thistle the hare), a pet (Sprig the leaf dragon), a
    garden with a cooking pot, and fishing. The tree home grows through 8 levels. **New (Phase F): the home has a goal
-   list for each level.** It grows only when every goal is met and its price is paid. The next missions need the new
-   home level, so the game keeps you from entering a mission with a camp that is too small.
+   list for each level.** It grows only when every goal is met and its price is paid. Its level caps upgrades;
+   Raid Missions open sequentially without requiring a larger home.
    **New (20 Nov 2026, G2): the tree home is called the Hearthtree.** Its level names stay (Shed, Hut, Treehouse...).
    The Market (with Thistle, free) and the Mushroom Cottage (with Sprig) come at Hearthtree level 2.
-3. **After mission 15** the game goes on two ways, side by side:
+3. **After Raid Mission 15** the game goes on two ways, side by side:
    - **Gloom Raids**: short attacks on the camp. A meter fills while you play; when it is full, a raid comes.
    - **The Gloomwood**: a dungeon at night. The cat walks a road past fights to a boss and brings home rare
      materials. They pay for the top upgrades. The first win frees the camp's guardian, the Moss Warden.
@@ -72,17 +72,26 @@ The owner plays on a Samsung Galaxy S24. The APK with the full update was instal
 | Move | Press anywhere on the screen and drag. A joystick appears under your thumb and goes away when you lift it. |
 | Shoot | Automatic. The cat turns to the nearest enemy in range (5.5 m at the start) and keeps shooting, also while walking. |
 | Hide | Stand in tall grass or a bush, outside the camp. Enemies can't see the cat. After 1.5 s hidden, the next shot is an **Ambush**: double damage. Not while riding. |
-| Ride | Tap **Ride** once Thistle has come. The cat is faster, the mount takes the hits, and she shoots ahead only. Turn the mount to face enemies behind you. Its skills come from the Saddlery. Tap **Walk** to get off. |
+| Ride | Tap **Ride** once Thistle has come. The cat is faster and the mount takes the hits. Drag to turn the mount and run in that direction. The cat shoots across a 280-degree arc, leaving an 80-degree gap directly behind. Its skills come from the Saddlery. Tap **Walk** to get off. |
 | Feed | When the mount is knocked out, Ride turns into **Feed** (2 Sunberries). |
 | Leaf Dash | **Gloomwood only.** Flick your thumb quickly as you lift it. The cat dashes 3 m and nothing can hurt it during the dash. Dash through an attack at the last moment (a **close call**) and the next arrow hits double. It recharges in 1.4 s; an arc under the health bar shows it. |
 | Build | Buy a defence in the shop. A button such as "Barricade ×2" appears at the bottom. Tap it, walk the see-through piece to where you want it, tap **Place**, then **Done**. **New (G2): barricades are not built this way.** Tap a road marker instead (see the next block). |
-| Barricade row | After mission 1, tap an open road pad to build a **row of 3 pieces** for 90 leaves and 5 timber between waves. Pads open as the Hearthtree grows. Tap a built row to repair it at any time, including during a wave. See Defences. |
+| Barricade row | After raid 1, tap an open road pad to build a **row of 3 pieces** for 90 leaves and 5 timber between waves. Pads open as the Hearthtree grows. Tap a built row to repair it at any time, including during a wave. See Defences. |
 | Use a building | Tap it (see below). Its card opens. Tap a green button to buy. |
 | Grow the home | Open the Hearthtree's card (the Shop). **New (Phase F):** the top section, "Grow the home", lists the goals. Tap **Go** on a goal and the card closes and the cat walks to the building that sells it, or tap **Show** to scroll the card to that row. |
 
 On a PC: WASD or the arrow keys move, the mouse works as a finger, and Space dashes.
 
 Most camp cards work between waves. During a wave, the signpost and built barricade rows can still be tapped.
+
+**New (23 Nov 2026) · Bag.** Tap Bag at the bottom-left for a shared grid of square item slots. Food, keys,
+materials, unplaced defences and dishes appear as icons with counts. Leaves, timber and shards sit above the grid.
+The cat appears beside the selected item's details, seated on her current mount while riding. Tap a slot to see its
+name and uses. Gameplay continues while the panel is open.
+The X, an outside tap, Escape or Android Back closes it. The garden and cooking pot show food icons and owned totals.
+Recipe ingredients show Have and Need, every unlocked recipe is reachable, and cooking explains when its dish activates.
+Picking, fishing and trading report what was gained or spent and the new totals. The Market handles trade and the pot
+handles cooking. The Bag displays their supplies.
 
 > **New (19 Nov 2026): tap to open.** Walking near something opens nothing, and there are no glowing ground rings.
 > Each usable thing has a small leaf-shaped pin with an icon over it: small and dim far away, bigger and glowing with
@@ -106,10 +115,10 @@ Most camp cards work between waves. During a wave, the signpost and built barric
 - **Top bar** (one slim strip under the phone's status bar):
   - left: golden leaves, timber and Gloom shards; in the Gloomwood, the satchel's materials too; the dish eaten this
     chapter; "Endgame test save" when the debug save is on.
-  - right: the fight's bar. In a mission it is the campfire's health. **New (Phase F):** in a breather it also says
-    where the next wave comes from: "Wave 6 of 20 in 12s · Next: every road", "Next: Fernwood and Mossback's Den" or
-    "Next: a rush from Fernwood!". After the missions it is the Gloom meter or a
-    raid's countdown. In the Gloomwood it is a row of pips, one per fight and one for the boss.
+  - right: the fight's bar. In a raid it is the campfire's health. Between waves it previews the next one:
+    "Wave 6 of 20 ready · Next: every road", "Next: Fernwood and Mossback's Den" or "Next: a rush from Fernwood!".
+    Every wave waits for **Start wave** at the signpost. After the campaign it is the Gloom meter or raid status.
+    In the Gloomwood it is a row of pips, one per fight and one for the boss.
   - a second thin line appears when there is a status to show (for example the Gloomwood's name and level).
 - **Just under it**: the boss's health bar, then **banners** (short headlines, about 2 s; a win or a loss is bigger
   and stays about 3.5 s), then **toasts** (one-line news) and the status line ("Rebuilding the campfire...",
@@ -165,7 +174,7 @@ In a fight, enemies go for the campfire last but hardest. If it is destroyed, th
 The tree home and its campfire are both called **the Hearthtree** (New, G2; the level names stay).
 The home's counter is the **shop**. It sells: the Training Target and the Bow Shop (New, 21 Nov 2026, G3: it was the Bow Bench); the cat's own Health, Move speed
 and Leaf magnet; acorn towers and thorn spikes, and their levels; "Mend the defences"; growing the home (see the goals
-above); and the **Graphics** setting (Auto, Low, Medium, High). After the missions, "Mend all" sits at the top when
+above); and the **Graphics** setting (Auto, Low, Medium, High). After the raids, "Mend all" sits at the top when
 anything is damaged.
 
 > **New (20 Nov 2026, G2): what changed at the shop.**
@@ -180,7 +189,7 @@ The home level caps each station and defence. Most stations stop at level 3. The
 Saddlery go to 5. From home level 4 on, the home itself grows.
 
 > **New (19 Nov 2026, Phase F): home goals.** Each home level from 2 to 8 has a **goal list**. The home grows only
-> when **every goal is met and the price is paid**. Once mission 1 is won, the home's card has a **"Grow the home"**
+> when **every goal is met and the price is paid**. Once raid 1 is won, the home's card has a **"Grow the home"**
 > section at the top: one line per goal with a tick or its progress ("Damage 3/4"), and a **Go** button (the card
 > closes and the cat walks to the building that sells it) or **Show** (scrolls the card to that row). At the bottom:
 > "Grow your home to level N". The home's badge shows "!" when it can grow. A toast says when every goal is met.
@@ -198,25 +207,25 @@ Saddlery go to 5. From home level 4 on, the home itself grows.
 
 **New (22 Nov 2026): new prices for homes 3, 5, 6, 7 and 8** (leaves and timber; they were 3,500/60, 8,000/60, 15,000/200, 25,000/90 and 40,000/135). Homes 2 and 4 are unchanged, and so are the Burrow materials. Each level costs more than the one before.
 
-The goals (all of them must be met). The mission that ends each step is the first goal:
+The goals (all of them must be met). The raid that ends each step is the first goal:
 
-| Home | Goals | Missions usually played at this level (not required since 21 Nov 2026) |
+| Home | Goals | Raids usually played at this level (not required since 21 Nov 2026) |
 |---|---|---|
-| 2 | Mission 1 won (First Embers). Training Target and Bow Shop built. Damage 4, Draw speed 2, Health 3. Twig Bow level 4. | Missions 3 to 6 |
-| 3 | Mission 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2; Wishing Well built. Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Missions 7 to 10 |
-| 4 | Mission 9 won (Croaking Choir). Target, Bow Shop, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Missions 11 to 13 |
-| 5 | Mission 12 won (Two Fronts). Target and Bow Shop at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9. (New, 22 Nov 2026: Thorn Volley is hidden, so it is no longer a goal here.) 5 towers at level 3; Thorn Spikes level 3. | Missions 14 and 15 |
-| 6 | All 15 missions won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the Burrows go on |
+| 2 | Raid 1 won (First Embers). Training Target and Bow Shop built. Damage 4, Draw speed 2, Health 3. Twig Bow level 4. | Raids 3 to 6 |
+| 3 | Raid 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2; Wishing Well built. Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Raids 7 to 10 |
+| 4 | Raid 9 won (Croaking Choir). Target, Bow Shop, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Raids 11 to 13 |
+| 5 | Raid 12 won (Two Fronts). Target and Bow Shop at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9. (New, 22 Nov 2026: Thorn Volley is hidden, so it is no longer a goal here.) 5 towers at level 3; Thorn Spikes level 3. | Raids 14 and 15 |
+| 6 | All 15 raids won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the Burrows go on |
 | 7 | Gloomwood level 2 beaten | |
 | 8 | Gloomwood level 3 beaten | |
 
-**New (22 Nov 2026, loop fixes): each Hearthtree level asks for one mission earlier.** Home 2 needs mission 1 won (was 2),
-home 3 mission 5 (was 6), home 4 mission 9 (was 10), home 5 mission 12 (was 13). Home 6 still needs mission 15, and
-homes 7 and 8 are unchanged. So a player stuck on an act's last mission (a boss) can grow the Hearthtree first, if they can pay.
+**New (22 Nov 2026, loop fixes): each Hearthtree level asks for one raid earlier.** Home 2 needs raid 1 won (was 2),
+home 3 raid 5 (was 6), home 4 raid 9 (was 10), home 5 raid 12 (was 13). Home 6 still needs raid 15, and
+homes 7 and 8 are unchanged. So a player stuck on an act's last raid (a boss) can grow the Hearthtree first, if they can pay.
 
-**No mission gates (the owner, 21 Nov 2026).** Missions never wait for a Hearthtree upgrade: the next mission opens as
-soon as the one before it is won, whatever the Hearthtree's level. Before this change, the owner reached mission
-11 without enough leaves for Hearthtree 4 and could not play the next mission to earn more. Growing the Hearthtree
+**No raid gates (the owner, 21 Nov 2026).** Raids never wait for a Hearthtree upgrade: the next raid opens as
+soon as the one before it is won, whatever the Hearthtree's level. Before this change, the owner reached raid
+11 without enough leaves for Hearthtree 4 and could not play the next raid to earn more. Growing the Hearthtree
 still needs its goals and its price, and still opens the Market, the Cottage and more barricade rows.
 
 Levels 4 to 6 each have their own campfire: a stone hearth, a great bonfire, a crystal brazier. Levels 7 and 8 show
@@ -229,18 +238,18 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 
 | Building | What it does | How you get it |
 |---|---|---|
-| Signpost | Start the next mission, "Go" between waves, "Go on" or "Give up" a saved mission. No replays. After the missions it becomes **the Watch** (part 7). | From the start |
-| Training Target | Damage, Draw speed and Range for the cat (Range from level 2). 5 levels. | Shop, after mission 1's first wave |
-| Bow Shop | **New (21 Nov 2026, G3): the Bow Bench is now the Bow Shop** (same place, same model). One card with a tile per bow, one button each: **Upgrade** for the equipped bow, **Equip** for an owned bow (between waves only; during a wave it says "Between waves"), **Buy** for a bow not owned yet (or "Needs Bow Shop level N"). Buying equips the bow if no wave is on. Each bow keeps its own level. Bow levels; 5 levels. See part 11 for the bows' data. **New (22 Nov 2026):** the shop has four bows, in the table below the buildings. | Shop, after mission 1 is won |
-| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25; after all missions also amber for 60, glowstone for 120 and heartwood for 400. **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the missions amber, glowstone and heartwood. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
-| Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for mission 3. |
+| Signpost | **Raid Missions:** 15 down to 1 in spacious animated cards; To finish / Completed, Start / Replay, and saved-run resume. **Random Raids:** unlocks after all 15 Raid Missions, retaining Watch controls (part 7). | From the start |
+| Training Target | Damage, Draw speed and Range for the cat (Range from level 2). 5 levels. | Shop, after raid 1's first wave |
+| Bow Shop | **New (21 Nov 2026, G3): the Bow Bench is now the Bow Shop** (same place, same model). One card with a tile per bow, one button each: **Upgrade** for the equipped bow, **Equip** for an owned bow (between waves only; during a wave it says "Between waves"), **Buy** for a bow not owned yet (or "Needs Bow Shop level N"). Buying equips the bow if no wave is on. Each bow keeps its own level. Bow levels; 5 levels. See part 11 for the bows' data. **New (22 Nov 2026):** the shop has four bows, in the table below the buildings. | Shop, after raid 1 is won |
+| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25; after all raids also amber for 60, glowstone for 120 and heartwood for 400. **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the raids amber, glowstone and heartwood. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
+| Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for raid 3. |
 | Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
-| Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Levels 4 and 5 also need Burrow materials, after the missions. Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 missions are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 missions first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
-| Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. | Shop, after 4 missions won |
-| Garden and cooking pot | Grow food and cook dishes (part 6) | Gift for winning mission 1, with 4 Sunberries |
-| Fishing Spot | Fishing at the lake (part 6) | Gift for winning mission 6 |
+| Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Levels 4 and 5 also need Burrow materials, after the raids. Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
+| Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. | Shop, after 4 raids won |
+| Garden and cooking pot | Grow food and cook dishes (part 6) | Gift for winning raid 1, with 4 Sunberries |
+| Fishing Spot | Fishing at the lake (part 6) | Gift for winning raid 6 |
 | Guardian Stone | The Moss Warden's home: its post, colours and upgrades (part 5) | Appears when the Warden is freed |
-| The Old Hollow | The way into the Gloomwood (part 8) | Sealed with Gloom crystals from the first mission won; opens with mission 15's first win |
+| The Old Hollow | The way into the Gloomwood (part 8) | Sealed with Gloom crystals from the first raid won; opens with raid 15's first win |
 
 Most buildings have levels 1 to 3 (bought on their own card, never above the home level). **New (Phase F):** the
 Training Target and the Bow Shop have **5 levels**. The station level caps what it sells: Target (or Bow Shop) level
@@ -265,55 +274,61 @@ The Training Target still trains the cat's general Damage, Draw speed and Range;
 Better bows are how damage grows later. Each bow's own level-ups are still bought at the Bow Shop; Frost's level-ups
 cost about 1.3x Ember's. Each bow has its own arrow, release burst, trail and hit effect.
 
+**Late upgrades (23 Nov 2026):** bow levels 6–10 each add 20% of base damage instead of 10%, and cost about 25% fewer
+leaves. Levels 2–5 and mastery increments keep 10%. Already-owned levels gain the extra damage automatically.
+Ember 5→9 costs 1,480 leaves; the Bow Shop displays the next upgrade's actual damage gain. Raid rewards stay the same.
+
 **Buildings can be broken.** In a wave, enemies attack buildings. A building at 0 health is a **ruin**: it does
 nothing until it is repaired (a ruined home closes the shop, a ruined stall means no riding, and so on). Winning a
-mission mends every ruin for free.
+raid mends every ruin for free.
 
 > **New (20 Nov 2026, G2): tower repair.** A knocked-down acorn tower shows a repair marker. Tap it to repair the tower.
 > **New (22 Nov 2026, loop fixes): the tower's repair costs the same as "Mend the defences" for that tower**, leaves
-> only (for example 27 leaves in the missions, 41 after the missions, at tower level 2). It was 30% of the tower and its
+> only (for example 27 leaves in the raids, 41 after the raids, at tower level 2). It was 30% of the tower and its
 > upgrades, plus timber.
 >
 > **New (22 Nov 2026, loop fixes): the Hearthtree's repair is capped.** A knocked-down Hearthtree costs 10% of what it
-> cost, at least the `ruin_min` minimum, at most 900 leaves and 30 timber, in the missions too (for example Hearthtree 4:
+> cost, at least the `ruin_min` minimum, at most 900 leaves and 30 timber, in the raids too (for example Hearthtree 4:
 > 900 leaves and 14 timber; it was 3,930 leaves and 42 timber). Other buildings keep the 30% price for a ruin. After the
-> missions, raids also leave **wear** (part 7).
+> raids, raids also leave **wear** (part 7).
 
 ---
 
-## 4. Missions
+## 4. Raids
 
 ### Starting one
 
-Go to the signpost. Its card ("To the woods") shows the next mission: its waves and its enemies. Tap **Fight**.
+Go to the signpost. Its card ("To the woods") shows the next raid: its waves and its enemies. Tap **Fight**.
 
-> **New (19 Nov 2026, Phase F): no replays.** A won mission is done, and the signpost offers only the next one (or a
-> saved run: "Go on" / "Give up"). **New (21 Nov 2026): no mission needs a bigger home any more**, so the signpost
-> always offers the next mission (the "Needs home level X" card and its one-time tip are still in the code, unused).
-> After a lost chapter the hint says "Spend your leaves on the goals at your home, then try again." After all 15
-> missions the signpost is the Watch. The old "strength" note on the card is gone.
+> **Updated 23 Nov 2026:** the signpost separates **Raid Missions** from **Random Raids**. All 15 Raid Missions
+> remain listed, including completed ones with Replay. New unfinished missions unlock sequentially; existing saved
+> runs must be resumed or explicitly given up before another starts. Random Raids unlock after all 15 unique
+> completions. Raid Missions remain replayable afterward. Replay completion rewards use the existing 50% setting;
+> normal wave/chest pay remains, and first-clear gifts and unique progression never duplicate.
 
-### Waves, chapters and breathers
+### Waves and supply chests
 
-- Missions 1 to 5 have **15 waves**, missions 6 to 15 have **20**. Waves come in **chapters of 5** (Scouts, Main
+- Raids 1 to 5 have **15 waves**, raids 6 to 15 have **20**. Waves come in **chapters of 5** (Scouts, Main
   assault, Onslaught, Finale).
-- Each wave is a little stronger than the last (5% a wave, on top of 8% a mission) and has more enemies in total.
-  **New (20 Nov 2026, G1): many enemies in a wave, few on the field.** A whole wave has 10 to 25 enemies in missions 1 to 5, 16 to 32 in missions 6 to 10, and 20 to 38 in missions 11 to 15 (first wave to last). At most 10, 12 or 14 are on the field at once (by mission group; it was 28). Tanks (Stump Golem, Toadstool Brute, Beetle Knight, Crystal Snail; a Bramble Boar counts as half) are at most 1, 2 or 3 at once. In a whole wave, tanks are at most 10% (missions 1 to 5) or 15% (missions 6 to 15). With a boss alive, at most 8 others are on the field.
+- Each wave is a little stronger than the last (5% a wave, on top of 8% a raid) and has more enemies in total.
+  **New (20 Nov 2026, G1): many enemies in a wave, few on the field.** A whole wave has 10 to 25 enemies in raids 1 to 5, 16 to 32 in raids 6 to 10, and 20 to 38 in raids 11 to 15 (first wave to last). At most 10, 12 or 14 are on the field at once (by raid group; it was 28). Tanks (Stump Golem, Toadstool Brute, Beetle Knight, Crystal Snail; a Bramble Boar counts as half) are at most 1, 2 or 3 at once. In a whole wave, tanks are at most 10% (raids 1 to 5) or 15% (raids 6 to 15). With a boss alive, at most 8 others are on the field.
   **No easy waves (Phase F, changed in G1).** An ordinary wave whose total health is under 85% of the wave before it swaps its weak enemies for stronger ones. It never adds enemies. (Not the first wave after a chapter break, not the boss wave.) Enemies also come in **bursts** of 2 to 4,
-  0.4 s apart, not one by one, and spawn speed carries over between chapters. Missions 6, 13 and 15 have real last
+  0.4 s apart, not one by one, and spawn speed carries over between chapters. Raids 6, 13 and 15 have real last
   chapters and fewer helpers with the boss.
-- Every chapter's last wave is an **elite wave** (the mission's tough enemy, more each chapter). The mission's last
+- Every chapter's last wave is an **elite wave** (the raid's tough enemy, more each chapter). The raid's last
   wave brings its **boss** or a big finale pack.
-- Between waves: a **15 s breather**. The camp is safe, the cat heals, the cards work. "Go" at the signpost skips it
-  (it pays a little, see Pay). The top bar says where the next wave comes from.
-- After each chapter: a **chapter break**. The campfire is fed back to full, a **chest** pays out, and **the game
-  saves**. The camp waits until you tap Go at the signpost. If you close the game mid-mission, you come back to the
-  start of that chapter: "Go on" or "Give up this mission" (giving up keeps what you earned).
+- Between every wave: **unlimited time**. The camp is safe, the cat heals, and the cards work. Tap **Start wave**
+  at the signpost when ready. There is no automatic start and no early-start payment. The top bar previews its roads.
+- **Every cleared wave saves.** Closing the game resumes the next uncleared wave; a camp fall retries only the
+  failed wave. Numbers continue from 1 through 15 or 20, including 5→6, 10→11 and 15→16.
+- Every five waves, a **supply chest** pays out and the campfire refills. The chapter structure still controls enemy
+  pools, food duration and these rewards. Older chapter-only saves keep their original checkpoint. **Give up** is an
+  explicit choice to restart that raid while keeping what was earned.
 - A wave can never hang: if its last 3 enemies do nothing for 45 s, they flee.
 
 ### Squads (New, 20 Nov 2026, G1b)
 
-Mission waves are made of **squads**: small teams, each with roles.
+Raid waves are made of **squads**: small teams, each with roles.
 
 - **Light:** Thornling, Moth, Raccoon, Puffball, Mole.
 - **Fighter:** Boar.
@@ -322,7 +337,7 @@ Mission waves are made of **squads**: small teams, each with roles.
 
 The 12 squads:
 
-| Squad | Who | From mission |
+| Squad | Who | From raid |
 |---|---|---|
 | Scouts | 3 or 4 Thornlings | 1 |
 | Chief's Band | The Thornling Chief and 3 Thornlings (elite) | 1 |
@@ -339,11 +354,11 @@ The 12 squads:
 
 **The rules for a wave:**
 
-- From mission 2, a wave has at least 2 kinds of squad.
-- From mission 3, no kind is more than about 40% of a wave, where possible. Missions 3 to 8 often cannot meet this,
+- From raid 2, a wave has at least 2 kinds of squad.
+- From raid 3, no kind is more than about 40% of a wave, where possible. Raids 3 to 8 often cannot meet this,
   because Thornlings are in most squads. The game does its best.
 - Wave sizes and the field and tank limits from G1 stay the same.
-- Each chapter lists its squads. The bosses (missions 6, 13 and 15) come with escort squads. Elites lead their own
+- Each chapter lists its squads. The bosses (raids 6, 13 and 15) come with escort squads. Elites lead their own
   small squads.
 
 **How a squad moves:** a squad comes down one road together.
@@ -356,28 +371,30 @@ The 12 squads:
 
 ### The four roads: patterns
 
-> **New (19 Nov 2026, Phase F).** The four roads stay. Each wave of a mission has a pattern:
+> **New (19 Nov 2026, Phase F).** The four roads stay. Each wave of a raid has a pattern:
 >
 > | Pattern | Share | What happens |
 > |---|---|---|
-> | Surround | about 65% | All four roads, taking turns. The mission's own road sends a bit more. |
+> | Surround | about 65% | All four roads, taking turns. The raid's own road sends a bit more. |
 > | Pincer | about 20% | Two roads far apart |
-> | Rush | about 15% | The mission's own road: the same number of enemies, 15% faster (G1: they used to bring 25% more), with a banner |
+> | Rush | about 15% | The raid's own road: the same number of enemies, 15% faster (G1: they used to bring 25% more), with a banner |
 >
-> Elites come down a different road (a flank). The boss wave is a surround. **Mission 1 teaches it:** chapter 1 uses
+> Elites come down a different road (a flank). The boss wave is a surround. **Raid 1 teaches it:** chapter 1 uses
 > one road, chapter 2 two, chapter 3 all four. In a breather the top bar names the next wave's roads, so barricades
-> become a choice. Gloom Raids keep their old rules. The Gloom over the woods now fades a step with each mission won
+> become a choice. Gloom Raids keep their old rules. The Gloom over the woods now fades a step with each raid won
 > (it only changes the look).
 
 ### Pay
 
 Kills drop golden leaves (pick them up; the Leaf magnet pulls them in, and what is left flies to the cat when the
 wave ends). Each cleared wave pays a small bonus, each chapter a chest with timber, and the win pays the
-mission's reward. **New (G1):** every mission wave held also pays 1 timber times the mission's pay scale (at least 1). Chapter chests pay 2, 4, 4 and 6 timber for chapters 1 to 4 (it was 1, 2, 2 and 3). All of it grows 20% per mission. The first win of a mission may give a gift (see the table below).
+raid's reward. **Updated 23 Nov 2026:** fresh enemy kill drops give 50% more golden leaves, rounded; returned stolen
+leaves keep their original amount. Each campaign wave pays **6 + wave number** leaves and **2 timber**, multiplied
+by the existing pay scale (1 + 0.2 × raid index, then rounded). Both base wave amounts are doubled. Five-wave chests
+still pay 2, 4, 4 and 6 timber, with the same scaling. First-clear rewards and gifts stay as listed below.
 **New (Phase F): pay for active play.** A **quick clear** (the wave cleared within 20 s plus 3 s per enemy) and an
-**intact wave** (no building or defence ruined, the fire never out) each pay **half the wave bonus again**. Going on
-early from the signpost pays 0.5 leaves for each breather second skipped. The toast reads like "Wave 3 held! +5 leaves
-· +1 timber · quick +3 · intact +3". The win rewards are much bigger than before (part 9).
+**intact wave** (no building or defence ruined, the fire never out) each pay **half the wave bonus again**. These
+bonuses use the stronger wave pay. Waiting or pressing Start wave never pays extra leaves.
 
 ### Enemies attack the camp
 
@@ -391,9 +408,9 @@ within 7 m, then the **nearest building** within 9 m, then the **campfire**.
 > - **Ranged foes hang back.** Pitcher Spitters (8 m) and Frog Shamans (7.5 m) stop at that distance from a tower, a
 >   building or the campfire and shoot it from there. That is beyond the cat's reach when she stands at the fire, and
 >   beyond a tower's range. Walk out to them. Up close they still fight the cat.
-> - **The Golden Grub** (from mission 2, about 1 wave in 3). A small gold grub (a stand-in model) runs round the camp,
+> - **The Golden Grub** (from raid 2, about 1 wave in 3). A small gold grub (a stand-in model) runs round the camp,
 >   outside the firelight, with a sack of 40 leaves. Shoot it within 14 s or it gets away. It never holds a wave up.
-> - **The Gloom Totem** (from mission 3, about 1 ordinary wave in 3). A violet crystal spire (made from existing
+> - **The Gloom Totem** (from raid 3, about 1 ordinary wave in 3). A violet crystal spire (made from existing
 >   Gloom props) grows on a road a few seconds into the wave. Enemies within 4 m are 25% faster and take 25% less
 >   damage (a faint violet tint) until the cat breaks it. The wave waits for it.
 
@@ -401,12 +418,12 @@ within 7 m, then the **nearest building** within 9 m, then the **campfire**.
 
 | Defence | Where it goes | What it does | Opens |
 |---|---|---|---|
-| Barricade row (90 leaves and 5 timber for 3 pieces) | Tap a road marker. Each road has a gate, a middle pad and a far pad. | Blocks the road until enemies break a piece | After mission 1. The four gates are available at Hearthtree 1, the middle pads at 3, and the far pads at 4 on the right and 5 on the left. |
-| Acorn tower (90 leaves) | Anywhere free; how many is set by the home level (2 to 9) | Shoots acorns at enemies near it; enemies go for towers right after barricades | After 2 missions |
-| Thorn spikes (70 leaves) | Anywhere free | Hurt and slow whatever walks over them | After 3 missions |
+| Barricade row (90 leaves and 5 timber for 3 pieces) | Tap a road marker. Each road has a gate, a middle pad and a far pad. | Blocks the road until enemies break a piece | After raid 1. The four gates are available at Hearthtree 1, the middle pads at 3, and the far pads at 4 on the right and 5 on the left. |
+| Acorn tower (90 leaves) | Anywhere free; how many is set by the home level (2 to 9) | Crossbow aims through 360° and shoots large Twig-style arrows; enemies go for towers right after barricades | After 2 raids |
+| Thorn spikes (70 leaves) | Anywhere free | Hurt and slow whatever walks over them | After 3 raids |
 
 > Each piece breaks on its own. Below 50% health it cracks, darkens and leans. At 0 it falls flat and enemies pass
-> through the gap. Tap the row to repair it. Winning a mission repairs the defences for free.
+> through the gap. Tap the row to repair it. Winning a raid repairs the defences for free.
 >
 > **Barricade placement (22 Nov 2026).** Each pad lies across the curve of its own road.
 >
@@ -434,10 +451,16 @@ within 7 m, then the **nearest building** within 9 m, then the **campfire**.
 >   mended cheaply in a wave);
 > - hurt but not cracked: its missing share of health.
 
-All acorn towers and thorn spikes share one level, bought in the shop and capped by the home level. Buying a barricade
-level on the Hearthtree's card makes every row tougher at once. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
-and opens after the missions; level 5 (Heartwood, Amber, Amber Thorns) costs Gloomwood materials. Broken defences are
-mended free when a mission is won; after a camp fall or a raid they stay broken until mended in the shop or with
+All acorn towers and thorn spikes share one level, bought in the shop and capped by the home level. Upgrading
+a defence type updates every placed piece of that type. **Acorn arrows (23 Nov 2026):** the five existing tower
+models reach 5/6/7/8/9 m and deal 8/14/24/36/44 damage. Their arrows grow 1.6× to 2.4× the cat's Twig arrow and
+change tip/fletching colours at each tier: leaf/silver, pale blue, gold, violet and amber. Only the upper crossbow
+turns and tilts. Loading, string draw, release, recoil and the arrow trail are animated. Broken towers stop and
+hide their arrow until repaired. An upgrade loads the new tier automatically.
+
+Buying a barricade level on the Hearthtree's card makes every row tougher at once. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
+and opens after the raids; level 5 (Heartwood, Amber, Amber Thorns) costs Gloomwood materials. Broken defences are
+mended free when a raid is won; after a camp fall or a raid they stay broken until mended in the shop or with
 "Mend all".
 
 ### The Last Stand and the camp falling
@@ -454,12 +477,12 @@ mended free when a mission is won; after a camp fall or a raid they stay broken 
 |---|---|
 | The cat is knocked out while the fire burns | Nothing. It is back by the fire in 5 s. |
 | The mount is knocked out | It stays out until fed (2 Sunberries) or the next chapter break (part 5). |
-| The camp falls | **New (22 Nov 2026, loop fixes):** the Gloom takes 30% of the leaves gained since this chapter began (pickups, wave pay, bonuses and sales while playing the chapter), never more than you hold. Savings, completed chapter chests and gains during chapter breaks are safe. Ruins stay ruins. Broken defences stay broken. The campfire is ashes until you light it again at its spot (New, G1: 40 leaves and no timber, or free when you have fewer than 40 leaves; no mission starts before that). **The chapter starts over**, not the mission. A dish eaten this chapter goes back into the pot. No level is ever lost. |
-| You give up a mission | Its next try starts at wave 1. What you earned stays. |
+| The camp falls | The Gloom takes 30% of the leaves gained since this chapter began, never more than you hold. Savings, completed supply chests and gains during chapter breaks are safe. Ruins and broken defences stay damaged. Rebuild the ashes at the campfire before resuming. **Retry only the failed wave**; all earlier cleared waves stay cleared. A dish eaten this chapter goes back into the pot. No level is lost. |
+| You give up a raid | Its next try starts at wave 1. What you earned stays. |
 
-### The 15 missions
+### The 15 raids
 
-| # | Mission | Waves | Needs home | Trails | New threat | Ends with | First-win gift |
+| # | Raid | Waves | Needs home | Trails | New threat | Ends with | First-win gift |
 |---|---|---|---|---|---|---|---|
 | 1 | First Embers | 15 | 1 | Fernwood | Thornlings (the tutorial) | Thornling Chief (a mini-boss) | Garden and pot, Bow Shop in the shop, 60 leaves (New, G1b: "+60 leaves for your first barricades"; it was 2 barricade pieces) |
 | 2 | Bramble Pack | 15 | 1 | Toadstool Dell | Bramble Boars | 2 boars | None (New, G2: the Market and Thistle come at Hearthtree level 2) |
@@ -477,8 +500,8 @@ mended free when a mission is won; after a camp fall or a raid they stay broken 
 | 14 | Gloom Tide | 20 | 5 | all four | everything at once | 2 snails, 2 stumps | |
 | 15 | The Elder Thornstag | 20 | 5 | Thicket, Den | | **The Elder Thornstag** (boss) | Gloom Raids and the Old Hollow open |
 
-**New (Phase F): mission 2 is easier.** Fewer boars (none in waves 1 and 2), elite waves with 1, 1 and 2 boars, and a
-final wave of 2 boars. Boars are also softer (see the enemies table). Only missions 6, 13 and 15 end in a real boss.
+**New (Phase F): raid 2 is easier.** Fewer boars (none in waves 1 and 2), elite waves with 1, 1 and 2 boars, and a
+final wave of 2 boars. Boars are also softer (see the enemies table). Only raids 6, 13 and 15 end in a real boss.
 The owner wants 2 or 3 more bosses later (part 10).
 
 ### The enemies
@@ -486,7 +509,7 @@ The owner wants 2 or 3 more bosses later (part 10).
 | Enemy | What it does |
 |---|---|
 | Thornling | Small and quick; pounces; chases the cat when near |
-| Thornling Chief | A big Thornling: mission 1's mini-boss |
+| Thornling Chief | A big Thornling: raid 1's mini-boss |
 | Toadstool Brute | Goes for buildings; its spore bursts slow the cat |
 | Raccoon Bandit | Grabs golden leaves off the ground and runs away with them (never in raids) |
 | Bramble Boar | Paws the ground, then charges in a straight line every 5 s (70 health; 22 damage to the campfire, 90 to a barricade). **New (Phase F):** a boar that misses its charge, or hits a barricade, a building or the Warden, is **dazed** about 1 s ("Bonk!") and takes 1.5 times damage. A tip explains it the first time. |
@@ -514,19 +537,22 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 ### Thistle, the mount
 
 - Comes free with the Market (New, G2: at Hearthtree level 2). Tap **Ride** and it bounds over; the cat hops into the leaf saddle.
-- Riding: the cat runs 50%, 65% or 80% faster (by Market level). She sways and leans with the mount, carries her
-  bow upright and tilted toward her, and shoots only ahead. Turn the mount to face enemies behind you.
+- Riding: the cat runs 27.5%, 40.25% or 53% faster (by Market level; all tiers reduced 15% on 23 Nov). She sways and leans with the mount and carries her
+  bow upright and tilted toward her. **Updated 23 Nov 2026, after phone play** · the mount faces joystick travel and
+  runs forward. The cat shoots up to 140 degrees either side, a 280-degree arc with an 80-degree rear gap.
+  It releases held targets outside that arc. Dedicated left/right rear-quarter shooting animations turn
+  her torso, shoulders, arms and head above a seat that stays aligned with the mount. Turn the mount for enemies directly behind.
   She can't hide while riding. The mount uses the skills it learned at the Saddlery.
 - **Thistle takes the hits** while the cat rides. Its health is the thin amber bar under the cat's.
-- **Knocked out**, it throws the cat off. In a mission it stays out until you **feed** it 2 Sunberries with the Feed
+- **Knocked out**, it throws the cat off. In a raid it stays out until you **feed** it 2 Sunberries with the Feed
   button (any time, even mid-wave; it comes back whole and the cat hops on) or until the next chapter break. In the
-  Gloomwood it stays out until fed. Outside missions it rests 20 s and gets up by itself. With no food, the button
+  Gloomwood it stays out until fed. Outside raids it rests 20 s and gets up by itself. With no food, the button
   says "No food".
-- It is whole again at every chapter break and when a mission ends.
+- It is whole again at every chapter break and when a raid ends.
 
 ### The Saddlery: the mount's skills and attachments (New, 21 Nov 2026, G4)
 
-- Build it on the Hearthtree's card once 8 missions are won and the Hearthtree is at level 2 (part 3).
+- Build it on the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (part 3).
   Buy skills and attachments with leaves and timber. Levels 4 and 5 also need Burrow materials. Item levels are
   capped by the Saddlery's level.
 - **Skills.** The mount uses them by itself while the cat rides in a fight, each on its own timer. Never two at once: a
@@ -545,14 +571,21 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 
   | Attachment | What it does (level 1) | Per level |
   |---|---|---|
-  | **Fire-spitter** | Every 3 s, a 2.5 m cone of fire ahead when enemies are close: they burn, 8 damage a second for 2 s | +40% damage |
+  | **Fire-spitter** | Flame balls at the cat's current arrow range and firing pace. Its firing unit automatically tracks enemies while riding, including to the side and rear. Each hit deals 8 damage to the enemy and foes within 1.25 m, plus 8 burn damage a second for 2 s | +40% of base impact and burn damage |
   | **Mossweave Saddle** | The mount has 15% more health | +15% (level 5: +75%) |
-  | **Saddlebags** | Kills drop 5% more leaves (missions, raids and the Burrows) | +5% (level 5: +25%) |
+  | **Saddlebags** | Kills drop 5% more leaves (raids, raids and the Burrows) | +5% (level 5: +25%) |
 
-  The worn Saddlery attachment works in missions, raids and the Burrows. Claude made the models for both mounts.
+  The worn Saddlery attachment works in raids, raids and the Burrows. Claude made the models for both mounts.
+  Fire-spitter speed follows the cat's draw upgrades, current bow and food boosts, independently of the mount skill gap.
+  **Flame visuals (23 Nov 2026):** shots have a hot round core, directional flame tail and sparks. Hits create a
+  glowing scorch with low, animated ground flames. It extinguishes after 3 seconds, fading during the last 0.8 s;
+  nearby hits refresh the same fire. This is a visual effect alongside the existing impact damage and enemy burn.
+  Graphics quality caps ground patches at 4 / 6 / 8 and reduces particle counts on Low.
+  Range follows the cat's range upgrades and bow. The cannon assists her focused enemy or finds another enemy in range;
+  only its firing unit swivels, with the harness fixed and joystick steering preserved.
 - **The mounts have no built-in move any more.** A mount carries the cat faster and takes the hits. Its fighting comes
   from the Saddlery.
-- **Old saves.** A pre-G4 save with mission 8 won gets Stomp level 1. An old Mossweave Saddle becomes saddle level 3.
+- **Old saves.** A pre-G4 save with raid 8 won gets Stomp level 1. An old Mossweave Saddle becomes saddle level 3.
   Old Saddlebags become level 5. If there is no worn choice in the save, the highest-level owned attachment goes on.
   Ties go to Saddlebags, then Mossweave Saddle, then Fire-spitter.
 - **Animations** (Claude made them in Blender, on the owner's mount rigs; besides Idle, Run and Thump, which are
@@ -573,17 +606,17 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
   differ (the model and its animations).
 - **Colours** row: Natural, Snow, Midnight, Autumn, Golden and more, per look. All free while testing; sold later.
 - **Gloomlit** colours cost 60 Gloom shards per look. They are earned only, never sold.
-- **Attachments** (after the missions): see part 8. **New (21 Nov 2026, G4):** the mount's Mossweave Saddle, Saddlebags
+- **Attachments** (after the raids): see part 8. **New (21 Nov 2026, G4):** the mount's Mossweave Saddle, Saddlebags
   and Fire-spitter are at the Saddlery (above).
 
 ### The Moss Warden, the camp's guardian
 
 - A big, slow golem of mossy stone and old roots, from the owner's Meshy model.
-- **How you get it:** not in the missions, never sold. On the **first clear of the Gloomwood**, after Mossback falls,
+- **How you get it:** not in the raids, never sold. On the **first clear of the Gloomwood**, after Mossback falls,
   the Warden lies sealed in violet Gloom crystals at the arena's north edge. Stand on the seal for 3 s to break it.
   It comes home and lives by the Guardian Stone, east of the camp. Banner: "The Moss Warden is free! It will guard the
   camp while you are away."
-- **What it does:** in a fight (raids and mission replays) it goes for whatever attacks your buildings, barricades,
+- **What it does:** in a fight (raids and raid replays) it goes for whatever attacks your buildings, barricades,
   towers or campfire. It punches, and slams the ground when foes crowd it (small foes are dazed). It is too slow for
   fliers and thieves.
 - **Knocked down**, it is a heap of stones that pulls itself together after 30 s, twice as fast if the cat stands
@@ -602,11 +635,11 @@ Food matters from the start: it brings the mount back, and dishes give a boost.
 
 ### The garden
 
-- South of the camp, the gift for winning mission 1 (with 4 Sunberries, so the pantry is never empty).
+- South of the camp, the gift for winning raid 1 (with 4 Sunberries, so the pantry is never empty).
 - 3, 5 or 6 plots by garden level. **Plant** (seed packets cost a few leaves), **water**, and **pick** when ripe (a
   glint shows it).
 - **It grows one step for every wave the camp holds**, two while watered (watering lasts 3 to 5 waves). That means
-  mission waves, replays and raid waves. It never grows with real time, while the game is closed, or while you wait
+  raid waves, replays and raid waves. It never grows with real time, while the game is closed, or while you wait
   in the camp. Ripe plants never rot. (Gloomwood runs do not grow it.)
 
 | Crop | Gives | Ripe after |
@@ -635,7 +668,7 @@ The pantry holds up to 20 of each food.
 
 ### Fishing
 
-- The gift for winning mission 6, at the lake's south shore. Any time no wave is on: **Cast** on the card. After a
+- The gift for winning raid 6, at the lake's south shore. Any time no wave is on: **Cast** on the card. After a
   wait (and a nibble or two) the float dips with a white, blue or gold "!": **tap anywhere**. Bigger catches need
   reeling: a ring closes on the float, tap while it is green. A miss costs nothing.
 - Stop by walking away; a wave starting pulls the line in.
@@ -651,11 +684,18 @@ The pantry holds up to 20 of each food.
   tried in that order so the mount's berries last). At most one every 3 s.
 - A dish waiting in the pot **goes down with the cat** and lasts the run.
 
+**New (23 Nov 2026) · choosing food.** In Bag, select a food to see its healing amount and cooking uses. Quick heal
+chooses that food for the bottom button. Use Auto follows the existing order in the paragraph above. The button shows
+the chosen food, quantity, healing amount, and cooldown or full-health state. When a chosen food runs out, Choose food
+opens the Bag. Eat in the Bag uses the selected food and closes the panel on success. Both actions share the same
+cooldown and save the spent food with the run's healed health. Selecting a material slot shows At camp and This run
+amounts and the amount kept after a knock-out.
+
 ---
 
-## 7. After the missions: Gloom Raids
+## 7. After the raids: Gloom Raids
 
-Raids start with the first win of mission 15. They come only while you are playing in the camp.
+Raids start with the first win of raid 15. They come only while you are playing in the camp.
 
 ### The meter and the Watch
 
@@ -669,30 +709,35 @@ Raids start with the first win of mission 15. They come only while you are playi
 
 ### A raid
 
-1. **Warning**: 45 s (60 s for the first raid and elite raids; never under 30 or over 60). A banner says what is
-   coming and from where, mist and eyes roll back onto the trail, a gold arrow points at it, and a countdown runs at
-   the top right. The camp is safe and every card works. The countdown stops while you are idle. "Meet them now"
-   starts it early.
-2. **3 waves**, with 10 s breathers between them.
-3. **The leader** walks in during wave 3: the Gloom Herald, or a boss in an elite raid. **Topple the leader and the
+1. **Preparation**: the horn announces a waiting Gloom Raid. A banner shows its kind and trails, and the camp stays
+   safe. Scouts may reveal hidden trails during preparation; reaching the old warning time never starts combat.
+   Tap **Defend Camp** at the signpost to begin.
+2. **One continuous assault**, with no intermediate waves or preparation breaks. Small mixed groups of **1–3**
+   arrive across **all four trails**, 0.22 seconds apart within groups and 1.1–2 seconds between groups. The seeded
+   roster starts at 36–46 plus the existing level increment, with a **50-enemy total cap** including leader and boss
+   summons. A separate live-enemy limit keeps the field manageable; more arrive as room opens. Completion also pays
+   **7 golden leaves and 2 timber** on top of the final raid reward. **Raid Missions retain their normal wave system.**
+3. **The leader** joins last: the Gloom Herald, or a boss in an elite raid. **Topple the leader and the
    raid breaks**: the rest flee and drop their leaves.
 
 | Kind | From | Trails | Leader | Who comes |
 |---|---|---|---|---|
-| Siege (the first raid is always one) | raid 1 | 1 (2 from raid level 12) | Gloom Herald | Bruisers for your buildings: Stump Golems, Brutes, Boars, Beetles, Thornlings |
-| Sky | raid 2 | 2 | Gloom Herald | Mostly Gloom Moths over the barricades: towers and your bow matter |
-| Sneak | raid 3 | the least-guarded one, hidden until 15 s left | Gloom Herald | Thornlings, Moles, Puffballs |
-| Elite (rare) | raid 5, then 4 raids apart at least | 2 | Mossback, then the Owl Witch, then the Elder Thornstag | A tough mix; pays double shards |
+| Siege (the first raid is always one) | raid 1 | All four, mixed groups | Gloom Herald | Bruisers for your buildings: Stump Golems, Brutes, Boars, Beetles, Thornlings |
+| Sky | raid 2 | All four, mixed groups | Gloom Herald | Mostly Gloom Moths over the barricades: towers and your bow matter |
+| Sneak | raid 3 | All four; hidden until the preparation reveal | Gloom Herald | Thornlings, Moles, Puffballs |
+| Elite (rare) | raid 5, then 4 raids apart at least | All four, mixed groups | Mossback, then the Owl Witch, then the Elder Thornstag | A tough mix; pays double shards |
 
 ### Winning and losing
 
 - **Held**: Gloom shards, leaves, timber and a Hollow key (2 for an elite raid). A **perfect defence** (no building
   lost, the fire never out) pays 50% more shards; a camp that was whole when the raid began pays 20% more. Perfect
   streaks put ribbons on the signpost.
-- **Lost** (the camp falls): only the damage stays, plus 2 shards per wave held. Nothing is taken, the fire relights
+- **Lost** (the camp falls): only the damage stays, plus 2 shards per complete third of the assault defended. Nothing is taken, the fire relights
   at once, and the next raid is a little gentler.
 - **Raid level** (1 to 30) grows with the camp (home level, station levels, towers, defence levels, the Warden) and
   with raids won. The cat's own upgrades never make raids harder.
+- **Resume:** defeated enemies stay defeated; unresolved members return with the saved roster, summons and camp
+  damage. The assault waits for Defend Camp again. Old multi-wave saves receive credit for their cleared portion.
 
 ### Keeping the camp up
 
@@ -712,16 +757,16 @@ Bramble buys 5 shards for 100 leaves.
 
 ---
 
-## 8. After the missions: the Gloomwood
+## 8. After the raids: the Gloomwood
 
 **The Burrows** is the working name for the dungeons (accepted by the owner). The first one is **the Gloomwood**,
-reached through **the Old Hollow** at the south edge of the camp. After the missions, the Burrows are most of the
+reached through **the Old Hollow** at the south edge of the camp. After the raids, the Burrows are most of the
 game: go in, bring back what the camp needs, upgrade, go again on a harder level.
 
 ### Getting in
 
-- The Old Hollow appears sealed with Gloom crystals (two violet eyes blink under them) from the first mission won. It
-  opens with mission 15's first win.
+- The Old Hollow appears sealed with Gloom crystals (two violet eyes blink under them) from the first raid won. It
+  opens with raid 15's first win.
 - **Entry is free and unlimited.** It is blocked only while a fight is on or a raid is coming. A damaged camp only
   shows a warning on the card.
 - The cat goes in with its **pet and mount**. The Warden stays home.
@@ -838,8 +883,8 @@ boss: a map can end in a **treasure clearing** instead, and the owner wants some
 
 | Currency | Where it comes from | What it buys |
 |---|---|---|
-| Golden leaves | Kills, waves, bonuses, chests, mission rewards, raids, the Gloomwood | Almost everything |
-| Timber | Mission waves held (G1), chapter chests, mission rewards, driftwood, raids, the Gloomwood | Buildings, home levels, rebuilding the campfire; buy 5 for 50 leaves, sell 5 for 30 leaves (G1) |
+| Golden leaves | Kills, waves, bonuses, chests, raid rewards, raids, the Gloomwood | Almost everything |
+| Timber | Raid waves held (G1), chapter chests, raid rewards, driftwood, raids, the Gloomwood | Buildings, home levels, rebuilding the campfire; buy 5 for 50 leaves, sell 5 for 30 leaves (G1) |
 | Gloom shards | Raids, Gloomwood boss chests | Part 7's list; sell 5 for 100 leaves |
 | Hollow keys (0 to 3) | Raids held, a level's first clear | A boon at the start of a run |
 | Root Amber, Glowstone, Heartwood | The Gloomwood only | Part 8's list |
@@ -852,28 +897,30 @@ missions -> leaves and timber -> buildings (the home caps their level)
          -> the home's goals are met -> the home grows and the camp unlocks more options
 ```
 
-- **No replays.** Every win pays much more than before, so finishing a mission gives enough leaves to upgrade. The
-  goals plus the home's price fit inside what the act's missions pay when each is won once; what is left is your
+- **Raid Mission rewards.** First clears pay the listed completion reward; replays pay 50% of that leaf/timber reward,
+  plus normal wave/chest pay. Unique progression and gifts remain one-time. The
+  goals plus the home's price fit inside what the act's raids pay when each is won once; what is left is your
   choice (more towers, stats past the goal, food, repairs). The spare shrinks as the game goes on.
-- **Win rewards (leaves)** for missions 1 to 15: 100, 180, 200, 300, 350, 700, 600, 700, 800, 900, 1,300, 1,400,
+- **Win rewards (leaves)** for raids 1 to 15: 100, 180, 200, 300, 350, 700, 600, 700, 800, 900, 1,300, 1,400,
   2,000, 1,200, 1,500. Timber goes from 10 to 60.
 - **Prices.** Stat and bow prices are 30% higher than before. Home prices are in part 3.
 - **The camp fall** takes 30% of the leaves gained in the lost chapter only (New, 22 Nov 2026, loop fixes; it was 30% of
-  all unspent leaves). A lost chapter is played again, and its kills pay again.
-- **After the missions** the Gloom Raids and the Burrows are the endless play. The home is not maxed when the
-  missions end: homes 6 to 8 are dear, and mastery, mending and food pull on the same leaves.
+  all unspent leaves). Only the failed wave is retried; completed waves and their rewards stay completed.
+- **After the raids** the Gloom Raids and the Burrows are the endless play. The home is not maxed when the
+  raids end: homes 6 to 8 are dear, and mastery, mending and food pull on the same leaves.
 
 ### Growing stronger
 
-The cat's stats (10 levels each, capped by the station, 4, 6, 8, 9 or 10 by the Target's level; Health, Move speed and Leaf magnet by the home level; most get 2 mastery levels after the missions), the bows (**New, 22 Nov 2026:** the four shop bows in the table in part 3, Twig to start and Frost last; Thorn Volley and
+The cat's stats (10 levels each, capped by the station, 4, 6, 8, 9 or 10 by the Target's level; Health, Move speed and Leaf magnet by the home level; most get 2 mastery levels after the raids), the bows (**New, 22 Nov 2026:** the four shop bows in the table in part 3, Twig to start and Frost last; Thorn Volley and
 Foxfire are hidden), and the camp (part 3). Every exact price is in
 `game/data/balance.json`. When the player has everything, the game is done and the Gloomwood is there for fun.
 
 ### Cat outfits
 
 Outfits from the Tailor's Nook change the cat's look and keep her stats the same. **Original Ranger** is free
-and owned from the start. **Dusk Ranger** costs 3,000 leaves and **Nightfall Ranger** costs 6,000 leaves.
-Nightfall changes the outfit while keeping the cat's orange fur and the tunic's bronze front.
+and owned from the start. **Dusk Ranger** costs 3,000 leaves and **Ember Ranger** costs 6,000 leaves.
+Dusk wears teal; Ember wears crimson with gold trim and cream lining. Ember is the renamed Nightfall outfit;
+existing owners keep it. Both preserve the cat's orange fur, face and gear.
 
 Buy an outfit between waves and the cat puts it on at once. If you buy during a wave, tap **Wear** between waves
 to put it on. Switching is free between waves, and the game saves what she wears.
@@ -889,8 +936,8 @@ The owner's rules (18 November 2026):
   screens and no banners, ever.
 - **Sold**: looks (new pets and mounts with the same strength, colour skins, cosmetics) and **attachments** for the
   pet and mount, which help only in the Gloomwood and can also be earned by playing.
-- **Never sold**: leaves, timber, shards, keys, materials, stats, mission progress, raid wins, the guardians, or
-  anything that skips the missions. A player who never pays can get every gameplay thing by playing.
+- **Never sold**: leaves, timber, shards, keys, materials, stats, raid progress, raid wins, the guardians, or
+  anything that skips the raids. A player who never pays can get every gameplay thing by playing.
 
 Claude's proposals, waiting for the owner (`GAME_PLAN.md` section 0, "Making money"): a premium currency (working name
 **Moonpetals**, also earned in small amounts by playing); rewarded-ad gifts such as doubling a chapter chest, keeping
@@ -916,7 +963,7 @@ The game uses stand-ins until these come. Concept images are made. Put the Meshy
 | Amber Grub | Gloomwood | A small tinted Mole Sapper | `concepts/burrows/05_amber_grub.png` |
 
 Later: the **Bramble Boar** (`concepts/companions/04_bramble_boar.png`, a fighter) and the **Lantern Owl**
-(`concepts/companions/05_lantern_owl.png`, a helper) as new guardians; **2 or 3 more mission bosses** for missions
+(`concepts/companions/05_lantern_owl.png`, a helper) as new guardians; **2 or 3 more raid bosses** for raids
 that end without one, for example 4, 9 and 12 (no concepts yet). Old Grubber (`concepts/burrows/04_old_grubber.png`)
 is no longer needed.
 
@@ -938,6 +985,16 @@ is no longer needed.
 - The optional Moth Lantern and Bramble Snare (raid extras), only with the owner's yes.
 
 ### Later
+
+- **Random Raids redesign (23 Nov 2026; combat not implemented):**
+  [`RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md`](RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md) records the owner's direction
+  for one simultaneous assault from all four trails, adapting to player/camp capability, with guardian and later
+  recruited-friend defence. The new catalogue/navigation is built; the existing random-raid combat backend remains.
+
+- **Agreed direction, 23 Nov 2026; not implemented:** [`DUNGEON_EXPEDITIONS_PLAN.md`](DUNGEON_EXPEDITIONS_PLAN.md)
+  records random expeditions across ten distinct dungeons as a release target, difficulty separate from location,
+  meaningful variations, permanent discoveries and companions recruited to the campfire through quests. The current
+  game still has one playable dungeon. Exact party, quest and difficulty rules remain to be discussed.
 
 - Claude's own to-do: Blender models for home levels 7 and 8 and their campfires; sounds (raid horn, shards, the rout,
   a dash whoosh, the Warden, garden and fishing); attachments shown on the models; the bug review held to the end.
@@ -970,8 +1027,8 @@ safety net.
   A card is a dictionary `{title, sub, rows, anchor}` built by `stations._card_*()`, `burrow.card()` or
   `raids.card_watch()`; a row is `{text, note, cost, label, enabled, action, pulse}`. The home's card builds its
   "Grow the home" rows from `Data.home_goals(level)` (see Phase F below).
-- **fight.gd** runs missions (`mode = "mission"`) and Gloom Raids (`mode = "raid"`, started by `raids.gd` with
-  `start_raid`). A Burrows run never uses fight.gd's waves and must leave `fight.mode` at "mission"; `start_raid`
+- **fight.gd** runs raids (`mode = "mission"`) and Gloom Raids (`mode = "raid"`, started by `raids.gd` with
+  `start_raid`). A Burrows run never uses fight.gd's waves and must leave `fight.mode` at "raid"; `start_raid`
   refuses while any fight is active.
 - **enemy.gd** is every enemy. It loads `assets/enemies/<id>/<id>.glb` and its JSON, or a stand-in from the
   `model`, `scale` and `tint` keys of its `balance.json` entry. When the real model lands, delete those three keys.
@@ -1003,7 +1060,7 @@ plane (120 m) and the sun's shadow box, so the camp is not drawn while the cat i
 
 | File | What is in it |
 |---|---|
-| `game/data/balance.json` | Every number. Blocks: `cat`, `stats`, `stations`, `home_names`, `bows`, `defences`, `enemies`, `patches` (the 4 trails), `missions` and `mission` (the rules and pay; Phase F keys below), `raid` (the **mission** camp-falls numbers), `gloom_raids`, `guardian`, `garden`, `ingredients`, `cooking`, `fishing`, `looks`, `building_hp`, `burrows`, `attachments`, and (New, G1b and G2) `squads`, `enemy_roles`, `market`, `camp_name`. Most blocks start with a `_note`. |
+| `game/data/balance.json` | Every number. Blocks: `cat`, `stats`, `stations`, `home_names`, `bows`, `defences`, `enemies`, `patches` (the 4 trails), `missions` and `mission` (the rules and pay; Phase F keys below), `raid` (the **raid** camp-falls numbers), `gloom_raids`, `guardian`, `garden`, `ingredients`, `cooking`, `fishing`, `looks`, `building_hp`, `burrows`, `attachments`, and (New, G1b and G2) `squads`, `enemy_roles`, `market`, `camp_name`. Most blocks start with a `_note`. |
 | `game/data/dungeons/<id>.json` | One dungeon map: spine, clearings, branches, arena, fights, checkpoints, chests, traps, lanterns, `floor`, woods, theme, `end`. Positions are `[x, z]`, `{"s": arc length, "off": metres right}` or `{"in": clearing}`. |
 | `game/assets/<group>/<id>/<id>.glb` and `.json` | Characters (enemies, companions, NPCs): clips, events, speeds, spring chains |
 | `game/assets/props/*.glb` and `<group>.json` | Blender props and their lists (`camp_life.json`, `raids.json`, `burrows.json` and others) |
@@ -1011,7 +1068,7 @@ plane (120 m) and the sun's shadow box, so the camp is not drawn while the cat i
 
 The Android export includes `*.json` and leaves out `_autotest/*`, `build/*` and `*.md`.
 
-### Phase F: home goals and fair missions (New, 19 Nov 2026)
+### Phase F: home goals and fair raids (New, 19 Nov 2026)
 
 The design is `docs/PHASE_F_PLAN.md`. The numbers are all in `balance.json`.
 
@@ -1022,7 +1079,7 @@ The design is `docs/PHASE_F_PLAN.md`. The numbers are all in `balance.json`.
     `needs_burrows` and `needs_depth` on homes 6 to 8 are kept for older code.
   - `stations.target` and `stations.bench`: 5 levels. `stat_cap_by_station_level` and `bow_cap_by_bench_level`:
     `[0, 4, 6, 8, 9, 10]`.
-  - `missions[i].needs_home` (the home level to start it; **all 1 since 21 Nov 2026**, so no mission is gated), `reward` (leaves, timber), optional `strength_mult`,
+  - `missions[i].needs_home` (the home level to start it; **all 1 since 21 Nov 2026**, so no raid is gated), `reward` (leaves, timber), optional `strength_mult`,
     `elite_by_chapter`, `boss_adds`, `pool_first` with `first_waves`.
   - `mission.roads` (pattern shares, `favoured_weight`, `rush_count`, `rush_speed`, `teach_mission`,
     `teach_roads_by_chapter`), `mission.burst` (`size`, `spacing`), `mission.min_wave_ratio` (0.85),
@@ -1034,9 +1091,9 @@ The design is `docs/PHASE_F_PLAN.md`. The numbers are all in `balance.json`.
   `mission_needs_home(i)` and `mission_unlocked(i)`.
 - **`fight.gd`:** `plan_wave(w)` (a wave's pattern, roads and groups), `plan_queue(w, p, prev_hp)` (the spawn queue,
   topped up to `min_wave_ratio` until G1; since G1 it swaps weak enemies for stronger ones, see Phase G1), `preview_text()` (the breather's "Next: ..." line). `fight.skip_gate` (tests only)
-  lets a test start any mission. The groups **"bonus"** (the Golden Grub: it never holds a wave up) and **"totems"**
+  lets a test start any raid. The groups **"bonus"** (the Golden Grub: it never holds a wave up) and **"totems"**
   (the Gloom Totem: a foe the wave waits for).
-- **Old tests.** Tests that start a won mission (replays) or a mission past the home gate, after `_veteran`, fail or
+- **Old tests.** Tests that start a won raid (replays) or a raid past the home gate, after `_veteran`, fail or
   need `skip_gate`.
 
 ### Phase G1: the fixes (New, 20 Nov 2026, G1)
@@ -1045,7 +1102,7 @@ The design is `docs/PHASE_G_PLAN.md` (step G1). The numbers are all in `balance.
 
 - **Data keys.**
   - `mission.wave_limits` (groups with `max_alive`, `tanks_at_once`, `tank_share`; `tank_weight`; `boss_others_on_field`).
-    The groups are missions 1 to 5, 6 to 10 and 11 to 15.
+    The groups are raids 1 to 5, 6 to 10 and 11 to 15.
   - `mission.timber_per_wave` (timber for a held wave, times the pay scale), `mission.chest_timber` (chapters 1 to 4)
     and `mission.rebuild_leaves` (60: the rebuild price when the cat has under 10 timber).
   - `trade.buy` and `trade.sell` (the Market's timber trade: 5 timber for 50 leaves, or 30 leaves back).
@@ -1060,14 +1117,14 @@ The design is `docs/PHASE_G_PLAN.md` (step G1). The numbers are all in `balance.
 The design is `docs/PHASE_G_PLAN.md` (steps G1b and G2). The numbers are in `balance.json`.
 
 - **G1b, squads.**
-  - Data: `missions[].chapters[].squads` (the squads of each chapter), `boss_escort` (the escort squads of missions 6,
+  - Data: `missions[].chapters[].squads` (the squads of each chapter), `boss_escort` (the escort squads of raids 6,
     13 and 15), `squads` (the 12 squad definitions), `enemy_roles` (light, fighter, tank or support for each enemy)
-    and `mission.squad_rules` (from mission 2 at least 2 kinds; from mission 3 about 40% per kind at most).
+    and `mission.squad_rules` (from raid 2 at least 2 kinds; from raid 3 about 40% per kind at most).
   - `fight.gd`: `plan_queue` now plans squads; the old pool code is `_pool_queue`; `_spawn_squad` spawns one squad on
-    one road. Raids keep their old random waves.
+    one road. Random Raids instead use their own single roster of small mixed groups across all four trails.
   - `enemy.gd`: `_keep_formation` (the spacing and pace of a squad member) and `leave_squad` (the break-up rule: within
     6 m of the firelight, the leader dead, or the cat close).
-  - Mission 1's first win gives 60 leaves, not barricade pieces.
+  - Raid 1's first win gives 60 leaves, not barricade pieces.
 - **G2, the Hearthtree.**
   - `camp_name` in `balance.json`, and `Data.camp_name(cap)` for the name. Level names are unchanged.
   - The Mushroom Cottage and the Market have `needs_home` 2. The `market` block holds its sells, buys and prices. Thistle
@@ -1133,42 +1190,48 @@ The design is `docs/PHASE_G_PLAN.md` (step G4). The numbers are in `balance.json
   - `mount.gd`: the skills and their timers, `try_move`, the Fire-spitter, the Pounce and Ram movement.
   - `save.gd`: `Save.saddlery` holds `skills`, `attach` and `worn`. The worn attachment alone shows and
     works. `migrate_saddlery()` handles old saves (see part 5).
-  - `enemy.gd`: `stun`, `shove`, `bellowed`. `fx.gd`: `fire_cone`, `bellow`. `ui_icons.gd`: icons stomp, ram, pounce,
+  - `fireball.gd`: flame-ball flight, swept collision, splash damage and burn. `player.attack_interval` supplies its pace.
+    `Data.cat_range` supplies its range. The attachment's `fire_aim` node rotates the firing unit; `marker_nozzle` is
+    its +Z firing axis. `mount.gd` keeps the target lock and smooth aim independently of the mount's heading.
+  - `enemy.gd`: `stun`, `shove`, `bellowed`. `fx.gd`: `fireball`, `fireball_hit`, `bellow`. `ui_icons.gd`: icons stomp, ram, pounce,
     bellow, saddlebags. `marker.gd`: the saddle badge. `world.gd`: the Saddlery spot (5, 0, 8).
 - **Riding and models.**
   - `ride_motion.gd` makes the cat move with the saddle, lifts and tilts the carried bow, and eases her
-    away from sampled mount head and ear points. Forward aim uses `mount.aim_cone_deg` and
-    `aim_cone_keep_deg`. The movement and clearance use the `mount.ride_*` keys.
+    away from sampled mount head and ear points. The mount follows joystick travel using its original forward gait.
+    `mount.aim_cone_deg` sets the half-arc, and `aim_cone_keep_deg` adds edge tolerance to an existing lock.
+    `assets/cat/mounted/shooting.res` supplies five upper-body loops, blended by mount-relative bearing in `player.gd`.
+    The character root follows the mount; the animation layer is filtered from the spine upward. The procedural seat
+    remains active while shooting. The loops share the Shoot draw/release clock. Movement and clearance use `mount.ride_*`.
   - `lifebar.gd` draws the amber mount bar. Mounts' GLBs and clip lists are under `assets/companions/`,
     with Claude's six gear models in `attachments/` (three for each mount). The Blender scripts
     and previews are in the local `art/` folders.
 - **Tests:** `--saddlery` (`game/scripts/autotest_g4_saddle.gd`); see the test modes table.
-- **Results on the PC:** `--saddlery` passed 52 checks. Add `--rideclear` to measure rider clearance.
+- **Results on the PC:** `--saddlery` passed 94 checks, including flame balls, splash, firing cadence, arrow range and tracking while steering. Add `--rideclear` to measure rider clearance.
   See `docs/CHANGES.md` for the known `--topup` and `--raidloss` failures.
 - **Backup** before G4: `D:\DevCache\backup\pre_g4_20261121` (scripts, data, both mounts' files and `.blend`).
 
 ### Loop fixes (22 Nov 2026) (New, 22 Nov 2026, loop fixes)
 
 A loop check on 21 Nov 2026 found three loops: a camp fall ate the savings needed for the Hearthtree (the owner's save
-was stuck that way), each act's last mission had to be won before the Hearthtree could grow, and two repair prices
+was stuck that way), each act's last raid had to be won before the Hearthtree could grow, and two repair prices
 drained leaves. Five fixes, each approved by the owner:
 
 1. **A camp fall takes only the lost chapter's leaves.** The Gloom takes `raid.leaves_share` (30%) of the leaves gained
    since the chapter began, never more than the cat holds. Code: `Save.leaves` has a setter that adds every rise to
-   `Save.mission_run["gain"]` while `Save.count_gain` is on (from a mission wave start to the chapter break, fall or end);
+   `Save.mission_run["gain"]` while `Save.count_gain` is on (from a raid wave start to the chapter break, fall or end);
    `fight.chapter_gain()`, `fight.last_fall_lost`. It survives a saved run and an app restart. Raids still take nothing.
-2. **Hearthtree goals one mission earlier:** `stations.camp.levels[1..4].goals`. Hearthtree 2 needs mission 1, 3 mission 5,
-   4 mission 9, 5 mission 12. Hearthtree 6 (mission 15), the Gloomwood and 7-8 are unchanged.
+2. **Hearthtree goals one raid earlier:** `stations.camp.levels[1..4].goals`. Hearthtree 2 needs raid 1, 3 raid 5,
+   4 raid 9, 5 raid 12. Hearthtree 6 (raid 15), the Gloomwood and 7-8 are unchanged.
 3. **The Hearthtree's repair is capped:** 10% of its cost, at least `ruin_min`, at most 900 leaves and 30 timber, in the
-   missions too. Code: `gloom_raids.repair`. Other buildings keep the 30% price.
+   raids too. Code: `gloom_raids.repair`. Other buildings keep the 30% price.
 4. **A knocked-down tower's repair badge costs what "Mend the defences" costs for that tower** (leaves only). Code:
    `defences.gd` `mend_price(p)`. `defences.tower.repair_share` is no longer read.
-5. **The Saddlery needs Hearthtree level 2** (and 8 missions won). At Hearthtree 1 its tile says "Needs the Hearthtree at
+5. **The Saddlery needs Hearthtree level 2** (and 8 raids won). At Hearthtree 1 its tile says "Needs the Hearthtree at
    level 2".
 
 - **Tests (PC):** `--smoke` OK, `--homegoals` 46, `--rows` 48, `--campg` 47, `--saddlery` 46, `--fightf` 64 (new fall-gain
   checks), `--laststand` 1 (it runs again with `fight.skip_gate`), `--raidloss` 12 pass and 2 old failures (it tries to
-  replay a won mission, which is refused since Phase F).
+  replay a won raid, which is refused since Phase F).
 - **Backup** before the fixes: `D:\DevCache\backup\pre_loopfix_20261121`.
 
 ### Bow and Hearthtree balance (22 Nov 2026) (New, 22 Nov 2026)
@@ -1182,6 +1245,7 @@ the bow table) and in `balance.json`.
   - `cat.min_range_m` (2.0 m): the floor for the cat's range.
 - **Code.**
   - `Data.bow_draw_mult(id)`. `Data.cat_range()` applies the 2.0 m floor.
+    - `Data.bow_level_mult(id, level)` applies `bow_upgrade_curve` to existing and newly purchased bow levels.
   - `player.gd`: the draw speed is `Data.cat_draw() / Data.bow_draw_mult(Save.bow)`.
   - `stations.gd` `_bow_note` builds each bow tile's pro and con.
 - **Tests (PC).** `--bowshop` 61 pass, `--homegoals` 48 pass, `--smoke` OK.
@@ -1241,6 +1305,7 @@ The indices are 2 for the gate, 1 for the middle and 0 for the far pad. A road c
 
 - `balance.json` holds the building price and unlock in `stations.tailor` and the outfit prices in `cat_skins`.
   The outfit IDs are `original`, `dusk_ranger` and `nightfall_ranger`.
+  The last ID now displays **Ember Ranger**; it stays unchanged internally to preserve old saves and purchases.
 - `stations.gd` builds the outfit card with `_card_tailor` and `_skin_tile` and handles buying and wearing with
   `_buy_skin` and `_wear_skin`. `data.gd` has the `cat_skin_*` helpers. `save.gd` stores `cat_skin` and
   `cat_skins_owned`. `settle_cat_skin` defaults older saves to Original Ranger and resets an invalid choice.
@@ -1295,14 +1360,14 @@ steady 30 fps. The player picks Auto, Low, Medium or High on the Shop card. The 
 
 On the phone `user://` is the app's `files/` folder (package `com.projectleaf.game`; reach it with
 `adb shell run-as com.projectleaf.game`). The game saves after every purchase, every wave cleared, every chapter break
-(`Save.mission_run`) and every mission end. Raids save quietly (`Save.save_game(true)`) every 10 meter points, at stir,
+(`Save.mission_run`) and every raid end. Raids save quietly (`Save.save_game(true)`) every 10 meter points, at stir,
 at full, at each wave held, and on pause, focus-out or close (`main._notification` calls `raids.persist()` and
 `burrows.persist()`). A Burrows run saves at checkpoints, when hurt (throttled) and on pause. Old saves load field by
 field with defaults (`d.get`); `save_v` is 2. A dish eaten mid-chapter goes back into the pot on load.
 
 ### The debug endgame start
 
-Debug builds only. `--endgame` opens a **separate save** as if all 15 missions were won: home level 5, a grown cat
+Debug builds only. `--endgame` opens a **separate save** as if all 15 raids were won: home level 5, a grown cat
 (Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, 3 Hollow keys, food, the Gloomwood open (the Warden still to be found). The HUD
 says "Endgame test save". It stays on at every launch until one launch with `--endgame-off`; then the real save is
 back, untouched. `--endgame --fresh` starts it over (an older endgame save keeps its old levels until then). On the phone, put the argument on a line in `files/test_args.txt`.
@@ -1326,16 +1391,18 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 
 | Area | Script | Modes |
 |---|---|---|
-| Missions and camp | `autotest.gd` | default (all 15 waves of mission 1), `--smoke`, `--resume=1` then `=2`, `--village`, `--siege`, `--laststand`, `--bars`, `--skins`, `--levels`, `--grow`, `--gallery`, `--patch=N`, `--grasswalk`, `--lake`, `--perf`, `--perfdiag` |
+| Raids and camp | `autotest.gd` | default (all 15 waves of raid 1), `--smoke`, `--resume=1` then `=2`, `--village`, `--siege`, `--laststand`, `--bars`, `--skins`, `--levels`, `--grow`, `--gallery`, `--patch=N`, `--grasswalk`, `--lake`, `--perf`, `--perfdiag` |
 | Warden, garden, cooking, fishing | `autotest.gd` | `--guardian`, `--guardianab`, `--garden`, `--cook`, `--fishing`, `--feed`, `--camplife` |
-| Gloom Raids | `autotest.gd` | `--raid` (with `--raid-small`, `--with-warden`), `--raidloss`, `--meter`, `--raidsave`, `--raidresume=1/2/3`, `--raidtypes`, `--wear`, `--shards`, `--raidintro`, `--raidshots`, `--raidperf`; flags `--raid-type=`, `--raid-warn=`, `--raid-meter=` |
+| Gloom / Random Raids | `autotest.gd`, `autotest_assault.gd` | `--assault` / `--raidsave` (29 continuous-assault checks); `--raid` (with `--raid-small`, `--with-warden`), `--raidloss`, `--meter`, `--raidresume=1/2/3`, `--raidtypes`, `--wear`, `--shards`, `--raidintro`, `--raidshots`, `--raidperf`; flags `--raid-type=`, `--raid-warn=`, `--raid-meter=` |
 | The Gloomwood | `autotest_e.gd` | `--dungeon`, `--dungeonshots`, `--dungeonfall`, `--dungeonresume=1` then `=2`, `--boss`, `--dungeonperf`, `--dungeontreasure`, `--dungeonlevels`, `--dungeonstand` (`=god`, `=items`), `--dungeoncareful`, `--floormaps=<dir>`; kept from Phase E: `--burrowsave`, `--hollow`, `--dash`, `--traps`, `--burrowfoes`, `--topup`, `--burrowhooks` |
 | Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck`, `--taps`, `--arrows` |
-| Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (goals and mission access), `--fightf` (waves, squads, bonuses, Gloom fade and chapter losses), `--enemyf` (boars, support enemies, grub and totem) |
-| G1b and G2 | `autotest_g2_def.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (pads, repair, the Well), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
-| G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, upgrades, equipping, pierce, burn, frost, models and shot effects; 61 passes) |
-| G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments and riding; 52 passes); add `--rideclear` for the clearance sweep |
+| Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (goals and raid access), `--fightf` (90 passes: manual waves, rewards, save/resume, losses, legacy saves, squads and Gloom Raids), `--enemyf` (boars, support enemies, grub and totem) |
+| G1b and G2 | `autotest_g2_def.gd`, `autotest_towers.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (168 checks: pads, repair, the Well, five tower levels, full-circle arrows and loading cycles), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
+| G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, late damage and leaf budgets, upgrades, equipping, pierce, burn, frost, models and shot effects; 77 passes) |
+| G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 110 passes); add `--rideclear` for the clearance sweep |
 | Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
+| Supplies inventory | `autotest_inventory.gd` | `--inventory` (53 checks covering the shared slot grid, currency layout, cat and mount preview, real input, gathering, cooking, trades, food choice, live combat, healing, dungeon resume, settlement and older saves) |
+| Mounted target lock | `autotest_mounted_aim.gd` | `--mountedaim` (69 checks: strict 280-degree arc boundaries, rear blind spot, both mounts, real arrows and hits, torso aiming above a forward-facing root, hips and feet, outfits and different bows, left/right steering and forward gait, target reacquisition, Ram direction and dismounting mid-shot) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it
 gets its `.uid`.
@@ -1414,6 +1481,9 @@ and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\
 - `docs/PHASE_D_SPEC.md`: the Gloom Raids and keeping the camp up.
 - `docs/PHASE_E_SPEC.md`: the Burrows. Only the decisions at the top still hold; its rooms are gone.
 - `docs/DUNGEON_SPEC.md`: dungeons as paths; the Gloomwood.
+- `docs/DUNGEON_EXPEDITIONS_PLAN.md`: agreed future expedition/discovery/recruitment direction, prototype suggestions
+  and open decisions (23 Nov 2026; not implemented).
+- `docs/RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md`: built Raid Mission catalogue/replays and the separate future Random Raid assault/menu direction.
 - `docs/PERFORMANCE.md`: graphics levels and measurements on the PC and the S24.
 - `docs/ASSET_RULES.md`: the rules every 3D model follows.
 - `docs/AGENT_BRIEF_MESHY.md`: the brief for turning a Meshy mesh into a game model.

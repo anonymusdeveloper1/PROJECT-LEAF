@@ -45,6 +45,7 @@ func run() -> bool:
 	_buy()
 	_upgrade()
 	_equip()
+	await _late_upgrades()
 	await _pierce()
 	await _fan()
 	await _burn()
@@ -382,6 +383,95 @@ func _shoot(bid: String, from: Vector3, dmg: float) -> Node3D:
 	main.add_child(a)
 	a.launch(from, Vector3(0, 0, 1), main, dmg, int(bow["pierce"]), Data.bow_burn(bid), bid, Data.bow_frost(bid))
 	return a
+
+
+## Late damage must reach real arrows; purchases must remain affordable and reject an insufficient wallet.
+func _late_upgrades() -> void:
+	var keep_bow: String = Save.bow
+	var keep_bows: Dictionary = Save.bows.duplicate(true)
+	var keep_stats: Dictionary = Save.stats.duplicate(true)
+	var keep_leaves: int = Save.leaves
+	var keep_bench: int = Save.stations["bench"]
+	var processing: bool = main.player.is_processing()
+	main.player.set_process(false)
+	Save.stats["damage"] = 9
+	var expected := {1: 1.0, 5: 1.4, 6: 1.6, 9: 2.2, 10: 2.4, 11: 2.5, 12: 2.6}
+	var affordable := {"twig": 810, "sunwood": 1100, "ember": 1480, "frost": 1930}
+	for bid in ORDER:
+		var curve_ok := true
+		for level in expected:
+			Save.bow = bid
+			Save.bows[bid] = int(level)
+			var want: float = 20.8 * float(Data.bow_info(bid)["damage"]) * float(expected[level])
+			curve_ok = curve_ok and absf(Data.arrow_damage() - want) < 0.0001
+		_x("%s keeps early damage, gains stronger levels 6-10 and retains mastery increments" % bid, curve_ok)
+		var total := 0
+		for level in range(5, 9):
+			total += int(Data.bow_cost(bid, level)["leaves"])
+		_x("%s level 5 to 9 costs the reduced leaf total" % bid, total == int(affordable[bid]), {"leaves": total})
+	Save.bow = "ember"
+	Save.bows["ember"] = 9
+	Save.leaves = 0
+	var power := Data.arrow_damage()
+	_x("an already-owned level-9 Ember gains damage even with no leaves", absf(power - 59.488) < 0.0001 and Save.leaves == 0 and int(Save.bows["ember"]) == 9, {"damage": power})
+	_clear()
+	var base := Vector3(-1.5, 0, 12)
+	var foe := _foe(base + Vector3(0, 0, 2.0))
+	_shoot("ember", base + Vector3(0, foe.aim_height, 0), power)
+	await t._wait(0.3)
+	_x("the stronger level-9 arrow really hits and scales its Ember burn", absf(1e6 - float(foe.hp) - 59.488) < 0.001 and absf(float(foe.burn_per_s) - 14.872) < 0.001, {"hit": 1e6 - float(foe.hp), "burn_per_s": foe.burn_per_s})
+	_clear()
+	Save.bows["ember"] = 5
+	Save.stations["bench"] = 2                       # level 6 power is available before the expensive late shop tier
+	var price := int(Data.bow_cost("ember", 5)["leaves"])
+	Save.leaves = price - 1
+	_st()._upgrade_bow()
+	_x("one leaf short refuses a late upgrade without charging or changing its level", int(Save.bows["ember"]) == 5 and Save.leaves == price - 1)
+	var tile := _tile("ember")
+	_x("the shop shows the affordable price and next damage gain", int((tile.get("cost", {}) as Dictionary).get("leaves", 0)) == price and String(tile.get("text", "")).begins_with("Next: +14.3% damage\n"), {"tile": tile.get("text", ""), "cost": tile.get("cost", {})})
+	main.hud.show_card(_st().rings["bench"])
+	await t._wait(0.4)                              # let the card's opening animation and layout settle
+	await t._shot("late_bow_price_damage")
+	main.hud.hide_card()
+	Save.leaves = price
+	_st()._upgrade_bow()
+	_x("exactly the reduced price buys level 6 and leaves the wallet at zero", price == 225 and int(Save.bows["ember"]) == 6 and Save.leaves == 0)
+	Save.bows["ember"] = 5
+	Save.stations["bench"] = 4
+	Save.leaves = int(affordable["ember"])
+	for step in 4:
+		_st()._upgrade_bow()
+	_x("a saved 1480-leaf budget buys all four Ember upgrades from 5 to 9", int(Save.bows["ember"]) == 9 and Save.leaves == 0)
+	var guaranteed := _guaranteed_mission_leaves(12) + _guaranteed_mission_leaves(13)
+	var shop_cost: int = (Data.b["stations"]["bench"]["levels"][3] as Dictionary)["leaves"]
+	var owned_package: int = shop_cost + int(affordable["ember"])
+	var new_package := shop_cost + int(Data.craft_cost("ember")["leaves"])
+	for level in range(1, 9):
+		new_package += int(Data.bow_cost("ember", level)["leaves"])
+	_x("raids 13 and 14 guaranteed leaves cover shop 4 plus Ember 5-to-9 with repair room", guaranteed >= owned_package + 2000, {"guaranteed_floor": guaranteed, "package": owned_package, "remaining": guaranteed - owned_package})
+	_x("even a newly bought Ember to level 9 fits that budget without kill or performance rewards", guaranteed > new_package, {"guaranteed_floor": guaranteed, "package": new_package, "remaining": guaranteed - new_package})
+	t._log("late bow affordability", {"guaranteed_floor": guaranteed, "owned_package": owned_package, "new_package": new_package})
+	Save.bow = keep_bow
+	Save.bows = keep_bows
+	Save.stats = keep_stats
+	Save.leaves = keep_leaves
+	Save.stations["bench"] = keep_bench
+	main.player.set_process(processing)
+
+
+## Conservative first-clear income: floor each guaranteed wave/chapter payment, excluding kills and all bonuses.
+func _guaranteed_mission_leaves(index: int) -> int:
+	var mission: Dictionary = Data.mission(index)
+	var cfg: Dictionary = Data.b["mission"]
+	var scale: float = 1.0 + float(cfg["pay_per_mission"]) * index
+	var leaves := int((mission["reward"] as Dictionary)["leaves"])
+	for wave in range(1, int(mission["waves"]) + 1):
+		leaves += floori((float(cfg["wave_bonus"]) + float(cfg["wave_bonus_step"]) * wave) * scale)
+	var chapters := ceili(float(mission["waves"]) / float(cfg["chapter_waves"]))
+	var chests: Array = cfg["chest_leaves"]
+	for chapter in chapters:
+		leaves += floori(float(chests[mini(chapter, chests.size() - 1)]) * scale)
+	return leaves
 
 
 # ---------------------------------------------------------------- (e) pierce

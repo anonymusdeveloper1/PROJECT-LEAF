@@ -200,6 +200,15 @@ func _tap_outside() -> void:
 func _run() -> void:
 	await _wait(1.2)
 	await _shot("01_camp_start")
+	if Data.args().has("--inventory"):
+		var check := Node.new()
+		check.set_script(load("res://scripts/autotest_inventory.gd"))
+		check.t = self
+		check.main = main
+		add_child(check)
+		await check.run()
+		_finish()
+		return
 	if Data.args().has("--grasswalk"):
 		var spot = null
 		for h in main.world.hide_spots:
@@ -355,7 +364,7 @@ func _run() -> void:
 	main.player.invincible = true
 	var start_m := 0
 	for a in Data.args():
-		if a.begins_with("--patch=") or a.begins_with("--mission="):
+		if a.begins_with("--patch=") or a.begins_with("--raid="):
 			start_m = int(a.split("=")[1])
 	if start_m > 0:
 		_veteran(start_m)
@@ -364,7 +373,7 @@ func _run() -> void:
 	await _use(main.stations.rings["sign"])
 	await _wait(0.6)
 	await _shot("02_sign_card")
-	_press("Fight")
+	_press("Start")
 	var lane0: int = int(Data.mission(start_m)["lanes"][0])
 	var hold: Vector3 = main.world.edge_point(lane0) * 1.55
 	await _go_to(hold, 0.4)
@@ -413,11 +422,11 @@ func _run() -> void:
 				await _use(main.stations.rings["sign"], 0.25, 10.0)
 				await _wait(0.4)
 				await _shot("07_sign_breather")
-				_press("Go")
+				_press("Start wave")
 			await _go_to(hold, 0.4, 8.0)
 			Engine.time_scale = 2.0
 	Engine.time_scale = 1.0
-	_log("mission over", {"time": t, "done": Save.missions_done, "claimed": Save.claimed, "items": Save.items})
+	_log("raid over", {"time": t, "done": Save.missions_done, "claimed": Save.claimed, "items": Save.items})
 	await _wait(1.0)
 	await _shot("08_stage_end")
 	await _wait(2.0)
@@ -476,7 +485,7 @@ func _resume(step: int) -> void:
 		main.player.invincible = true
 		await _use(main.stations.rings["sign"])
 		await _wait(0.5)
-		_press("Fight")
+		_press("Start")
 		var hold: Vector3 = main.world.edge_point(int(Data.mission(0)["lanes"][0])) * 1.55
 		await _go_to(hold, 0.4)
 		Engine.time_scale = 2.0
@@ -497,7 +506,7 @@ func _resume(step: int) -> void:
 	await _use(main.stations.rings["sign"])
 	await _wait(0.6)
 	await _shot("resume_sign_card")
-	_press("Go on")
+	_press("Start wave")
 	await _wait(1.0)
 	await _shot("resume_started")
 	_log("resume 2 started", {"active": f.active, "wave": f.wave, "chapter": f.chapter(), "in_wave": f.in_wave, "status": f.status_text()})
@@ -1631,7 +1640,7 @@ func _guardian_fight(g) -> void:
 		await _wait(0.3)
 		seen.append(Save.guardian_post)
 	var lanes: Array = main.stations._post_lanes()
-	_expect("the post goes round the camp and the next mission's trails", seen == [-1] + lanes + [-1], {"seen": seen, "lanes": lanes})
+	_expect("the post goes round the camp and the next raid's trails", seen == [-1] + lanes + [-1], {"seen": seen, "lanes": lanes})
 	await _shot("warden_post_card")
 	Save.guardian_post = int(lanes[0])
 	main.hud.hide_card()
@@ -2079,6 +2088,9 @@ func _cast_once(shots: bool) -> void:
 ## Runs a Phase D mode if one was asked for; false when none was.
 func _phase_d() -> bool:
 	var args := Data.args()
+	if args.has("--assault"):
+		await _raidsave()
+		return true
 	if args.has("--shards"):
 		await _shards()
 		return true
@@ -2283,7 +2295,7 @@ func _raid() -> void:
 	_expect("renown +1, meter 0, perfect streak 1", int(r["renown"]) == 1 and float(r["meter"]) < 1.0 and int(r["streak"]) == 1, {"r": r})
 	_expect("a burrow key", Save.burrow_keys == 1, {"keys": Save.burrow_keys})
 	_expect("the plan and the run are cleared", (r["plan"] as Dictionary).is_empty() and not bool(r["pending"]) and (r["run"] as Dictionary).is_empty())
-	_expect("the mission save fields are untouched", _mission_fields() == mf, {"before": mf, "after": _mission_fields()})
+	_expect("the raid save fields are untouched", _mission_fields() == mf, {"before": mf, "after": _mission_fields()})
 	_expect("the fire burns", not Save.fire_ruined and not main.world.fire_out)
 	await _wait(3.0)
 	var g := 0.0
@@ -2336,7 +2348,7 @@ func _raidloss() -> void:
 	_expect("the raid is lost", not f.active and f.mode == "mission" and int(r["lost"]) == lost0 + 1 and not bool(r["pending"]), {"r": r})
 	_expect("no leaves or timber taken (only the rebuild's 10 timber)", Save.leaves == leaves0 and Save.timber == timber0 - 10, {"leaves": [leaves0, Save.leaves], "timber": [timber0, Save.timber]})
 	_expect("the fire is lit, not ashes", not Save.fire_ruined and not main.world.fire_out)
-	_expect("the mission run untouched", Save.mission_run.is_empty() and _mission_fields() == mf)
+	_expect("the raid run untouched", Save.mission_run.is_empty() and _mission_fields() == mf)
 	_expect("the ruin is kept", Save.ruined.has("well"))
 	var src: Dictionary = bar["src"]
 	_expect("the barricade is wrecked in its own Save.placed entry", src.has("wreck") and absf(float(src["wreck"]) - float(bar["hp"]) / float(bar["max_hp"])) < 0.01 and Save.placed.has(src), {"src": src})
@@ -2476,109 +2488,15 @@ func _meter() -> void:
 	_log("meter", {"raids": r})
 
 
-## Closing the game mid-raid (--raidsave): the raid comes back at its warning with the same plan; waves held stay held;
-## the damage stays; a quit in the Last Stand brings the fire back at 30% as the one rebuild. Nothing in the save is a
-## time, and no script reads the clock.
+## Continuous assault and restart checks (--assault / --raidsave).
 func _raidsave() -> void:
-	await _raid_camp()
-	var f = main.fight
-	var rd = main.raids
-	var r: Dictionary = Save.raids
-	r["first_done"] = true
-	await _wait(0.3)
-	await _raid_to_warning()
-	f._breather = 40.0
-	r["warn_left"] = 40.0
-	rd.persist()
-	var plan0: Dictionary = (r["plan"] as Dictionary).duplicate(true)
-	Save.load_game()
-	main.defences.relink_saved()
-	r = Save.raids
-	_reset_fight()
-	rd.restore_on_load()
-	var back: bool = await _until(func(): return f.active and f.mode == "raid", 3.0)
-	_expect("after a reload: still pending, back at its warning", back and bool(r["pending"]) and f.warning)
-	_expect("the warning kept its 40 s", absf(f._breather - 40.0) < 0.6, {"breather": f._breather})
-	_expect("the same plan and seed", (r["plan"] as Dictionary) == plan0, {"before": plan0, "after": r["plan"]})
-	# hold wave 1, then in wave 2 ruin the well, hurt the home and a barricade, and quit
-	f.next_phase_now()
-	await _until(func(): return f.in_wave, 3.0)
-	var t := 0.0
-	while f.in_wave and t < 60.0:
-		_kill_foes(true)
-		await _wait(0.3)
-		t += 0.3
-	_expect("wave 1 held", not f.in_wave and int(r["run"].get("wave_done", 0)) == 1, {"run": r["run"]})
-	f.next_phase_now()
-	await _until(func(): return f.in_wave, 3.0)
-	var q2: Array = f._queue.duplicate()
-	f.set_physics_process(false)
-	for e in get_tree().get_nodes_in_group("foes"):
-		e.queue_free()
-	main.stations.hurt_building("well", 99999)
-	main.stations.hurt_building("home", main.stations.full_hp("home") * 0.32)
-	var bar: Dictionary = {}
-	for pc in main.defences.pieces:
-		if pc["type"] == "barricade" and pc.get("src") != null:
-			bar = pc
-			break
-	main.defences.hurt_piece(int(bar["id"]), 100)
-	rd.persist()
-	Save.load_game()
-	main.defences.relink_saved()
-	r = Save.raids
-	_reset_fight()
-	f.set_physics_process(true)
-	rd.restore_on_load()
-	back = await _until(func(): return f.active and f.mode == "raid", 3.0)
-	_expect("after a quit in wave 2: back at the warning", back and f.warning and f.wave == 1 and int(r["run"]["wave_done"]) == 1, {"wave": f.wave, "run": r["run"]})
-	_expect("the warning is 30 s or more", f._breather >= 29.9, {"breather": f._breather})
-	_expect("the well is still ruined", Save.ruined.has("well"))
-	_expect("the home's wear is kept (30%)", absf(float(Save.wear.get("home", 0.0)) - 0.3) < 0.001, {"wear": Save.wear})
-	var src2: Dictionary = bar.get("src", {}) if bar.get("src") != null else {}
-	_expect("the barricade's wreck is kept", src2.has("wreck"), {"src": src2})
-	_expect("the home comes back worn (70%)", absf(float(main.stations.hp.get("home", 0.0)) - main.stations.full_hp("home") * 0.7) < 1.0, {"hp": main.stations.hp})
-	f.next_phase_now()
-	await _until(func(): return f.in_wave, 3.0)
-	_expect("wave 2 is the same wave as before", f.wave == 2 and f._queue == q2, {"before": q2, "after": f._queue})
-	# a quit in the Last Stand
-	f.set_physics_process(false)
-	for e in get_tree().get_nodes_in_group("foes"):
-		e.queue_free()
-	var timber0 := Save.timber
-	f.damage_fire(int(f.gate_hp) + 1, Vector3(0, 0, -5))
-	await _wait(0.3)
-	_expect("the Last Stand", f.last_stand)
-	rd.persist()
-	Save.load_game()
-	main.defences.relink_saved()
-	r = Save.raids
-	_reset_fight()
-	f.set_physics_process(true)
-	rd.restore_on_load()
-	back = await _until(func(): return f.active and f.mode == "raid", 3.0)
-	_expect("a quit in the Last Stand: the fire back at 30%, counted as the rebuild, no timber", back and absf(f.gate_hp / f.gate_max - 0.3) < 0.01
-		and f.rebuilt and f.fire_went_out and Save.timber == timber0, {"gate": f.gate_hp, "max": f.gate_max, "rebuilt": f.rebuilt, "timber": [timber0, Save.timber]})
-	await _shot("raidsave_back")
-	# no time in the save, no clock in the scripts
-	var text := FileAccess.get_file_as_string(Save.path).to_lower()
-	var bad: Array = []
-	for w in ["time", "date", "stamp", "clock", "unix"]:
-		if text.contains("\"" + w) or text.contains(w + "\""):
-			bad.append(w)
-	_expect("the save holds no time values", bad.is_empty(), {"found": bad})
-	var rx := RegEx.new()
-	rx.compile("get_unix_time|get_datetime|get_date_|get_time_dict|get_time_string")
-	var hits: Array = []
-	for fn in DirAccess.get_files_at("res://scripts"):
-		if not fn.ends_with(".gd") or fn == "autotest.gd":
-			continue
-		if rx.search(FileAccess.get_file_as_string("res://scripts/" + fn)) != null:
-			hits.append(fn)
-	_expect("no script reads the clock (outside autotest.gd)", hits.is_empty(), {"hits": hits})
-	_reset_fight()
-	_clear_raid_state()
-	Save.save_game()
+	var test := Node.new()
+	test.set_script(load("res://scripts/autotest_assault.gd"))
+	test.t = self
+	test.main = main
+	add_child(test)
+	await test.run()
+	test.queue_free()
 
 
 ## A real restart in the middle of a raid (--raidresume=1 with --fresh, then =2, then =3):
@@ -2739,7 +2657,7 @@ func _raidshots() -> void:
 	main.player.global_position = Vector3(0, 0, 1.6)
 	await _until(func(): return main.fight.in_wave, 3.0)
 	await _wait(2.0)
-	_expect("HUD in a raid wave", String(main.hud._stage_l.text).contains("wave 1 of"), {"text": main.hud._stage_l.text})
+	_expect("HUD shows continuous raid progress", String(main.hud._stage_l.text).contains("raiders left"), {"text": main.hud._stage_l.text})
 	await _shot("hud_wave")
 	var t := 0.0
 	while main.fight.active and t < 120.0:
@@ -2768,7 +2686,7 @@ func _raidintro() -> void:
 	f._win()
 	await _wait(0.5)
 	f.set_physics_process(true)
-	_expect("raids open after the last mission's first win", main.raids.open and Data.raids_open())
+	_expect("raids open after the last raid's first win", main.raids.open and Data.raids_open())
 	_expect("the meter starts at 70", absf(float(Save.raids["meter"]) - 70.0) < 0.5, {"meter": Save.raids["meter"]})
 	_expect("the intro was told", Save.flag("told_raids"))
 	_expect("the signpost is the Watch", String(main.world.sign_node.get_meta("model", "")) == "signpost_watch")
@@ -2833,7 +2751,7 @@ func _raidtypes() -> void:
 			raccoon = true
 		_expect("%s: the warning is 30-60 s" % kind, f._breather >= 29.9 and f._breather <= 60.1, {"breather": f._breather})
 		if kind == "sneak":
-			_expect("sneak: the least-guarded trail (3)", (plan["lanes"] as Array) == [3], {"lanes": plan["lanes"]})
+			_expect("sneak: all four trails are planned", (plan["lanes"] as Array) == range(Data.lane_count()), {"lanes": plan["lanes"]})
 			await _wait(1.0)
 			_expect("sneak: hidden, no Gloom on its trail before the reveal", rd.trail_text() == "trail unknown" and float(w.gloom[3]) < 0.02,
 				{"text": rd.trail_text(), "gloom": w.gloom})
@@ -2867,7 +2785,7 @@ func _raidtypes() -> void:
 			"sky":
 				_expect("sky: moths come", seen.has("moth"), {"seen": seen.keys()})
 			"sneak":
-				_expect("sneak: they come only down trail 3", lanes_seen.keys() == [3], {"lanes": lanes_seen.keys()})
+				_expect("sneak: groups arrive from different trails", lanes_seen.size() >= 2, {"lanes": lanes_seen.keys()})
 			"elite":
 				_expect("elite: its last wave's boss has the boss bar", boss_ok, {"seen": seen.keys()})
 		_reset_fight()
@@ -3014,7 +2932,7 @@ func _shard_goods() -> void:
 		d.relevel(t)
 	d._spawn("spikes", Vector3(2.6, 0, -6.2), 0.0)
 	var texts := func() -> Array: return (st._card_shop()["rows"] as Array).map(func(rw): return String(rw.get("title", "")) + " " + String(rw.get("text", "")))
-	_expect("level 4 is hidden before every mission is won", not " ".join(texts.call()).contains("Shardstone"), {"rows": texts.call()})
+	_expect("level 4 is hidden before every raid is won", not " ".join(texts.call()).contains("Shardstone"), {"rows": texts.call()})
 	Save.missions_done.append(String(Data.mission(Data.mission_count() - 1)["id"]))
 	main.raids.refresh_open()
 	main.world.swap_sign()
@@ -3150,6 +3068,8 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_f_enemy.gd"
 	elif a.has("--homegoals"):
 		file = "res://scripts/autotest_f_home.gd"
+	elif a.has("--missions"):
+		file = "res://scripts/autotest_missions.gd"
 	elif a.has("--rows"):                               # Phase G2: barricade rows, tower repair
 		file = "res://scripts/autotest_g2_def.gd"
 	elif a.has("--campg"):                              # Phase G2: the Hearthtree, Market, pet, the automatic Well
@@ -3160,6 +3080,8 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_g3_bow.gd"
 	elif a.has("--saddlery"):                           # Phase G4: the Saddlery, the mount's skills and attachments
 		file = "res://scripts/autotest_g4_saddle.gd"
+	elif a.has("--mountedaim"):
+		file = "res://scripts/autotest_mounted_aim.gd"
 	elif a.has("--tailor"):                             # 23 Nov 2026: the Tailor's Nook and the cat's outfits
 		file = "res://scripts/autotest_cat_skins.gd"
 	if file == "":

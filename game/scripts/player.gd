@@ -9,6 +9,8 @@ extends Node3D
 ## The shooting stance is side-on: the chest is 64 degrees to the right of the aim. So while shooting on the move
 ## the hips are turned to point the legs along the way the cat is going (body_twist.gd) and the spine is turned back
 ## by the same amount, which leaves the chest, arms and bow exactly as they were authored.
+## Mounted shooting uses five upper-body loops from assets/cat/mounted/shooting.res. The torso and arms turn for
+## rear-quarter shots on one Shoot clock; the root, seated pelvis and knees follow the mount's heading.
 ## The hood, capelet and skirt are not in the clips: cloth.gd simulates them on top, after the body is posed.
 
 ## The hero model to use, without ".glb" (its clips are hero_clips()). 23 Nov 2026: the outfit she wears
@@ -49,6 +51,7 @@ const ClothScript := preload("res://scripts/cloth.gd")
 const RideScript := preload("res://scripts/ride_pose.gd")
 const RideMotionScript := preload("res://scripts/ride_motion.gd")
 const BowFaceScript := preload("res://scripts/bow_face.gd")
+const MountedShooting := preload("res://assets/cat/mounted/shooting.res")
 const SEAT_DROP := 0.35                                 # m from the cat's feet down to its seat: it sits on the saddle
 
 const MAX_SPEED := 2.6                                  # m/s with the stick fully pushed
@@ -175,6 +178,7 @@ func _build_model() -> void:
 	skeleton = _find(model, "Skeleton3D")
 	for clip in ["Idle", "Walk", "Run", "Shoot"]:
 		anim.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
+	anim.add_animation_library("mounted", MountedShooting)
 	# the arrow on the string: the arrow asset rides the bone `arrow` with no offset. The rig aims that bone's Z
 	# axis down the shaft (measured in Blender: asset frame = bone frame), and the asset's tip is +Z too.
 	var hold := BoneAttachment3D.new()
@@ -605,7 +609,35 @@ func _build_tree() -> void:
 	graph.add_node("mix", mix, Vector2.ZERO)
 	graph.connect_node("mix", 0, "loco_speed")
 	graph.connect_node("mix", 1, "shoot_speed")
-	graph.connect_node("output", 0, "mix")
+	# Dedicated upper-body mounted loops. The seat remains aligned with the mount while the torso and arms aim.
+	# All five poses use the same draw/release clock, so changing direction cannot restart or duplicate a shot.
+	var seated := AnimationNodeBlendSpace1D.new()
+	seated.min_space = -150.0
+	seated.max_space = 150.0
+	seated.sync = true
+	var mounted_clips := ["RearRight", "QuarterRight", "Front", "QuarterLeft", "RearLeft"]
+	for p in mounted_clips.size():
+		var node := AnimationNodeAnimation.new()
+		node.animation = "mounted/" + mounted_clips[p]
+		seated.add_blend_point(node, -150.0 + float(p) * 75.0, -1, mounted_clips[p])
+	graph.add_node("seated", seated, Vector2.ZERO)
+	graph.add_node("seated_seek", AnimationNodeTimeSeek.new(), Vector2.ZERO)
+	graph.connect_node("seated_seek", 0, "seated")
+	graph.add_node("seated_speed", AnimationNodeTimeScale.new(), Vector2.ZERO)
+	graph.connect_node("seated_speed", 0, "seated_seek")
+	var seat_mix := AnimationNodeBlend2.new()
+	seat_mix.sync = true
+	seat_mix.filter_enabled = true
+	for t in shoot_anim.get_track_count():
+		var path := shoot_anim.track_get_path(t)
+		if path.get_subname_count() > 0:
+			var bone := skeleton.find_bone(path.get_subname(0))
+			if bone >= 0 and _is_upper(bone):
+				seat_mix.set_filter_path(path, true)
+	graph.add_node("seat_mix", seat_mix, Vector2.ZERO)
+	graph.connect_node("seat_mix", 0, "mix")
+	graph.connect_node("seat_mix", 1, "seated_speed")
+	graph.connect_node("output", 0, "seat_mix")
 	tree = AnimationTree.new()
 	tree.tree_root = graph
 	model.add_child(tree)
@@ -615,6 +647,8 @@ func _build_tree() -> void:
 	tree.set("parameters/loco_speed/scale", 1.0)
 	tree.set("parameters/mix/blend_amount", 0.0)
 	tree.set("parameters/shoot_speed/scale", 1.0)
+	tree.set("parameters/seated_speed/scale", 1.0)
+	tree.set("parameters/seat_mix/blend_amount", 0.0)
 
 
 func _loco(clip: String, scale: float) -> void:
@@ -665,7 +699,6 @@ func _process(delta: float) -> void:
 	# on Thistle the cat sits in the saddle, astride, and rides the hops
 	var on_mount: bool = riding and main.mount != null
 	_ride_w = move_toward(_ride_w, 1.0 if on_mount else 0.0, delta / 0.25)
-	ride_pose.amount = _ride_w
 	var ride_want: float = main.mount.rider_height() - SEAT_DROP if on_mount else 0.0
 	# seated, she keeps to the saddle as it bounds (22 Nov 2026: closer than before, so the ride's bob is in time)
 	_ride_y = lerpf(_ride_y, ride_want, 1.0 - exp(-(40.0 if on_mount and _ride_w >= 0.999 else 16.0) * delta))
@@ -674,12 +707,10 @@ func _process(delta: float) -> void:
 	if cloth != null:
 		cloth.follow(global_position, delta)
 
-	# who to shoot: stay on the same enemy until it is gone or out of reach. 22 Nov 2026 (the owner): in the saddle she
-	# shoots only ahead, within mount.aim_cone_deg either side of the mount's heading (one she holds is kept up to
-	# aim_cone_keep_deg past it); to shoot what is behind, turn the mount
-	var mount_ahead := Vector3(sin(heading), 0.0, cos(heading)) if on_mount else Vector3.ZERO
+	# The mount follows the thumb. The rider acquires enemies across the wider, forward-centred firing arc.
 	var cone := aim_cone() if on_mount else PI
-	var keep := cone + deg_to_rad(float(Data.b["mount"].get("aim_cone_keep_deg", 5.0))) if on_mount else PI
+	var mount_ahead := Vector3(sin(heading), 0, cos(heading)) if on_mount else Vector3.ZERO
+	var keep := minf(PI, cone + deg_to_rad(float(Data.b["mount"]["aim_cone_keep_deg"]))) if on_mount else PI
 	if hp <= 0:
 		target = null
 	elif target == null or not is_instance_valid(target) or target.dead or not main.target_ok(target) \
@@ -692,6 +723,7 @@ func _process(delta: float) -> void:
 			target = other
 	var aiming: bool = target != null
 	aim_w = move_toward(aim_w, 1.0 if aiming else 0.0, delta / AIM_BLEND)
+	ride_pose.amount = _ride_w
 
 	# the body faces what it shoots at; with nothing to shoot it faces the way it goes
 	var aim_error := 0.0
@@ -700,7 +732,7 @@ func _process(delta: float) -> void:
 		var to: Vector3 = target.global_position - global_position
 		var want := atan2(to.x, to.z)
 		var turn_to := want
-		if on_mount:                                                # never turned past the cone in the saddle
+		if on_mount:
 			turn_to = heading + clampf(wrapf(want - heading, -PI, PI), -cone, cone)
 		facing = lerp_angle(facing, turn_to, 1.0 - exp(-TURN * delta))
 		aim_offset = wrapf(want - facing, -PI, PI)
@@ -711,7 +743,7 @@ func _process(delta: float) -> void:
 		facing = lerp_angle(facing, atan2(dir.x, dir.z), 1.0 - exp(-TURN * delta))
 	if on_mount:
 		facing = heading + clampf(wrapf(facing - heading, -PI, PI), -cone, cone)   # the mount turned: she keeps within it
-	rotation.y = facing
+	rotation.y = heading if on_mount else facing
 
 	# the legs: along the way the cat is going, forward or backward, whichever twists the body less
 	var want_turn := 0.0
@@ -732,16 +764,20 @@ func _process(delta: float) -> void:
 		want_turn = STANCE_HIPS
 	legs_backward = backward
 	hips_turn = lerpf(hips_turn, want_turn, 1.0 - exp(-10.0 * delta))
-	twist.hips_yaw = hips_turn * aim_w
-	twist.upper_yaw = (STANCE_HIPS - hips_turn) * aim_w         # the chest ends up where the stance put it
+	twist.hips_yaw = hips_turn * aim_w * (1.0 - _ride_w)
+	twist.upper_yaw = (STANCE_HIPS - hips_turn) * aim_w * (1.0 - _ride_w)
+	ride_pose.leg_yaw = 0.0
 	if on_mount:
-		# in the saddle the hips and legs stay with Thistle, and only the upper body turns to aim
-		var seat := wrapf(heading - facing, -PI, PI)
-		hips_turn = seat
-		twist.hips_yaw = seat
-		twist.upper_yaw = -seat + STANCE_HIPS * aim_w
-	twist.aim_yaw = aim_offset
-	twist.aim_lock = aim_w
+		# Upper-body animation aims independently of the forward-facing seat and character root.
+		var turn := wrapf(facing - heading, -PI, PI)
+		twist.hips_yaw = 0.0
+		twist.upper_yaw = 0.0
+		tree.set("parameters/seated/blend_position", rad_to_deg(turn))
+	else:
+		# Once the root faces the target on foot, the fading mounted layer must use its front pose.
+		tree.set("parameters/seated/blend_position", 0.0)
+	twist.aim_yaw = wrapf(aim_offset + facing - rotation.y, -PI, PI)
+	twist.aim_lock = aim_w if not on_mount or aim_error < FIRE_CONE else 0.0
 	_ride_motion(delta, on_mount, heading)
 
 	model.rotation.x = lerpf(model.rotation.x, 0.26 if _dash_t > 0.0 else 0.0, 1.0 - exp(-18.0 * delta))   # leans into a dash
@@ -752,17 +788,20 @@ func _process(delta: float) -> void:
 	else:
 		_loco("Idle", 1.0)
 	tree.set("parameters/mix/blend_amount", aim_w)
+	tree.set("parameters/seat_mix/blend_amount", _ride_w * aim_w)
 	if bow_face:
 		bow_face.weight = 0.0 if has_rod() else 1.0 - aim_w   # the string toward her while carried; not while drawing or fishing
 
 	# shooting: a clock that runs with the Shoot loop
 	if aiming and not _was_aiming:
 		tree.set("parameters/shoot_seek/seek_request", 0.0)
+		tree.set("parameters/seated_seek/seek_request", 0.0)
 		_shoot_t = 0.0
 		_fired = false
 	_was_aiming = aiming
 	var draw := Data.cat_draw() / Data.bow_draw_mult(Save.bow)     # the bow's draw_mult: 1.25 = a 25% slower draw
 	tree.set("parameters/shoot_speed/scale", draw)
+	tree.set("parameters/seated_speed/scale", draw)
 	if aiming:
 		_shoot_t += delta * draw
 		if _shoot_t >= SHOOT_LENGTH:
@@ -783,10 +822,14 @@ func _process(delta: float) -> void:
 		state = "move" if moving else "idle"
 
 
-## 22 Nov 2026: in the saddle she shoots only within this many radians either side of the mount's heading
-## (balance.json mount.aim_cone_deg).
+## Half the mounted firing arc, centred on the mount's joystick-controlled heading.
 func aim_cone() -> float:
-	return deg_to_rad(float(Data.b["mount"].get("aim_cone_deg", 80.0)))
+	return deg_to_rad(float(Data.b["mount"]["aim_cone_deg"]))
+
+
+## The current bow's full shooting cycle, including draw upgrades and meal boosts. Attachments use the same pace.
+func attack_interval() -> float:
+	return SHOOT_LENGTH * Data.bow_draw_mult(Save.bow) / maxf(Data.cat_draw(), 0.001)
 
 
 ## 22 Nov 2026 (the owner: "make the cat move while riding"): what ride_motion.gd needs this frame, from the mount's real
@@ -821,7 +864,7 @@ func _ride_motion(delta: float, on_mount: bool, heading: float) -> void:
 		_rm_head = heading
 		_rm_turn = 0.0
 	# the mount's forward, seen from her body (she may be turned to aim)
-	var seat := wrapf(heading - facing, -PI, PI) if on_mount else 0.0
+	var seat := wrapf(heading - rotation.y, -PI, PI) if on_mount else 0.0
 	rm.fwd = Vector3(sin(seat), 0.0, cos(seat))
 	# her hips rock with the saddle
 	var sk_b := skeleton.global_transform.basis.orthonormalized()

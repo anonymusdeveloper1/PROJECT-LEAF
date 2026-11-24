@@ -2,13 +2,10 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://p34xiy7cq0kl"
+uid="uid://ddi4mok8r0d8u"
 path="res://.godot/imported/bow_twig_T_CatRanger_BC.png-5e4a2c24d1e3567d9bdc8fddbd814385.ctex"
 metadata={
 "vram_texture": false
-}
-generator_parameters={
-"md5": "ba5b9707e8bd59c2ca8e3b7505e71b58"
 }
 
 [deps]
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

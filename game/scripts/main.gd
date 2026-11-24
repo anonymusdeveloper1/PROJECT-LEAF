@@ -622,8 +622,10 @@ func on_stage_start() -> void:
 	if fishing:
 		fishing.stop("")                                    # a mission starts: the line comes in
 	var c: int = fight.chapter_of(fight.wave + 1)
+	if cooking and fight.wave % fight.chapter_waves() != 0 and Save.meal_on == "":
+		cooking.eat()                                   # a resumed wave keeps the retry's prepared dish useful
 	if c > 0:
-		hud.banner(fight.title(), Color(1.0, 0.9, 0.5), "Chapter %d of %d: %s" % [c + 1, fight.chapters(), fight.chapter_name(c)])
+		hud.banner(fight.title(), Color(1.0, 0.9, 0.5), "Raid %d · wave %d of %d" % [fight.mission + 1, fight.wave + 1, fight.waves()])
 	else:
 		hud.banner(fight.title(), Color(1.0, 0.9, 0.5), String(fight.info().get("intro", "Protect the camp!")))
 	if not Save.flag("told_go_out"):
@@ -633,7 +635,7 @@ func on_stage_start() -> void:
 
 ## A wave starts: a banner for the first wave of a chapter, an elite wave and the last wave, a toast otherwise.
 func on_wave_start(n: int, elite := false, last := false) -> void:
-	if cooking and (n - 1) % fight.chapter_waves() == 0:
+	if cooking and (n - 1) % fight.chapter_waves() == 0 and Save.meal_on == "":
 		cooking.eat()                                       # a chapter (or a raid) starts: the dish in the pot is eaten
 	if guardian:
 		guardian.on_wave_start()
@@ -651,7 +653,7 @@ func on_wave_start(n: int, elite := false, last := false) -> void:
 	elif elite:
 		hud.banner("Elite wave!", Color(1.0, 0.7, 0.4), "Wave %d of %d · tougher foes" % [n, fight.waves()])
 	elif n > 1 and (n - 1) % fight.chapter_waves() == 0:
-		hud.banner("Chapter %d: %s" % [c + 1, fight.chapter_name(c)], Color(1.0, 0.85, 0.5), "Wave %d of %d" % [n, fight.waves()])
+		hud.banner("Wave %d of %d" % [n, fight.waves()], Color(1.0, 0.85, 0.5), fight.chapter_name(c))
 	elif n > 1:
 		hud.toast("Wave %d of %d" % [n, fight.waves()])
 
@@ -667,7 +669,7 @@ func on_wave_cleared() -> void:
 	Save.save_game()
 	if fight.wave == 1 and not Save.flag("told_horn"):
 		Save.set_flag("told_horn")
-		hud.tip("A short breather: spend your leaves! The next wave starts by itself (or tap Go at the signpost).", stations.rings["sign"])
+		hud.tip("Wave saved! Spend your golden leaves, then tap Start wave at the signpost. The next wave waits for you.", stations.rings["sign"])
 
 
 ## A wave was held (a breather, a chapter break or the mission's last wave): the garden grows a step.
@@ -684,7 +686,7 @@ func on_chapter_done() -> void:
 		mount.refill()                                      # the mount is up and whole again at a chapter break
 	if not Save.flag("told_chapter"):
 		Save.set_flag("told_chapter")
-		hud.tip("Chapter held, and the game is saved here. Take your time: shop, repair, then go on from the signpost.", stations.rings["sign"])
+		hud.tip("Supply chest earned! Cleared waves stay cleared. Rest, shop and repair, then start the next wave at the signpost.", stations.rings["sign"])
 
 
 func on_stage_end(_won: bool) -> void:
@@ -715,9 +717,9 @@ func on_stage_end(_won: bool) -> void:
 	var nxt := Data.next_mission()
 	if _won and not raid and nxt < Data.mission_count() and not Data.mission_unlocked(nxt) and not Save.flag("told_home_goals"):
 		Save.set_flag("told_home_goals")
-		hud.tip_after_delay(3.6, "The next mission needs a bigger %s. Meet its goals, then grow it." % Data.camp_name().trim_prefix("the "), stations.rings["shop"])
+		hud.tip_after_delay(3.6, "The next raid needs a bigger %s. Meet its goals, then grow it." % Data.camp_name().trim_prefix("the "), stations.rings["shop"])
 	if _won and not raid:
-		_check_home_ready()                             # "Win mission N" may have been the last goal
+		_check_home_ready()                             # "Win raid N" may have been the last goal
 	hud.refresh_build()
 
 
@@ -808,8 +810,7 @@ func set_riding(on: bool, show := true) -> void:
 		mount.come_to(player.global_position)
 		if show and not Save.flag("told_ride"):
 			Save.set_flag("told_ride")
-			hud.tip("Riding %s: faster, and it takes the hits for you. You shoot only ahead: turn %s to face enemies. You can't hide while riding." % [
-				Data.mount_name(), Data.mount_name()], null)
+			hud.tip("Riding %s: faster, and it takes the hits for you. Drag to steer. The cat shoots around you; turn for enemies directly behind." % Data.mount_name(), null)
 	else:
 		Fx.dust(self, player.global_position, 6, 1.0)
 	hud.refresh_build()
@@ -867,37 +868,60 @@ func on_area_left(_result: String) -> void:
 
 ## A packed lunch below ground (Phase E): the first food the pantry has, in balance.json burrows.lunch order (berries
 ## last, so the mount's food lasts). {} when there is nothing to eat.
-func snack_pick() -> Dictionary:
+func snack_pick(item := "") -> Dictionary:
+	var choice := Save.snack_choice if item == "" else item
+	if choice != "auto":
+		return Data.snack(choice) if int(Save.pantry.get(choice, 0)) > 0 else {}
 	for e in Data.burrow_cfg().get("lunch", []):
 		if int(Save.pantry.get(String(e["item"]), 0)) > 0:
 			return e
 	return {}
 
 
-var _snack_t := 0
+var _snack_t := -1
+
+
+func snack_left() -> float:
+	if _snack_t < 0:
+		return 0.0
+	return maxf(0.0, float(Data.burrow_cfg()["snack_every_s"]) - (Time.get_ticks_msec() - _snack_t) / 1000.0)
+
+
+func snack_reason(item := "") -> String:
+	if area == null:
+		return "Eat in a dungeon"
+	if frozen or player.frozen or area.leaving:
+		return "Wait for the dungeon"
+	if player.hp <= 0:
+		return "The cat is down"
+	if snack_pick(item).is_empty():
+		return "No food"
+	if player.hp >= Data.cat_max_hp():
+		return "Full health"
+	if snack_left() > 0.0:
+		return "Ready in %ds" % int(ceil(snack_left()))
+	return ""
 
 
 ## The HUD's Snack button below ground: one piece of food heals the cat.
-func eat_snack() -> void:
-	var sn := snack_pick()
-	if area == null or sn.is_empty() or player.hp <= 0:
-		return
-	if player.hp >= Data.cat_max_hp():
-		hud.toast("You're not hurt: keep it for later")
-		return
-	var now := Time.get_ticks_msec()
-	if now - _snack_t < int(float(Data.burrow_cfg().get("snack_every_s", 3.0)) * 1000.0):
-		return
-	_snack_t = now
+func eat_snack(item := "") -> bool:
+	if snack_reason(item) != "":
+		return false
+	var sn := snack_pick(item)
+	_snack_t = Time.get_ticks_msec()
+	var before: int = player.hp
 	Data.take_items({String(sn["item"]): 1})
 	player.hp = mini(player.hp + int(sn["heal"]), Data.cat_max_hp())
+	var healed: int = player.hp - before
 	Fx.hearts(self, player.global_position + Vector3(0, 1.2, 0))
-	Fx.text(self, player.global_position + Vector3(0, 1.6, 0), "+%d" % int(sn["heal"]), Color(0.5, 1.0, 0.5))
+	Fx.text(self, player.global_position + Vector3(0, 1.6, 0), "+%d" % healed, Color(0.5, 1.0, 0.5))
 	Sfx.play("pluck", -4.0)
+	area.persist()
+	hud.toast("Healed %d · %s" % [healed, Data.food_receipt({String(sn["item"]): -1})])
 	hud.refresh_hp()
 	hud.refresh_build()
-	if area.has_method("persist"):
-		area.persist()
+	hud.refresh_card()
+	return true
 
 
 func on_camp_grown() -> void:

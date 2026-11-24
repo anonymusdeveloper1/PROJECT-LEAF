@@ -7,6 +7,12 @@ static var _leaf_mesh: ArrayMesh
 static var _mat: StandardMaterial3D
 static var _blob_mat: StandardMaterial3D
 static var _blob_mesh: PlaneMesh
+static var _fireball_mat: StandardMaterial3D
+static var _fire_quad: QuadMesh
+static var _flame_material: ShaderMaterial
+static var _orb_material: ShaderMaterial
+static var _flame_ramp: Gradient
+static var _flame_curve: Curve
 
 
 ## A soft dark spot on the ground under a character. It stands in for the sun's shadow on Low graphics, where the sun
@@ -586,6 +592,131 @@ static func embers(parent: Node3D, radius: float, amount := 10, life := 0.5, siz
 	parent.add_child(p)
 	p.emitting = true
 	return p
+
+
+## Animated flame silhouettes, shared across projectile trails, impacts and ground fire. No light or shadow per flame.
+static func flames(parent: Node3D, radius: float, amount: int, life: float, size: float) -> CPUParticles3D:
+	if _fire_quad == null:
+		_fire_quad = QuadMesh.new()
+		_fire_quad.size = Vector2(1.0, 1.5)
+		_flame_material = ShaderMaterial.new()
+		_flame_material.shader = preload("res://shaders/fire_tongue.gdshader")
+		_flame_ramp = _grad([Color(1, 1, 1, 0.0), Color(1, 1, 1, 1.0), Color(1, 1, 1, 0.85), Color(1, 1, 1, 0.0)])
+		_flame_curve = Curve.new()
+		_flame_curve.add_point(Vector2(0.0, 0.6))
+		_flame_curve.add_point(Vector2(0.2, 1.0))
+		_flame_curve.add_point(Vector2(1.0, 0.3))
+	var p := CPUParticles3D.new()
+	p.mesh = _fire_quad
+	p.material_override = _flame_material
+	p.amount = Quality.particles(amount)
+	p.lifetime = life
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = maxf(radius, 0.01)
+	p.direction = Vector3.UP
+	p.spread = 15.0
+	p.initial_velocity_min = 0.5
+	p.initial_velocity_max = 1.1
+	p.gravity = Vector3(0, 0.25, 0)
+	p.scale_amount_min = size * 0.65
+	p.scale_amount_max = size
+	p.scale_amount_curve = _flame_curve
+	p.color_ramp = _flame_ramp
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(p)
+	p.emitting = true
+	return p
+
+
+## White-yellow fireball core with living orange flames streaming behind it and a few escaping sparks.
+static func fireball(host: Node3D, radius: float, direction: Vector3) -> Array:
+	var trail := flames(host, radius * 0.25, 18, 0.18, radius * 2.2)
+	trail.name = "FlameTrail"
+	var trail_mat := _flame_material.duplicate() as ShaderMaterial
+	trail_mat.set_shader_parameter("flight_direction", direction)
+	trail.material_override = trail_mat
+	trail.preprocess = 0.15
+	trail.direction = -direction
+	trail.spread = 12.0
+	trail.gravity = Vector3(0, 0.35, 0)
+	trail.initial_velocity_min = 0.7
+	trail.initial_velocity_max = 1.8
+	var sparks := embers(host, radius * 0.3, 7, 0.32, 0.6)
+	sparks.direction = -direction
+	sparks.spread = 30.0
+	sparks.initial_velocity_min = 0.5
+	sparks.initial_velocity_max = 1.4
+	if _fireball_mat == null:
+		_fireball_mat = StandardMaterial3D.new()
+		_fireball_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_fireball_mat.albedo_color = Color(1.0, 0.92, 0.35)
+		_fireball_mat.emission_enabled = true
+		_fireball_mat.emission = Color(1.0, 0.65, 0.06)
+	var core := MeshInstance3D.new()
+	core.mesh = _ember_mesh
+	core.material_override = _fireball_mat
+	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	core.name = "HotCore"
+	core.scale = Vector3.ONE * radius * 0.9 / 0.045
+	host.add_child(core)
+	var shell := MeshInstance3D.new()
+	shell.name = "FlameShell"
+	shell.mesh = _fire_quad
+	if _orb_material == null:
+		_orb_material = _flame_material.duplicate() as ShaderMaterial
+		_orb_material.set_shader_parameter("orb", true)
+	shell.material_override = _orb_material
+	shell.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shell.scale = Vector3(radius * 3.2, radius * 3.2 / 1.5, radius * 3.2)
+	host.add_child(shell)
+	return [trail, sparks]
+
+
+## A short outward flame burst marks the splash around the enemy that was hit.
+static func fireball_hit(parent: Node3D, at: Vector3, radius: float) -> void:
+	var host := Node3D.new()
+	parent.add_child(host)
+	host.global_position = at
+	var p := flames(host, radius * 0.12, 22, 0.45, 0.75)
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.spread = 180.0
+	p.initial_velocity_min = radius * 1.8
+	p.initial_velocity_max = radius * 3.2
+	p.gravity = Vector3(0, 0.4, 0)
+	p.restart()
+	var sparks := embers(host, radius * 0.15, 12, 0.45, 0.9)
+	sparks.one_shot = true
+	sparks.explosiveness = 1.0
+	sparks.spread = 150.0
+	sparks.initial_velocity_min = 1.4
+	sparks.initial_velocity_max = 2.8
+	sparks.restart()
+	host.get_tree().create_timer(0.7).timeout.connect(host.queue_free)
+
+
+## Repeated impacts refresh nearby ground fire. Distant patches are capped so rapid fire stays affordable on phones.
+static func fire_ground(game, at: Vector3, radius: float, info: Dictionary):
+	var patches: Array = []
+	for patch in game.get_tree().get_nodes_in_group("mount_ground_fire"):
+		if patch.is_queued_for_deletion() or patch.source_area != game.get("area"):
+			continue
+		if Vector2(patch.global_position.x - at.x, patch.global_position.z - at.z).length() <= float(info["ground_fire_merge_m"]):
+			patch.refresh()
+			return patch
+		patches.append(patch)
+	var caps: Array = info["ground_fire_max_by_quality"]
+	var cap := maxi(1, int(caps[clampi(Quality.level, 0, caps.size() - 1)]))
+	if patches.size() >= cap:
+		patches.sort_custom(func(a, b): return a.age > b.age)
+		for i in patches.size() - cap + 1:
+			patches[i].retire()
+	var patch := Node3D.new()
+	patch.set_script(load("res://scripts/fire_patch.gd"))
+	game.add_child(patch)
+	patch.setup(game, at, radius, info)
+	return patch
 
 
 

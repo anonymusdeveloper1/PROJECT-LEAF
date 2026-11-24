@@ -1,0 +1,18 @@
+{
+  "source": "game/assets/cat/CatRanger.glb",
+  "sha256": "cd4ea2d0afe0c363a6b5d4acffc5bd0b3a1868ffecc076a5d032bafe221cd118",
+  "mesh": "SK_CatRanger",
+  "rig": "RIG_CatRanger",
+  "bounds_min": [
+    -0.3715369403362274,
+    -0.21399998664855957,
+    -5.112763190595615E-08
+  ],
+  "bounds_max": [
+    0.37153708934783936,
+    0.4931502938270569,
+    1.2377980947494507
+  ],
+  "height_m": 1.2377981458770826,
+  "note": "Shipping CatRanger rendered in rest pose; no mesh, texture or rig edits. Non-body meshes hidden only in the preview scene."
+}

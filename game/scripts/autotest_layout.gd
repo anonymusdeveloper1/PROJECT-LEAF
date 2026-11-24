@@ -555,7 +555,7 @@ func _hudcheck() -> void:
 	await t._wait(0.6)
 	_middle_free("camp, mid-game")
 	await _card_at(main.stations.rings["sign"], "sign_missions")
-	_expect_rows("the signpost: the saved run and the replays", ["Go on", "Give up"])
+	_expect_rows("the signpost: the saved run and the replays", ["Start wave", "Give up"])
 	# Android's back button: the dialog's while one is open (it closes it), the game's again after
 	t._expect("back is the dialog's while it is open", not get_tree().quit_on_go_back)
 	get_tree().root.propagate_notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
@@ -577,7 +577,7 @@ func _hudcheck() -> void:
 	hud.banner("First Embers won!", Color(1.0, 0.9, 0.4), "+120 leaves  ·  +6 timber", true)
 	await t._wait(0.5)
 	await t._shot("hud_banner_big")
-	_middle_free("a mission won")
+	_middle_free("a raid won")
 	await t._wait(3.6)
 	# 2. the endgame camp: every card
 	await _e._endgame_camp()
@@ -650,7 +650,7 @@ func _hudcheck() -> void:
 	await t._wait(1.5)
 	await t._shot("hud_mission_boss")
 	t._expect("the boss bar shows under the top bar", hud._boss_bar.visible and hud._boss_bar.global_position.y >= hud._safe.x + hud._top_h, {"y": hud._boss_bar.global_position.y})
-	_middle_free("a mission with a boss")
+	_middle_free("a raid with a boss")
 	t._reset_fight()
 
 

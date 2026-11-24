@@ -31,11 +31,11 @@ extends Node
 ##              gets more enemies (not the first wave after a chapter break, not the boss wave).
 ##   extras     the Golden Grub (a bonus runner in the group "bonus": it never holds a wave up, see _wave_foes) and the
 ##              Gloom Totem (a foe on a road: the wave waits for it).
-##   breather   15 s between waves to shop (the signpost's "Go" skips it, and pays for the seconds skipped). The camp's
-##              cards only work outside a wave.
+##   breather   unlimited time between every wave to shop. The signpost's "Start wave" starts exactly the next wave.
+##              The camp's cards only work outside a wave. No automatic start or early-start timer payment.
 ##   break      after a chapter the camp rests until the player goes on from the signpost. The campfire is fed back to
-##              full, a chest pays out, and the game is saved there (Save.mission_run): closing the game mid-mission
-##              comes back to the start of that chapter.
+##              full and a chest pays out. Every wave saves wave_done (Save.mission_run); restarting resumes the next
+##              uncleared wave. Older chapter-only saves retain their original chapter checkpoint.
 ##   pay        kills drop leaves; a cleared wave pays a small bonus, more when it was quick and when nothing was broken
 ##              (mission.bonus), and (Phase G1) `timber_per_wave` timber; a chapter pays its chest; the win pays the
 ##              reward. Every mission won fades the Gloom over the woods a step (world.fade_gloom) and may give a
@@ -50,13 +50,13 @@ extends Node
 ## ashes, pay rebuild_cost(): timber, or in a mission leaves when the timber is short); it comes back at 30%. The camp
 ## falls if the cat dies in the Last Stand or the fire is destroyed a second time (camp_falls): the Gloom takes a share
 ## of the leaves gained since that chapter began (chapter_gain; since 21 Nov 2026 never the leaves saved before it),
-## ruined buildings and broken defences stay broken, the campfire stays ashes until it is rebuilt, and the chapter
-## starts over. No level is ever lost.
+## ruined buildings and broken defences stay broken, the campfire stays ashes until it is rebuilt, and only the failed
+## wave is retried. No completed wave or level is lost. Player-facing terminology is "raid"; internal keys are stable.
 ## Gloom Raids (Phase D) run here too, as mode "raid": raids.gd builds a mission-shaped spec and calls start_raid. Its
 ## warning is the breather before its first wave; it never reaches _win or _chapter_done, never writes the mission
-## save fields, and a lost raid takes nothing (no leaves, no ashes): only the damage stays (raids.finish). A raid keeps
-## its own lane picking, one enemy at a time (none of the Phase F roads, bursts, swaps, extras or pay, and none of the
-## Phase G1 limits: its own `max_alive`, and its campfire rebuild costs timber).
+## save fields, and a lost raid takes nothing (no leaves, no ashes): only the damage stays (raids.finish). Random Raids
+## use one seeded roster, arriving in groups of 1–3 across all four trails with no intermediate waves. Their own live
+## cap applies; the 50-enemy total includes leaders and summons. Defeated member IDs preserve progress across saves.
 
 const EnemyScript := preload("res://scripts/enemy.gd")
 
@@ -239,21 +239,23 @@ func _rand() -> float:
 
 # ---------------------------------------------------------------- starting
 ## Starts mission i. If the save holds a run of it (Save.mission_run), it goes on from the start of that chapter.
-## The gate: a mission the home is not ready for, or one already won, does not start (Data.mission_unlocked).
+## Unfinished missions stay sequential. Completed ones can be replayed; a different saved run must be resumed or given up.
 func start_mission(i: int) -> void:
 	if active or Save.fire_ruined or bool(Save.raids.get("pending", false)) or main.area != null:
 		return                                      # a raid at the gate is met first: it cannot be dodged (nor while below ground)
 	var idx := clampi(i, 0, Data.mission_count() - 1)
+	if Save.mission_run.has("mission") and int(Save.mission_run["mission"]) != idx:
+		return                                      # keep the saved mission until the player resumes or explicitly gives it up
 	if not skip_gate and Data.has_method("mission_unlocked") and not bool(Data.call("mission_unlocked", idx)):
 		return                                      # the safety net: the signpost does not offer it either
 	mode = "mission"
 	raid = {}
 	warning = false
 	mission = idx
-	var from_chapter := 0
+	var held_wave := 0
 	var gain := 0
 	if int(Save.mission_run.get("mission", -1)) == mission:
-		from_chapter = clampi(int(Save.mission_run.get("chapter", 0)), 0, chapters() - 1)
+		held_wave = clampi(int(Save.mission_run.get("wave_done", int(Save.mission_run.get("chapter", 0)) * chapter_waves())), 0, waves() - 1)
 		gain = maxi(0, int(Save.mission_run.get("gain", 0)))   # a run resumed: what that chapter had gained stays counted
 	elif not Save.mission_run.is_empty():
 		Save.mission_run = {}                       # another mission was picked: the old run is given up
@@ -264,6 +266,7 @@ func start_mission(i: int) -> void:
 	total_t = 0.0
 	_endgame_run = Data.raids_open()
 	_ruined_at_start = Save.ruined.duplicate()
+	Data.set_meal(Save.meal_on)                       # a wave checkpoint retains the dish already being eaten
 	gate_max = float(Data.fire_hp())
 	gate_hp = gate_max
 	_first = mission == 0 and not Save.missions_done.has(String(info()["id"]))
@@ -273,8 +276,8 @@ func start_mission(i: int) -> void:
 	_early_pay = 0
 	_say = []
 	_say_t = -1.0
-	_save_run(from_chapter, gain)
-	wave = from_chapter * chapter_waves()           # the wave before the chapter's first
+	wave = held_wave
+	_save_run(chapter_of(wave + 1), gain, wave)
 	main.stations.reset_hp()
 	main.on_stage_start()
 	_start_wave(wave + 1)
@@ -287,8 +290,9 @@ func start_stage(i: int) -> void:
 
 ## The run saved at the start of chapter c. `gain`: the leaves that chapter has gained so far (0 for a new chapter;
 ## Save's leaves setter adds to it while the chapter is played, see chapter_gain).
-func _save_run(c: int, gain := 0) -> void:
-	Save.mission_run = {"mission": mission, "chapter": c, "gain": gain}
+func _save_run(c: int, gain := 0, held_wave := -1) -> void:
+	Save.mission_run = {"mission": mission, "chapter": c, "gain": gain,
+		"wave_done": c * chapter_waves() if held_wave < 0 else held_wave}
 	Save.save_game()
 
 
@@ -336,7 +340,7 @@ func _start_wave(w: int) -> void:
 		_raid_queue(w, last)
 	else:
 		_mission_queue(w, elite, last)
-	_spawn_t = 1.0
+	_spawn_t = float(raid["assault"]["opening_delay"]) if mode == "raid" else 1.0
 	_quiet_t = 0.0
 	Sfx.play("horn", -8.0)
 	main.on_wave_start(w, elite, last)
@@ -344,28 +348,54 @@ func _start_wave(w: int) -> void:
 		_wave_news(elite, last)
 
 
-## A Gloom Raid's wave, exactly as before Phase F (seeded: a raid that comes back is the same raid).
-func _raid_queue(w: int, last: bool) -> void:
-	var c := chapter_of(w)
-	var ch: Dictionary = info()["chapters"][mini(c, info()["chapters"].size() - 1)]
-	var cnt: Array = info()["count"]
-	var t := float(w - 1) / float(maxi(1, waves() - 1))
-	var n := int(round(lerpf(float(cnt[0]), float(cnt[1]), t)))
-	if last:
-		n = int(round(n * 0.6))                     # the boss brings fewer friends
+## One seeded raid roster. Groups use different shuffled trails; they overlap in time, without round breaks.
+## Member IDs stay stable so a resumed assault never recreates enemies already defeated.
+func _raid_queue(_w: int, _last: bool) -> void:
 	plan = {}
 	_queue.clear()
 	_qinfo.clear()
-	for k in n:
-		_queue.append(_pick_kind(ch["pool"]))
-	var special: Array = []
-	if last:
-		special = info()["boss"]
-	# the raid's leader walks in near the front, after a few of the ordinary ones
-	var at := mini(_queue.size(), int(info().get("leader_at", 2)))
-	for pair in special:
-		for k in int(pair[1]):
-			_queue.insert(at, String(pair[0]))
+	var assault: Dictionary = raid["assault"]
+	var sizes: Array = assault["group_size"]
+	var gaps: Array = assault["group_gap"]
+	var total := int(raid["enemy_count"])
+	var defeated: Array = Save.raids.get("run", {}).get("defeated", [])
+	var roads: Array = []
+	var previous_road := -1
+	var group := 0
+	var member := 0
+	while member < total:
+		if roads.is_empty():
+			roads = (raid["lanes"] as Array).duplicate()
+			for i in range(roads.size() - 1, 0, -1):
+				var j := _rng.randi_range(0, i)
+				var swap: int = roads[i]
+				roads[i] = roads[j]
+				roads[j] = swap
+			if roads.size() > 1 and int(roads.back()) == previous_road:
+				var swap: int = roads[0]
+				roads[0] = roads.back()
+				roads[roads.size() - 1] = swap
+		var road := int(roads.pop_back())
+		previous_road = road
+		var size := mini(total - member, _rng.randi_range(int(sizes[0]), int(sizes[1])))
+		var gap := _rng.randf_range(float(gaps[0]), float(gaps[1]))
+		for i in size:
+			var kind := _pick_kind(raid["chapters"][0]["pool"])
+			# The leader joins last, so its rout cannot cancel raiders that have not arrived yet.
+			if member == total - 1 and String(raid["leader"]) != "":
+				kind = String(raid["leader"])
+			if not defeated.has(member):
+				_queue.append(kind)
+				_qinfo.append([road, group, gap if i == size - 1 else float(assault["member_gap"]), member])
+			member += 1
+		group += 1
+	_wave_n = _queue.size()
+	var summons: Array = Save.raids.get("run", {}).get("summons", [])
+	for i in summons.size():
+		var id := total + i
+		if not defeated.has(id):
+			_queue.append(String(summons[i]["kind"]))
+			_qinfo.append([int(summons[i]["lane"]), group + i, float(assault["member_gap"]), id])
 
 
 ## A mission's wave: its roads (planned in the breather, or now), its enemies and their roads, and the extras.
@@ -1270,17 +1300,12 @@ func _pick_kind(pool: Array) -> String:
 func _physics_process(delta: float) -> void:
 	if not active or main.frozen:
 		return
-	if on_break:
-		return
 	var dt := minf(delta, 0.1)
-	if _breather > 0.0:
-		if mode == "raid" and main.raids.holding():
-			return                                  # nobody is playing: the Gloom waits for the player
-		_breather -= dt
-		if warning:
+	if not in_wave:
+		# A Gloom warning may reveal its trails, but reaching zero never starts a wave.
+		if mode == "raid" and warning and _breather > 0.0 and not main.raids.holding():
+			_breather = maxf(0.0, _breather - dt)
 			main.raids.warning_tick(_breather)
-		if _breather <= 0.0:
-			_start_wave(wave + 1)
 		return
 	total_t += dt
 	wave_t += dt
@@ -1383,6 +1408,9 @@ func _queued_tag(k: int) -> String:
 ## comes in bursts as before.
 func _spawn_next(k := 0) -> void:
 	k = clampi(k, 0, _queue.size() - 1)
+	if mode == "raid":
+		_spawn_raid_member(k)
+		return
 	var in_step := _qinfo.size() == _queue.size()
 	if mode != "raid" and _queued_squad(k) >= 0:
 		_spawn_squad(k)
@@ -1393,12 +1421,6 @@ func _spawn_next(k := 0) -> void:
 	var ch: Dictionary = info()["chapters"][mini(chapter(), info()["chapters"].size() - 1)]
 	var e: Array = ch["every"]
 	var into := float((wave - 1) % chapter_waves()) / float(maxi(1, chapter_waves() - 1))
-	if mode == "raid":
-		var rl := _pick_lane()
-		spawn(kind, main.world.spawn_point(rl, randf_range(-0.12, 0.12)), rl)
-		into = float(wave - 1) / float(maxi(1, waves() - 1))
-		_spawn_t = lerpf(float(e[0]), float(e[1]), into) * randf_range(0.8, 1.2)
-		return
 	var q: Array = [-1, 1.0, ""]
 	if in_step:
 		q = _qinfo[k]
@@ -1428,6 +1450,20 @@ func _spawn_next(k := 0) -> void:
 		var made := _burst_n - _burst_left          # this burst's enemies (fewer when the wave ran out)
 		_spawn_t = maxf(gap, made * lerpf(float(e[0]), float(e[1]), into) - (made - 1) * gap) * randf_range(0.85, 1.15)
 		_burst_left = 0
+
+
+func _spawn_raid_member(k: int) -> void:
+	var kind := String(_queue[k])
+	var row: Array = _qinfo[k]
+	_queue.remove_at(k)
+	_qinfo.remove_at(k)
+	lane = int(row[0])
+	_quiet_t = 0.0
+	_spawn_t = float(row[2])
+	var enemy = spawn(kind, main.world.spawn_point(lane, _rng.randf_range(-0.12, 0.12)), lane, int(row[3]))
+	if is_instance_valid(enemy):
+		enemy.set_meta("raid_member", int(row[3]))
+		enemy.set_meta("raid_group", int(row[1]))
 
 
 ## Phase G1b: the squad that starts at queued enemy k comes out of its road's woods all at once, set out in its
@@ -1548,13 +1584,24 @@ func spawn_totem(ln: int):
 	return e
 
 
-func spawn(kind: String, at: Vector3, p: int) -> Node3D:
+func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 	if main.area != null and main.area.owns(at):
 		return main.area.spawn(kind, at, {"summon": true})   # Phase E: a summon below ground (the room's strength, the cap)
+	if mode == "raid" and active and raid_member < 0:
+		# Boss summons share the same total and live limits; they cannot create an endless extra wave.
+		if raid_total() >= int(raid["assault"]["max_enemies"]) or _wave_foe_count() >= _max_alive():
+			return null
+		var run: Dictionary = Save.raids["run"]
+		var summons: Array = run.get("summons", [])
+		raid_member = int(raid["enemy_count"]) + summons.size()
+		summons.append({"kind": kind, "lane": p})
+		run["summons"] = summons
 	var e := Node3D.new()
 	e.set_script(EnemyScript)
 	e.main = main
 	e.position = at
+	if mode == "raid" and raid_member >= 0:
+		e.set_meta("raid_member", raid_member)
 	main.add_child(e)
 	var st := strength()
 	var leader: bool = mode == "raid" and String(raid.get("leader", "")) != "" and kind == String(raid.get("leader", ""))
@@ -1572,8 +1619,21 @@ func spawn(kind: String, at: Vector3, p: int) -> Node3D:
 
 func on_enemy_died(e) -> void:
 	_quiet_t = 0.0
+	_record_raid_member(e)
 	if mode == "raid" and active and is_instance_valid(e) and e.has_meta("leader"):
 		_rout(e)
+
+
+func _record_raid_member(enemy) -> void:
+	if mode != "raid" or not active or not is_instance_valid(enemy) or not enemy.has_meta("raid_member"):
+		return
+	var run: Dictionary = Save.raids["run"]
+	var defeated: Array = run.get("defeated", [])
+	var member := int(enemy.get_meta("raid_member"))
+	if not defeated.has(member):
+		defeated.append(member)
+	run["assault_format"] = 1
+	run["defeated"] = defeated
 
 
 ## Something is happening in the wave (an enemy hit a building, a defence, the campfire or the cat): no fleeing yet.
@@ -1609,6 +1669,7 @@ func _stragglers_flee() -> void:
 		if bool(Data.enemy(String(e.id)).get("boss", false)):
 			return                                  # never a boss: it has to be beaten
 	for e in left:
+		_record_raid_member(e)
 		e.dead = true
 		e.remove_from_group("foes")
 		e.remove_from_group("enemies")
@@ -1617,7 +1678,8 @@ func _stragglers_flee() -> void:
 	main.hud.toast("The last %d fled into the woods" % left.size())
 
 
-func on_escaped(_e) -> void:
+func on_escaped(e) -> void:
+	_record_raid_member(e)
 	main.hud.toast("A Bandit got away with leaves!")
 
 
@@ -1626,8 +1688,14 @@ func left_in_wave() -> int:
 	return _queue.size() + _wave_foe_count()
 
 
+func raid_total() -> int:
+	return int(raid["enemy_count"]) + (Save.raids.get("run", {}).get("summons", []) as Array).size()
+
+
 # ---------------------------------------------------------------- between waves
 func _wave_cleared() -> void:
+	if not active or not in_wave:
+		return                                      # a cleared wave pays and advances its checkpoint only once
 	in_wave = false
 	if mode == "raid":
 		_raid_wave_cleared()                    # a raid never reaches _win or _chapter_done
@@ -1637,7 +1705,7 @@ func _wave_cleared() -> void:
 	_say = []
 	_say_t = -1.0
 	main.on_wave_held()                         # the garden grows a step for every wave held
-	var bonus := int(round((float(_cfg()["wave_bonus"]) + float(_cfg()["wave_bonus_step"]) * wave) * _pay_scale()))
+	var bonus := wave_leaves()
 	var extra := _active_pay(bonus)             # [quick, intact]
 	var more := int(extra[0]) + int(extra[1])
 	var note := _pay_note(extra)
@@ -1662,17 +1730,22 @@ func _wave_cleared() -> void:
 		if note != "":
 			main.hud.toast("Wave bonus: " + note)
 	else:
-		_breather = float(_cfg()["breather"])
+		_breather = 0.0
+		_save_run(chapter(), chapter_gain(), wave)
 		var tim_txt := (" · +%d timber" % tim) if tim > 0 else ""
-		main.hud.toast("Wave %d held!  +%d leaves%s%s" % [wave, bonus, tim_txt, (" · " + note) if note != "" else ""])
+		main.hud.toast("Wave %d held!  +%d golden leaves%s%s" % [wave, bonus, tim_txt, (" · " + note) if note != "" else ""])
 		main.on_wave_cleared()
 
 
-## Phase G1: the timber a mission wave held pays: `timber_per_wave` x the pay scale, rounded, at least 1 (0 when the
-## data has none).
+## Every held wave's guaranteed leaves, scaled for later campaign raids.
+func wave_leaves() -> int:
+	return roundi((float(_cfg()["wave_bonus"]) + float(_cfg()["wave_bonus_step"]) * wave) * _pay_scale())
+
+
+## Every held wave's timber, scaled for later campaign raids (Gloom Raids use the base amount).
 func wave_timber() -> int:
 	var per := float(_cfg().get("timber_per_wave", 0.0))
-	if per <= 0.0 or mode == "raid":
+	if per <= 0.0:
 		return 0
 	return maxi(1, int(round(per * _pay_scale())))
 
@@ -1748,28 +1821,21 @@ func _chapter_done(bonus: int, wave_tim := 0) -> void:
 	_save_run(c + 1)
 	Fx.flower_ring(main, Vector3.ZERO, 1.6)
 	Sfx.play("win", -8.0)
-	main.hud.banner("Chapter %d held!" % (c + 1), Color(1.0, 0.9, 0.5),
-		"+%d leaves  ·  +%d timber  ·  saved\nRest, shop, then go on from the signpost" % [leaves, timber])
+	main.hud.banner("Wave %d of %d held!" % [wave, waves()], Color(1.0, 0.9, 0.5),
+		"Supply chest · +%d golden leaves · +%d timber · saved\nStart wave %d at the signpost when ready" % [leaves, timber, wave + 1])
 	main.on_chapter_done()
 	# the boss comes in the last chapter: a nudge to cook for it
 	if c + 2 == chapters() and not (info().get("boss", []) as Array).is_empty() and Save.meal_ready == "" and Data.garden_level() > 0:
 		main.hud.tip_after("The boss comes in the last chapter: cook a dish at the pot first!", main.stations.rings.get("pot"))
 
 
-## The signpost's "Go": skip the rest of the breather (a mission pays early_per_s leaves per second skipped), or end
-## the chapter break.
+## Every next wave starts only from the player's action. Waiting and repeated taps never pay extra leaves.
 func next_phase_now() -> void:
 	if not active or in_wave:
 		return
-	if on_break:
-		_start_wave(wave + 1)
-	elif _breather > 0.0:
-		if mode != "raid" and _breather > 0.05:
-			var pay := int(round(float(_sub("bonus").get("early_per_s", 0.0)) * _breather * _pay_scale()))
-			if pay > 0:
-				Save.add_leaves(pay)
-				_early_pay += pay                   # shown when the wave starts (_wave_news)
-		_breather = 0.01
+	if mode == "raid":
+		main.hud.hide_card()
+	_start_wave(wave + 1)
 
 
 func title() -> String:
@@ -1789,21 +1855,14 @@ func status_text() -> String:
 		return ""
 	if mode == "raid":
 		var nm := title()
-		if warning:
-			var t := "%s · %s · %s" % [nm, main.raids.trail_text(), mmss(_breather)]
-			if main.raids.holding():
-				t += " · waiting for you"
-			return t
 		if not in_wave:
-			return "%s · wave %d of %d in %ds" % [nm, wave + 1, waves(), int(ceil(_breather))]
-		return "%s · wave %d of %d · %d left" % [nm, wave, waves(), left_in_wave()]
-	if on_break:
-		return "%s · chapter %d of %d held · go on from the signpost" % [title(), chapter() + 1, chapters()]
+			return "%s ready · Defend Camp at the signpost" % nm
+		return "%s · %d raiders left" % [nm, left_in_wave()]
 	if not in_wave:
 		var pv := preview_text()
 		if pv != "":                                # one slim line: the title gives way to where they come from
-			return "Wave %d of %d in %ds · %s" % [wave + 1, waves(), int(ceil(_breather)), pv]
-		return "%s · wave %d of %d in %ds" % [title(), wave + 1, waves(), int(ceil(_breather))]
+			return "Wave %d of %d ready · %s" % [wave + 1, waves(), pv]
+		return "%s · wave %d of %d ready · start at the signpost" % [title(), wave + 1, waves()]
 	return "%s · wave %d of %d · %d left" % [title(), wave, waves(), left_in_wave()]
 
 
@@ -1923,12 +1982,12 @@ func camp_falls() -> void:
 	if main.defences.keep_damage() > 0:
 		bits.append("defences broken")
 	bits.append("the campfire is ashes")
-	bits.append("chapter %d starts over" % (chapter() + 1))
+	bits.append("retry wave %d of %d" % [wave, waves()])
 	Save.fire_ruined = true
 	main.world.set_fire_out(true)
 	main.stations.set_fire_out(true)
 	Save.stages_lost += 1
-	Save.mission_run = {"mission": mission, "chapter": chapter(), "gain": 0}
+	Save.mission_run = {"mission": mission, "chapter": chapter(), "gain": 0, "wave_done": maxi(0, wave - 1 if in_wave else wave)}
 	main.set_riding(false)
 	Save.save_game()
 	Sfx.play("lose", -3.0)
@@ -1977,7 +2036,7 @@ func _win(extra_leaves := 0, extra_timber := 0) -> void:
 			barricade_gift = int(di.get("free_pieces", 2)) * int(di.get("piece", 30))
 			if barricade_gift > 0:
 				Save.add_leaves(barricade_gift)
-	if not first_win:                              # replays are gone (Phase F); kept harmless for an old run
+	if not first_win:                              # repeat completion rewards; first-clear gifts and unlocks remain one-time
 		main.raids.add_gloom("replay_won")
 		if Data.burrows_open() and main.get("burrows") != null:
 			main.burrows.grant_key("replay", int(Data.burrow_cfg()["keys"]["replay"]))   # a bonus key (Phase E)
@@ -2019,8 +2078,7 @@ func _end(won: bool) -> void:
 
 
 # ---------------------------------------------------------------- Gloom Raids (Phase D)
-## A Gloom Raid: the warning first (the breather before its next wave), then its waves. raids.gd calls this. Waves a
-## restart already held stay held (Save.raids.run), and so does the one rebuild of the fire.
+## Random Raid preparation, followed by one continuous assault. Defeated members and the one rebuild survive saves.
 func start_raid(spec: Dictionary, warn_s: float) -> bool:
 	if active or Save.fire_ruined:
 		return false
@@ -2047,7 +2105,7 @@ func start_raid(spec: Dictionary, warn_s: float) -> bool:
 	_early_pay = 0
 	gate_max = float(Data.fire_hp())
 	gate_hp = gate_max * clampf(float(run.get("fire", 1.0)), 0.3, 1.0)
-	wave = clampi(int(run.get("wave_done", 0)), 0, maxi(0, waves() - 1))   # waves already held stay held
+	wave = 0                                            # one assault; defeated member IDs preserve its progress
 	_breather = maxf(warn_s, 0.05)
 	main.stations.reset_hp()                             # hp{} is stale outside fights; wear applies here
 	main.on_raid_start(spec)
@@ -2060,14 +2118,17 @@ func breather_left() -> float:
 
 
 func _raid_wave_cleared() -> void:
-	main.on_wave_held()                                  # the garden grows a step for every wave held, raids too
-	main.raids.on_wave_held(wave)                        # wear, wrecks and the fire saved now, not only at the end
-	if wave >= waves():
-		_raid_over(true)
+	if not active or mode != "raid":
 		return
-	_breather = float(raid.get("breather", 10.0))
-	main.hud.toast("Wave %d of %d held!" % [wave, waves()])
-	main.on_wave_cleared()
+	if int(Save.raids["run"].get("wave_done", 0)) == 0:
+		var leaves := wave_leaves()
+		var timber := wave_timber()
+		Save.add_leaves(leaves)
+		Save.timber += timber
+		last_pay = {"wave": wave, "bonus": leaves, "quick": 0, "intact": 0, "timber": timber}
+		main.on_wave_held()
+		main.raids.on_wave_held(wave)
+	_raid_over(true)                                     # no intermediate wave or rest state
 
 
 ## A Gloom Raid ends: held, or the Gloom got through. Either way the damage stays; nothing else is lost.
@@ -2077,6 +2138,11 @@ func _raid_over(won: bool) -> void:
 	var perfect := won and raid_losses == 0 and not fire_went_out
 	var held := wave if won else maxi(0, wave - 1 if in_wave else wave)
 	if not won:
+		var run: Dictionary = Save.raids["run"]
+		var legacy := int(main.raids.cfg()["assault"]["legacy_waves"])
+		var credit := clampi(int(run.get("legacy_held", 0)), 0, legacy)
+		var fraction := float((run.get("defeated", []) as Array).size()) / maxf(float(raid_total()), 1.0)
+		held = credit + floori(fraction * (legacy - credit)) # preserve partial-defence consolation without round breaks
 		main.set_riding(false)
 	_clear_foes()
 	main.raids.finish(won, perfect, held)
@@ -2089,6 +2155,7 @@ func _raid_over(won: bool) -> void:
 ## The leader fell: the rest of the raid flees and drops its leaves.
 func _rout(leader) -> void:
 	_queue.clear()
+	_qinfo.clear()
 	var at: Vector3 = leader.global_position
 	var fled := 0
 	var pay := 0
@@ -2097,6 +2164,7 @@ func _rout(leader) -> void:
 		if f == leader or f.dead:
 			continue
 		pay += int(f.info.get("leaves", 0)) + int(f.carried)
+		_record_raid_member(f)
 		f.dead = true
 		f.remove_from_group("foes")
 		f.remove_from_group("enemies")

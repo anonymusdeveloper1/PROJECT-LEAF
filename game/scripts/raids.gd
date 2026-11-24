@@ -4,8 +4,8 @@ extends Node
 ##            raid pending, the fire burns, the cat is up, a touch within idle_after). Never fed from the clock: each
 ##            frame adds at most max_delta seconds, so a resume or a stall never adds time.
 ##   plan     made at stir_at: kind, trails, level, leader, seed. What was announced is what comes.
-##   pending  full: the raid is announced and fight.gd runs it (start_raid): the warning, then its waves. It stays
-##            pending across restarts and comes back at its warning. Nothing is ever worked out while closed.
+##   pending  full: preparation, then one continuous assault from every trail in small mixed groups (up to 50).
+##            It stays pending across restarts; defeated member IDs are retained. Nothing happens while closed.
 ##   end      held: shards, leaves, timber, keys. Lost: a few shards. The damage stays either way, nothing is taken.
 ## Everything the player sees of it is on the signpost (the Watch card), the HUD's top right, banners and toasts.
 
@@ -102,13 +102,13 @@ func idle() -> bool:
 	return not test_awake and idle_t >= float(cfg()["meter"]["idle_after"])
 
 
-## The countdown waits while nobody is playing (the warning and the breathers between raid waves).
+## The preparation countdown waits while nobody is playing. It never starts combat on its own.
 func holding() -> bool:
 	return not test_awake and idle_t >= float(cfg()["warning"]["idle_hold"])
 
 
-## Action points (a harvest, a dish, a fish, a Burrows run; "replay_chapter" and "replay_won" are kept but no longer
-## come, Phase F has no replays): never past bump_cap, never while a raid is pending, so the horn always sounds while
+## Action points (a harvest, a dish, a fish, a Burrows run or raid mission replay): never past bump_cap, never while
+## a raid is pending, so the horn always sounds while
 ## the player is there playing.
 func add_gloom(action: String) -> void:
 	if not open or bool(Save.raids["pending"]):
@@ -202,7 +202,7 @@ func _plan() -> Dictionary:
 	if t.has("leaders"):
 		var ls: Array = t["leaders"]
 		leader = String(ls[int(r["elite_turn"]) % ls.size()])
-	return {"type": kind, "lanes": _pick_lanes(t, level), "level": level, "leader": leader, "first": first,
+	return {"type": kind, "lanes": range(Data.lane_count()), "level": level, "leader": leader, "first": first,
 		"seed": randi() % 1000000000, "called": false}
 
 
@@ -286,26 +286,34 @@ func spec_for(plan: Dictionary) -> Dictionary:
 	var leader := String(plan.get("leader", ""))
 	if not enemies.has(leader):
 		leader = ""                                 # no leader model yet: no rout, the last wave just ends the raid
-	var c: Array = cfg()["count"]
-	var per := lv / int(cfg()["count_per_level"])
-	var count: Array = [int(c[0]) + per, int(c[1]) + per]
-	var waves := int(cfg()["waves"])
-	var breather := float(cfg()["breather"])
-	if small:
-		count = [2, 3]
-		waves = 2
-		breather = 1.0
+	var assault: Dictionary = cfg()["assault"]
+	var count_rng := RandomNumberGenerator.new()
+	count_rng.seed = int(plan["seed"])
+	var bounds: Array = assault["test_count"] if small else assault["count"]
+	var total := clampi(int(plan.get("assault_total", count_rng.randi_range(int(bounds[0]), int(bounds[1])) + lv / int(cfg()["count_per_level"]))), 1, int(assault["max_enemies"]))
+	var run: Dictionary = Save.raids.get("run", {})
+	if not run.is_empty() and int(run.get("assault_format", 0)) != 1:
+		# Credit the completed portion of an old multi-wave raid once, then use the new save format.
+		var old_waves := int(assault["legacy_waves"])
+		var old_done := clampi(int(run.get("wave_done", 0)), 0, old_waves)
+		total = maxi(1, ceili(float(total) * float(old_waves - old_done) / float(old_waves)))
+		run["wave_done"] = 0
+		run["assault_format"] = 1
+		run["defeated"] = []
+		run["legacy_held"] = old_done
+	plan["assault_total"] = total                 # the announced roster size survives saves and future tuning
+	plan["lanes"] = range(Data.lane_count())
 	var st: Dictionary = cfg()["strength"]
 	var mq: Array = cfg()["max_alive_by_quality"]
 	var lanes: Array = []
 	for ln in plan["lanes"]:
 		lanes.append(int(ln))
 	return {"id": "raid_" + String(plan["type"]), "name": String(t["name"]), "type": String(plan["type"]), "level": lv,
-		"seed": int(plan["seed"]), "waves": waves, "count": count, "lanes": lanes,
+		"seed": int(plan["seed"]), "waves": int(cfg()["waves"]), "count": [total, total], "enemy_count": total, "lanes": lanes,
 		"chapters": [{"name": String(t["name"]), "pool": pool, "every": t["every"]}],
 		"elite": [], "boss": [[leader, 1]] if leader != "" else [], "leader": leader, "leader_at": int(cfg()["leader_at"]),
 		"leader_mult": float(st["herald_mult"]) if leader == "herald" else float(st["boss_mult"]),
-		"strength": strength_for(lv), "wave_ramp": float(st["wave_ramp"]), "breather": breather,
+		"strength": strength_for(lv), "wave_ramp": 0.0, "breather": 0.0, "assault": assault,
 		"max_alive": int(mq[clampi(Quality.level, 0, mq.size() - 1)]), "hidden": hidden_kind(plan), "tell": String(t.get("tell", ""))}
 
 
@@ -332,6 +340,8 @@ func known_lanes() -> Array:
 
 
 func trail_names(lanes: Array) -> String:
+	if lanes.size() == Data.lane_count():
+		return "all four trails"
 	var names: Array = []
 	for ln in lanes:
 		names.append(String(Data.patch(int(ln))["name"]))
@@ -428,7 +438,7 @@ func try_warning() -> void:
 		return
 	if (r["run"] as Dictionary).is_empty():
 		r["run"] = {"wave_done": 0, "losses": 0, "fire": 1.0, "fire_went_out": false, "rebuilt": false, "last_stand": false,
-			"ready": false, "revealed": false, "started": false}
+			"ready": false, "revealed": false, "started": false, "assault_format": 1, "defeated": []}
 	_warn_total = warn
 	present_warning()
 	raid_started.emit(main.fight.raid)
@@ -461,15 +471,15 @@ func present_warning() -> void:
 	if _restored:
 		_restored = false
 		main.hud.banner_later(1.0, "A Gloom Raid is waiting!", Color(0.8, 0.55, 1.0),
-			"It comes in %d s · nothing happened while you were away" % int(ceil(left)))
+			"Resume the assault at the signpost · nothing happened while you were away")
 	else:
-		main.hud.banner("A Gloom Raid is coming!", Color(0.8, 0.55, 1.0), "%s · level %d · %s · %d s to get ready" % [
-			type_name(plan), int(plan["level"]), where, int(ceil(left))])
+		main.hud.banner("A Gloom Raid is waiting!", Color(0.8, 0.55, 1.0), "%s · level %d · %s · start when ready" % [
+			type_name(plan), int(plan["level"]), where])
 	if not hidden_now():
 		_show_trails(float(w["point_s"]))
 	if bool(plan.get("first", false)) and not Save.flag("told_raid_warn"):
 		Save.set_flag("told_raid_warn")
-		main.hud.tip_after("Repair and mend, then tap Meet them now at the signpost. Or wait for the horn.", main.stations.rings.get("sign"))
+		main.hud.tip_after("Repair and mend, then tap Defend Camp at the signpost. One continuous attack comes from every trail.", main.stations.rings.get("sign"))
 	main.shake(0.15)
 
 
@@ -498,7 +508,7 @@ func warning_tick(left: float) -> void:
 		_reveal()
 	if not _told_ten and left <= float(w["ten_left"]) and left > 1.0:     # (not when the player met them early)
 		_told_ten = true
-		main.hud.toast("10 seconds!")
+		main.hud.toast("Scouts spotted · start the wave when ready")
 		if not hidden_now():
 			_point(3.0)
 
@@ -517,7 +527,7 @@ func _reveal() -> void:
 
 
 # ---------------------------------------------------------------- the waves (fight.gd and main.gd call these)
-func on_wave_begins(w: int, last: bool) -> void:
+func on_wave_begins(_w: int, _last: bool) -> void:
 	var r: Dictionary = Save.raids
 	var run: Dictionary = r["run"]
 	if not bool(run.get("started", false)):
@@ -525,13 +535,7 @@ func on_wave_begins(w: int, last: bool) -> void:
 		run["ready"] = (camp_check()["items"] as Array).is_empty()   # the camp was whole when the raid began
 	if hidden_now():
 		_reveal()
-	var spec: Dictionary = main.fight.raid
-	if last:
-		main.hud.banner("Final push!", Color(1.0, 0.6, 0.45), "%s leads it" % leader_name(String(spec.get("leader", ""))) if String(spec.get("leader", "")) != "" else "The last wave of the raid")
-	elif w == 1:
-		main.hud.banner("They're here!", Color(1.0, 0.7, 0.45), String(spec.get("tell", "")))
-	else:
-		main.hud.toast("Raid wave %d of %d" % [w, main.fight.waves()])
+	main.hud.banner("Defend the camp!", Color(1.0, 0.7, 0.45), "%d raiders · all four trails · one continuous attack" % main.fight.left_in_wave())
 	Save.save_game(true)
 
 
@@ -665,7 +669,7 @@ func finish(won: bool, perfect: bool, held: int) -> void:
 		var nw: int = main.defences.wrecked_count()
 		var sub2 := "%d building%s in ruins · %d defence%s wrecked · nothing else was lost" % [nr, "" if nr == 1 else "s", nw, "" if nw == 1 else "s"]
 		if shards > 0:
-			sub2 += "\n+%d shards for the waves you held" % shards
+			sub2 += "\n+%d shards for the raiders you held back" % shards
 		main.hud.banner("The Gloom broke through", Color(0.8, 0.6, 1.0), sub2, true)
 		main.hud.tip_after_delay(3.5, "Repair and mend from the signpost. The next raid will be a little gentler.", main.stations.rings.get("sign"))
 	var at: Vector3 = _rout_at if _rout_at != null else Vector3(0, 0.6, 0)
@@ -721,6 +725,7 @@ func restore_on_load() -> void:
 		if a.begins_with("--raid-meter="):
 			r["meter"] = clampf(float(a.substr(13)), 0.0, float(cfg()["meter"]["full"]))
 	main.world.swap_sign()
+	main.stations.sign_tab = "raids"
 	if bool(r["pending"]):
 		var w: Dictionary = cfg()["warning"]
 		r["warn_left"] = clampf(float(r["warn_left"]), float(w["min"]), float(w["max"]))
@@ -747,6 +752,7 @@ func on_all_missions_won() -> void:
 	r["meter"] = maxf(float(r["meter"]), float(cfg()["meter"]["first_fill"]))
 	Save.save_v = 2
 	main.world.swap_sign()
+	main.stations.sign_tab = "raids"
 	_update_watch_model(true)
 	Save.save_game(true)
 	_intro()
@@ -756,7 +762,7 @@ func _intro() -> void:
 	if Save.flag("told_raids"):
 		return
 	Save.set_flag("told_raids")
-	main.hud.banner_later(3.5, "Every mission is won!", Color(1.0, 0.9, 0.4), "But the Gloom will be back. The Watch by the signpost shows it gathering.")
+	main.hud.banner_later(3.5, "All Raid Missions finished!", Color(1.0, 0.9, 0.4), "Random Raids are unlocked. The Watch by the signpost shows the Gloom gathering.")
 	main.hud.tip_after_delay(7.5, "When the horn's crystal is full, a raid comes. You'll always get time to prepare.", main.stations.rings.get("sign"))
 
 
@@ -929,8 +935,7 @@ func card_watch(anchor: Vector3) -> Dictionary:
 	elif meter() < float(cfg()["meter"]["call_from"]):
 		rows.append(_row("The Gloom is gathering", "It fills while you play, never while the game is closed · %d%%" % pct))
 	else:
-		var p2: Dictionary = plan if not plan.is_empty() else {"first": first, "type": String(cfg()["first_raid"]) if first else ""}
-		var note := "Call the raid now: %d s to get ready" % int(warn_seconds(p2, true))
+		var note := "Prepare one continuous attack from all four trails"
 		if has_unlock("watch:tracker") and not plan.is_empty():
 			note = "Next: %s from %s" % [type_name(plan), trail_names(plan["lanes"])]
 		rows.append(_row("Sound the horn", note, "Sound", call_now, true))
@@ -946,30 +951,25 @@ func card_watch(anchor: Vector3) -> Dictionary:
 	if g != null and g.has_method("status_text"):
 		rows.append(_row(Data.guardian_name(), String(g.status_text())))
 	var why := "A raid is at the gate: meet it first" if pending else ""
-	rows.append_array(main.stations._run_rows(why))    # a saved mission run only: won missions are not replayed (Phase F)
+	rows.append_array(main.stations._run_rows(why))    # a saved raid mission, including a replay
 	return {"title": "The Watch", "sub": sub, "rows": rows, "anchor": anchor}
 
 
-## The signpost while a raid is on: its warning, its waves and the breathers between them.
+## The signpost before and during the one continuous Random Raid.
 func card_raid(anchor: Vector3) -> Dictionary:
 	var f = main.fight
 	var spec: Dictionary = f.raid
 	var nm: String = f.title()
 	var leader := String(spec.get("leader", ""))
 	if f.in_wave:
-		var how := "topple %s to break it" % _the(leader_name(leader)) if leader != "" else "hold every wave"
-		return {"title": nm, "sub": "Wave %d of %d · %s" % [f.wave, f.waves(), how], "rows": [], "anchor": anchor}
+		var how := "topple %s to break it" % _the(leader_name(leader)) if leader != "" else "defend every trail"
+		return {"title": nm, "sub": "%d raiders left · %s" % [f.left_in_wave(), how], "rows": [], "anchor": anchor}
 	var rows: Array = []
-	if f.warning:
-		var left: String = f.mmss(f.breather_left())
-		var sub := ("Trail unknown · %s to get ready" % left) if hidden_now() else ("From %s · %s to get ready" % [trail_text(), left])
-		rows.append(_row("Meet them now", "Start the raid", "Go", f.next_phase_now, true))
-		rows.append(camp_row(camp_check()))
-		rows.append(_row("What's coming", coming_text()))
-		return {"title": nm + "!", "sub": sub, "rows": rows, "anchor": anchor}
-	rows.append(_row("Next wave now", "Skip the rest of the breather", "Go", f.next_phase_now, true))
+	var remaining := maxi(0, int(f.raid_total()) - (Save.raids["run"].get("defeated", []) as Array).size())
+	rows.append(_row("One continuous assault", "%d raiders · small groups from all four trails · no breaks" % remaining, "Defend Camp", f.next_phase_now, true))
 	rows.append(camp_row(camp_check()))
-	return {"title": nm, "sub": f.status_text(), "rows": rows, "anchor": anchor}
+	rows.append(_row("What's coming", coming_text()))
+	return {"title": nm + "!", "sub": "Repair and prepare · start when ready", "rows": rows, "anchor": anchor}
 
 
 ## "Stump Golems, Toadstool Brutes, Bramble Boars · led by the Gloom Herald · level 8"
@@ -1183,3 +1183,4 @@ func trade_shards() -> void:
 	Save.save_game()
 	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
 	main.on_purchase()
+	main.hud.toast("Sold %d Gloom shards · now %d · leaves %d" % [int(st["shards"]), Save.shards, Save.leaves])

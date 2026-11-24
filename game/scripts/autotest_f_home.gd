@@ -23,7 +23,7 @@ func run() -> bool:
 	await t._wait(0.3)
 	_fresh_save()
 	await _grow_to_2()
-	_no_replays()
+	_replays()
 	_caps()
 	await _home_card()
 	_endgame()
@@ -106,7 +106,8 @@ func _meet(level: int) -> void:
 
 
 func _sign_rows() -> Array:
-	return main.stations._card_sign().get("rows", [])
+	var rows: Array = main.stations._card_sign().get("rows", [])
+	return rows.filter(func(r): return String(r.get("label", "")) in ["Start", "Start wave", "Give up"])
 
 
 func _texts(rows: Array) -> String:
@@ -124,15 +125,15 @@ func _fresh_save() -> void:
 	_x("home 2's goals come from balance.json, each with text, progress and a station", g2.size() == want.size() and g2.size() > 0 and shaped,
 		{"goals": g2.map(func(g): return "%s [%s]" % [g["progress"], g["station"]])})
 	_x("a fresh save: home 2's goals are not met", not Data.home_goals_met(2) and not Data.home_can_grow())
-	_x("a fresh save: mission 1 is unlocked, mission 2 not yet", Data.mission_unlocked(0) and not Data.mission_unlocked(1))
+	_x("a fresh save: raid 1 is unlocked, raid 2 not yet", Data.mission_unlocked(0) and not Data.mission_unlocked(1))
 	var needs: Array = range(Data.mission_count()).map(func(i): return Data.mission_needs_home(i))
-	_x("no mission needs a bigger Hearthtree (balance.json needs_home all 1)", needs.all(func(n): return n == 1), {"needs_home": needs})
+	_x("no raid needs a bigger Hearthtree (balance.json needs_home all 1)", needs.all(func(n): return n == 1), {"needs_home": needs})
 	# 21 Nov 2026: each Hearthtree level asks for one mission earlier (2 -> 1, 3 -> 5, 4 -> 9, 5 -> 12; 6-8 kept)
 	var asks: Array = []
 	for lv in range(2, 7):
 		var ms: Array = Data.home_goals(lv).filter(func(g): return String(g["type"]) == "mission")
 		asks.append(int(ms[0]["need"]) if ms.size() == 1 else -1)
-	_x("Hearthtree 2-6 ask for missions 1, 5, 9, 12 and 15", asks == [1, 5, 9, 12, 15], {"asks": asks})
+	_x("Hearthtree 2-6 ask for raids 1, 5, 9, 12 and 15", asks == [1, 5, 9, 12, 15], {"asks": asks})
 	# 22 Nov 2026: Thorn Volley is hidden from the Bow Shop, and the Frost Bow needs Bow Shop 5, so Hearthtree 6 asks for it; no goal needs a hidden bow
 	var bow5: Array = Data.home_goals(6).filter(func(g): return String(g["type"]) == "bow_owned")
 	var hidden_goals: Array = []
@@ -158,19 +159,19 @@ func _fresh_save() -> void:
 				and int((levels_all[lv - 1] as Dictionary).get("timber", 0)) > int((levels_all[lv - 2] as Dictionary).get("timber", 0))
 	_x("no Hearthtree goal asks for a bow the Bow Shop cannot sell by then; each Hearthtree level costs more leaves and timber than the one before", reach_bad.is_empty() and prices_up,
 		{"bad": reach_bad})
-	var mg := Data.home_goals(2).filter(func(g): return String(g["text"]) == "Win mission 1")
-	_x("a fresh save: the 'Win mission 1' goal is not ticked yet", mg.size() == 1 and not bool(mg[0]["done"]), {"goals": Data.home_goals(2).map(func(g): return g["progress"])})
+	var mg := Data.home_goals(2).filter(func(g): return String(g["text"]) == "Finish Raid Mission 1")
+	_x("a fresh save: the 'Win raid 1' goal is not ticked yet", mg.size() == 1 and not bool(mg[0]["done"]), {"goals": Data.home_goals(2).map(func(g): return g["progress"])})
 	_win_upto(1)
-	mg = Data.home_goals(2).filter(func(g): return String(g["text"]) == "Win mission 1")
-	_x("mission 1 won: the 'Win mission 1' goal is ticked, the list still not met", mg.size() == 1 and bool(mg[0]["done"]) and not Data.home_goals_met(2))
+	mg = Data.home_goals(2).filter(func(g): return String(g["text"]) == "Finish Raid Mission 1")
+	_x("raid 1 won: the 'Win raid 1' goal is ticked, the list still not met", mg.size() == 1 and bool(mg[0]["done"]) and not Data.home_goals_met(2))
 	_win_upto(2)
-	_x("missions 1-2 won: mission 3 is next and open at home 1", Data.next_mission() == 2 and Data.mission_unlocked(2),
+	_x("raids 1-2 won: raid 3 is next and open at home 1", Data.next_mission() == 2 and Data.mission_unlocked(2),
 		{"next": Data.next_mission(), "home": Save.camp_level})
 	var rows := _sign_rows()
-	_x("the signpost offers mission 3 to fight at home 1", rows.size() == 1 and String(rows[0]["text"]).begins_with("3.")
-		and String(rows[0]["label"]) == "Fight" and bool(rows[0]["enabled"]), {"rows": _texts(rows)})
+	_x("the signpost offers raid mission 3 to fight at home 1", rows.size() == 1 and String(rows[0]["text"]).begins_with("Raid Mission 3 ·")
+		and String(rows[0]["label"]) == "Start" and bool(rows[0]["enabled"]), {"rows": _texts(rows)})
 	main.stations.refresh()
-	_x("the signpost shows its '!' (the next mission is open)", main.stations.rings["sign"].pulse)
+	_x("the signpost shows its '!' (the next raid is open)", main.stations.rings["sign"].pulse)
 	Save.leaves = 99999
 	Save.timber = 9999
 	main.stations._grow_camp()
@@ -198,23 +199,24 @@ func _grow_to_2() -> void:
 	await t._wait(0.4)
 	_x("growing the home works: level 2, the price taken", Save.camp_level == 2 and Save.leaves == 37 and Save.timber == 3,
 		{"home": Save.camp_level, "leaves": Save.leaves, "timber": Save.timber})
-	_x("mission 3 still open at home 2", Data.mission_unlocked(2))
+	_x("raid 3 still open at home 2", Data.mission_unlocked(2))
 	var rows := _sign_rows()
-	_x("the signpost offers mission 3 to fight", rows.size() == 1 and String(rows[0]["text"]).begins_with("3.") and String(rows[0]["label"]) == "Fight"
+	_x("the signpost offers raid mission 3 to fight", rows.size() == 1 and String(rows[0]["text"]).begins_with("Raid Mission 3 ·") and String(rows[0]["label"]) == "Start"
 		and bool(rows[0]["enabled"]), {"rows": _texts(rows)})
 	_x("no hidden strength on the signpost any more", not String(rows[0]["note"]).contains("strength") if rows.size() > 0 else false)
 
 
 # ---------------------------------------------------------------- (c) no replays
-func _no_replays() -> void:
-	_x("a won mission is not unlocked (no replays)", not Data.mission_unlocked(0) and not Data.mission_unlocked(1))
-	_x("a later mission is not unlocked either", not Data.mission_unlocked(3) and not Data.mission_unlocked(Data.mission_count() - 1))
-	var txt := _texts(_sign_rows())
-	_x("the signpost shows no won mission", not txt.contains("1. ") and not txt.contains("2. "), {"rows": txt})
+func _replays() -> void:
+	_x("completed raid missions remain unlocked for replay", Data.mission_unlocked(0) and Data.mission_unlocked(1))
+	_x("a later raid is not unlocked either", not Data.mission_unlocked(3) and not Data.mission_unlocked(Data.mission_count() - 1))
+	var catalog: Array = main.stations._card_sign()["rows"]
+	var finished: Array = catalog.filter(func(r): return bool(r.get("completed", false)))
+	_x("the signpost lists completed raid missions with Replay", finished.size() == 2 and finished.all(func(r): return String(r["label"]) == "Replay" and bool(r["enabled"])))
 	Save.mission_run = {"mission": 1, "chapter": 1}
-	_x("a saved run of a mission stays playable (an old save's run)", Data.mission_unlocked(1))
+	_x("a saved run of a raid stays playable (an old save's run)", Data.mission_unlocked(1))
 	var rr := _sign_rows()
-	_x("the signpost offers the saved run: Go on / Give up", _texts(rr).contains("2. ") and rr.any(func(r): return String(r["label"]) == "Go on")
+	_x("the signpost offers the saved run: Start wave / Give up", _texts(rr).contains("Raid Mission 2 ·") and rr.any(func(r): return String(r["label"]) == "Start wave")
 		and rr.any(func(r): return String(r["label"]) == "Give up"), {"rows": _texts(rr)})
 	Save.mission_run = {}
 

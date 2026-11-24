@@ -23,7 +23,7 @@ const LINES := {
 	"ram": "Charges ahead every 7 s: 35 damage",
 	"pounce": "Leaps on a group every 9 s: 40 damage, 1 s stun",
 	"bellow": "4+ enemies near: 1.5 s stun, +20% damage taken",
-	"fire_spitter": "When worn: fire every 3 s, 8 a second for 2 s",
+	"fire_spitter": "Cat's firing pace: 8 splash damage in 1.3 m, +8 burn/s for 2 s",
 	"saddle": "has +15% health",
 	"saddlebags": "When worn: kills drop +5% leaves",
 }
@@ -55,6 +55,9 @@ func run() -> bool:
 	await _bellow()
 	await _gap()
 	await _attach()
+	await _fireballs()
+	await _ground_fire()
+	await _fire_tracking()
 	_clear()
 	_fight(false)
 	main.player.set_process(true)
@@ -122,19 +125,20 @@ func _fight(on: bool) -> void:
 	f.active = on
 	f.in_wave = on
 	f.on_break = on
+	f.set_physics_process(not on)                     # these tests fake combat; do not run or pay an actual wave
 
 
 # ---------------------------------------------------------------- (a) the building
 func _building() -> void:
 	var st = _st()
 	var tl := _item(st._card_shop(), "Saddlery")
-	_x("before mission 8: the Hearthtree shows a Locked Saddlery tile ('Win 8 missions first')", String(tl.get("badge", "")) == "Locked"
-		and String(tl.get("text", "")).contains("Win 8 missions first") and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
+	_x("before raid 8: the Hearthtree shows a Locked Saddlery tile ('Win 8 raids first')", String(tl.get("badge", "")) == "Locked"
+		and String(tl.get("text", "")).contains("Finish 8 Raid Missions first") and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
 	var build: Dictionary = Data.b["stations"]["saddlery"]["build"]
 	Save.leaves = 100000
 	Save.timber = 1000
 	st._build_station("saddlery")
-	_x("before mission 8 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
+	_x("before raid 8 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
 	_start_fresh(8)
 	# 21 Nov 2026: it needs the Hearthtree at level 2 too (stations.saddlery.needs_home)
 	var nh := int(Data.b["stations"]["saddlery"].get("needs_home", 1))
@@ -143,7 +147,7 @@ func _building() -> void:
 	Save.timber = 1000
 	tl = _item(st._card_shop(), "Saddlery")
 	var need_txt := "Needs %s at level %d" % [Data.camp_name(), nh]
-	_x("8 missions won at Hearthtree 1: the tile is Locked ('%s')" % need_txt, nh == 2 and String(tl.get("badge", "")) == "Locked"
+	_x("8 raids won at Hearthtree 1: the tile is Locked ('%s')" % need_txt, nh == 2 and String(tl.get("badge", "")) == "Locked"
 		and String(tl.get("text", "")) == need_txt and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
 	st._build_station("saddlery")
 	_x("at Hearthtree 1 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
@@ -151,7 +155,7 @@ func _building() -> void:
 	Save.leaves = int(build["leaves"]) + 123
 	Save.timber = int(build["timber"]) + 7
 	tl = _item(st._card_shop(), "Saddlery")
-	_x("after 8 missions the tile is a Build button", String(tl.get("label", "")) == "Build" and String(tl.get("badge", "")) == "New" and bool(tl.get("enabled", false)),
+	_x("after 8 raids the tile is a Build button", String(tl.get("label", "")) == "Build" and String(tl.get("badge", "")) == "New" and bool(tl.get("enabled", false)),
 		{"badge": tl.get("badge", ""), "label": tl.get("label", "")})
 	st._build_station("saddlery")
 	_x("Build pays its price and the Saddlery is level 1", int(Save.stations["saddlery"]) == 1 and Save.leaves == 123 and Save.timber == 7,
@@ -212,8 +216,8 @@ func _buy() -> void:
 	Save.stations["saddlery"] = 5
 	Save.saddlery["skills"]["stomp"] = 3
 	tl = _tile("skills", "stomp")
-	_x("level 4 is blocked 'burrows' before the missions end, with its note", Data.saddle_block("skills", "stomp") == "burrows" and not bool(tl.get("enabled", true))
-		and String(tl.get("text", "")) == "Level 4 needs Burrow materials, after the missions", {"text": tl.get("text", ""), "block": Data.saddle_block("skills", "stomp")})
+	_x("level 4 is blocked 'burrows' before the raids end, with its note", Data.saddle_block("skills", "stomp") == "burrows" and not bool(tl.get("enabled", true))
+		and String(tl.get("text", "")) == "Level 4 needs Burrow materials, after the raids", {"text": tl.get("text", ""), "block": Data.saddle_block("skills", "stomp")})
 	st._saddle_buy("skills", "stomp")
 	_x("and it cannot be bought", Data.skill_level("stomp") == 3)
 	Save.set_flag("hollow_open")
@@ -237,6 +241,10 @@ func _foe(at: Vector3) -> Node3D:
 
 
 func _clear() -> void:
+	for ball in get_tree().get_nodes_in_group("mount_fireballs"):
+		ball.queue_free()
+	for patch in get_tree().get_nodes_in_group("mount_ground_fire"):
+		patch.retire()
 	for e in get_tree().get_nodes_in_group("foes"):
 		e.dead = true
 		e.remove_from_group("foes")
@@ -413,7 +421,9 @@ func _attach() -> void:
 	var close = _foe(at + Vector3(0, 0, 1.6))
 	var behind = _foe(at + Vector3(0, 0, -1.6))
 	var went: bool = m.try_move("fire_spitter")
-	_x("Fire-spitter sets a close foe ahead burning (its damage a second), not one behind", went and close.burn_t > 0.0 and absf(float(close.burn_per_s) - Data.fire_burn_per_s(1)) < 0.01 and behind.burn_t <= 0.0,
+	_x("Fire-spitter launches a real ball before applying damage", went and close.hp == 1e6 and close.burn_t <= 0.0 and get_tree().get_nodes_in_group("mount_fireballs").size() == 1)
+	await t._wait(0.4)
+	_x("Fire-spitter's ball impacts and burns the foe ahead, not one behind", went and close.burn_t > 0.0 and absf(float(close.burn_per_s) - Data.fire_burn_per_s(1)) < 0.01 and behind.burn_t <= 0.0,
 		{"went": went, "burn_t": close.burn_t, "per_s": close.burn_per_s, "want": Data.fire_burn_per_s(1)})
 	# 22 Nov 2026: only the WORN attachment shows its model on the saddle bone (one at a time, the owner), when its file
 	# exists; the others owned stay off
@@ -479,6 +489,263 @@ func _attach() -> void:
 	Save.saddlery["attach"] = {}
 	m.refresh_gear()
 	_x("without attachments no model is shown", m.gear.is_empty())
+
+
+## Real projectiles, splash, upgrade damage and automatic cadence. Other combat is held still to isolate these hits.
+func _fireballs() -> void:
+	var m = main.mount
+	var old_draw: int = Save.stats.get("draw", 0)
+	var old_bow: String = Save.bow
+	Save.bow = "twig"
+	Save.saddlery["skills"] = {}
+	Save.saddlery["attach"] = {"fire_spitter": 1}
+	Save.saddlery["worn"] = "fire_spitter"
+	m.set_process(false)
+	for look in ["thistle", "bramblewool"]:
+		Save.mount_look = look
+		m.set_look()
+		for level in [1, 2, 5]:
+			Save.saddlery["attach"]["fire_spitter"] = level
+			var at: Vector3 = await _reset()
+			var primary = _foe(at + Vector3(0, 0, 2.0))
+			var splash = _foe(at + Vector3(1.0, 0, 2.1))
+			var outside = _foe(at + Vector3(-2.2, 0, 2.0))
+			var went: bool = m.try_move("fire_spitter")
+			if level == 1:
+				var balls := get_tree().get_nodes_in_group("mount_fireballs")
+				var from: Array = m._fire_from()
+				_x("%s flame ball starts at the attachment nozzle" % look, went and balls.size() == 1 and balls[0].global_position.distance_to(from[0]) < 0.001)
+				main.closeup = Vector3(-3.8, 6.2, 5.5)
+				await t._wait(0.02)
+				await t._shot("flame_ball_" + look)
+				await t._wait(0.2)
+				await t._shot("flame_splash_" + look)
+				await t._wait(0.25)
+			else:
+				await t._wait(0.45)
+			var want := Data.fire_damage(level)
+			_x("%s level %d impact damages primary and nearby foe once, leaving an outside foe alone" % [look, level], went and absf(1e6 - float(primary.hp) - want) < 0.01 and absf(1e6 - float(splash.hp) - want) < 0.01 and outside.hp == 1e6,
+				{"primary": 1e6 - float(primary.hp), "splash": 1e6 - float(splash.hp), "expected": want})
+			_x("%s level %d splash retains the upgraded burn" % [look, level], absf(float(splash.burn_per_s) - Data.fire_burn_per_s(level)) < 0.001 and splash.burn_t > 0.0)
+			if level == 1:
+				main.closeup = Vector3.ZERO
+	# Upgrades must actually add damage at every level, including fractional damage at levels 2 and 5.
+	var rising := true
+	for level in range(2, 6):
+		rising = rising and Data.fire_damage(level) > Data.fire_damage(level - 1) and Data.fire_burn_per_s(level) > Data.fire_burn_per_s(level - 1)
+	_x("each Fire-spitter upgrade increases impact and burn damage", rising)
+	Save.saddlery["attach"]["fire_spitter"] = 1
+	var at: Vector3 = await _reset()
+	_foe(main.player.global_position + Vector3(0, 0, Data.cat_range() + 0.5))
+	_x("Fire-spitter does not shoot beyond the cat's arrow range", not m.try_move("fire_spitter"))
+	at = await _reset()
+	var foe = _foe(at + Vector3(0, 0, 2.0))
+	m.try_move("fire_spitter")
+	var ball = get_tree().get_first_node_in_group("mount_fireballs")
+	var start: Vector3 = ball.global_position
+	main.frozen = true
+	await t._wait(0.2)
+	_x("a frozen game stops flame-ball movement and damage", is_instance_valid(ball) and ball.global_position.is_equal_approx(start) and foe.hp == 1e6)
+	main.frozen = false
+	await t._wait(0.45)
+	_x("a paused flame ball resumes and impacts once", absf(1e6 - float(foe.hp) - Data.fire_damage(1)) < 0.01)
+	at = await _reset()
+	foe = _foe(at + Vector3(0, 0, 2.0))
+	m.try_move("fire_spitter")
+	foe.global_position.x += 8.0
+	await t._wait(float(Data.saddle_info("attach", "fire_spitter")["projectile_life_s"]) + 0.2)
+	_x("a missed flame ball expires without damaging a distant foe", get_tree().get_nodes_in_group("mount_fireballs").is_empty() and foe.hp == 1e6)
+	# The automatic attachment clock must follow draw upgrades and bypass the slower shared skill gap.
+	var counts: Array[int] = []
+	for draw_level in [0, 9]:
+		Save.stats["draw"] = draw_level
+		at = await _reset()
+		_foe(at + Vector3(0, 0, 2.0))
+		m.gap = 10.0
+		m.set_process(true)
+		await t._wait(2.1)
+		m.set_process(false)
+		counts.append(int(m.moves_made.get("fire_spitter", 0)))
+		var expected := floori(2.1 / main.player.attack_interval())
+		_x("draw level %d: automatic Fire-spitter keeps the cat's pace during the skill gap" % draw_level, counts.back() >= expected and m.gap > 0.0, {"shots": counts.back(), "expected_min": expected, "interval": main.player.attack_interval()})
+	_x("a faster cat causes more automatic flame balls", counts[1] > counts[0], {"slow": counts[0], "fast": counts[1]})
+	Save.saddlery["worn"] = ""
+	var before: int = m.moves_made.get("fire_spitter", 0)
+	m.set_process(true)
+	await t._wait(0.8)
+	_x("taking off the Fire-spitter stops new flame balls", int(m.moves_made.get("fire_spitter", 0)) == before)
+	m.set_process(false)
+	_clear()
+	Save.stats["draw"] = old_draw
+	Save.bow = old_bow
+	Save.mount_look = "thistle"
+	Save.saddlery["attach"] = {}
+	Save.saddlery["worn"] = ""
+	m.set_look()
+	m.set_process(true)
+
+
+## Arrow-range parity, a rotating firing unit, target changes and steering while shooting sideways/behind.
+## Living flames on the projectile and enemies, and a short-lived, bounded visual ground burn.
+func _ground_fire() -> void:
+	var m = main.mount
+	var info := Data.saddle_info("attach", "fire_spitter")
+	var old_quality: int = Quality.level
+	Save.mount_look = "thistle"
+	Save.saddlery["skills"] = {}
+	Save.saddlery["attach"] = {"fire_spitter": 1}
+	Save.saddlery["worn"] = "fire_spitter"
+	m.set_look()
+	m.set_process(false)
+	_fight(true)
+	var at: Vector3 = await _reset()
+	var foe = _foe(at + Vector3(0, 0, 3.0))
+	main.closeup = Vector3(-3.2, 4.2, 4.8)
+	m.try_move("fire_spitter")
+	await t._wait(0.12)
+	var ball = get_tree().get_first_node_in_group("mount_fireballs")
+	_x("the redesigned ball has a hot core, flame shell and animated trail", ball != null and ball.has_node("HotCore") and ball.has_node("FlameShell") and ball.has_node("FlameTrail") and ball.get_node("FlameTrail").mesh is QuadMesh)
+	await t._shot("fireball_flames_in_flight")
+	await t._wait(0.5)
+	var patches := get_tree().get_nodes_in_group("mount_ground_fire")
+	_x("a real fireball impact leaves one ground fire", patches.size() == 1)
+	if patches.is_empty():
+		main.closeup = Vector3.ZERO
+		m.set_process(true)
+		return
+	var patch = patches[0]
+	_x("ground fire sits on the floor at the impact, not up at the enemy's chest", absf(float(patch.global_position.y) - 0.045) < 0.001 and Vector2(patch.global_position.x - foe.global_position.x, patch.global_position.z - foe.global_position.z).length() < 0.05)
+	_x("the ground effect lasts three seconds with a final fade", is_equal_approx(float(patch.life), 3.0) and float(info["ground_fire_fade_s"]) > 0.0 and float(info["ground_fire_fade_s"]) < float(patch.life))
+	_x("burning enemies use animated flame silhouettes too", foe._burn_fx != null and foe._burn_fx.mesh is QuadMesh and foe.burn_t > 0.0)
+	main.closeup_at = foe
+	main.closeup = Vector3(-2.8, 3.5, 4.2)
+	await t._wait(0.15)
+	await t._shot("fire_ground_burning")
+	var before_hp: float = foe.hp
+	var before_age: float = patch.age
+	main.frozen = true
+	await t._wait(0.2)
+	_x("freezing gameplay also stops the ground fire clock and particles", is_equal_approx(float(patch.age), before_age) and float(patch._flames.speed_scale) == 0.0)
+	main.frozen = false
+	await t._wait(0.1)
+	_x("ground fire resumes after gameplay unfreezes", float(patch.age) > before_age and float(patch._flames.speed_scale) == 1.0)
+	var until_fade: float = maxf(0.0, float(patch.life) - float(info["ground_fire_fade_s"]) + 0.25 - float(patch.age))
+	await t._wait(until_fade)
+	var opacity: float = patch._ground_mat.get_shader_parameter("opacity")
+	_x("flames stop spawning and the embers fade before extinguishing", not patch._flames.emitting and opacity > 0.0 and opacity < 1.0, {"age": patch.age, "opacity": opacity})
+	await t._shot("fire_ground_fading")
+	await t._wait(0.8)
+	_x("fire extinguishes and removes its ground mark after three seconds", get_tree().get_nodes_in_group("mount_ground_fire").is_empty())
+	_x("ground visuals do not add extra hits or extend the existing enemy burn", foe.hp == before_hp and absf(float(foe.burn_per_s) - Data.fire_burn_per_s(1)) < 0.01)
+	main.closeup_at = null
+	var fresh = Fx.fire_ground(main, at + Vector3(0, 0, 2.0), float(info["blast_m"]), info)
+	fresh.age = 1.5
+	var reused = Fx.fire_ground(main, at + Vector3(0.2, 0, 2.0), float(info["blast_m"]), info)
+	_x("nearby repeated hits refresh one existing fire patch", reused == fresh and is_zero_approx(float(fresh.age)) and get_tree().get_nodes_in_group("mount_ground_fire").size() == 1)
+	var caps: Array = info["ground_fire_max_by_quality"]
+	for quality in 3:
+		for p in get_tree().get_nodes_in_group("mount_ground_fire"):
+			p.retire()
+		Quality.level = quality
+		for i in int(caps[quality]) + 3:
+			Fx.fire_ground(main, at + Vector3(i * 3.0, 0, 4.0), float(info["blast_m"]), info)
+		_x("quality %d caps simultaneous ground fire" % quality, get_tree().get_nodes_in_group("mount_ground_fire").size() == int(caps[quality]))
+	for p in get_tree().get_nodes_in_group("mount_ground_fire"):
+		p.retire()
+	Quality.level = Quality.LOW
+	fresh = Fx.fire_ground(main, foe.global_position, float(info["blast_m"]), info)
+	main.closeup_at = foe
+	await t._wait(0.3)
+	_x("Low graphics keeps visible flames with fewer particles", fresh._flames.amount == Quality.particles(22) and fresh._flames.emitting)
+	await t._shot("fire_ground_low")
+	var prior_area = main.area
+	var other := Node3D.new()
+	main.area = other
+	fresh._process(0.01)
+	main.area = prior_area
+	other.free()
+	_x("changing areas clears the old ground fire", get_tree().get_nodes_in_group("mount_ground_fire").is_empty())
+	Quality.level = old_quality
+	main.closeup = Vector3.ZERO
+	main.closeup_at = null
+	_clear()
+	Save.saddlery["attach"] = {}
+	Save.saddlery["worn"] = ""
+	m.set_look()
+	m.set_process(true)
+
+
+func _fire_tracking() -> void:
+	var m = main.mount
+	var old_range: int = Save.stats.get("range", 0)
+	var old_bow: String = Save.bow
+	Save.saddlery["attach"] = {"fire_spitter": 1}
+	Save.saddlery["worn"] = "fire_spitter"
+	Save.saddlery["skills"] = {}
+	for look in ["thistle", "bramblewool"]:
+		Save.mount_look = look
+		m.set_process(false)
+		m.set_look()
+		for profile in [[0, "twig"], [6, "frost"]]:
+			Save.stats["range"] = profile[0]
+			Save.bow = profile[1]
+			await _reset()
+			var reach := Data.cat_range()
+			var foe = _foe(main.player.global_position + Vector3(0, 0, reach - 0.1))
+			var went: bool = m.try_move("fire_spitter")
+			await t._wait((reach + 1.0) / float(Data.saddle_info("attach", "fire_spitter")["projectile_speed"]) + 0.2)
+			_x("%s reaches the cat's arrow-range edge with %s/range %d" % [look, profile[1], profile[0]], went and foe.hp < 1e6 and foe.burn_t > 0.0, {"range": reach, "damage": 1e6 - float(foe.hp)})
+			foe.global_position = main.player.global_position + Vector3(0, 0, reach + 0.2)
+			_x("%s drops a target just beyond the current arrow range" % look, not m.try_move("fire_spitter") and m._fire_target == null)
+		Save.stats["range"] = 0
+		Save.bow = "twig"
+		await _reset()
+		var near = _foe(BASE + Vector3(-2.5, 0, 0))
+		var chosen = _foe(BASE + Vector3(0, 0, 4.0))
+		main.player.target = chosen
+		m._update_fire_aim(0.4)
+		_x("%s assists the cat's focus and aims its nozzle at it" % look, m._fire_target == chosen and m._fire_aligned() and m._fire_pivot != null)
+		chosen.dead = true
+		m._update_fire_aim(0.4)
+		_x("%s reacquires a side target after the focused enemy dies" % look, m._fire_target == near and m._fire_aligned())
+		_x("%s turns only the firing unit above a fixed harness" % look, m.gear["fire_spitter"].transform.is_equal_approx(Transform3D.IDENTITY) and absf(m.rotation.y) < 0.01 and not m._fire_pivot.quaternion.is_equal_approx(m._fire_rest))
+		for direction in [-1.0, 1.0]:
+			await _reset()
+			var foe = _foe(BASE + Vector3(0, 0, -3.5))
+			m._track = BASE
+			m._spd = 0.0
+			main.joystick.force = true
+			main.joystick.forced = Vector2(direction * 0.5, 0)
+			main.player.set_process(true)
+			m.set_process(true)
+			var elapsed := 0.0
+			var max_error := 0.0
+			while elapsed < 1.8:
+				await get_tree().process_frame
+				elapsed += get_process_delta_time()
+				if elapsed > 0.7:
+					var from: Array = m._fire_from()
+					var to: Vector3 = foe.global_position + Vector3(0, foe.aim_height, 0) - (from[0] as Vector3)
+					max_error = maxf(max_error, acos(clampf((from[1] as Vector3).dot(to.normalized()), -1.0, 1.0)))
+			main.joystick.forced = Vector2.ZERO
+			main.player.set_process(false)
+			m.set_process(false)
+			var moved: float = (main.player.global_position.x - BASE.x) * direction
+			var heading_error := absf(wrapf(m.rotation.y - direction * PI * 0.5, -PI, PI))
+			_x("%s steers %s while tracking and hitting an enemy behind" % [look, "left" if direction < 0.0 else "right"], moved > 0.5 and heading_error < 0.08 and max_error < deg_to_rad(12.0) and foe.burn_t > 0.0 and int(m.moves_made.get("fire_spitter", 0)) >= 2, {"moved": moved, "heading_error": heading_error, "aim_error": max_error, "burn": foe.burn_t, "shots": m.moves_made.get("fire_spitter", 0)})
+			main.closeup = Vector3(-3.8, 6.2, 5.5).rotated(Vector3.UP, m.rotation.y)
+			await t._shot("fire_tracking_%s_%s" % [look, "left" if direction < 0.0 else "right"])
+			main.closeup = Vector3.ZERO
+		main.joystick.force = false
+	_clear()
+	main.player.target = null
+	Save.stats["range"] = old_range
+	Save.bow = old_bow
+	Save.mount_look = "thistle"
+	Save.saddlery["attach"] = {}
+	Save.saddlery["worn"] = ""
+	m.set_look()
+	m.set_process(true)
 
 
 # ---------------------------------------------------------------- (g) the ride, in pictures
@@ -793,7 +1060,7 @@ func _migrate() -> void:
 	Save.flags.erase("g4_free_stomp")
 	Save.flags.erase("g4_old_attach")
 	Save.load_game()
-	_x("old save with 8 missions won, no 'saddlery' key: Stomp level 1 for free (flag g4_free_stomp)", Data.skill_level("stomp") == 1 and Save.flag("g4_free_stomp"),
+	_x("old save with 8 raids won, no 'saddlery' key: Stomp level 1 for free (flag g4_free_stomp)", Data.skill_level("stomp") == 1 and Save.flag("g4_free_stomp"),
 		{"skills": Save.saddlery["skills"]})
 	_x("its old Burrows saddle is Saddlery saddle level 3, the bags level 5 (flag), the mount slot comes off, the bell stays",
 		Data.attach_level("saddle") == 3 and Data.attach_level("saddlebags") == 5 and Save.flag("g4_old_attach") and String(Save.attach["mount"]) == ""
@@ -809,7 +1076,7 @@ func _migrate() -> void:
 	f.close()
 	Save.flags = {}
 	Save.load_game()
-	_x("an old save with only 5 missions won gets nothing", Data.skill_level("stomp") == 0 and Save.saddlery["attach"].is_empty())
+	_x("an old save with only 5 raids won gets nothing", Data.skill_level("stomp") == 0 and Save.saddlery["attach"].is_empty())
 	Save.path = keep_path
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
 

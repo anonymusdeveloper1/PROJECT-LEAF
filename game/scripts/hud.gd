@@ -19,6 +19,7 @@ extends CanvasLayer
 const LifebarScript := preload("res://scripts/lifebar.gd")
 const ArrowsScript := preload("res://scripts/threat_arrows.gd")
 const UiIcons := preload("res://scripts/ui_icons.gd")           # Phase G2: the shop tiles' pictures
+const InventoryScript := preload("res://scripts/inventory.gd")
 const ROW_H := 48.0                     # the top bar's first line: riches on the left, the fight's bar on the right
 const LINE2_H := 24.0                   # its second line, when there is something on it: the dish, the status line
 const GATE_W := 236.0
@@ -70,6 +71,10 @@ var _card_list: VBoxContainer
 var _card_title: Label
 var _card_sub: Label
 var _card_body: Control
+var _card_tabs: HBoxContainer
+var _card_nav: MarginContainer
+var _card_view_id := ""
+var _card_render_signature := ""
 var _close_btn: Button                 # the round X
 var _quit_back := true                 # what Android's back button did before the dialog took it
 var _tip_ring = null
@@ -77,6 +82,9 @@ var _tip_time := 0.0
 var _shown_leaves := 0
 var _gate_flash := 0.0
 var _build_bar: HBoxContainer
+var inventory
+var bag_button: Button
+var _snack_button: Button
 var _hide_l: Label
 var _place_bar: HBoxContainer
 var status := ""                        # a line under the top bar (rebuilding the campfire...)
@@ -93,6 +101,7 @@ var _zone_end := 0.0                    # the bottom of everything at the top (t
 
 func build(m) -> void:
 	main = m
+	inventory = InventoryScript.new(self)
 	_leaf_tex = _make_leaf()
 	_log_tex = _make_log()
 	_shard_tex = _make_shard()
@@ -220,6 +229,13 @@ func build(m) -> void:
 	_place_bar.add_theme_constant_override("separation", 14)
 	_place_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(_place_bar)
+	bag_button = _big_button("Bag", Color(0.56, 0.35, 0.17), open_inventory)
+	bag_button.custom_minimum_size = Vector2(116, 84)
+	bag_button.add_theme_font_size_override("font_size", 25)
+	bag_button.icon = icon("saddlebags")
+	bag_button.expand_icon = true
+	bag_button.add_theme_constant_override("icon_max_width", 30)
+	add_child(bag_button)
 	var fl := CanvasLayer.new()
 	fl.layer = 20
 	add_child(fl)
@@ -343,8 +359,12 @@ func _place_all() -> void:
 	var bottom := size.y - _safe.y
 	var bar_y := bottom - 16.0 - 84.0
 	var buttons := true
-	_build_bar.position = Vector2(20, bar_y)
-	_build_bar.size = Vector2(size.x - 40, 84)
+	bag_button.position = Vector2(20, bar_y)
+	bag_button.size = Vector2(116, 84)
+	bag_button.visible = not _place_bar.visible
+	bag_button.disabled = main.frozen or main.player.hp <= 0 or (main.fishing != null and main.fishing.busy())
+	_build_bar.position = Vector2(148, bar_y)
+	_build_bar.size = Vector2(size.x - 168, 84)
 	_place_bar.position = Vector2(20, bar_y - 6.0)
 	_place_bar.size = Vector2(size.x - 40, 96)
 	_build_bar.modulate.a = 1.0 if buttons else 0.0
@@ -352,7 +372,7 @@ func _place_all() -> void:
 	_build_bar.mouse_filter = Control.MOUSE_FILTER_PASS if buttons else Control.MOUSE_FILTER_IGNORE
 	for c in _build_bar.get_children() + _place_bar.get_children():
 		(c as Control).visible = buttons
-	var line_bottom := (bar_y if _build_bar.get_child_count() > 0 or _place_bar.visible else bottom - 10.0) - 6.0
+	var line_bottom := bar_y - 6.0
 	_hint.position = Vector2(0, line_bottom - 30.0)
 	_hint.size = Vector2(size.x, 30)
 	var tip_bottom := (line_bottom - 32.0) if _hint.modulate.a > 0.01 else line_bottom
@@ -436,10 +456,17 @@ func _on_save_changed() -> void:
 	if main.mount != null and main.mount.resting > 0.0 and main.can_feed() != _feed_ok:
 		refresh_build()                              # the Feed button lights up (or greys out) with the pantry
 	if _card != null and _card_ring != null:
-		_fill_card(_spec(_card_ring))              # through _spec: a card stays blank while a wave is on
+		if _card_ring == inventory:
+			inventory.refresh()
+		else:
+			_fill_card(_spec(_card_ring))              # through _spec: a card stays blank while a wave is on
 
 
 func _process(delta: float) -> void:
+	inventory.tick(delta)
+	_refresh_snack()
+	if _card_ring == inventory and main.player.hp <= 0:
+		hide_card()
 	# count leaves up, so a pickup feels like something
 	if _shown_leaves != Save.leaves:
 		var diff := Save.leaves - _shown_leaves
@@ -689,7 +716,7 @@ func _draw_raid_bar() -> void:
 	if st == "warning":
 		var c := Color(0.95, 0.75, 0.3).lerp(Color(1, 0.3, 0.25), 1.0 - frac)
 		_gate_bar.draw_rect(Rect2(3, 3, (w - 6) * frac, 24), c)
-		var txt: String = "waiting for you" if rd.holding() else main.fight.mmss(main.fight.breather_left())
+		var txt: String = "Defend Camp at signpost"
 		_gate_bar.draw_string(ThemeDB.fallback_font, Vector2(8, 24), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(0.15, 0.08, 0.05))
 		return
 	var col := Color(0.62, 0.4, 0.95)
@@ -747,7 +774,9 @@ func _draw_overlay() -> void:
 
 # ---------------------------------------------------------------- building
 func refresh_build() -> void:
+	_snack_button = null
 	for c in _build_bar.get_children():
+		(c as Control).visible = false
 		c.queue_free()
 	for c in _place_bar.get_children():
 		c.queue_free()
@@ -793,12 +822,42 @@ func _area_buttons() -> void:
 	elif main.mount != null and not Save.ruined.has("stall"):
 		var on: bool = main.player.riding
 		_build_bar.add_child(_big_button("Walk" if on else "Ride", Color(0.42, 0.6, 0.86) if not on else Color(0.55, 0.5, 0.45), main.toggle_ride))
-	var sn: Dictionary = main.snack_pick() if main.has_method("snack_pick") else {}
-	if not sn.is_empty():
-		var hurt: bool = main.player.hp < Data.cat_max_hp()
-		_build_bar.add_child(_big_button("Snack
-%s +%d" % [Data.item_name(String(sn["item"]), 1), int(sn["heal"])],
-			Color(0.55, 0.75, 0.35) if hurt else Color(0.62, 0.6, 0.55), main.eat_snack))
+	_snack_button = _big_button("", Color(0.55, 0.75, 0.35), _quick_snack)
+	_snack_button.add_theme_font_size_override("font_size", 25)
+	_build_bar.add_child(_snack_button)
+	_refresh_snack()
+
+
+func _refresh_snack() -> void:
+	if _snack_button == null or not is_instance_valid(_snack_button):
+		return
+	var sn: Dictionary = main.snack_pick()
+	if sn.is_empty():
+		var name := "No food" if Save.snack_choice == "auto" else "%s ×0" % Data.item_name(Save.snack_choice, 2).capitalize()
+		_snack_button.text = "%s\nChoose food" % name
+		_snack_button.disabled = main.frozen or main.player.hp <= 0
+		return
+	var item := String(sn["item"])
+	var reason: String = main.snack_reason()
+	_snack_button.text = "%s ×%d\n%s" % [Data.item_name(item, 2).capitalize(), int(Save.pantry.get(item, 0)), "Heal %d" % int(sn["heal"]) if reason == "" else reason]
+	_snack_button.disabled = reason != ""
+
+
+func _quick_snack() -> void:
+	if main.snack_pick().is_empty():
+		open_inventory()
+	else:
+		main.eat_snack()
+
+
+func open_inventory() -> void:
+	if main.frozen or main.player.hp <= 0 or (main.fishing != null and main.fishing.busy()):
+		return
+	if _card_ring == inventory:
+		hide_card()
+		return
+	main.interact.stop_walk()
+	show_card(inventory)
 
 
 func _big_button(text: String, col: Color, action: Callable, enabled := true) -> Button:
@@ -922,6 +981,10 @@ func hide_card() -> void:
 	_card_title = null
 	_card_sub = null
 	_card_body = null
+	_card_tabs = null
+	_card_nav = null
+	_card_view_id = ""
+	_card_render_signature = ""
 
 
 ## A tap on the dim (outside the dialog) closes it; a drag there does nothing.
@@ -1024,6 +1087,8 @@ func _glow_at(row: Control, y: float) -> void:
 
 ## A marker's card. While a wave is on only the signpost and the barricade rows' markers (repair) work: the shops and stations open between waves.
 func _spec(ring) -> Dictionary:
+	if ring == inventory:
+		return inventory.spec()
 	var spec: Dictionary = ring.builder.call()
 	var f = main.fight
 	if f.active and f.in_wave and ring != main.stations.rings.get("sign") and not String(ring.key).begins_with("road_"):
@@ -1107,6 +1172,13 @@ func _card_frame() -> void:
 	_card_sub = sub
 	_close_btn = _make_close()
 	hb.add_child(_close_btn)
+	_card_tabs = HBoxContainer.new()
+	_card_tabs.add_theme_constant_override("separation", 8)
+	_card_nav = MarginContainer.new()
+	v.add_child(_card_nav)
+	_card_nav.add_child(_card_tabs)
+	_card_nav.visible = false
+	_card_tabs.visible = false
 	var body := MarginContainer.new()
 	body.add_theme_constant_override("margin_left", 16)
 	body.add_theme_constant_override("margin_right", 16)
@@ -1128,14 +1200,34 @@ func _card_frame() -> void:
 ## when they are taller than it may be. Phase G2: a row {"kind": "section"} is a shelf heading; a run of rows
 ## {"kind": "item"} is one grid of shop tiles (_item_grid); any other row is a plain row, drawn as before (_plain_row).
 func _fill_card(spec: Dictionary) -> void:
+	var scroll := _card_scroll.scroll_vertical if _card_scroll != null else 0
 	_card_anchor = spec.get("anchor", Vector3.ZERO)
 	var rows: Array = spec.get("rows", [])
+	var view_id := String(spec.get("view_id", ""))
+	var signature := _signpost_signature(spec) if view_id != "" else ""
+	if view_id != "" and view_id == _card_view_id and signature == _card_render_signature and is_instance_valid(_card_list):
+		return                                      # live HUD refreshes keep the list and its animations steady
+	var reveal := view_id != "" and view_id != _card_view_id
+	_card_view_id = view_id
+	_card_render_signature = signature
 	if _card_list == null or not is_instance_valid(_card_list):
 		_card_frame()
+	var spacious := bool(spec.get("spacious", false))
+	_card_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER if spacious else ScrollContainer.SCROLL_MODE_AUTO
+	_card_list.add_theme_constant_override("separation", 16 if spacious else 6)
+	for side in ["left", "right"]:
+		_card_body.add_theme_constant_override("margin_" + side, 18 if spacious else 16)
+		_card_nav.add_theme_constant_override("margin_" + side, 18 if spacious else 0)
+	_card_body.add_theme_constant_override("margin_top", 0 if spacious else 4)
+	_card_body.add_theme_constant_override("margin_bottom", 18 if spacious else 12)
+	_card_nav.add_theme_constant_override("margin_top", 18 if spacious else 0)
+	_card_nav.add_theme_constant_override("margin_bottom", 18 if spacious else 0)
+	_card_tabs.add_theme_constant_override("separation", 14 if spacious else 8)
 	# a refresh (leaves spent, a wave starting) keeps the frame, the X and the scroll; only the words and rows change
 	_card_title.text = String(spec.get("title", ""))
 	_card_sub.text = String(spec.get("sub", ""))
 	_card_sub.visible = _card_sub.text != ""
+	_fill_card_tabs(spec.get("tabs", []))
 	_card_body.visible = not rows.is_empty()
 	for c in _card_list.get_children():
 		(c as Control).visible = false              # gone from the layout now (a pressed button finishes its press first)
@@ -1146,6 +1238,14 @@ func _fill_card(spec: Dictionary) -> void:
 	while i < rows.size():
 		var row: Dictionary = rows[i]
 		var kind := String(row.get("kind", ""))
+		if kind == "inventory":
+			list.add_child(inventory.content())
+			i += 1
+			continue
+		if kind == "pantry":
+			list.add_child(pantry_strip())
+			i += 1
+			continue
 		if kind == "item":
 			var items: Array = []                       # consecutive tiles make one grid
 			while i < rows.size() and String((rows[i] as Dictionary).get("kind", "")) == "item":
@@ -1159,6 +1259,20 @@ func _fill_card(spec: Dictionary) -> void:
 			list.add_child(_section_row(String(row.get("text", "")), prev != ""))
 			prev = "section"
 			continue
+		if kind == "mission":
+			list.add_child(_mission_row(row))
+			prev = "mission"
+			continue
+		if spacious:
+			var panel := _signpost_panel()
+			list.add_child(panel)
+			var inner := VBoxContainer.new()
+			panel.add_child(inner)
+			_plain_row(inner, row, false)
+			for button in panel.find_children("*", "Button", true, false):
+				_signpost_button_motion(button as Button)
+			prev = "row"
+			continue
 		# Phase F: a "small" row is one compact line (the home's goals): no rule between two of them, a smaller font and
 		# button. A rule between two plain rows, as before (a tile or a heading next to it needs none).
 		var small := bool(row.get("small", false))
@@ -1168,6 +1282,177 @@ func _fill_card(spec: Dictionary) -> void:
 			list.add_child(sep)
 		prev = "small" if small else "row"
 		_plain_row(list, row, small)
+	_card_scroll.set_deferred("scroll_vertical", scroll)
+	if reveal:
+		var index := 0
+		for child in list.get_children():
+			if (child as Control).visible:
+				_reveal_signpost_control(child as Control, minf(index * 0.025, 0.15))
+				index += 1
+		for button in _card_tabs.get_children():
+			_reveal_signpost_control(button as Control, 0.0)
+
+
+## Only visible values belong in the cache; the actions are newly bound Callables on each refresh.
+func _signpost_signature(spec: Dictionary) -> String:
+	var content: Array = [spec.get("title", ""), spec.get("sub", "")]
+	for tab in spec.get("tabs", []):
+		content.append([tab.get("text", ""), tab.get("selected", false), tab.get("enabled", true)])
+	for row in spec.get("rows", []):
+		var visible_values := {}
+		for key in ["kind", "text", "note", "label", "enabled", "cost", "mission_index", "mission_name", "completed"]:
+			if row.has(key):
+				visible_values[key] = row[key]
+		content.append(visible_values)
+	return JSON.stringify(content)
+
+
+func _signpost_panel(ready := false, completed := false) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_PASS    # card backgrounds must pass finger drags up to the scroll container
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(1.0, 0.97, 0.87) if ready else Color(0.94, 0.9, 0.8)
+	if completed:
+		style.bg_color = Color(0.93, 0.96, 0.85)
+	style.border_color = Color(0.6, 0.69, 0.35) if ready or completed else Color(0.79, 0.73, 0.61)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(20)
+	style.set_content_margin_all(18)
+	panel.add_theme_stylebox_override("panel", style)
+	return panel
+
+
+## A quiet number badge, name and status, with one thumb-sized action at the right.
+func _mission_row(row: Dictionary) -> Control:
+	var ready := bool(row.get("enabled", false))
+	var completed := bool(row.get("completed", false))
+	var panel := _signpost_panel(ready, completed)
+	panel.custom_minimum_size.y = 120
+	panel.set_meta("mission_index", int(row["mission_index"]))
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 18)
+	panel.add_child(line)
+	var badge := PanelContainer.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.custom_minimum_size = Vector2(60, 60)
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = Color(0.35, 0.53, 0.27) if completed else (Color(0.71, 0.47, 0.18) if ready else Color(0.8, 0.75, 0.65))
+	badge_style.set_corner_radius_all(16)
+	badge.add_theme_stylebox_override("panel", badge_style)
+	line.add_child(badge)
+	var number := Label.new()
+	number.text = str(int(row["mission_index"]) + 1)
+	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	number.add_theme_font_override("font", _bold())
+	number.add_theme_font_size_override("font_size", 28)
+	number.add_theme_color_override("font_color", Color(1.0, 0.98, 0.89) if ready or completed else TILE_INK)
+	badge.add_child(number)
+	var words := VBoxContainer.new()
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	words.add_theme_constant_override("separation", 8)
+	line.add_child(words)
+	var name_label := Label.new()
+	name_label.text = String(row.get("mission_name", ""))
+	name_label.add_theme_font_override("font", _bold())
+	name_label.add_theme_font_size_override("font_size", 25)
+	name_label.add_theme_color_override("font_color", TILE_INK)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	words.add_child(name_label)
+	var status := Label.new()
+	status.text = String(row.get("note", ""))
+	status.add_theme_font_size_override("font_size", 19)
+	status.add_theme_color_override("font_color", Color(0.31, 0.46, 0.22) if completed else Color(0.45, 0.38, 0.29))
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	words.add_child(status)
+	var button := _cost_button(row)
+	button.custom_minimum_size = Vector2(130, 66)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(button)
+	_signpost_button_motion(button)
+	return panel
+
+
+## Fade and settle without animating positions owned by the containers.
+func _reveal_signpost_control(control: Control, delay: float) -> void:
+	control.modulate.a = 0.0
+	control.scale = Vector2.ONE * 0.98
+	_start_signpost_reveal.call_deferred(control, delay)
+
+
+func _start_signpost_reveal(control: Control, delay: float) -> void:
+	if not is_instance_valid(control) or control.is_queued_for_deletion():
+		return
+	control.pivot_offset = control.size * 0.5
+	var tween := control.create_tween().set_parallel()
+	tween.tween_property(control, "modulate:a", 1.0, 0.24).set_delay(delay)
+	tween.tween_property(control, "scale", Vector2.ONE, 0.28).set_delay(delay).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _signpost_button_motion(button: Button) -> void:
+	button.mouse_filter = Control.MOUSE_FILTER_PASS   # scrolling also starts over Start, Replay and locked buttons
+	if String(button.get_meta("label", "")) == "Defend Camp":
+		button.custom_minimum_size.x = 190
+	button.button_down.connect(_press_signpost_button.bind(button, true))
+	button.button_up.connect(_press_signpost_button.bind(button, false))
+	button.mouse_exited.connect(_press_signpost_button.bind(button, false))
+
+
+func _press_signpost_button(button: Button, down: bool) -> void:
+	if not is_instance_valid(button) or button.is_queued_for_deletion() or button.disabled:
+		return
+	if button.has_meta("press_tween"):
+		var previous: Tween = button.get_meta("press_tween")
+		if previous.is_valid():
+			previous.kill()
+	button.pivot_offset = button.size * 0.5
+	var tween := button.create_tween()
+	button.set_meta("press_tween", tween)
+	tween.tween_property(button, "scale", Vector2.ONE * (0.965 if down else 1.0), 0.07 if down else 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _fill_card_tabs(tabs: Array) -> void:
+	for child in _card_tabs.get_children():
+		child.hide()
+		child.queue_free()
+	_card_tabs.visible = not tabs.is_empty()
+	_card_nav.visible = _card_tabs.visible
+	for tab in tabs:
+		var selected := bool(tab.get("selected", false))
+		var enabled := bool(tab.get("enabled", true))
+		var color := Color(0.72, 0.43, 0.17) if selected else Color(0.29, 0.48, 0.58)
+		if not enabled and not selected:
+			color = Color(0.5, 0.49, 0.45)
+		var button := _big_button(String(tab["text"]), color, tab.get("action", Callable()), enabled)
+		button.custom_minimum_size = Vector2(0, 64)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 26)
+		button.set_meta("card_tab", true)
+		_card_tabs.add_child(button)
+		_signpost_button_motion(button)
+
+
+func pantry_strip() -> Control:
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 12)
+	flow.add_theme_constant_override("v_separation", 6)
+	for id in Data.b["ingredients"]:
+		if not Data.food_known(String(id)):
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 5)
+		flow.add_child(row)
+		var picture := _btn_icon(icon(id))
+		picture.custom_minimum_size = Vector2(28, 28)
+		row.add_child(picture)
+		var label := Label.new()
+		label.text = "%s %d/%d" % [Data.item_name(String(id), 2).capitalize(), int(Save.pantry.get(id, 0)), int(Data.b["cooking"]["pantry_cap"])]
+		label.add_theme_font_size_override("font_size", 19)
+		label.add_theme_color_override("font_color", TILE_INK)
+		row.add_child(label)
+	return flow
 
 
 ## A plain row (the card rows from before Phase G2): its words and note, and a button with its price. "done" (with
@@ -1326,6 +1611,9 @@ func _place_card() -> void:
 	var max_h := (bottom - top) * DIALOG_H
 	if _card_scroll != null and _card_list != null and _card_head != null:
 		var room := max_h - _card_head.get_combined_minimum_size().y - 12.0 - 16.0
+		if _card_nav != null and _card_nav.visible:
+			room -= _card_nav.get_combined_minimum_size().y
+		room -= _card_body.get_theme_constant("margin_top") + _card_body.get_theme_constant("margin_bottom") - 16.0
 		_card_scroll.custom_minimum_size.y = clampf(_card_list.get_combined_minimum_size().y, 0.0, maxf(room, 120.0))
 	var cs := _card.get_combined_minimum_size()
 	cs.x = w

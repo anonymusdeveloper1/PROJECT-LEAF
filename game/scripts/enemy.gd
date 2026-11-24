@@ -2206,7 +2206,7 @@ func _burn_hurt(amount: float) -> void:
 ## The flames on a burning enemy (Fx.embers, a few rising sparks, scaled by the graphics level).
 func _burn_look(on: bool) -> void:
 	if on and (_burn_fx == null or not is_instance_valid(_burn_fx)):
-		_burn_fx = Fx.embers(self, radius * 0.6, 10, 0.55, clampf(radius / 0.3, 0.8, 2.0))
+		_burn_fx = Fx.flames(self, radius * 0.55, 10, 0.55, clampf(radius * 1.8, 0.3, 0.85))
 		_burn_fx.position = Vector3(0, aim_height, 0)
 	if _burn_fx != null and is_instance_valid(_burn_fx):
 		_burn_fx.emitting = on
@@ -2322,7 +2322,10 @@ func _die() -> void:
 	if _in_area():
 		main.area.on_enemy_died(self)               # in a Burrow: the run pays (leaves, amber, dew) and counts the fight
 	else:
-		var value := Data.saddlebag_leaves(int(info["leaves"])) + carried   # G4: the Saddlebags add to the kill's own leaves
+		var value := Data.saddlebag_leaves(int(info["leaves"]))
+		if main.fight.active:
+			value = roundi(value * float(Data.b["mission"]["enemy_leaf_mult"]))
+		value += carried                           # returned stolen leaves are never multiplied
 		main.drop_leaves(global_position, value)
 	Sfx.play("pop", -6.0)
 	Fx.kill(main, global_position + Vector3(0, aim_height, 0), _color)

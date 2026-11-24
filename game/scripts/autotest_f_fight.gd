@@ -60,6 +60,7 @@ func run() -> bool:
 	main.fight.mission = -1
 	await _gate()
 	await _live_wave()
+	await _manual_progress()
 	await _live_limits()
 	await _fall_gain()
 	await _live_squad()
@@ -206,11 +207,11 @@ func _patterns() -> void:
 	var sh := {}
 	for k in counts:
 		sh[k] = snappedf(float(counts[k]) / n_plans, 0.01)
-	_x("mission 7: the patterns' shares roughly as set (surround %.2f, pincer %.2f, rush %.2f)" % [
+	_x("raid 7: the patterns' shares roughly as set (surround %.2f, pincer %.2f, rush %.2f)" % [
 		float(rc["surround"]), float(rc["pincer"]), float(rc["rush"])],
 		float(sh["surround"]) >= 0.35 and float(sh["surround"]) <= 0.9 and int(counts["pincer"]) >= 1 and float(sh["pincer"]) <= 0.45
 		and int(counts["rush"]) >= 1 and float(sh["rush"]) <= 0.4, {"shares": sh})
-	_x("mission 7: surrounds use all four roads (the favoured one most), pincers two far apart, rushes its own woods (faster, the same count)",
+	_x("raid 7: surrounds use all four roads (the favoured one most), pincers two far apart, rushes its own woods (faster, the same count)",
 		bad.is_empty(), {"bad": bad.slice(0, 8)})
 	# an elite wave: the elites (G1b: and their squads) come down the flank road
 	var pe: Dictionary = f.plan_wave(5)
@@ -264,9 +265,9 @@ func _teach_roads() -> void:
 					bad2.append([w, int(qi[0])])
 		elif rs.size() != 4:
 			bad3.append([w, rs])
-	_x("mission 1, chapter 1: every enemy comes down one road, its own woods", bad1.is_empty(), {"bad": bad1.slice(0, 8), "fav": fav})
-	_x("mission 1, chapter 2: two roads side by side, both used", bad2.is_empty() and used2.size() == 2, {"bad": bad2.slice(0, 8), "used": used2.keys()})
-	_x("mission 1, chapter 3: all four roads", bad3.is_empty(), {"bad": bad3.slice(0, 8)})
+	_x("raid 1, chapter 1: every enemy comes down one road, its own woods", bad1.is_empty(), {"bad": bad1.slice(0, 8), "fav": fav})
+	_x("raid 1, chapter 2: two roads side by side, both used", bad2.is_empty() and used2.size() == 2, {"bad": bad2.slice(0, 8), "used": used2.keys()})
+	_x("raid 1, chapter 3: all four roads", bad3.is_empty(), {"bad": bad3.slice(0, 8)})
 
 
 # ---------------------------------------------------------------- no easy waves
@@ -290,9 +291,9 @@ func _no_easy_waves() -> void:
 			bad_n.append([w, _ordinary(q), want_n])
 		rows.append([w, String(p["pattern"]), n, int(round(hp)), int(q["swaps"]), bool(q.get("short", false))])
 		prev = hp
-	_x("mission 2: every wave at least %d%% of the one before (chapter starts and the boss wave aside)" % int(round(ratio * 100.0)),
+	_x("raid 2: every wave at least %d%% of the one before (chapter starts and the boss wave aside)" % int(round(ratio * 100.0)),
 		bad.is_empty(), {"bad": bad, "waves": rows})
-	_x("mission 2: every wave within its count in whole squads (count - 2 to count + 3; swaps never add more)", bad_n.is_empty(), {"bad": bad_n})
+	_x("raid 2: every wave within its count in whole squads (count - 2 to count + 3; swaps never add more)", bad_n.is_empty(), {"bad": bad_n})
 	var q6: Dictionary = f.plan_queue(6, f.plan_wave(6), 1e6)
 	var ql: Dictionary = f.plan_queue(f.waves(), f.plan_wave(f.waves()), 1e6)
 	_x("no swaps for a chapter's first wave or the boss wave", int(q6["swaps"]) == 0 and int(ql["swaps"]) == 0,
@@ -368,9 +369,9 @@ func _tank_share() -> void:
 		if ordinary < want_n - 2 or ordinary > want_n + 3 or not in_range or specials != _planned_specials(f, w):
 			bad_n.append([w, String(p["pattern"]), ordinary, want_n, specials, _planned_specials(f, w)])
 		rows.append([w, String(p["pattern"]), kinds.size(), snappedf(tw, 0.1), snappedf(cap, 0.1), int(q["swaps"])])
-	_x("mission 9: no wave's tank weight goes over %d%% of its enemies (30 waves planned)" % int(round(share * 100.0)),
+	_x("raid 9: no wave's tank weight goes over %d%% of its enemies (30 waves planned)" % int(round(share * 100.0)),
 		not g.is_empty() and bad_t.is_empty(), {"group": g, "bad": bad_t.slice(0, 6)})
-	_x("mission 9: every wave has the mission's count (%d to %d, in whole squads) and all its elites and boss" % [int(cnt[0]), int(cnt[1])],
+	_x("raid 9: every wave has the raid's count (%d to %d, in whole squads) and all its elites and boss" % [int(cnt[0]), int(cnt[1])],
 		bad_n.is_empty(), {"bad": bad_n.slice(0, 8)})
 	t._log("fightf tank share", {"waves": rows})
 
@@ -509,11 +510,11 @@ func _squad_plans() -> void:
 				top = maxi(top, int(cnt[kd]))
 			sh.append(float(top) / float(maxi(1, (q["kinds"] as Array).size())))
 		var nm := String(Data.mission(mi)["name"])
-		_x("mission %d (%s): every enemy is in a squad of its chapter's list (or the elites' and the boss's own squads)" % [mi + 1, nm],
+		_x("raid %d (%s): every enemy is in a squad of its chapter's list (or the elites' and the boss's own squads)" % [mi + 1, nm],
 			bad_sq.is_empty(), {"bad": bad_sq.slice(0, 6)})
-		_x("mission %d: a squad's members come side by side, all down one road" % (mi + 1), bad_road.is_empty(), {"bad": bad_road.slice(0, 6)})
+		_x("raid %d: a squad's members come side by side, all down one road" % (mi + 1), bad_road.is_empty(), {"bad": bad_road.slice(0, 6)})
 		if mi + 1 >= int(r.get("mixed_from", 99)):
-			_x("mission %d: every wave has at least %d squad types (as many as its chapter lists)" % [mi + 1, int(r.get("min_types", 2))],
+			_x("raid %d: every wave has at least %d squad types (as many as its chapter lists)" % [mi + 1, int(r.get("min_types", 2))],
 				bad_types.is_empty(), {"bad": bad_types.slice(0, 6)})
 		shares[mi] = sh
 	# the share of one kind, from mission share_from: mission 14 can keep it, mission 9 mostly cannot (a Thornling is in
@@ -524,12 +525,12 @@ func _squad_plans() -> void:
 		for v in sh14:
 			if float(v) <= lim + 0.001:
 				within += 1
-		_x("mission 14: most waves keep every kind within %d%% (at least 70%% of 30 waves)" % int(round(lim * 100.0)),
+		_x("raid 14: most waves keep every kind within %d%% (at least 70%% of 30 waves)" % int(round(lim * 100.0)),
 			float(within) / float(sh14.size()) >= 0.7, {"within": within, "of": sh14.size(), "worst": snappedf(_max_of(sh14), 0.01)})
 		# mission 9 with the rule and without it (the data changed here only, and put back)
 		var sh9: Array = shares[8]
 		var off := _no_share_rule_shares(8)
-		_x("mission 9: the share rule's fallback: no kind over 65% of a wave, and less of one kind than without the rule",
+		_x("raid 9: the share rule's fallback: no kind over 65% of a wave, and less of one kind than without the rule",
 			_max_of(sh9) <= 0.65 and _mean_of(sh9) < _mean_of(off),
 			{"worst": snappedf(_max_of(sh9), 0.01), "mean": snappedf(_mean_of(sh9), 0.01), "mean_without": snappedf(_mean_of(off), 0.01)})
 
@@ -585,7 +586,7 @@ func _elite_boss() -> void:
 	for s in q1["squads"]:
 		if String(s["tag"]) == "elite":
 			band = s
-	_x("mission 1's elite wave: the Thornling Chief leads his Chief's Band", String(band.get("id", "")) == "chief_band"
+	_x("raid 1's elite wave: the Thornling Chief leads his Chief's Band", String(band.get("id", "")) == "chief_band"
 		and String(band["kinds"][int(band["lead"])]) == "chief", {"band": band})
 	# mission 2, wave 5: each Boar elite leads elite_escort light ones of the chapter, and leads them in the queue
 	f = _as_mission(1)
@@ -606,7 +607,7 @@ func _elite_boss() -> void:
 		var qi: Array = q2["info"][j]
 		if String(qi[2]) == "elite" and not (qi.size() > 5 and bool(qi[5])):
 			bad.append("an elite that does not lead its squad")
-	_x("mission 2's elite wave: each elite leads its own squad of %d-%d light ones" % [int(esc[0]), int(esc[esc.size() - 1])],
+	_x("raid 2's elite wave: each elite leads its own squad of %d-%d light ones" % [int(esc[0]), int(esc[esc.size() - 1])],
 		n_el == _planned_specials(f, 5) and bad.is_empty(), {"elites": n_el, "bad": bad, "squads": q2["squads"]})
 	# mission 6, the boss wave: Mossback (alone at its squad's head) with a Brute Wall and a Boar Raid, all from its woods
 	f = _as_mission(5)
@@ -622,7 +623,7 @@ func _elite_boss() -> void:
 			esc_ids.append(String(s["id"]))
 			esc_roads.append(int(s["road"]))
 	var fav := int(pb["fav"])
-	_x("mission 6's boss wave: Mossback with a Brute Wall and a Boar Raid, all out of its own woods",
+	_x("raid 6's boss wave: Mossback with a Brute Wall and a Boar Raid, all out of its own woods",
 		not boss_sq.is_empty() and String(boss_sq["kinds"][int(boss_sq["lead"])]) == "bear" and esc_ids.has("brute_wall")
 		and esc_ids.has("boar_raid") and int(boss_sq["road"]) == fav and esc_roads.count(fav) == esc_roads.size(),
 		{"boss": boss_sq, "escorts": esc_ids, "roads": esc_roads, "fav": fav})
@@ -641,7 +642,7 @@ func _gate() -> void:
 	var started: bool = f.active
 	if started:
 		t._reset_fight()
-	_x("the gate: a mission that is not unlocked does not start", not started, {"home": Save.camp_level})
+	_x("the gate: a raid that is not unlocked does not start", not started, {"home": Save.camp_level})
 	Save.mission_run = {}
 	await t._wait(0.2)
 
@@ -655,14 +656,14 @@ func _live_wave() -> void:
 	Save.raids["pending"] = false
 	f.mission = -1
 	f.start_mission(0)
-	if not _x("mission 1 starts (the next mission is let through)", f.active and f.in_wave and f.mission == 0, {"active": f.active}):
+	if not _x("raid 1 starts (the next raid is let through)", f.active and f.in_wave and f.mission == 0, {"active": f.active}):
 		return
 	var fav := int(Data.mission(0)["lanes"][0])
 	await t._until(func(): return _wave_foes().size() >= 3 or f._queue.is_empty(), 15.0)
 	var roads := {}
 	for e in _wave_foes():
 		roads[int(e.patch)] = true
-	_x("mission 1, wave 1: the enemies come down one road", roads.keys() == [fav], {"roads": roads.keys(), "fav": fav, "plan": f.plan})
+	_x("raid 1, wave 1: the enemies come down one road", roads.keys() == [fav], {"roads": roads.keys(), "fav": fav, "plan": f.plan})
 	# a Golden Grub alive does not hold the wave up
 	var grub = f.spawn_grub()
 	_x("a Golden Grub runs in, in the groups foes and bonus", grub != null and grub.is_in_group("foes") and grub.is_in_group("bonus"))
@@ -680,20 +681,177 @@ func _live_wave() -> void:
 		{"pay": lp, "toast": String(main.hud._toast.text)})
 	# Phase G1: every wave held pays timber_per_wave x the pay scale (mission 1: the pay scale is 1), at least 1
 	var want_t := maxi(1, int(round(float(Data.b["mission"].get("timber_per_wave", 1)))))
-	_x("mission 1: the wave held pays %d timber" % want_t, Save.timber == tim0 + want_t and int(lp.get("timber", 0)) == want_t,
+	_x("raid 1: the wave held pays %d timber" % want_t, Save.timber == tim0 + want_t and int(lp.get("timber", 0)) == want_t,
 		{"timber": [tim0, Save.timber], "pay": lp})
 	# the breather: where the next wave comes from is on the status line
 	var st: String = f.status_text()
 	_x("the breather's status line previews the next wave", f.preview_text() != "" and st.contains("Next: "), {"status": st})
-	# going on early pays for the seconds skipped
+	# The player starts the next wave; no timer or early-start leaf payment remains.
 	var l0: int = Save.leaves
-	var left: float = f._breather
 	f.next_phase_now()
-	_x("going on early from the signpost pays leaves", Save.leaves > l0, {"skipped": snappedf(left, 0.1), "paid": Save.leaves - l0})
+	_x("starting a wave charges and pays no leaves", Save.leaves == l0, {"paid": Save.leaves - l0})
 	await t._until(func(): return f.in_wave, 2.0)
 	_x("the next wave starts", f.in_wave and f.wave == 2, {"wave": f.wave, "status": f.status_text()})
 	t._reset_fight()
 	Save.mission_run = {}
+	Save.save_game()
+	await t._wait(0.3)
+
+
+# ---------------------------------------------------------------- manual wave control and durable progress (23 Nov 2026)
+func _manual_progress() -> void:
+	var f = main.fight
+	f.set_physics_process(false)
+	Save.missions_done = []
+	Save.mission_run = {}
+	Save.fire_ruined = false
+	Save.raids["pending"] = false
+	Save.leaves = 1000
+	Save.timber = 100
+	var sign: Dictionary = main.stations._card_sign()
+	var first_rows: Array = (sign["rows"] as Array).filter(func(r): return int(r.get("mission_index", -1)) == 0)
+	_x("the signpost offers the first Raid Mission and locks Random Raids", first_rows.size() == 1 and String(first_rows[0]["label"]) == "Start" and not bool(sign["tabs"][1]["enabled"]))
+	f.start_mission(0)
+	_x("first raid starts at wave 1 of 15 from the player's action", f.in_wave and f.wave == 1 and f.waves() == 15)
+	# Real kill drops gain 50%, while returned stolen leaves keep their original amount.
+	for p in get_tree().get_nodes_in_group("pickups"):
+		p.queue_free()
+		p.remove_from_group("pickups")
+	var foe = f.spawn("thornling", Vector3(25, 0, 12), 0)
+	var base_drop := Data.saddlebag_leaves(int(foe.info["leaves"]))
+	foe.carried = 7
+	foe.hit(Vector3.FORWARD, float(foe.hp) + 1.0)
+	var dropped := 0
+	for p in get_tree().get_nodes_in_group("pickups"):
+		dropped += int(p.value)
+		p.remove_from_group("pickups")
+		p.queue_free()
+	_x("real enemy drops gain 50% without multiplying stolen leaves", dropped == roundi(base_drop * 1.5) + 7, {"base": base_drop, "drop": dropped})
+	f._clear_foes()
+	var before_leaves: int = Save.leaves
+	var before_timber: int = Save.timber
+	f._wave_cleared()
+	var paid: Dictionary = f.last_pay
+	_x("wave 1 pays doubled base leaves and timber", int(paid["bonus"]) == 7 and int(paid["timber"]) == 2 and Save.timber == before_timber + 2 and Save.leaves == before_leaves + int(paid["bonus"]) + int(paid["quick"]) + int(paid["intact"]), {"pay": paid})
+	_x("every ordinary wave saves its completed number", int(Save.mission_run.get("wave_done", -1)) == 1 and not f.in_wave)
+	var banked: int = Save.leaves
+	var timber_banked: int = Save.timber
+	for tick in 400:
+		f._physics_process(0.1)
+	_x("40 seconds of waiting never starts wave 2 or pays again", not f.in_wave and f.wave == 1 and Save.leaves == banked and Save.timber == timber_banked)
+	f._wave_cleared()
+	_x("a repeated wave-clear callback cannot duplicate rewards", Save.leaves == banked and Save.timber == timber_banked and int(Save.mission_run["wave_done"]) == 1)
+	sign = main.stations._card_sign()
+	_x("waiting signpost offers exactly the next wave without a countdown", String(sign["rows"][0]["label"]) == "Start wave" and String(sign["rows"][0]["text"]) == "Wave 2 of 15" and not String(sign["sub"]).contains("in 15"))
+	(sign["rows"][0]["action"] as Callable).call()
+	f.next_phase_now()
+	_x("Start wave begins wave 2 immediately and a second tap cannot skip it", f.in_wave and f.wave == 2 and Save.leaves == banked)
+	f._clear_foes()
+	f._wave_cleared()
+	Save.meal_on = String(Data.b["cooking"]["recipes"][0]["id"])
+	var meal: String = Save.meal_on
+	Save.save_game()
+	t._reset_fight()
+	Save.load_game()
+	main.defences.relink_saved()
+	_x("save/load retains wave 2 and the active dish", int(Save.mission_run.get("wave_done", -1)) == 2 and Save.meal_on == meal)
+	Save.meal_on = ""
+	Data.set_meal("")
+	banked = Save.leaves
+	f.start_mission(0)
+	_x("restart resumes at wave 3 without repeating completed rewards", f.wave == 3 and f.in_wave and Save.leaves == banked)
+	f.camp_falls()
+	_x("a loss keeps waves 1-2 cleared and offers retry of wave 3", int(Save.mission_run.get("wave_done", -1)) == 2 and String(main.hud._banner_s.text).contains("retry wave 3"))
+	Save.fire_ruined = false
+	main.world.set_fire_out(false)
+	main.stations.set_fire_out(false)
+	f.start_mission(0)
+	_x("the retry starts only the failed wave", f.wave == 3 and f.in_wave)
+	f._clear_foes()
+	f._start_wave(5)
+	f._clear_foes()
+	f._wave_cleared()
+	_x("wave 5 keeps its supply chest and saves five cleared waves", f.on_break and f.wave == 5 and int(Save.mission_run.get("wave_done", -1)) == 5)
+	for tick in 400:
+		f._physics_process(0.1)
+	_x("the fifth-wave checkpoint also waits indefinitely", not f.in_wave and f.wave == 5)
+	f.next_phase_now()
+	_x("the next group continues at wave 6, never resets to wave 1", f.in_wave and f.wave == 6)
+	f._clear_foes()
+	f._wave_cleared()
+	main.hud.show_card(main.stations.rings["sign"])
+	await t._wait(0.4)
+	await t._shot("manual_raid_wave_7")
+	main.hud.hide_card()
+	Save.save_game()
+	t._reset_fight()
+	Save.load_game()
+	main.defences.relink_saved()
+	f.start_mission(0)
+	_x("a restart after wave 6 resumes at wave 7, beyond the old checkpoint", f.in_wave and f.wave == 7)
+	t._reset_fight()
+	Save.mission_run = {"mission": 0, "chapter": 1, "gain": 0}
+	Save.save_game()
+	Save.load_game()
+	main.defences.relink_saved()
+	f.start_mission(0)
+	_x("an older chapter-only save still resumes at wave 6", f.in_wave and f.wave == 6)
+	t._reset_fight()
+	Save.missions_done = []
+	Save.mission_run = {"mission": 13, "chapter": 3, "wave_done": 19, "gain": 0}
+	Save.save_game()
+	Save.load_game()
+	main.defences.relink_saved()
+	f.skip_gate = true
+	f.start_mission(13)
+	f.skip_gate = false
+	_x("a 20-wave raid resumes at wave 20 instead of resetting to 16", f.in_wave and f.wave == 20 and f.waves() == 20)
+	f._clear_foes()
+	f._wave_cleared()
+	_x("the final wave completes the raid and clears its checkpoint", not f.active and Save.mission_run.is_empty() and Save.missions_done.has(String(Data.mission(13)["id"])))
+	t._reset_fight()
+	Save.missions_done = []
+	Save.mission_run = {}
+	# Random Raids wait for one player action, then continue without intermediate wave starts.
+	var old_raids: Dictionary = Save.raids.duplicate(true)
+	for m in Data.b["missions"]:
+		Save.missions_done.append(String(m["id"]))
+	main.raids.refresh_open()
+	var plan: Dictionary = main.raids._plan()
+	Save.raids["plan"] = plan
+	Save.raids["pending"] = true
+	Save.raids["run"] = {}
+	var spec: Dictionary = main.raids.spec_for(plan)
+	f.start_raid(spec, 0.1)
+	for tick in 400:
+		f._physics_process(0.1)
+	_x("a Random Raid cannot start its assault automatically", f.active and not f.in_wave and f.wave == 0)
+	f.next_phase_now()
+	_x("the player starts one continuous Random Raid", f.in_wave and f.wave == 1 and f.waves() == 1)
+	banked = Save.leaves
+	Save.raids["run"] = {"assault_format": 1, "defeated": [0, 1]}
+	t._reset_fight()
+	f.start_raid(spec, 0.1)
+	_x("Random Raid restarts preserve banked rewards and wait for the player", f.wave == 0 and not f.in_wave and Save.leaves == banked)
+	f.next_phase_now()
+	_x("the resumed assault omits already defeated members", f.wave == 1 and f.in_wave and f._queue.size() == int(spec["enemy_count"]) - 2 and f._qinfo.all(func(row): return int(row[3]) > 1))
+	f._clear_foes()
+	before_leaves = Save.leaves
+	before_timber = Save.timber
+	var held_before: int = Save.raids["held"]
+	f._wave_cleared()
+	_x("the whole assault pays once and ends without another wave", not f.active and int(Save.raids["held"]) == held_before + 1 and Save.leaves >= before_leaves + 7 and Save.timber >= before_timber + 2)
+	banked = Save.leaves
+	f._wave_cleared()
+	_x("a duplicate assault clear cannot repeat rewards", Save.leaves == banked and not f.active)
+	t._reset_fight()
+	Save.raids = old_raids
+	Save.raids["pending"] = false
+	Save.missions_done = []
+	Save.mission_run = {}
+	Save.fire_ruined = false
+	main.raids.refresh_open()
+	f.set_physics_process(true)
 	Save.save_game()
 	await t._wait(0.3)
 
@@ -710,13 +868,13 @@ func _live_limits() -> void:
 	f.skip_gate = true
 	f.start_mission(8)                                      # mission 9, the Croaking Choir: missions 6-10's limits
 	f.skip_gate = false
-	if not _x("mission 9 starts (skip_gate)", f.active and f.in_wave and f.mission == 8, {"active": f.active}):
+	if not _x("raid 9 starts (skip_gate)", f.active and f.in_wave and f.mission == 8, {"active": f.active}):
 		return
 	var g := _group(9)
 	var lim: Dictionary = f.wave_limits()
 	var cap_n := int(g.get("max_alive", 12))
 	var cap_t := float(g.get("tanks_at_once", 2.0))
-	_x("mission 9 has its group's limits (at most %d on the field, %.1f tanks)" % [cap_n, cap_t],
+	_x("raid 9 has its group's limits (at most %d on the field, %.1f tanks)" % [cap_n, cap_t],
 		int(lim["max_alive"]) == cap_n and absf(float(lim["tanks_at_once"]) - cap_t) < 0.001
 		and absf(float(lim["tank_share"]) - float(g.get("tank_share", -1.0))) < 0.001 and f._max_alive() == cap_n,
 		{"limits": lim, "group": g})
@@ -780,7 +938,7 @@ func _live_limits() -> void:
 		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 	var cleared: bool = await t._until(func(): return not f.in_wave, 5.0)
 	var toast := String(main.hud._toast.text)
-	_x("mission 9: the wave held pays %d timber and the toast says so" % want_t,
+	_x("raid 9: the wave held pays %d timber and the toast says so" % want_t,
 		cleared and Save.timber == tim0 + want_t and int(f.last_pay.get("timber", 0)) == want_t and toast.contains("+%d timber" % want_t),
 		{"cleared": cleared, "timber": [tim0, Save.timber], "pay": f.last_pay, "toast": toast})
 	t._reset_fight()
@@ -805,7 +963,7 @@ func _fall_gain() -> void:
 	f.mission = -1
 	f.start_mission(0)
 	f.set_physics_process(false)
-	if not _x("fall: mission 1 starts with 1000 leaves saved and nothing gained yet", f.active and f.chapter_gain() == 0 and Save.leaves == 1000,
+	if not _x("fall: raid 1 starts with 1000 leaves saved and nothing gained yet", f.active and f.chapter_gain() == 0 and Save.leaves == 1000,
 			{"run": Save.mission_run, "leaves": Save.leaves}):
 		f.set_physics_process(true)
 		t._reset_fight()
@@ -889,7 +1047,7 @@ func _live_squad() -> void:
 	f.skip_gate = true
 	f.start_mission(8)                                      # mission 9, the Croaking Choir
 	f.skip_gate = false
-	if not _x("mission 9 starts for the squad test (skip_gate)", f.active and f.in_wave and f.mission == 8, {"active": f.active}):
+	if not _x("raid 9 starts for the squad test (skip_gate)", f.active and f.in_wave and f.mission == 8, {"active": f.active}):
 		return
 	f._grub_at = -1.0
 	f._totem_at = -1.0
@@ -1023,7 +1181,7 @@ func _first_win() -> void:
 	Save.raids["pending"] = false
 	f.mission = -1
 	f.start_mission(0)
-	if not _x("mission 1 starts for its first win", f.active and f.mission == 0, {"active": f.active}):
+	if not _x("raid 1 starts for its first win", f.active and f.mission == 0, {"active": f.active}):
 		return
 	f._queue.clear()
 	f._qinfo.clear()
@@ -1033,7 +1191,7 @@ func _first_win() -> void:
 	f._win()
 	var toast := String(main.hud._toast.text)
 	var told: bool = toast.contains("+%d leaves for your first barricades" % want) or toast.begins_with("Every goal met")
-	_x("mission 1's first win: +%d leaves for the first barricades, no pieces in the bag" % want,
+	_x("raid 1's first win: +%d leaves for the first barricades, no pieces in the bag" % want,
 		int(f.barricade_gift) == want and int(Save.items.get("barricade", 0)) == bag0 and Save.leaves - l0 >= reward + want and told,
 		{"gift": f.barricade_gift, "bag": [bag0, int(Save.items.get("barricade", 0))], "leaves": Save.leaves - l0, "reward": reward,
 		"toast": toast})
@@ -1058,7 +1216,7 @@ func _gloom() -> void:
 	for i in 4:
 		g.append(snappedf(float(w.gloom[i]), 0.01))
 		ok = ok and absf(float(w.gloom[i]) - want) < 0.02
-	_x("the Gloom over all four woods fades a step per mission won (3 won: %.2f)" % want, ok, {"gloom": g})
+	_x("the Gloom over all four woods fades a step per raid won (3 won: %.2f)" % want, ok, {"gloom": g})
 	Save.missions_done = []
 	w.settle_gloom()
 	await t._wait(1.9)

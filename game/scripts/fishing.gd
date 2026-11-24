@@ -341,20 +341,17 @@ func _give() -> void:
 		match String(k):
 			"leaves":
 				Save.add_leaves(n)
-				bits.append("+%d leaves" % n)
+				bits.append("+%d leaves · now %d" % [n, Save.leaves])
 			"timber":
 				Save.timber += n
-				bits.append("+%d timber" % n)
+				bits.append("+%d timber · now %d" % [n, Save.timber])
 			_:
 				var left: Dictionary = Data.add_items({k: n})
 				if not left.is_empty():
 					let_go = true
-				var have := int(Save.pantry.get(k, 0))
-				bits.append("%d %s" % [have, Data.item_name(String(k), have)])
-	if let_go:
-		main.hud.toast("The pantry is full: you let it go")
-	elif not bits.is_empty():
-		main.hud.toast("+1 %s (%s)" % [nm, ", ".join(bits)])
+				bits.append(Data.food_receipt({k: n - int(left.get(k, 0))}))
+	if not bits.is_empty():
+		main.hud.toast("%s · %s%s" % [nm, " · ".join(bits), " · pantry full, extra released" if let_go else ""])
 	if p.model:
 		Fx.boing(p.model, 0.2)
 	Fx.sparkle(main, p.global_position + Vector3(0, 1.0, 0))

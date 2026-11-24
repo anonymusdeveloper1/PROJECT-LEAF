@@ -227,7 +227,7 @@ func card(id: String) -> Dictionary:
 	var anchor: Vector3 = entrances[id]["pos"] + Vector3(0, 2.2, 0) if entrances.has(id) else Vector3.ZERO
 	if not is_open(id):
 		return {"title": nm, "sub": "Sealed by the Gloom", "anchor": anchor, "rows": [
-			{"text": "Win every mission to open it", "note": "%d of %d won · something sleeps under the roots" % [Data.progress(), Data.mission_count()],
+			{"text": "Finish all Raid Missions to open it", "note": "%d of %d finished · something sleeps under the roots" % [Data.progress(), Data.mission_count()],
 				"cost": {}, "label": "", "enabled": false, "action": Callable()}]}
 	var rows: Array = []
 	var why := blocker()

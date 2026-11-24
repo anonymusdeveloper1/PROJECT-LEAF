@@ -8,7 +8,7 @@ extends Node3D
 ##   skills       Stomp, Ram, Pounce, Bellow (balance.json mount_skills): while the cat rides it in a fight (a mission,
 ##                a raid, the Burrows) it uses each by itself, each on its own timer (cooldowns), never two at once
 ##                (a shared gap, saddlery.gap_s); the first ready one whose moment has come goes (mount_skills.priority)
-##   attachments  the Fire-spitter (a cone of fire on its own timer, in the same gap), the Mossweave Saddle (max_hp) and
+##   attachments  the Fire-spitter (splash flame balls at the cat's pace, independent of the skill gap), the Mossweave Saddle (max_hp) and
 ##                the Saddlebags (Data.saddlebag_leaves, read by the kills). 22 Nov 2026 (the owner's rule): it may own all
 ##                three but wears one at a time, or none (Data.worn_attach); only the worn one acts and shows
 ## Ram and Pounce move the mount and the cat on it by code (_move_*); the clip of each move is played if the model has it
@@ -19,8 +19,7 @@ extends Node3D
 ## res://assets/companions/attachments/<id>_<look>.glb (id fire_spitter, saddle or saddlebags; look thistle or
 ## bramblewool), made in the saddle bone's frame and hung on a BoneAttachment3D on that bone with no offset, coloured
 ## with Props.apply_vc_glow (refresh_gear: on load, on a look change, on a purchase). No file: nothing shown. The
-## Fire-spitter's flames start at the node marker_nozzle in its model, pointing along that node's +Z (or -Z, whichever
-## points ahead), else as before.
+## Fire-spitter's firing unit pivots at fire_aim while its harness stays fixed. Shots start at marker_nozzle along +Z.
 
 var main
 var model: Node3D
@@ -41,7 +40,7 @@ var resting := 0.0                                # seconds before it can be rid
 var _regen_t := 0.0
 # G4: the Saddlery's skills and the Fire-spitter
 var cooldowns := {}                               # skill or attachment id -> seconds before it can go again (0: ready)
-var gap := 0.0                                    # seconds before any next move (saddlery.gap_s after each one)
+var gap := 0.0                                    # seconds before the next skill (the Fire-spitter is independent)
 var act_t := 0.0                                  # the move's clip: seconds left (Idle and Run wait for it)
 var last_move := ""                               # the last move made ("stomp", "ram", "pounce", "bellow", "fire_spitter")
 var moves_made := {}                              # id -> how many times it went (the tests read it)
@@ -59,6 +58,10 @@ var _lift := 0.0                                  # how high the hop lifts it no
 var gear := {}                                    # attachment id -> its model on the saddle bone (only those shown)
 var _gear_hold: BoneAttachment3D                  # ... the holder on the saddle bone
 var _nozzle: Node3D                               # ... the Fire-spitter model's marker_nozzle, if any
+var _fire_pivot: Node3D                           # firing unit; the collar and hangers stay on the saddle
+var _fire_rest := Quaternion.IDENTITY
+var _fire_target
+const Fireball := preload("res://scripts/fireball.gd")
 
 
 func setup(m, at: Vector3) -> void:
@@ -173,6 +176,8 @@ func set_look() -> void:
 	gear = {}
 	_gear_hold = null
 	_nozzle = null
+	_fire_pivot = null
+	_fire_target = null
 	_hazards_of = null
 	_hazards = []
 	_load_model()
@@ -196,6 +201,8 @@ func refresh_gear() -> void:
 			(old as Node).queue_free()
 	gear = {}
 	_nozzle = null
+	_fire_pivot = null
+	_fire_target = null
 	if _skel == null or _saddle < 0 or not is_instance_valid(_skel):
 		return
 	for id in Data.saddle_items("attach"):
@@ -229,21 +236,75 @@ func _hang_gear(id: String, ps: PackedScene) -> Node3D:
 	gear[id] = n
 	if id == "fire_spitter":
 		_nozzle = Props.find_part(n, "marker_nozzle")
+		_fire_pivot = Props.find_part(n, "fire_aim")
+		_fire_rest = _fire_pivot.quaternion if _fire_pivot != null else Quaternion.IDENTITY
 	return n
 
 
-## Where the Fire-spitter's flames start and which way they go: its model's marker_nozzle (its +Z, or -Z if that is the
-## one pointing ahead; ahead if neither does), else in front of the mount as before. [from, dir]
+## The actual rotating nozzle's position and +Z firing axis, including side and rear shots. [from, dir]
 func _fire_from() -> Array:
 	var fwd := _fwd()
 	if _nozzle != null and is_instance_valid(_nozzle) and _nozzle.is_inside_tree():
-		var z := _nozzle.global_basis.z
-		for d in [z, -z]:
-			var flat := _flat(d)
-			if flat.length() > 0.3 and flat.normalized().dot(fwd) > 0.3:
-				return [_nozzle.global_position, (d as Vector3).normalized()]
-		return [_nozzle.global_position, fwd]
+		return [_nozzle.global_position, _nozzle.global_basis.z.normalized()]
 	return [global_position + fwd * 0.45 + Vector3(0, 0.75, 0), fwd]
+
+
+func _fire_target_ok(foe) -> bool:
+	if foe == null or not is_instance_valid(foe) or not foe.is_in_group("foes") or foe.dead:
+		return false
+	var distance: float = main.player.global_position.distance_to(foe.global_position)
+	return distance <= Data.cat_range() and (foe.awake or distance <= float(Data.burrow_cfg()["wake_r"]))
+
+
+## Assist the cat's current enemy; otherwise hold a valid lock or acquire the nearest foe in any direction.
+func _select_fire_target() -> void:
+	if _fire_target_ok(main.player.target):
+		_fire_target = main.player.target
+	elif not _fire_target_ok(_fire_target):
+		var foe = main.nearest_enemy(main.player.global_position, Data.cat_range())
+		_fire_target = foe if _fire_target_ok(foe) else null
+
+
+func _fire_aim_at() -> Vector3:
+	return _fire_target.global_position + Vector3(0, _fire_target.aim_height, 0)
+
+
+func _point_fire_target(dt: float, instant := false) -> void:
+	if _fire_pivot == null or not is_instance_valid(_fire_pivot) or not _fire_target_ok(_fire_target):
+		return
+	var to := _fire_aim_at() - _fire_pivot.global_position
+	if to.length_squared() < 0.000001:
+		return
+	var up := Vector3.UP if absf(to.normalized().dot(Vector3.UP)) < 0.99 else Vector3.FORWARD
+	var want := Quaternion(Basis.looking_at(-to.normalized(), up))
+	var current := Quaternion(_fire_pivot.global_basis.orthonormalized())
+	var step := deg_to_rad(float(Data.saddle_info("attach", "fire_spitter")["aim_turn_deg_per_s"])) * dt
+	var weight := 1.0 if instant else minf(1.0, step / maxf(current.angle_to(want), 0.000001))
+	_fire_pivot.global_basis = Basis(current.slerp(want, weight))
+
+
+func _update_fire_aim(dt: float) -> void:
+	if main.player.riding and _fighting() and Data.worn_level("fire_spitter") > 0:
+		_select_fire_target()
+	else:
+		_fire_target = null
+	if _fire_target_ok(_fire_target):
+		_point_fire_target(dt)
+	elif _fire_pivot != null and is_instance_valid(_fire_pivot):
+		var current := _fire_pivot.quaternion
+		var step := deg_to_rad(float(Data.saddle_info("attach", "fire_spitter")["aim_turn_deg_per_s"])) * dt
+		_fire_pivot.quaternion = current.slerp(_fire_rest, minf(1.0, step / maxf(current.angle_to(_fire_rest), 0.000001)))
+
+
+func _fire_aligned() -> bool:
+	if not _fire_target_ok(_fire_target):
+		return false
+	if _fire_pivot == null or not is_instance_valid(_fire_pivot):
+		return true                                # a missing model still has the gameplay effect
+	var from := _fire_from()
+	var to := _fire_aim_at() - (from[0] as Vector3)
+	var tolerance := deg_to_rad(float(Data.saddle_info("attach", "fire_spitter")["aim_tolerance_deg"]))
+	return to.length_squared() < 0.000001 or (from[1] as Vector3).dot(to.normalized()) >= cos(tolerance)
 
 
 ## How high the cat stands on the saddle right now (it bobs with the mount's hops, and rises with a Pounce's hop).
@@ -439,8 +500,6 @@ func _process(delta: float) -> void:
 			_ram_strike()                            # the enemies along the way so far
 		if _move_kind != "" and _move_k >= 1.0:
 			_finish_move()                           # a Pounce lands here
-		if _fighting():
-			_try_moves()
 	else:
 		_stop_move()                                 # off the mount: a charge or a leap stops
 		var to := home - global_position
@@ -482,6 +541,9 @@ func _process(delta: float) -> void:
 		for i in _ears.size():
 			var e: Node3D = _ears[i]
 			e.rotation.x = lerpf(e.rotation.x, -0.25 - (0.5 if running else 0.08 * sin(_t * 2.0 + i)), 1.0 - exp(-8.0 * dt))
+	_update_fire_aim(dt)
+	if main.player.riding and _fighting():
+		_try_moves()
 
 
 # ---------------------------------------------------------------- G4: skills and the Fire-spitter
@@ -498,25 +560,23 @@ func _fighting() -> bool:
 	return (main.fight.active or main.get("area") != null) and main.player.hp > 0 and not main.player.frozen
 
 
-## The first ready move whose moment has come goes (skills in mount_skills.priority, then the Fire-spitter); nothing
-## while the gap since the last one runs or a charge or leap is under way.
+## Skills share their gap and respect an active charge/leap. The worn Fire-spitter has its own faster firing clock.
 func _try_moves() -> void:
-	if gap > 0.0 or _move_kind != "":
-		return
-	for id in Data.skill_priority():
-		var lv := Data.skill_level(String(id))
-		if lv > 0 and float(cooldowns.get(id, 0.0)) <= 0.0 and _use(String(id), lv):
-			return
+	if gap <= 0.0 and _move_kind == "":
+		for id in Data.skill_priority():
+			var lv := Data.skill_level(String(id))
+			if lv > 0 and float(cooldowns.get(id, 0.0)) <= 0.0 and _use(String(id), lv):
+				break
 	var fl := Data.worn_level("fire_spitter")             # only when it is the one worn (22 Nov 2026)
 	if fl > 0 and float(cooldowns.get("fire_spitter", 0.0)) <= 0.0:
-		_use("fire_spitter", fl)
+		_spit_fire(fl, false)
 
 
 ## Tests and tools: make move id now if it is owned (the Fire-spitter: worn) and its moment has come (an enemy where it
 ## needs one), whatever its timer and the gap say. True when it went.
 func try_move(id: String) -> bool:
 	var lv := Data.worn_level(id) if id == "fire_spitter" else Data.skill_level(id)
-	if lv <= 0 or _move_kind != "" or not main.player.riding:
+	if lv <= 0 or (_move_kind != "" and id != "fire_spitter") or not main.player.riding:
 		return false
 	return _use(id, lv)
 
@@ -536,10 +596,13 @@ func _use(id: String, lv: int) -> bool:
 	return false
 
 
-## A move went: its own timer starts (every_s), then the gap (and, for a charge or a leap, its time on top).
+## Skills start their cooldown and shared gap; the Fire-spitter uses the current cat attack interval independently.
 func _went(id: String, info: Dictionary, busy_s := 0.0) -> void:
-	cooldowns[id] = float(info.get("every_s", 4.0))
-	gap = Data.saddle_gap() + busy_s
+	if id == "fire_spitter":
+		cooldowns[id] = main.player.attack_interval()
+	else:
+		cooldowns[id] = float(info.get("every_s", 4.0))
+		gap = Data.saddle_gap() + busy_s
 	last_move = id
 	moves_made[id] = int(moves_made.get(id, 0)) + 1
 	_jolt(id)
@@ -564,7 +627,7 @@ func _flat(v: Vector3) -> Vector3:
 	return Vector3(v.x, 0.0, v.z)
 
 
-## Where it faces (its heading follows the cat's steps).
+## Where it faces, following the direction of travel.
 func _fwd() -> Vector3:
 	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 
@@ -768,30 +831,23 @@ func _bellow(lv: int) -> bool:
 	return true
 
 
-## The Fire-spitter: an enemy in the cone in front of it (cone_m long, cone_deg either side; fliers too): fire gushes
-## there and each enemy in it burns (burn_s at its burn a second, enemy.ignite as the Ember Bow's fire). No clip: it
-## keeps running.
-func _spit_fire(lv: int) -> bool:
+## A flame ball at the current lock, within the cat's arrow range. Automatic fire waits for the visible unit to aim.
+func _spit_fire(lv: int, instant := true) -> bool:
 	var info := Data.saddle_info("attach", "fire_spitter")
-	var fwd := _fwd()
-	var reach := float(info.get("cone_m", 2.5))
-	var half := float(info.get("cone_deg", 35.0))
-	var cosa := cos(deg_to_rad(half))
-	var hit: Array = []
-	for e in _foes(false):
-		var to: Vector3 = _flat(e.global_position - global_position)
-		if to.length() < reach + float(e.radius) and (to.length() < float(e.radius) + 0.3 or to.normalized().dot(fwd) > cosa):
-			hit.append(e)
-	if hit.is_empty():
+	_select_fire_target()
+	if _fire_target == null:
 		return false
-	var per_s := Data.fire_burn_per_s(lv) * _friends()
-	var secs := float(info.get("burn_s", 2.0))
+	if instant:
+		_point_fire_target(0.0, true)
+	if not _fire_aligned():
+		return false
 	_went("fire_spitter", info)
 	var from := _fire_from()                            # 22 Nov 2026: from its model's nozzle when it has one
-	Fx.fire_cone(main, from[0], from[1], reach, half)
-	for e in hit:
-		if is_instance_valid(e) and not e.dead and e.has_method("ignite"):
-			e.ignite(secs, per_s)
+	var ball := Node3D.new()
+	ball.set_script(Fireball)
+	main.add_child(ball)
+	var aim := _fire_aim_at()
+	ball.launch(main, from[0], aim, info, Data.fire_damage(lv) * _friends(), Data.fire_burn_per_s(lv) * _friends())
 	return true
 
 

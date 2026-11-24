@@ -139,7 +139,7 @@ func _unlocks() -> void:
 	st._build_station("stall")
 	st._build_station("cottage")
 	_x("Hearthtree 1: building them is refused", int(Save.stations["stall"]) == 0 and int(Save.stations["cottage"]) == 0 and Save.leaves == 99999)
-	_x("no mission gives them any more", Data.gift_mission("stall") < 0 and Data.gift_mission("cottage") < 0)
+	_x("no raid gives them any more", Data.gift_mission("stall") < 0 and Data.gift_mission("cottage") < 0)
 	Save.camp_level = 2
 	st.refresh()
 	rows = st._card_shop()["rows"]
@@ -214,14 +214,14 @@ func _market() -> void:
 	l0 = Save.leaves
 	var shown_before: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
 	st._market_buy(ai)
-	_x("before the missions are won: no amber for sale, and none bought", ai >= 0 and not shown_before and int(Save.mats["amber"]) == a0 and Save.leaves == l0)
+	_x("before the raids are won: no amber for sale, and none bought", ai >= 0 and not shown_before and int(Save.mats["amber"]) == a0 and Save.leaves == l0)
 	var keep: Array = Save.missions_done.duplicate()
 	Save.missions_done = []
 	for i in Data.mission_count():
 		Save.missions_done.append(String(Data.mission(i)["id"]))
 	var shown_after: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
 	st._market_buy(ai)
-	_x("after the missions: amber for sale, bought into the materials", shown_after and int(Save.mats["amber"]) == a0 + int(ae.get("amount", 0))
+	_x("after the raids: amber for sale, bought into the materials", shown_after and int(Save.mats["amber"]) == a0 + int(ae.get("amount", 0))
 		and Save.leaves == l0 - int(ae.get("leaves", 0)), {"amber": Save.mats["amber"], "leaves": Save.leaves})
 	var si := _index_of("buys", "amber")
 	var se: Dictionary = Data.b["market"]["buys"][si] if si >= 0 else {}
@@ -375,7 +375,7 @@ func _old_save() -> void:
 	st.catch_up_gifts()
 	main.refresh_companions()
 	st.refresh()
-	_x("an old save keeps its Market and Cottage (gifts of missions 2 and 3) at their levels", int(Save.stations["stall"]) == 2
+	_x("an old save keeps its Market and Cottage (gifts of raids 2 and 3) at their levels", int(Save.stations["stall"]) == 2
 		and int(Save.stations["cottage"]) == 2 and Save.camp_level == 1, {"stations": Save.stations})
 	_x("... and Thistle and Sprig", main.mount != null and main.pet != null and Data.mount_level() == 2 and Data.pet_level() == 2)
 	var rows: Array = st._card_shop()["rows"]
@@ -427,7 +427,7 @@ func _home_repair() -> void:
 		seen[lv] = [got, want]
 		ok = ok and JSON.stringify(got) == JSON.stringify(want) and int(got["leaves"]) <= int(cap["leaves"]) and int(got.get("timber", 0)) <= int(cap["timber"])
 		capped = capped or int(got["leaves"]) == int(cap["leaves"])
-	_x("in the missions a ruined Hearthtree costs %d%% of what it cost, at most %d leaves and %d timber" % [int(round(share * 100.0)), int(cap["leaves"]), int(cap["timber"])],
+	_x("in the raids a ruined Hearthtree costs %d%% of what it cost, at most %d leaves and %d timber" % [int(round(share * 100.0)), int(cap["leaves"]), int(cap["timber"])],
 		not Data.raids_open() and ok and capped, {"by_level": seen})
 	Save.stations["stall"] = 2
 	var sp2 := _spent("stall")
@@ -436,7 +436,7 @@ func _home_repair() -> void:
 	if sp2["timber"] > 0.0:
 		want2["timber"] = int(ceil(sp2["timber"] * rs))
 	var got2: Dictionary = st.repair_cost("stall")
-	_x("another building (the Market) keeps the mission price (%d%% of what it cost)" % int(round(rs * 100.0)),
+	_x("another building (the Market) keeps the raid price (%d%% of what it cost)" % int(round(rs * 100.0)),
 		JSON.stringify(got2) == JSON.stringify(want2), {"got": got2, "want": want2})
 	Save.camp_level = cl0
 	st.refresh()

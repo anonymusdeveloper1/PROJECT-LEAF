@@ -403,7 +403,7 @@ func _dungeon() -> void:
 			grew = false
 	_x("the lift home banks the whole satchel", grew and not sat1.is_empty(), {"satchel": sat1, "mats": Save.mats})
 	_x("keys: 2 - 1 spent + 1 first-clear key = 2", Save.burrow_keys == 2, {"keys": Save.burrow_keys})
-	_x("no run saved, the missions untouched", Save.burrow_run.is_empty() and not main.fight.active and Save.mission_run == mf["run"]
+	_x("no run saved, the raids untouched", Save.burrow_run.is_empty() and not main.fight.active and Save.mission_run == mf["run"]
 		and Save.missions_done.size() == int(mf["done"]))
 	_x("back in the camp at the return spot, the camp's light again", main.area == null and main.player.global_position.distance_to(Vector3(0, 0, 15.5)) < 0.6
 		and main.cam.environment == null and absf(main.world.sun.light_energy - sun0) < 0.01)
@@ -1361,7 +1361,7 @@ func _hollow() -> void:
 	var b = main.burrows
 	var rg = b.ring()
 	var e: Dictionary = b.entrances["old_hollow"]
-	_x("sealed: the ring shows from the first mission won", rg.visible and not Data.burrows_open())
+	_x("sealed: the ring shows from the first raid won", rg.visible and not Data.burrows_open())
 	_x("sealed: the seal is on, the glow off", e["seal"] != null and (e["seal"] as Node3D).visible and e["glow"] != null and not (e["glow"] as Node3D).visible)
 	var spec: Dictionary = b.card("old_hollow")
 	_x("the sealed card", String(spec["sub"]) == "Sealed by the Gloom" and (spec["rows"] as Array).size() == 1 and not bool(spec["rows"][0]["enabled"]), {"spec": spec})
@@ -1516,7 +1516,7 @@ func _burrowsave_open() -> void:
 	b.check_open(true)
 	_x("not open at once (the reveal waits for the banners)", not Data.burrows_open())
 	var opened: bool = await t._until(func(): return Data.burrows_open(), 14.0)
-	_x("an old save that won every mission: the Hollow opens, keys topped up to 3", opened and Save.burrow_keys == 3, {"keys": Save.burrow_keys})
+	_x("an old save that won every raid: the Hollow opens, keys topped up to 3", opened and Save.burrow_keys == 3, {"keys": Save.burrow_keys})
 	Save.burrow_keys = 1
 	Save.save_game()
 	Save.load_game()

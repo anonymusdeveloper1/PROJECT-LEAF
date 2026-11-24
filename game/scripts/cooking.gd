@@ -56,7 +56,7 @@ func needs_text(r: Dictionary) -> String:
 	var needs: Dictionary = r.get("needs", {})
 	for k in needs:
 		var n := int(needs[k])
-		bits.append("%d %s (have %d)" % [n, Data.item_name(String(k), n), int(Save.pantry.get(k, 0))])
+		bits.append("%s · Have %d, Need %d" % [Data.item_name(String(k), 2).capitalize(), int(Save.pantry.get(k, 0)), n])
 	return ", ".join(bits)
 
 
@@ -94,6 +94,9 @@ func cook(id: String) -> bool:
 	if r.is_empty() or not can_cook(r):
 		return false
 	Data.take_items(r["needs"])
+	var spent := {}
+	for item in r["needs"]:
+		spent[item] = -int(r["needs"][item])
 	Save.meal_ready = id
 	var pot: Node3D = main.stations.nodes.get("pot")
 	var at: Vector3 = main.world.station_pos("pot")
@@ -112,6 +115,7 @@ func cook(id: String) -> bool:
 		main.raids.add_gloom("dish")
 	Save.save_game()
 	main.on_purchase()
+	main.hud.toast(Data.food_receipt(spent))
 	return true
 
 

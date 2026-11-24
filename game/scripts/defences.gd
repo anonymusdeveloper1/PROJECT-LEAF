@@ -18,7 +18,7 @@ extends Node3D
 ## level. Old saves: fences are refunded as leaves; placed barricades become rows at their road spots, and barricade
 ## pieces left in the bag are refunded as leaves (each its old price, barricade.piece).
 
-const AcornScript := preload("res://scripts/acorn.gd")
+const TowerScript := preload("res://scripts/tower.gd")
 const RowScript := preload("res://scripts/barricade_row.gd")
 const MarkerScript := preload("res://scripts/marker.gd")
 const AHEAD := 1.6
@@ -344,6 +344,7 @@ func _spawn(type: String, pos: Vector3, rot: float, slot: Array = []) -> Diction
 	_by_id[int(p["id"])] = p
 	_collide(p)
 	if type == "tower":
+		_setup_tower(p)
 		_make_tower_mark(p)
 	return p
 
@@ -423,6 +424,8 @@ func relevel(type: String) -> void:
 			node.rotation.y = p["rot"]
 			add_child(node)
 			p["node"] = node
+			if type == "tower":
+				_setup_tower(p)
 		_show(p)
 		_collide(p)
 		Fx.boing(p["node"], 0.3)
@@ -442,6 +445,8 @@ func _show(p: Dictionary, anim := false) -> void:
 		return
 	var node := p["node"] as Node3D
 	var down: bool = float(p["hp"]) <= 0.0 or p["broken"]
+	if p["type"] == "tower" and node.has_method("set_active"):
+		node.call("set_active", not down)
 	node.rotation.z = 0.22 if down else 0.0
 	Props.set_param(node, "gloom", 0.85 if p["wrecked"] else (0.5 if down else 0.0))
 
@@ -1257,6 +1262,12 @@ func _break(p: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------- towers and spikes at work
+func _setup_tower(p: Dictionary) -> void:
+	var node = p["node"]
+	node.set_script(TowerScript)
+	node.setup(main, p, level("tower"))
+
+
 func _physics_process(delta: float) -> void:
 	if main == null or main.frozen:
 		return
@@ -1266,33 +1277,8 @@ func _physics_process(delta: float) -> void:
 			continue
 		match String(p["type"]):
 			"tower":
-				var l: Dictionary = Data.defence_info("tower")["levels"][level("tower") - 1]
-				p["cd"] = float(p["cd"]) - delta
-				var best = null
-				var best_d := float(l["range"])
-				for e in foes:
-					if e.dead:
-						continue
-					var d: float = (e.global_position as Vector3).distance_to(p["pos"])
-					if d < best_d:
-						best_d = d
-						best = e
-				var turret: Node3D = Props.find_part(p["node"], "turret")
-				if best != null:
-					var to: Vector3 = best.global_position - (p["pos"] as Vector3)
-					if turret:
-						turret.global_rotation.y = lerp_angle(turret.global_rotation.y, atan2(to.x, to.z), 1.0 - exp(-10.0 * delta))
-					if float(p["cd"]) <= 0.0:
-						p["cd"] = float(l["every"])
-						var from: Vector3 = (p["pos"] as Vector3) + Vector3(0, 2.0, 0)
-						if turret:
-							var mk := Props.find_part(turret, "marker_shoot")
-							var fwd := Vector3(sin(turret.global_rotation.y), 0, cos(turret.global_rotation.y))
-							from = (mk.global_position if mk else turret.global_position) + fwd * 0.25
-						var acorn := Node3D.new()
-						acorn.set_script(AcornScript)
-						main.add_child(acorn)
-						acorn.launch(main, from, best, float(l["damage"]))
+				var tower = p["node"]
+				tower.tick(delta, foes)
 			"spikes":
 				var l2: Dictionary = Data.defence_info("spikes")["levels"][level("spikes") - 1]
 				for e in foes:

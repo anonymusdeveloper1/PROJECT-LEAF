@@ -1,5 +1,20 @@
 # Project LEAF: game plan
 
+**23 Nov 2026 Raid Missions / Random Raids addendum:**
+[`docs/RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md`](docs/RAID_MISSIONS_AND_RANDOM_RAIDS_PLAN.md) records the owner's
+terminology and direction. The signpost catalogue/replays are built: all Raid Missions stay listed, completed ones
+can be replayed, and Random Raids unlock after all 15. This supersedes older no-replay rules below. The agreed
+single-assault, four-direction adaptive Random Raid combat is a separate future redesign, not yet implemented.
+
+**23 Nov 2026 design addendum (planned, not implemented):**
+[`docs/DUNGEON_EXPEDITIONS_PLAN.md`](docs/DUNGEON_EXPEDITIONS_PLAN.md) records the owner's agreed dungeon direction:
+ten distinct locations as a release target, random expeditions, separate difficulty, meaningful repeat-run
+variations and permanent discoveries. Characters are recruited through quests to the campfire and may become
+adventuring companions. This permits companion residents and alternate dungeon routes in the future design;
+the camp stays a camp, with no production workers. Camp guardians retain their existing separate role.
+The addendum takes precedence over conflicting older dungeon/companion wording below. Runtime status remains
+in `docs/STATUS.md` and `docs/GAME_GUIDE.md`. Next the owner will describe raid changes for discussion.
+
 Draft 7, 17 November 2026. Draft 2 added the camp as a safe home base with no menus. Draft 3 added the progression
 (section 6). Draft 4 added stations that gate the upgrades (section 4). Draft 5 replaced the round-fenced village
 with the tree home, its shop, the firelight and fences you place yourself (section 3). Draft 6 (section 0) brought

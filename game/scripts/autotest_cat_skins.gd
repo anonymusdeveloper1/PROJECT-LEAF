@@ -192,7 +192,7 @@ func _card() -> void:
 	var titles: Array = _items(card).map(func(r): return String(r["title"]))
 	var want: Array = IDS.map(func(id): return Data.cat_skin_name(id))
 	_x("the card: title Tailor's Nook, one Outfits shelf, three tiles in order: %s" % ", ".join(want), String(card["title"]) == "Tailor's Nook"
-		and _sections(card) == ["Outfits"] and titles == want and want == ["Original Ranger", "Dusk Ranger", "Nightfall Ranger"],
+		and _sections(card) == ["Outfits"] and titles == want and want == ["Original Ranger", "Dusk Ranger", "Ember Ranger"],
 		{"title": card["title"], "sections": _sections(card), "titles": titles})
 	var o := _tile("original")
 	_x("the original (worn): Wearing, no working button", String(o.get("label", "")) == "Wearing" and String(o.get("badge", "")) == "Wearing"

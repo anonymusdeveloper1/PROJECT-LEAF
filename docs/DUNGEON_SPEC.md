@@ -1,5 +1,10 @@
 # Dungeons as paths: the Gloomwood (spec)
 
+**23 Nov 2026 · future direction:** [`DUNGEON_EXPEDITIONS_PLAN.md`](DUNGEON_EXPEDITIONS_PLAN.md) records the owner's
+agreed expedition, permanent-discovery and recruitment proposal. It is planning, not implemented gameplay. For
+that future design, alternate routes and evolving discoveries supersede this file's original restriction against
+route choices. This file remains the baseline specification for the currently playable Gloomwood.
+
 Updated 19 Nov 2026: night road, stone-circle arena, much harder; see PHASE_A_PROGRESS ("Night road and harder"). Where this
 file gives older numbers (marked "before 19 Nov"), the current ones are: 9 fights (6 with HUD pips plus 3 ambushes), Mossback
 about 9,900 health at level 1 (`hp_mult` 2.2), enrage below 35%, up to 6 adds (`boss_minions_max`), the Moonwell heals 40%,

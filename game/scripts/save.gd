@@ -43,7 +43,7 @@ var mount_look := "thistle"                        # which look rides in the mou
 var pet_look := "sprig"                            # which look fills the pet slot
 var mount_skin := "natural"                        # the look's colours (balance.json looks[].skins)
 var pet_skin := "natural"
-var mission_run := {}                              # a mission under way: {"mission": index, "chapter": the chapter to
+var mission_run := {}                              # campaign raid: wave_done is the last cleared wave; legacy chapter is kept
                                                    # start from, "gain": leaves gained since that chapter began (see
                                                    # leaves; an older save has none: 0)}, saved at every chapter
                                                    # break; {} = none
@@ -54,6 +54,7 @@ var guardian_skin := "natural"
 var guardian_post := -1                            # -1 guards the camp, 0-3 holds that trail
 var garden: Array = _empty_garden()                # 6 plots: {"crop": id or "", "grow": steps, "wet": waves left}
 var pantry := {"berries": 0, "herbs": 0, "honey": 0, "fish": 0, "goldfish": 0}
+var snack_choice := "auto"                         # the quick-heal food, or the configured automatic order
 var meal_ready := ""                               # the dish waiting in the pot (a recipe id)
 var meal_on := ""                                  # the dish eaten this chapter
 var fish_log := {}                                 # catch id -> how many caught
@@ -188,6 +189,8 @@ func load_game() -> void:
 	var run = d.get("mission_run", {})
 	if typeof(run) == TYPE_DICTIONARY and run.has("mission"):
 		mission_run = {"mission": int(run["mission"]), "chapter": int(run.get("chapter", 0)), "gain": maxi(0, int(run.get("gain", 0)))}
+		if run.has("wave_done"):
+			mission_run["wave_done"] = maxi(0, int(run["wave_done"]))
 	# Phase C (an older save has none of these: the defaults stay)
 	guardian_look = String(d.get("guardian_look", "moss_warden"))
 	guardian_skin = String(d.get("guardian_skin", "natural"))
@@ -202,10 +205,13 @@ func load_game() -> void:
 	if typeof(pd) == TYPE_DICTIONARY:
 		for k in pd:
 			pantry[String(k)] = int(pd[k])
+	snack_choice = String(d.get("snack_choice", "auto"))
+	if snack_choice != "auto" and Data.snack(snack_choice).is_empty():
+		snack_choice = "auto"
 	meal_ready = String(d.get("meal_ready", ""))
 	meal_on = String(d.get("meal_on", ""))
-	if meal_on != "":
-		# the run starts again at the chapter's start, so the dish being eaten goes back into the pot
+	if meal_on != "" and not mission_run.has("wave_done"):
+		# Legacy chapter checkpoints restart the chapter; new wave checkpoints keep its active dish.
 		if meal_ready == "":
 			meal_ready = meal_on
 		meal_on = ""
@@ -412,12 +418,32 @@ func _load_raids(rd) -> Dictionary:
 		r["plan"] = {"type": String(plan["type"]), "lanes": lanes, "level": int(plan.get("level", 1)),
 			"leader": String(plan.get("leader", "")), "first": bool(plan.get("first", false)), "seed": int(plan.get("seed", 1)),
 			"called": bool(plan.get("called", false))}
+		if plan.has("assault_total"):
+			r["plan"]["assault_total"] = clampi(int(plan["assault_total"]), 1, int(Data.gr()["assault"]["max_enemies"]))
 		var run = rd.get("run", {})
 		if typeof(run) == TYPE_DICTIONARY and not run.is_empty():
 			r["run"] = {"wave_done": int(run.get("wave_done", 0)), "losses": int(run.get("losses", 0)), "fire": float(run.get("fire", 1.0)),
 				"fire_went_out": bool(run.get("fire_went_out", false)), "rebuilt": bool(run.get("rebuilt", false)),
 				"last_stand": bool(run.get("last_stand", false)), "ready": bool(run.get("ready", false)),
 				"revealed": bool(run.get("revealed", false)), "started": bool(run.get("started", false))}
+			if int(run.get("assault_format", 0)) == 1:
+				r["run"]["assault_format"] = 1
+				r["run"]["legacy_held"] = maxi(0, int(run.get("legacy_held", 0)))
+				var defeated: Array = []
+				var total := int(r["plan"].get("assault_total", Data.gr()["assault"]["max_enemies"]))
+				var summons: Array = []
+				for summon in run.get("summons", []):
+					if total + summons.size() >= int(Data.gr()["assault"]["max_enemies"]):
+						break
+					if summon is Dictionary and Data.b["enemies"].has(String(summon.get("kind", ""))):
+						summons.append({"kind": String(summon["kind"]), "lane": clampi(int(summon.get("lane", 0)), 0, Data.lane_count() - 1)})
+				r["run"]["summons"] = summons
+				total += summons.size()
+				for member in run.get("defeated", []):
+					var id := int(member)
+					if id >= 0 and id < total and not defeated.has(id):
+						defeated.append(id)
+				r["run"]["defeated"] = defeated
 	else:
 		r["pending"] = false                               # no plan (or a kind that is gone): nothing is coming
 		r["run"] = {}
@@ -432,7 +458,7 @@ func save_game(quiet := false) -> void:
 		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "def_levels": def_levels, "flags": flags, "best_night": best_night,
 		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
 		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,
-		"pantry": pantry, "meal_ready": meal_ready, "meal_on": meal_on, "fish_log": fish_log, "fish_dry": fish_dry,
+		"pantry": pantry, "snack_choice": snack_choice, "meal_ready": meal_ready, "meal_on": meal_on, "fish_log": fish_log, "fish_dry": fish_dry,
 		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look, "burrow_keys": burrow_keys,
 		"save_v": save_v,
 		"mats": mats, "burrows": burrows, "burrow_run": burrow_run, "attach": attach,

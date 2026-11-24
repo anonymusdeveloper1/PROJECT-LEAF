@@ -12,6 +12,7 @@ const POSE := {
 }
 
 var amount := 0.0
+var leg_yaw := 0.0                                # optional seated leg offset; zero during gameplay
 var _bones := {}
 
 
@@ -28,7 +29,7 @@ func _process_modification_with_delta(_delta: float) -> void:
 			if bone < 0:
 				continue
 			var d: Vector3 = POSE[part]
-			var want := Vector3(d.x * sx, d.y, d.z).normalized()
+			var want := Vector3(d.x * sx, d.y, d.z).rotated(Vector3.UP, leg_yaw).normalized()
 			var pose := sk.get_bone_global_pose(bone)
 			var cur := pose.basis.y.normalized()
 			if cur.dot(want) > 0.9999:

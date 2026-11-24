@@ -11,7 +11,8 @@ extends Node3D
 ## The Hearthtree's card sells (shop-style item tiles in sections, Phase G2): growing it (its goals first: a tap on one
 ## takes the cat to where it is bought), the cat's own upgrades, the buildings, the defences (acorn towers, spikes, and
 ## the levels of barricades, towers and spikes: barricade rows are built at the road spots, defences.gd), and the
-## graphics setting. The signpost offers only the next mission (no replays), locked while it needs a bigger Hearthtree.
+## graphics setting. The signpost lists all Raid Missions, with completed replays and the next unfinished mission;
+## its separate Random Raids view unlocks once every Raid Mission is finished.
 ## The buildings round the campfire (world.SPOTS; the well stands on the lake's near shore):
 ##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) Burrow materials; Thistle
 ##                                        the hare comes free with it: ride it (mount.gd)
@@ -40,6 +41,7 @@ const FOOT := {"campfire": 0.6, "home": 1.15, "bench": 0.8, "target": 0.45, "wel
 ## Phase C stations: never wrecked, never in BUILDINGS or VILLAGE (the Moss Warden takes the hits for the camp).
 const CAMP_LIFE := ["stone", "garden", "pot", "fishing"]
 var dummy: Node3D        # what the cat shoots at the training target
+var sign_tab := ""       # empty selects the current progression view; otherwise missions / raids
 
 
 func build(m) -> void:
@@ -366,9 +368,9 @@ func _ruin_card(id: String, title: String, anchor: Vector3) -> Dictionary:
 		if raid:
 			rows.append({"text": "Repair between waves", "note": "Raids leave their damage: repair it after this wave", "cost": {}, "label": "", "enabled": false, "action": Callable()})
 		else:
-			rows.append({"text": "Repair between waves", "note": "Or win the mission and the camp mends itself", "cost": {}, "label": "", "enabled": false, "action": Callable()})
+			rows.append({"text": "Repair between waves", "note": "Or win the raid and the camp mends itself", "cost": {}, "label": "", "enabled": false, "action": Callable()})
 	else:
-		rows.append(_tile("repair", "Repair", "Everything here works again" + (" · free if the mission is won" if main.fight.active and not raid else ""),
+		rows.append(_tile("repair", "Repair", "Everything here works again" + (" · free if the raid is won" if main.fight.active and not raid else ""),
 			cost, "Repair", true, _repair.bind(id)))
 	return {"title": title, "sub": "Knocked down by the Gloom", "rows": rows, "anchor": anchor}
 
@@ -746,7 +748,7 @@ func _post_note() -> String:
 	var names: Array = lanes.map(func(ln): return String(Data.patch(int(ln))["name"]))
 	var p := Save.guardian_post
 	var note := "Goes where the fight is, all round the camp" if p < 0 else "Stays at that trail's mouth; the rest of the camp is yours"
-	note += " · next mission: %s" % ", ".join(names)
+	note += " · next raid: %s" % ", ".join(names)
 	if p >= 0 and not lanes.has(p):
 		note += " (not that trail: it guards the camp then)"
 	return note
@@ -785,12 +787,14 @@ func _card_garden() -> Dictionary:
 		return {"title": "Garden", "sub": sub, "rows": [], "anchor": anchor}
 	var rows: Array = []
 	var cnt: Dictionary = g.counts()
+	rows.append({"kind": "pantry"})
 	if int(cnt["ripe"]) > 0:
 		var pv: Dictionary = g.pick_preview()
 		var bits: Array = []
 		var add: Dictionary = pv["add"]
 		for k in add:
-			bits.append("+%d %s" % [int(add[k]), Data.item_name(String(k), int(add[k]))])
+			bits.append("+%d %s → %d/%d" % [int(add[k]), Data.item_name(String(k), int(add[k])),
+				int(Save.pantry.get(k, 0)) + int(add[k]), int(Data.b["cooking"]["pantry_cap"])])
 		var note := ", ".join(bits)
 		for k in pv["full"]:
 			note += (" · " if note != "" else "") + "pantry full of %s" % Data.item_name(String(k), 2)
@@ -868,6 +872,7 @@ func _garden_pick() -> void:
 	main.raids.add_gloom("harvest")
 	Save.save_game()
 	main.on_purchase()
+	main.hud.toast(Data.food_receipt(got))
 	if not Save.flag("told_cook"):
 		Save.set_flag("told_cook")
 		main.hud.tip("Cook what you pick at the pot by the campfire. A dish is eaten when the next chapter starts.", rings.get("pot"))
@@ -882,36 +887,28 @@ func _card_pot() -> Dictionary:
 	var subs: Array = []
 	if Save.meal_on != "":
 		var ron := Data.recipe(Save.meal_on)
-		subs.append("Eating: %s · %s this chapter" % [String(ron.get("name", "")), String(ron.get("says", ""))])
+		subs.append("Active dish · %s · %s" % [String(ron.get("name", "")), String(ron.get("says", ""))])
 	if Save.meal_ready != "":
-		subs.append("In the pot: %s · eaten when the next chapter starts" % String(Data.recipe(Save.meal_ready).get("name", "")))
-	var sub := " · ".join(subs) if not subs.is_empty() else "One dish at a time · eaten when the next chapter starts"
+		var waiting_dish := Data.recipe(Save.meal_ready)
+		subs.append("Waiting dish · %s · %s · next chapter or dungeon run" % [String(waiting_dish.get("name", "")), String(waiting_dish.get("says", ""))])
+	var sub := "\n".join(subs) if not subs.is_empty() else "One waiting dish · activates next chapter or dungeon run"
 	var rows: Array = []
-	var pantry: String = ck.pantry_text()
-	rows.append({"text": "Pantry", "note": pantry if not ck.pantry_empty() else "Empty: plant something in the garden", "cost": {}, "label": "", "enabled": false, "action": Callable()})
+	rows.append({"kind": "section", "text": "Your food"})
+	rows.append({"kind": "pantry"})
 	var known: Array = ck.known()
 	var ready: Array = known.filter(func(r): return ck.can_cook(r))
 	var not_yet: Array = known.filter(func(r): return not ck.can_cook(r))
 	var order: Array = ready + not_yet                 # what can be cooked now comes first
-	var room := int(Data.b["cooking"]["max_rows"]) - 1
-	var shown := order
-	var more: Array = []
-	if order.size() > room:
-		shown = order.slice(0, room - 1)
-		more = order.slice(room - 1)
 	var waiting := String(Data.recipe(Save.meal_ready).get("name", "")) if Save.meal_ready != "" else ""
-	for r in shown:
+	for r in order:
 		var ok: bool = ck.can_cook(r)
-		var note := "%s · %s" % [ck.needs_text(r), String(r.get("says", ""))]
+		var note := "%s\n%s · next chapter or dungeon run" % [ck.needs_text(r), String(r.get("says", ""))]
 		if not ok:
 			note = "%s · %s" % [ck.why_not(r), note]
 		elif waiting != "":
-			note += " · swaps out the %s in the pot" % waiting
-		rows.append({"text": "Cook %s" % String(r["name"]), "note": note, "cost": {}, "label": "Cook", "enabled": ok,
+			note += "\nReplaces %s and uses these ingredients" % waiting
+		rows.append({"text": "Cook %s" % String(r["name"]), "note": note, "cost": {}, "label": "Replace" if waiting != "" else "Cook", "enabled": ok,
 			"pulse": ok and Save.meal_ready == "", "action": _cook_dish.bind(String(r["id"]))})
-	if not more.is_empty():
-		var bits: Array = more.map(func(r): return "%s (%s)" % [String(r["name"]), ck.needs_short(r)])
-		rows.append({"text": "More recipes", "note": " · ".join(bits), "cost": {}, "label": "", "enabled": false, "action": Callable()})
 	return {"title": "Cooking Pot", "sub": sub, "rows": rows, "anchor": anchor}
 
 
@@ -1328,7 +1325,7 @@ func _station_needs(sid: String) -> String:
 		bits.append("Needs %s at level %d" % [Data.camp_name(), int(vi.get("needs_home", 1))])
 	var need := int(vi.get("needs_missions", 0))
 	if Data.progress() < need:
-		bits.append("Win %d missions first" % need)
+		bits.append("Finish %d Raid Missions first" % need)
 	return " · ".join(bits)
 
 
@@ -1442,7 +1439,7 @@ func _def_level_note(type: String, lv: int) -> String:
 	var l: Dictionary = Data.defence_info(type)["levels"][lv - 1]
 	match type:
 		"barricade": return "%d health each" % int(l["hp"])
-		"tower": return "%d damage every %.1fs, %.1fm range, %d health" % [int(l["damage"]), float(l["every"]), float(l["range"]), int(l.get("hp", 0))]
+		"tower": return "360° · %d damage · %.1fm\nEvery %.2fs · %d health" % [int(l["damage"]), float(l["range"]), float(l["every"]), int(l.get("hp", 0))]
 		"spikes": return "%d damage a second, slows more" % int(l["dps"])
 	return ""
 
@@ -1559,7 +1556,7 @@ func _grow_rows() -> Array:
 		if left > 0:
 			note = gives                                # the tile's Goals bar shows how many are met
 		elif bool(next.get("needs_burrows", false)) and not Data.burrows_open():
-			note = "After the missions: the Gloomwood must open first"
+			note = "After the raids: the Gloomwood must open first"
 		else:
 			note = "Beat level %d of %s first" % [int(next.get("needs_depth", 0)), String(Data.burrow_list()[0]["name"])]
 	rows.append(_section("Grow"))
@@ -1828,6 +1825,10 @@ func _bow_tile(bid: String) -> Dictionary:
 		var shown_cap := maxi(mini(cap, top), lv)
 		var bar := [["Level", float(lv) / float(maxi(shown_cap, 1)), "%d/%d" % [lv, shown_cap]]]
 		if bid == Save.bow:
+			var curve: Dictionary = Data.b["bow_upgrade_curve"]
+			if lv + 1 >= int(curve["late_from_level"]) and lv + 1 <= int(curve["late_to_level"]) and lv < cap and lv < top:
+				var gain := (Data.bow_level_mult(bid, lv + 1) / Data.bow_level_mult(bid, lv) - 1.0) * 100.0
+				says = "Next: +%s%% damage\n%s" % [_short_num(gain), says]
 			var costs: Array = bi["cost"]
 			if lv >= top:
 				t = _tile("bow", nm, "At max level · " + says, {}, "", false, Callable(), "Equipped", [["Level", 1.0, "Max"]])
@@ -2019,7 +2020,7 @@ func _saddle_tile(part: String, id: String) -> Dictionary:
 		"cap":
 			return _tile(icon, nm, "Upgrade the %s for more" % _name("saddlery"), {}, "Upgrade", false, Callable(), badge, bar)
 		"burrows":
-			return _tile(icon, nm, "Level %d needs Burrow materials, after the missions" % (lv + 1), {}, "Upgrade", false, Callable(), badge, bar)
+			return _tile(icon, nm, "Level %d needs Burrow materials, after the raids" % (lv + 1), {}, "Upgrade", false, Callable(), badge, bar)
 	var nc := Data.saddle_price(part, id, lv + 1)
 	return _tile(icon, nm, says + Data.mats_line(nc), nc, "Upgrade", block == "", _saddle_buy.bind(part, id), badge, bar)
 
@@ -2040,7 +2041,7 @@ func _saddle_note(part: String, id: String, lv: int) -> String:
 			return "%d+ enemies near: %s s stun, +%d%% damage taken" % [int(info.get("min_foes", 4)), _short_num(Data.skill_stun(id, lv)),
 				roundi(Data.skill_taken(id, lv) * 100.0)]
 		"fire_spitter":
-			return "When worn: fire every %s s, %d a second for %s s" % [every, roundi(Data.fire_burn_per_s(lv)), _short_num(float(info.get("burn_s", 2.0)))]
+			return "Cat's firing pace: %s splash damage in %s m, +%s burn/s for %s s" % [_short_num(Data.fire_damage(lv)), _short_num(float(info["blast_m"])), _short_num(Data.fire_burn_per_s(lv)), _short_num(float(info["burn_s"]))]
 		"saddle":
 			return "When worn: %s has +%d%% health" % [Data.mount_name(), roundi(float(info.get("hp_per_level", 0.0)) * lv * 100.0)]
 		"saddlebags":
@@ -2288,7 +2289,7 @@ func _card_stall() -> Dictionary:
 	for sk in Data.saddle_items("skills"):
 		if Data.skill_level(String(sk)) > 0:
 			learned += 1
-	var ride_note := "%d%% faster, takes the hits for you" % int((Data.pick("mount", "speed_by_level", lv) - 1.0) * 100.0)
+	var ride_note := "%s%% faster, takes the hits for you" % _short_num((Data.pick("mount", "speed_by_level", lv) - 1.0) * 100.0)
 	if learned > 0:
 		ride_note += " · %d skill%s" % [learned, "s" if learned > 1 else ""]
 	rows.append({"text": ("Get off %s" if riding else "Ride %s") % mn, "note": "%s goes back to the %s" % [mn, title] if riding else ride_note,
@@ -2328,9 +2329,9 @@ func _market_sells() -> Array:
 		if mat:
 			text = "A Burrow material · you have %d" % Data.have(id)
 		elif room:
-			text = "Food for the pot · you have %d" % int(Save.pantry.get(id, 0))
+			text = "Food for cooking and dungeon healing · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
 		else:
-			text = "The pantry is full of these"
+			text = "Pantry full · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
 		out.append(_quiet(_tile(id, title, text, {"leaves": int(e.get("leaves", 0))}, "Buy", room, _market_buy.bind(i))))
 	return out
 
@@ -2397,6 +2398,10 @@ func _market_buy(i: int) -> void:
 	Save.save_game()
 	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
 	main.on_purchase()
+	if mat:
+		main.hud.toast("+%d %s · now %d · leaves %d" % [n, Data.mat_name(id), Data.have(id), Save.leaves])
+	else:
+		main.hud.toast("%s · leaves %d" % [Data.food_receipt({id: n}), Save.leaves])
 
 
 ## Sells market.buys[i] to Bramble: the item is taken, he pays its leaves.
@@ -2418,6 +2423,7 @@ func _market_sell(i: int) -> void:
 	Save.save_game()
 	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
 	main.on_purchase()
+	main.hud.toast("Sold %d %s · now %d · leaves %d" % [n, Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n), _stock(id), Save.leaves])
 
 
 ## Phase E: attachments for the mount or the pet (balance.json attachments): Burrows-only help, bought with what the
@@ -2582,6 +2588,7 @@ func _use_look(slot: String, id: String) -> void:
 func _trade(buying: bool) -> void:
 	if Save.ruined.has("stall"):
 		return
+	var timber_before := Save.timber
 	if buying:
 		var tb: Dictionary = Data.b["trade"].get("buy", {"timber": 5, "leaves": 50})
 		if not Data.pay({"leaves": int(tb.get("leaves", 50))}):
@@ -2595,43 +2602,96 @@ func _trade(buying: bool) -> void:
 	Save.save_game()
 	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
 	main.on_purchase()
+	main.hud.toast("%+d timber · now %d · leaves %d" % [Save.timber - timber_before, Save.timber, Save.leaves])
 
 
 func _card_sign() -> Dictionary:
 	var f = main.fight
 	var anchor: Vector3 = main.world.station_pos("sign") + Vector3(0, 2.0, 0)
 	if f.active and f.mode == "raid":
-		return main.raids.card_raid(anchor)          # a Gloom Raid: its warning, waves and breathers
+		return _sign_navigation(main.raids.card_raid(anchor), "raids", true)
 	if f.active and f.in_wave:
-		return {"title": f.title(), "sub": "Wave %d of %d is on. Protect the camp!" % [f.wave, f.waves()], "rows": [], "anchor": anchor}
-	if f.active and f.on_break:
-		var c: int = f.chapter() + 1
-		return {"title": f.title(), "sub": "Chapter %d of %d held · saved" % [c, f.chapters()], "rows": [
-			{"text": "Chapter %d: %s" % [c + 1, f.chapter_name(c)], "note": "Waves %d–%d of %d" % [f.wave + 1, mini(f.wave + f.chapter_waves(), f.waves()), f.waves()],
-				"cost": {}, "label": "Go", "enabled": true, "action": f.next_phase_now}],
-			"anchor": anchor}
+		return _sign_navigation({"title": f.title(), "sub": "Raid mission · wave %d of %d is on. Protect the camp!" % [f.wave, f.waves()], "rows": [], "anchor": anchor}, "missions", true)
 	if f.active:
-		return {"title": f.title(), "sub": f.status_text(), "rows": [
-			{"text": "Next wave now", "note": "Skip the rest of the breather", "cost": {}, "label": "Go", "enabled": true, "action": f.next_phase_now}],
-			"anchor": anchor}
+		return _sign_navigation({"title": f.title(), "sub": f.status_text(), "rows": [
+			{"text": "Wave %d of %d" % [f.wave + 1, f.waves()], "note": "Saved · rest, shop and repair for as long as you need", "cost": {}, "label": "Start wave", "enabled": true, "action": f.next_phase_now}],
+			"anchor": anchor}, "missions", true)
+	var selected := sign_tab if sign_tab != "" else ("raids" if Data.raids_open() else "missions")
+	if selected == "raids" and Data.raids_open():
+		var watch: Dictionary = main.raids.card_watch(anchor)
+		watch["title"] = "Random Raids"
+		return _sign_navigation(watch, "raids")
+	return _sign_navigation(_mission_catalog(anchor), "missions")
+
+
+func _sign_navigation(spec: Dictionary, selected: String, busy := false) -> Dictionary:
+	spec["view_id"] = "signpost_%s_%s" % [selected, ("wave" if main.fight.in_wave else "ready") if busy else "catalog"]
+	spec["spacious"] = true
+	spec["tabs"] = [
+		{"text": "Raid Missions", "selected": selected == "missions", "enabled": not busy, "action": _set_sign_tab.bind("missions")},
+		{"text": "Random Raids", "selected": selected == "raids", "enabled": not busy and Data.raids_open(), "action": _set_sign_tab.bind("raids")}
+	]
+	return spec
+
+
+func _set_sign_tab(tab: String) -> void:
+	if main.fight.active or (tab == "raids" and not Data.raids_open()) or tab not in ["missions", "raids"]:
+		return
+	sign_tab = tab
+	if main.hud._card_scroll != null:
+		main.hud._card_scroll.scroll_vertical = 0
+	main.hud.refresh_card()
+
+
+func _mission_catalog(anchor: Vector3) -> Dictionary:
+	var rows: Array = []
+	var blocked := ""
 	if Save.fire_ruined:
-		return {"title": "To the woods", "sub": "The camp fell", "rows": [
-			{"text": "Rebuild the campfire first", "note": "At the ashes in the middle of the camp", "cost": {}, "label": "", "enabled": false, "action": Callable()}],
-			"anchor": anchor}
-	if Data.raids_open():
-		return main.raids.card_watch(anchor)         # every mission is won: the signpost is the Watch
-	var run_rows := _run_rows()
-	if not run_rows.is_empty():
-		return {"title": "To the woods", "sub": "A mission is under way", "rows": run_rows, "anchor": anchor}
-	var nxt := Data.next_mission()
-	if nxt >= Data.mission_count():
-		return {"title": "To the woods", "sub": "", "rows": [], "anchor": anchor}
-	if not Data.mission_unlocked(nxt):
-		return {"title": "To the woods", "sub": "The next mission needs a bigger %s" % Data.camp_name().trim_prefix("the "), "rows": _locked_rows(nxt), "anchor": anchor}
-	var m := Data.mission(nxt)
-	var rows: Array = [{"text": "%d. %s" % [nxt + 1, m["name"]], "note": "%d waves · %s" % [int(m["waves"]), _mission_enemies(nxt)],
-		"cost": {}, "label": "Fight", "enabled": true, "action": main.start_stage.bind(nxt)}]
-	return {"title": "To the woods", "sub": "The next mission", "rows": rows, "anchor": anchor}
+		blocked = "Rebuild the campfire first"
+	elif bool(Save.raids.get("pending", false)):
+		blocked = "A random raid is waiting · meet it first"
+	if blocked != "":
+		rows.append({"text": blocked, "note": "Your completed raid missions remain saved", "cost": {}, "label": "", "enabled": false, "action": Callable()})
+	if not Save.mission_run.is_empty():
+		rows.append({"kind": "section", "text": "In progress"})
+		rows.append_array(_run_rows(blocked))
+	var todo: Array = []
+	var done: Array = []
+	for i in range(Data.mission_count() - 1, -1, -1):
+		var won := Save.missions_done.has(String(Data.mission(i)["id"]))
+		var entry := _mission_entry(i, won, blocked)
+		if won:
+			done.append(entry)
+		else:
+			todo.append(entry)
+	if not todo.is_empty():
+		rows.append({"kind": "section", "text": "To finish · %d" % todo.size()})
+		rows.append_array(todo)
+	if not done.is_empty():
+		rows.append({"kind": "section", "text": "Completed · %d" % done.size()})
+		rows.append_array(done)
+	var sub := "%d / %d finished" % [done.size(), Data.mission_count()]
+	if not Data.raids_open():
+		sub += " · Random Raids unlock at %d" % Data.mission_count()
+	return {"title": "The Signpost", "sub": sub, "rows": rows, "anchor": anchor}
+
+
+func _mission_entry(i: int, won: bool, blocked: String) -> Dictionary:
+	var m := Data.mission(i)
+	var label := "Replay" if won else "Start"
+	var note := "Finished · %d waves" % int(m["waves"]) if won else "%d waves" % int(m["waves"])
+	var enabled := blocked == "" and Data.mission_unlocked(i)
+	if blocked != "":
+		note = blocked
+	elif Save.mission_run.has("mission"):
+		enabled = false
+		label = "Current" if int(Save.mission_run["mission"]) == i else label
+		note = "Use Resume above" if int(Save.mission_run["mission"]) == i else "Resume or give up the current raid mission first"
+	elif not Data.mission_unlocked(i):
+		label = "Locked"
+		note = "Finish #%d first · %d waves" % [i, int(m["waves"])] if i > Data.next_mission() else "Needs %s at level %d" % [Data.camp_name(), Data.mission_needs_home(i)]
+	return {"kind": "mission", "mission_index": i, "mission_name": String(m["name"]), "completed": won, "text": "Raid Mission %d · %s" % [i + 1, m["name"]],
+		"note": note, "cost": {}, "label": label, "enabled": enabled, "action": main.start_stage.bind(i)}
 
 
 ## The next mission while it needs a bigger Hearthtree (Phase F: missions 3, 7, 11 and 14 start an act): "Needs the
@@ -2666,15 +2726,16 @@ func _locked_rows(nxt: int) -> Array:
 func _run_rows(blocked := "") -> Array:
 	var rows: Array = []
 	var run: Dictionary = Save.mission_run
-	if not (run.has("mission") and int(run["mission"]) < Data.mission_count()):
+	if not (run.has("mission") and int(run["mission"]) >= 0 and int(run["mission"]) < Data.mission_count()):
 		return rows
 	var mi := int(run["mission"])
 	var m0 := Data.mission(mi)
 	var c0 := int(run.get("chapter", 0))
 	var per := int(Data.b["mission"]["chapter_waves"])
-	rows.append({"text": "%d. %s" % [mi + 1, m0["name"]], "note": blocked if blocked != "" else "Go on from chapter %d (wave %d of %d)" % [c0 + 1, c0 * per + 1, int(m0["waves"])],
-		"cost": {}, "label": "Go on", "enabled": blocked == "", "action": main.start_stage.bind(mi)})
-	rows.append({"text": "Give up this mission", "note": "Next time it starts from wave 1 · what you earned stays",
+	var next_wave := clampi(int(run.get("wave_done", c0 * per)) + 1, 1, int(m0["waves"]))
+	rows.append({"text": "Resume Raid Mission %d · %s" % [mi + 1, m0["name"]], "note": blocked if blocked != "" else "Resume at wave %d of %d · cleared waves stay cleared" % [next_wave, int(m0["waves"])],
+		"cost": {}, "label": "Start wave", "enabled": blocked == "", "action": main.start_stage.bind(mi)})
+	rows.append({"text": "Give up this raid mission", "note": "Next time it starts from wave 1 · what you earned stays",
 		"cost": {}, "label": "Give up", "enabled": true, "action": _give_up_run})
 	return rows
 
@@ -2695,5 +2756,5 @@ func _mission_enemies(i: int) -> String:
 
 func _give_up_run() -> void:
 	main.fight.give_up_run()
-	main.hud.toast("Mission given up: it starts from wave 1 next time")
+	main.hud.toast("Raid mission given up: it starts from wave 1 next time")
 	main.hud.refresh_card()

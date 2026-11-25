@@ -77,7 +77,7 @@ func tier() -> Dictionary:
 
 
 func map_name() -> String:
-	return String(data().get("name", Data.burrow_def(bid()).get("name", "The Burrow")))
+	return String(data().get("name", Data.burrow_def(bid()).get("name", "Expedition")))
 
 
 func end_type() -> String:

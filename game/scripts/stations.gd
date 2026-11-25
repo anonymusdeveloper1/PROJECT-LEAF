@@ -2317,7 +2317,9 @@ func _market_sells() -> Array:
 		var title := "%d %s" % [n, Data.mat_name(id) if mat else Data.item_name(id, n)]
 		var room := mat or int(Save.pantry.get(id, 0)) + n <= cap
 		var text := ""
-		if mat:
+		if id == "amber":
+			text = "An expedition material · you have %d" % Data.have(id)
+		elif mat:
 			text = "A Burrow material · you have %d" % Data.have(id)
 		elif room:
 			text = "Food for cooking and dungeon healing · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]

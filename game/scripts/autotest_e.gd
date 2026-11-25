@@ -277,8 +277,9 @@ func _dungeon() -> void:
 	await t._go_straight(m.w2(m.branches["nook"][0]), 0.5, 8.0)
 	var wk1: Dictionary = await _walk_to(46.0)
 	times.merge(wk1)
-	_x("all three holes fired and the holes are won", (holes["spawners"] as Array).all(func(sp): return sp["fired"]) and String(holes["state"]) == "done",
-		{"state": holes["state"]})
+	_x("all three Grubling holes fired and the named fight is won",
+		String(holes["name"]) == "The Grubling holes" and (holes["spawners"] as Array).all(func(sp): return sp["fired"])
+		and String(holes["state"]) == "done", {"name": holes["name"], "state": holes["state"]})
 	# 4. the Glowcap clearing
 	await _walk_to(51.0, false)
 	await t._wait(0.5)

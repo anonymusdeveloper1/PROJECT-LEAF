@@ -31,7 +31,7 @@
      "spawners": [
        {"line_s": 27.0, "kind": "thornling", "count": 3, "per_level": 0.5,
         "from": [{"s": 30.0, "off": -4.5}, {"s": 31.0, "off": 4.5}, {"s": 32.5, "off": -4.2}, {"s": 29.5, "off": 4.4}]}]},
-    {"id": "holes", "name": "The burrow holes", "at": {"s": 37.0},
+    {"id": "holes", "name": "The Grubling holes", "at": {"s": 37.0},
      "spawners": [
        {"hole": {"s": 31.0, "off": 1.3}, "line_s": 31.0, "kind": "grub", "count": 3, "per_level": 0.5, "emerge": true},
        {"hole": {"s": 37.5, "off": 1.4}, "line_s": 37.5, "kind": "grub", "count": 3, "per_level": 0.5, "emerge": true},

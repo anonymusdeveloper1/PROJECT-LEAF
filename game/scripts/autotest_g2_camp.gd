@@ -218,9 +218,10 @@ func _market() -> void:
 	Save.missions_done = []
 	for i in Data.mission_count():
 		Save.missions_done.append(String(Data.mission(i)["id"]))
-	var shown_after: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
+	var amber_text := "An expedition material · you have %d" % a0
+	var shown_after: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber" and String(r.get("text", "")) == amber_text)
 	st._market_buy(ai)
-	_x("after the raids: amber for sale, bought into the materials", shown_after and int(Save.mats["amber"]) == a0 + int(ae.get("amount", 0))
+	_x("after the raids: amber shows its expedition note and can be bought", shown_after and int(Save.mats["amber"]) == a0 + int(ae.get("amount", 0))
 		and Save.leaves == l0 - int(ae.get("leaves", 0)), {"amber": Save.mats["amber"], "leaves": Save.leaves})
 	var si := _index_of("buys", "amber")
 	var se: Dictionary = Data.b["market"]["buys"][si] if si >= 0 else {}

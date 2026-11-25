@@ -38,6 +38,8 @@ extends Node3D
 ## leader is gone, or the cat comes for it; then it acts on its own as before (_keep_formation, _squad_steer). Support
 ## members keep behind; a Frog Shaman still heals and a Crow Drummer still drums on the march. The leader walks its
 ## trail as before. Bosses and raid enemies have no squad.
+## H1 (the event board, Events): every hit that lands and every burn tick announce damage_dealt(self, amount); its
+## health reaching 0 announces enemy_died(id, where), once per enemy (_die).
 
 const BoltScript := preload("res://scripts/bolt.gd")
 const SlimeScript := preload("res://scripts/slime.gd")
@@ -76,6 +78,7 @@ var _act_len := 0.0
 var _act_event := 0.0
 var _act_done := false
 var _act_target = null
+var _act_trip := -1                           # H1: a grab's pickup drop (pickup.gd trip): pooled pickups are reused
 var _cd := 0.0                                # attack cooldown
 var _cd2 := 0.0                               # boar charge / bear slam cooldown
 var _cd3 := 0.0                               # bear roar cooldown
@@ -1416,6 +1419,7 @@ func _start_action(kind: String, tgt) -> void:
 			_play("Attack", 0.08)
 			_cd = float(info["attack_every"])
 		"grab":
+			_act_trip = int(tgt.trip) if tgt is Object and is_instance_valid(tgt) else -1   # H1: this drop of the leaf
 			_act_len = _clip_len("Grab", 0.6)
 			_act_event = _event("Grab", "grab", 0.3)
 			_play("Grab" if anim and anim.has_animation("Grab") else "Attack", 0.08)
@@ -1504,6 +1508,7 @@ func _do_action(delta: float) -> void:
 	_act_t += delta
 	if typeof(_act_target) == TYPE_OBJECT and not is_instance_valid(_act_target):
 		_act_target = null
+	_drop_pooled_grab()
 	var tgt = _act_target
 	if tgt is Node3D and is_instance_valid(tgt):
 		var to: Vector3 = (tgt as Node3D).global_position - global_position
@@ -1522,9 +1527,16 @@ func _do_action(delta: float) -> void:
 		_think_t = 0.0
 
 
+## H1: a grab's leaf that has gone back to its pool (picked up, swept) is out of the scene: the grab lets it go.
+func _drop_pooled_grab() -> void:
+	if state == "grab" and _act_target is Node and not (_act_target as Node).is_inside_tree():
+		_act_target = null
+
+
 func _impact() -> void:
 	if typeof(_act_target) == TYPE_OBJECT and not is_instance_valid(_act_target):
 		_act_target = null
+	_drop_pooled_grab()
 	var tgt = _act_target
 	var reach := float(info["reach"]) + radius + 0.5
 	var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
@@ -1546,7 +1558,8 @@ func _impact() -> void:
 			elif tgt != null and is_instance_valid(tgt) and tgt.has_method("hurt"):
 				tgt.hurt(int(maxi(gate_damage, 4) * float(info.get("siege", 1.0)) * (1.0 + buff if buff_t > 0.0 else 1.0)))
 		"grab":
-			if tgt != null and is_instance_valid(tgt) and not tgt.taken:
+			# H1: only the drop it reached for (a pooled pickup dropped again elsewhere is a new leaf)
+			if tgt != null and is_instance_valid(tgt) and not tgt.taken and int(tgt.trip) == _act_trip:
 				carried += tgt.steal()
 				Fx.text(main, global_position + Vector3(0, 1.3, 0), "Stolen!", Color(1.0, 0.55, 0.3))
 				Fx.smoke(main, global_position)
@@ -2174,6 +2187,8 @@ func hit(direction: Vector3, amount := 10.0) -> void:
 		wake()
 	hp -= amount
 	last_dealt = maxf(amount, 0.0)
+	if amount > 0.0:
+		Events.damage_dealt.emit(self, amount)
 	if not enraged and mods.has("enrage_at") and hp > 0.0 and hp <= max_hp * float(mods["enrage_at"]):
 		_enrage()
 	_hit_flash = 0.12
@@ -2240,6 +2255,7 @@ func _burn_hurt(amount: float) -> void:
 	hp -= amount
 	burn_dealt += amount
 	burn_ticks += 1
+	Events.damage_dealt.emit(self, amount)
 	_hit_flash = maxf(_hit_flash, 0.06)
 	if amount >= 0.5:
 		Fx.number(main, global_position + Vector3(0, aim_height * 2.0 + 0.3, 0), amount, Color(1.0, 0.6, 0.25))
@@ -2356,6 +2372,7 @@ func _frost_clear() -> void:
 
 
 func _die() -> void:
+	var first := not dead                           # H1: enemy_died goes out once per enemy
 	dead = true
 	burn_t = 0.0
 	_burn_look(false)
@@ -2375,6 +2392,8 @@ func _die() -> void:
 			value = roundi(value * float(Data.b["kill_leaf_bonus"]))
 		value += carried                           # returned stolen leaves are never multiplied
 		main.drop_leaves(global_position, value)
+	if first:
+		Events.enemy_died.emit(id, global_position)
 	Sfx.play("pop", -6.0)
 	Fx.kill(main, global_position + Vector3(0, aim_height, 0), _color)
 	if _ai == "golden_grub":

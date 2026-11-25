@@ -214,7 +214,7 @@ The goals (all of them must be met). The raid that ends each step is the first g
 | Home | Goals | Raids usually played at this level (not required since 21 Nov 2026) |
 |---|---|---|
 | 2 | Raid 1 won (First Embers). Training Target and Bow Shop built. Damage 4, Draw speed 2, Health 3. Twig Bow level 4. | Raids 3 to 6 |
-| 3 | Raid 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2; Wishing Well built. Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Raids 7 to 10 |
+| 3 | Raid 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2. (New, H1, 25 Nov 2026: this list no longer asks for the Wishing Well, which opens at Hearthtree 3; Hearthtree 4 still asks for Well level 2.) Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Raids 7 to 10 |
 | 4 | Raid 9 won (Croaking Choir). Target, Bow Shop, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Raids 11 to 13 |
 | 5 | Raid 12 won (Two Fronts). Target and Bow Shop at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9. (New, 22 Nov 2026: Thorn Volley is hidden, so it is no longer a goal here.) 5 towers at level 3; Thorn Spikes level 3. | Raids 14 and 15 |
 | 6 | All 15 raids won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the Burrows go on |
@@ -247,7 +247,7 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 | Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for raid 3. |
 | Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
 | Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Levels 4 and 5 also need Burrow materials, after the raids. Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
-| Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. | Shop, after 4 raids won |
+| Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. **New (H1, 25 Nov 2026):** it is built at **Hearthtree 3** (it used to need 4 raids won; a save that already has it keeps it). Its card has only its Upgrade row, and the card's subtitle shows its rates. In waves it mends **1%, 1.5% or 2.5%** of max health a second (it was 0.5, 1 and 2); between waves 3%, 6% and 10% as before. It also mends the standing Moss Warden; a downed golem gets up by its own rules. A worn Well is still repaired from the signpost's Mend list. | Shop, at Hearthtree 3 |
 | Garden and cooking pot | Grow food and cook dishes (part 6) | Gift for winning raid 1, with 4 Sunberries |
 | Fishing Spot | Fishing at the lake (part 6) | Gift for winning raid 6 |
 | Guardian Stone | The Moss Warden's home: its post, colours and upgrades (part 5) | Appears when the Warden is freed |
@@ -327,6 +327,7 @@ Go to the signpost. Its card ("To the woods") shows the next raid: its waves and
   pools, food duration and these rewards. Older chapter-only saves keep their original checkpoint. **Give up** is an
   explicit choice to restart that raid while keeping what was earned.
 - A wave can never hang: if its last 3 enemies do nothing for 45 s, they flee.
+  **New (H1, 25 Nov 2026):** this is for Raid Missions only, and it has not changed. Random Raids work differently (part 7).
 
 ### Squads (New, 20 Nov 2026, G1b)
 
@@ -721,6 +722,8 @@ Raids start with the first win of raid 15. They come only while you are playing 
    **7 golden leaves and 2 timber** on top of the final raid reward. **Raid Missions retain their normal wave system.**
 3. **The leader** joins last: the Gloom Herald, or a boss in an elite raid. **New (H1, 25 Nov 2026): the raid is held
    when every raider is defeated**: toppling the leader no longer makes the rest flee.
+   The leader's banner and the signpost card say "defeat every raider to hold the camp". If the last 1 to 3 raiders
+   do nothing for `flee_after` (45 s), they walk once to the campfire, so the raid can still end.
 
 | Kind | From | Trails | Leader | Who comes |
 |---|---|---|---|---|
@@ -885,7 +888,7 @@ boss: a map can end in a **treasure clearing** instead, and the owner wants some
 
 | Currency | Where it comes from | What it buys |
 |---|---|---|
-| Golden leaves | Kills, waves, bonuses, chests, raid rewards, raids, the Gloomwood | Almost everything |
+| Golden leaves | Kills, waves, bonuses, chests, raid rewards, raids, the Gloomwood. **New (H1, 25 Nov 2026):** the leaves that defeated enemies drop in Raid Missions, Random Raids and the Gloomwood are 30% more (`kill_leaf_bonus` 1.3, applied after the mission's 1.5). Stolen leaves, chests, wave pay and raid pay are not raised. | Almost everything |
 | Timber | Raid waves held (G1), chapter chests, raid rewards, driftwood, raids, the Gloomwood | Buildings, home levels, rebuilding the campfire; buy 5 for 50 leaves, sell 5 for 30 leaves (G1) |
 | Gloom shards | Raids, Gloomwood boss chests | Part 7's list; sell 5 for 100 leaves |
 | Hollow keys (0 to 3) | Raids held, a level's first clear | A boon at the start of a run |
@@ -1021,8 +1024,10 @@ safety net.
   CanvasLayer (`joystick.gd`), the cat (`player.gd`), `defences.gd`, `garden.gd`, `cooking.gd`, `fishing.gd`,
   `stations.gd` (every building, its ring and its card), `burrow.gd`, the HUD (`hud.gd`), the camera. Companions are
   added later by `main.refresh_companions()`: `pet.gd`, `mount.gd`, `npc.gd` (Bramble), `guardian.gd`.
-- **Autoloads** (`project.godot`): `Data` (`data.gd`: `balance.json`, the derived numbers, costs and currencies,
-  `Data.args()`), `Save` (`save.gd`), `Quality` (`quality.gd`). Static helpers by `class_name`: `Fx` (effects),
+- **Autoloads** (`project.godot`). **New (H1, 25 Nov 2026):** five now, in this order: `Events` (`core/events.gd`, first:
+  the signals and who sends them; read the file), `Data` (`data.gd`: `balance.json`, the derived numbers, costs and
+  currencies, `Data.args()`; it also reads `content/index.json` through `catalog()` and `item()`), `Save` (`save.gd`),
+  `Quality` (`quality.gd`) and `Pools` (`core/pools.gd`). Static helpers by `class_name`: `Fx` (effects),
   `Props` (loads Blender props or builds placeholders), `Sfx` (sounds; a missing sound plays nothing).
 - **Markers and cards.** Each usable thing has a marker (`marker.gd`, the leaf-shaped badge); `interact.gd` picks the
   marker under a tap and opens its card with `hud.show_card(...)`, walking the cat there first if it is out of reach.
@@ -1329,6 +1334,29 @@ The indices are 2 for the gate, 1 for the middle and 0 for the far pad. A road c
   model that actually loaded, including an Original Ranger fallback.
 - `--tailor` (`game/scripts/autotest_cat_skins.gd`) passed 63 checks. `--layout` passed 132 checks with the Nook.
 
+### The new core (New, H1, 25 Nov 2026)
+
+The first pieces of `docs/ARCHITECTURE.md` (the target structure). Step H1 only.
+
+- **`game/core/`:**
+  - `events.gd`: the event board, with 14 signals (enemy_died, damage_dealt, currency_changed, item_gained,
+    bag_changed, wave_started, wave_ended, raid_started, raid_ended, mission_won, building_upgraded, timer_finished,
+    quality_changed, save_loaded). Code sends them; later steps make the HUD listen.
+  - `pools.gd`: pooled arrows, damage numbers and text pop-ups, hit bursts and sprays, and leaf and timber pickups.
+    Pool sizes are in `balance.json` `pools`, per graphics level. A pool that runs out makes more.
+  - Shockwave, swipe, flower_ring and bellow now share one mesh and one material per colour (`fx.gd`).
+  - `save_upgrades.gd`: versioned save upgrades. There is no step yet.
+- **`game/content/`:** `index.json` is empty for now. `Data.catalog()` and `Data.item()` read it.
+- **`game/tests/`:** sample saves for `--saves`. The folder is left out of the phone build.
+- **Balance blocks:** `kill_leaf_bonus` (1.3, see part 9) and `pools` (arrows, numbers, hit_fx, pickups: three numbers
+  each, for Low, Medium and High).
+- **Save notes:** under "Saving".
+- **Raids:** `raids.gd` holds a Random Raid until every raider is defeated. The leader no longer routs the others.
+  Stragglers walk to the campfire after `flee_after`.
+- **Home goals check:** `--homegoals` also checks that no Hearthtree goal asks for a station that is not open yet.
+- **Text:** "Burrow" became "expedition" in player-facing text. Code names (`burrow.gd`, `burrow_run.gd`) are
+  unchanged. The Gloomwood and the Old Hollow keep their names; the Gloomwood's grub holes are "The Grubling holes".
+
 ### Graphics levels (`quality.gd`)
 
 | | Low | Medium | High |
@@ -1367,6 +1395,16 @@ at full, at each wave held, and on pause, focus-out or close (`main._notificatio
 `burrows.persist()`). A Burrows run saves at checkpoints, when hurt (throttled) and on pause. Old saves load field by
 field with defaults (`d.get`); `save_v` is 2. A dish eaten mid-chapter goes back into the pot on load.
 
+**New (H1, 25 Nov 2026):**
+- `Save.mark_dirty()` and `Save.flush()`: while the save is dirty it is flushed every 10 s, and on pause, background
+  or close.
+- `Save.hold_flush`: no flush during a Raid Mission wave, and one flush at the wave's end. This stops leaf farming
+  by force-closing the game.
+- Writes are atomic, through a `.tmp` file. If the main save cannot be read, the `.bak` copy is loaded. A backup is
+  written before an upgrade.
+- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (none yet).
+- Currency changes send `Events.currency_changed`. `Events.save_loaded` is sent after a load.
+
 ### The debug endgame start
 
 Debug builds only. `--endgame` opens a **separate save** as if all 15 raids were won: home level 5, a grown cat
@@ -1404,6 +1442,7 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 110 passes); add `--rideclear` for the clearance sweep |
 | Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
 | Supplies inventory | `autotest_inventory.gd` | `--inventory` (53 checks covering the shared slot grid, currency layout, cat and mount preview, real input, gathering, cooking, trades, food choice, live combat, healing, dungeon resume, settlement and older saves) |
+| H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/` load, upgrade and save) |
 | Mounted target lock | `autotest_mounted_aim.gd` | `--mountedaim` (69 checks: strict 280-degree arc boundaries, rear blind spot, both mounts, real arrows and hits, torso aiming above a forward-facing root, hips and feet, outfits and different bows, left/right steering and forward gait, target reacquisition, Ram direction and dismounting mid-shot) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it

@@ -57,6 +57,8 @@ extends Node
 ## save fields, and a lost raid takes nothing (no leaves, no ashes): only the damage stays (raids.finish). Random Raids
 ## use one seeded roster, arriving in groups of 1–3 across all four trails with no intermediate waves. Their own live
 ## cap applies; the 50-enemy total includes leaders and summons. Defeated member IDs preserve progress across saves.
+## H1 (the event board, Events): a Raid Mission announces wave_started(n), wave_ended(n, held) (held: beaten; not held:
+## the camp fell during it) and mission_won(n) (the mission's index). Random Raids announce theirs from raids.gd.
 
 const EnemyScript := preload("res://scripts/enemy.gd")
 
@@ -310,6 +312,7 @@ func give_up_run() -> void:
 	if active:
 		return
 	Save.mission_run = {}
+	Save.hold_flush = false
 	Save.save_game()
 
 
@@ -333,6 +336,7 @@ func _start_wave(w: int) -> void:
 	_breather = 0.0
 	on_break = false
 	in_wave = true
+	Save.hold_flush = mode == "mission"
 	Save.count_gain = mode != "raid"                # a mission chapter is played: its leaves count (chapter_gain)
 	var last := w == waves()
 	var elite := not last and w % chapter_waves() == 0 and mode != "raid"
@@ -346,6 +350,7 @@ func _start_wave(w: int) -> void:
 	main.on_wave_start(w, elite, last)
 	if mode != "raid":
 		_wave_news(elite, last)
+		Events.wave_started.emit(w)
 
 
 ## One seeded raid roster. Groups use different shuffled trails; they overlap in time, without round breaks.
@@ -1703,6 +1708,7 @@ func _wave_cleared() -> void:
 	if mode == "raid":
 		_raid_wave_cleared()                    # a raid never reaches _win or _chapter_done
 		return
+	Events.wave_ended.emit(wave, true)
 	_grub_at = -1.0                             # a living grub is left alone: it runs off by itself
 	_totem_at = -1.0                            # a totem not grown yet is dropped
 	_say = []
@@ -1738,6 +1744,8 @@ func _wave_cleared() -> void:
 		var tim_txt := (" · +%d timber" % tim) if tim > 0 else ""
 		main.hud.toast("Wave %d held!  +%d golden leaves%s%s" % [wave, bonus, tim_txt, (" · " + note) if note != "" else ""])
 		main.on_wave_cleared()
+	Save.hold_flush = false
+	Save.flush()
 
 
 ## Every held wave's guaranteed leaves, scaled for later campaign raids.
@@ -1972,6 +1980,8 @@ func camp_falls() -> void:
 	if mode == "raid":
 		_raid_over(false)                       # a lost Gloom Raid: only the damage stays (no leaves, no ashes)
 		return
+	if in_wave:
+		Events.wave_ended.emit(wave, false)
 	Save.count_gain = false
 	var r: Dictionary = Data.b["raid"]
 	var bits: Array = []
@@ -2054,9 +2064,12 @@ func _win(extra_leaves := 0, extra_timber := 0) -> void:
 		main.stations.gift(String(m["gift"]))
 	if first_win and Data.raids_open():
 		main.raids.on_all_missions_won()          # the last mission's first win: the Watch wakes
+	Events.mission_won.emit(mission)
 
 
 func _end(won: bool) -> void:
+	if mode == "mission":
+		Save.hold_flush = false
 	if main.cooking:
 		main.cooking.finish(won)                  # won: the dish is used up; the camp fell: it goes back into the pot
 	active = false
@@ -2078,6 +2091,8 @@ func _end(won: bool) -> void:
 	last_stand = false
 	main.hud.boss = null
 	main.on_stage_end(won)
+	if mode == "mission":
+		Save.flush()
 
 
 # ---------------------------------------------------------------- Gloom Raids (Phase D)

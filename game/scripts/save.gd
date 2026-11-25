@@ -1,10 +1,23 @@
 extends Node
-## Save (autoload): everything the player owns, kept in user://leaf_save.json. Saved after every purchase and every
-## stage. `-- --fresh` starts from nothing; the automated test uses its own file so it never touches a real save.
+## Save (autoload): everything the player owns, kept in user://leaf_save.json. Purchases and checkpoints can save
+## immediately. Other changes wait for a flush. `-- --fresh` starts from nothing. Tests use a separate save.
+## New load fixes go in core/save_upgrades.gd. The existing load fixes still run here and in their owning systems.
+## Follow-up: move the frequent writes in raids.gd (_add meter steps and _save_run_state checkpoints),
+## burrow_run.gd (on_cat_hurt), fishing.gd (catches), and main.gd (ride toggles) to mark_dirty().
 
 signal changed
 
+const Upgrades := preload("res://core/save_upgrades.gd")
+const FLUSH_EVERY_S := 10.0                        # seconds dirty changes may wait during play
+
+var _dirty := false
+var _dirty_elapsed := 0.0
+var _loading := false
+var _loaded_fields: Dictionary = {}
+
 var path := "user://leaf_save.json"
+## Keep the last checkpoint on disk while a Raid Mission wave is in progress.
+var hold_flush := false
 var count_gain := false                            # not saved: on only while a mission chapter is played (fight.gd)
 # Every change to leaves goes through this setter (Save.leaves += n, add_leaves, Data.give, a pay...). While a mission
 # chapter is being played (count_gain, set by fight.gd) every rise is added to mission_run["gain"]: the leaves gained
@@ -12,10 +25,18 @@ var count_gain := false                            # not saved: on only while a 
 # that only (fight.camp_falls); leaves saved before the chapter are safe.
 var leaves := 0:
 	set(v):
+		if v == leaves:
+			return
 		if count_gain and v > leaves and mission_run.has("mission"):
 			mission_run["gain"] = int(mission_run.get("gain", 0)) + v - leaves
 		leaves = v
-var timber := 0
+		_currency_changed("leaves", v)
+var timber := 0:
+	set(v):
+		if v == timber:
+			return
+		timber = v
+		_currency_changed("timber", v)
 var camp_level := 1
 var stations := {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0,
 	"saddlery": 0, "tailor": 0}                        # 0 = not there yet (23 Nov 2026: the Tailor's Nook, "tailor")
@@ -61,7 +82,12 @@ var fish_log := {}                                 # catch id -> how many caught
 var fish_dry := 0                                  # catches since the last rare one (the pity counter)
 # Phase D: the Gloom Raids. No timestamps anywhere: the meter fills only while the game runs, and a raid that was
 # coming (or under way) comes back at its warning.
-var shards := 0                                    # Gloom shards: earned in play only, never sold
+var shards := 0:                                   # Gloom shards: earned in play only, never sold
+	set(v):
+		if v == shards:
+			return
+		shards = v
+		_currency_changed("shards", v)
 var raids := {}                                    # Gloom Raids state; filled from RAIDS_DEFAULT
 var wear := {}                                     # building id -> share of health lost in raids (0..0.95, steps of 0.05)
 var unlocks: Array = []                            # bought with shards: "watch:lookout", "watch:tracker",
@@ -69,7 +95,9 @@ var unlocks: Array = []                            # bought with shards: "watch:
 var fire_look := ""                                # "" or "shardfire"
 var burrow_keys := 0                               # Hollow keys (0-3): a bonus only (a boon at the start of a run); earned in
                                                    # play (raids held, replays won, first clears); never refilled by time
-var save_v := 2                                    # save format version (1 = before Phase D)
+var save_v := Upgrades.CURRENT_VERSION             # format version written by save_game()
+## Version read from disk before upgrades. Zero means no save was loaded.
+var loaded_v := 0
 # Phase E: the Burrows. No timestamps anywhere: a run in progress waits at the Hollow while the game is closed.
 var mats := {"amber": 0, "glowstone": 0, "heartwood": 0}   # Burrows materials
 var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}
@@ -111,6 +139,8 @@ static func _empty_garden() -> Array:
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	set_process(false)
 	raids = RAIDS_DEFAULT.duplicate(true)
 	var args := Data.args()
 	# the debug endgame start (Phase E): `--endgame` (also from files/test_args.txt on the phone) opens a separate save as
@@ -137,11 +167,48 @@ func _ready() -> void:
 
 
 func load_game() -> void:
-	if not FileAccess.file_exists(path):
+	set_deferred("_loading", false)                # a bad field can interrupt the load
+	loaded_v = 0
+	var backup := path.get_basename() + ".bak.json"
+	var source := path
+	# Windows can be interrupted between removing the main file and renaming the completed temporary file.
+	if not FileAccess.file_exists(path) and OS.has_feature("windows") and FileAccess.file_exists(path + ".tmp"):
+		source += ".tmp"
+	var source_exists := FileAccess.file_exists(source)
+	if not source_exists and not FileAccess.file_exists(backup):
 		return
-	var d = JSON.parse_string(FileAccess.get_file_as_string(path))
-	if typeof(d) != TYPE_DICTIONARY:
-		return
+	var contents := FileAccess.get_file_as_string(source) if source_exists else ""
+	var json := JSON.new()
+	var from_backup := json.parse(contents) != OK or not json.data is Dictionary
+	if from_backup:
+		if not FileAccess.file_exists(backup):
+			push_warning("Could not read save %s." % source)
+			return
+		contents = FileAccess.get_file_as_string(backup)
+		if json.parse(contents) != OK or not json.data is Dictionary:
+			push_warning("Could not read save %s or its backup %s." % [source, backup])
+			return
+		push_warning("Could not read save %s. Loaded backup %s." % [source, backup])
+	elif source != path:
+		var err := DirAccess.rename_absolute(source, path)
+		if err != OK:
+			push_warning("Loaded %s, but could not restore it to %s: %s" % [source, path, error_string(err)])
+		else:
+			push_warning("Recovered an interrupted save from %s." % source)
+
+	var d: Dictionary = json.data
+	loaded_v = int(d.get("save_v", 1))
+	if loaded_v < Upgrades.CURRENT_VERSION:
+		if not from_backup:
+			var err := _write_save_file(backup, contents)
+			if err != OK:
+				push_warning("Could not back up %s before upgrading: %s" % [path, error_string(err)])
+		d = Upgrades.upgrade(d)
+
+	var previous_currency: Array[int] = [leaves, timber, shards]
+	_loading = true
+	_clear_dirty()
+	_loaded_fields = d
 	leaves = int(d.get("leaves", 0))
 	timber = int(d.get("timber", 0))
 	camp_level = int(d.get("camp_level", 1))
@@ -150,15 +217,21 @@ func load_game() -> void:
 	for k in d.get("stats", {}):
 		stats[k] = int(d["stats"][k])
 	bows = {}
-	for k in d.get("bows", {"twig": 1}):
-		bows[k] = int(d["bows"][k])
+	var saved_bows: Dictionary = d.get("bows", {"twig": 1})
+	for k in saved_bows:
+		bows[k] = int(saved_bows[k])
 	bow = String(d.get("bow", "twig"))
+	if not (Data.b["bows"] as Dictionary).has(bow):
+		bow = "twig"
+		if not bows.has(bow):
+			bows[bow] = 1
 	claimed = []
 	for c in d.get("claimed", []):
 		claimed.append(int(c))
 	spots = d.get("spots", {})
 	for k in spots:
-		spots[k]["level"] = int(spots[k]["level"])
+		if spots[k] is Dictionary and spots[k].has("level"):
+			spots[k]["level"] = int(spots[k]["level"])
 	for k in d.get("items", {}):
 		items[k] = int(d["items"][k])
 	placed = []
@@ -191,6 +264,7 @@ func load_game() -> void:
 		mission_run = {"mission": int(run["mission"]), "chapter": int(run.get("chapter", 0)), "gain": maxi(0, int(run.get("gain", 0)))}
 		if run.has("wave_done"):
 			mission_run["wave_done"] = maxi(0, int(run["wave_done"]))
+		mission_run.merge(run)
 	# Phase C (an older save has none of these: the defaults stay)
 	guardian_look = String(d.get("guardian_look", "moss_warden"))
 	guardian_skin = String(d.get("guardian_skin", "natural"))
@@ -201,6 +275,7 @@ func load_game() -> void:
 		for i in mini(gd.size(), 6):
 			if typeof(gd[i]) == TYPE_DICTIONARY:
 				garden[i] = {"crop": String(gd[i].get("crop", "")), "grow": int(gd[i].get("grow", 0)), "wet": int(gd[i].get("wet", 0))}
+				garden[i].merge(gd[i])
 	var pd = d.get("pantry", {})
 	if typeof(pd) == TYPE_DICTIONARY:
 		for k in pd:
@@ -249,6 +324,7 @@ func load_game() -> void:
 				var st := burrow_stats(String(k))
 				for f in st:
 					st[f] = maxi(0, int(bd[k].get(f, 0)))
+				st.merge(bd[k])
 	burrow_run = {}
 	var rd = d.get("burrow_run", {})
 	if typeof(rd) == TYPE_DICTIONARY:
@@ -260,6 +336,7 @@ func load_game() -> void:
 			attach["owned"].append(String(a))
 		attach["mount"] = String(ad.get("mount", ""))
 		attach["pet"] = String(ad.get("pet", ""))
+		attach.merge(ad)
 	# G4: the Saddlery (a file without the key is from before G4: it is brought over once, then saved with the key)
 	saddlery = {"skills": {}, "attach": {}, "worn": ""}
 	var sd = d.get("saddlery", null)
@@ -268,10 +345,14 @@ func load_game() -> void:
 			var pd2 = sd.get(part, {})
 			if typeof(pd2) == TYPE_DICTIONARY:
 				for k in pd2:
+					if Data.saddle_info(part, String(k)).is_empty():
+						saddlery[part][k] = pd2[k]
+						continue
 					var lv := clampi(int(pd2[k]), 0, 5)
 					if lv > 0:
 						saddlery[part][String(k)] = lv
 		saddlery["worn"] = String(sd.get("worn", ""))
+		saddlery.merge(sd)
 	else:
 		migrate_saddlery()
 	settle_worn()
@@ -284,6 +365,27 @@ func load_game() -> void:
 				cat_skins_owned.append(String(k))
 	cat_skin = String(d.get("cat_skin", "original"))
 	settle_cat_skin()
+	_loading = false
+	if from_backup or save_v > loaded_v:
+		mark_dirty()
+	_emit_loaded.call_deferred(previous_currency)
+
+
+func _emit_loaded(previous_currency: Array[int]) -> void:
+	if leaves != previous_currency[0]:
+		Events.currency_changed.emit("leaves", leaves)
+	if timber != previous_currency[1]:
+		Events.currency_changed.emit("timber", timber)
+	if shards != previous_currency[2]:
+		Events.currency_changed.emit("shards", shards)
+	Events.save_loaded.emit()
+
+
+func _currency_changed(id: String, total: int) -> void:
+	if _loading:
+		return
+	mark_dirty()
+	Events.currency_changed.emit(id, total)
 
 
 ## 23 Nov 2026: she wears an outfit she owns that the game still sells (balance.json cat_skins), else the original.
@@ -299,7 +401,7 @@ func settle_cat_skin() -> void:
 ## (Data.best_owned_attach); "" when it owns none.
 func settle_worn() -> void:
 	var w := String(saddlery.get("worn", ""))
-	if w != "" and int((saddlery["attach"] as Dictionary).get(w, 0)) >= 1:
+	if w != "" and not Data.saddle_info("attach", w).is_empty() and int((saddlery["attach"] as Dictionary).get(w, 0)) >= 1:
 		return
 	saddlery["worn"] = Data.best_owned_attach()
 
@@ -370,7 +472,7 @@ func _endgame_seed() -> void:
 	shards = 60
 	raids = RAIDS_DEFAULT.duplicate(true)
 	raids["meter"] = 20.0
-	save_v = 2
+	save_v = Upgrades.CURRENT_VERSION
 	burrow_keys = 3
 	mats = {"amber": 0, "glowstone": 0, "heartwood": 0}
 	burrows = {}
@@ -389,7 +491,15 @@ func burrow_stats(id: String) -> Dictionary:
 
 
 func add_mat(id: String, n: int) -> void:
-	mats[id] = maxi(0, int(mats.get(id, 0)) + n)
+	var before := int(mats.get(id, 0))
+	var total := maxi(0, before + n)
+	mats[id] = total
+	if total == before:
+		return
+	mark_dirty()
+	if total > before:
+		Events.item_gained.emit("material", id, total - before)
+	Events.bag_changed.emit()
 
 
 ## The Gloom Raids state from the save: RAIDS_DEFAULT with the saved keys merged over it, every value cast.
@@ -397,6 +507,7 @@ func _load_raids(rd) -> Dictionary:
 	var r: Dictionary = RAIDS_DEFAULT.duplicate(true)
 	if typeof(rd) != TYPE_DICTIONARY:
 		return r
+	r.merge(rd)
 	r["meter"] = clampf(float(rd.get("meter", 0.0)), 0.0, 100.0)
 	r["pending"] = bool(rd.get("pending", false))
 	r["warn_left"] = float(rd.get("warn_left", 0.0))
@@ -420,12 +531,14 @@ func _load_raids(rd) -> Dictionary:
 			"called": bool(plan.get("called", false))}
 		if plan.has("assault_total"):
 			r["plan"]["assault_total"] = clampi(int(plan["assault_total"]), 1, int(Data.gr()["assault"]["max_enemies"]))
+		r["plan"].merge(plan)
 		var run = rd.get("run", {})
 		if typeof(run) == TYPE_DICTIONARY and not run.is_empty():
 			r["run"] = {"wave_done": int(run.get("wave_done", 0)), "losses": int(run.get("losses", 0)), "fire": float(run.get("fire", 1.0)),
 				"fire_went_out": bool(run.get("fire_went_out", false)), "rebuilt": bool(run.get("rebuilt", false)),
 				"last_stand": bool(run.get("last_stand", false)), "ready": bool(run.get("ready", false)),
 				"revealed": bool(run.get("revealed", false)), "started": bool(run.get("started", false))}
+			r["run"].merge(run)
 			if int(run.get("assault_format", 0)) == 1:
 				r["run"]["assault_format"] = 1
 				r["run"]["legacy_held"] = maxi(0, int(run.get("legacy_held", 0)))
@@ -436,7 +549,10 @@ func _load_raids(rd) -> Dictionary:
 					if total + summons.size() >= int(Data.gr()["assault"]["max_enemies"]):
 						break
 					if summon is Dictionary and Data.b["enemies"].has(String(summon.get("kind", ""))):
-						summons.append({"kind": String(summon["kind"]), "lane": clampi(int(summon.get("lane", 0)), 0, Data.lane_count() - 1)})
+						var entry: Dictionary = summon.duplicate()
+						entry["kind"] = String(summon["kind"])
+						entry["lane"] = clampi(int(summon.get("lane", 0)), 0, Data.lane_count() - 1)
+						summons.append(entry)
 				r["run"]["summons"] = summons
 				total += summons.size()
 				for member in run.get("defeated", []):
@@ -444,6 +560,9 @@ func _load_raids(rd) -> Dictionary:
 					if id >= 0 and id < total and not defeated.has(id):
 						defeated.append(id)
 				r["run"]["defeated"] = defeated
+			else:
+				for key: String in ["assault_format", "legacy_held", "summons", "defeated"]:
+					r["run"].erase(key)
 	else:
 		r["pending"] = false                               # no plan (or a kind that is gone): nothing is coming
 		r["run"] = {}
@@ -451,7 +570,45 @@ func _load_raids(rd) -> Dictionary:
 	return r
 
 
+func mark_dirty() -> void:
+	if not _dirty:
+		_dirty = true
+		set_process(true)
+
+
+func flush() -> void:
+	if _dirty and not hold_flush:
+		_dirty_elapsed = 0.0
+		save_game(true)
+
+
+func _clear_dirty() -> void:
+	_dirty = false
+	_dirty_elapsed = 0.0
+	set_process(false)
+
+
+func _process(delta: float) -> void:
+	if hold_flush:
+		return
+	_dirty_elapsed += delta
+	if _dirty_elapsed >= FLUSH_EVERY_S:
+		flush()
+
+
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_WM_GO_BACK_REQUEST:
+			flush()
+		NOTIFICATION_PREDELETE:
+			# A mid-wave exit keeps the last completed checkpoint.
+			flush()
+			hold_flush = false
+
+
 ## quiet: write the file without the `changed` signal (the meter's steps and pause saves: the open card stays as it is).
+## Always writes: hold_flush only holds the automatic flushes (the timer, pause, background), never a save the game
+## asks for on purpose (a mission's checkpoints, a camp falling, a purchase).
 func save_game(quiet := false) -> void:
 	var d := {
 		"leaves": leaves, "timber": timber, "camp_level": camp_level, "stations": stations, "stats": stats,
@@ -465,11 +622,38 @@ func save_game(quiet := false) -> void:
 		"saddlery": saddlery,
 		"cat_skin": cat_skin, "cat_skins_owned": cat_skins_owned,
 	}
-	var f := FileAccess.open(path, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(d, "  "))
+	# Write current values for fields this version owns, and carry other top-level fields through.
+	d.merge(_loaded_fields)
+	var err := _write_save_file(path, JSON.stringify(d, "  "))
+	if err == OK:
+		_clear_dirty()
+	else:
+		mark_dirty()
+		push_warning("Could not save %s: %s" % [path, error_string(err)])
 	if not quiet:
 		changed.emit()
+
+
+## Check the closed file's size to catch a short write from flushing buffered data.
+static func _write_save_file(file_path: String, contents: String) -> Error:
+	var tmp := file_path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
+	if f == null:
+		return FileAccess.get_open_error()
+	var bytes := contents.to_utf8_buffer()
+	var written := f.store_buffer(bytes)
+	f.close()
+	if not written or FileAccess.get_size(tmp) != bytes.size():
+		DirAccess.remove_absolute(tmp)
+		return ERR_FILE_CANT_WRITE
+	var err := DirAccess.rename_absolute(tmp, file_path)
+	if err != OK and OS.has_feature("windows") and FileAccess.file_exists(file_path):
+		err = DirAccess.remove_absolute(file_path)
+		if err == OK:
+			err = DirAccess.rename_absolute(tmp, file_path)
+	if err != OK and FileAccess.file_exists(file_path):
+		DirAccess.remove_absolute(tmp)
+	return err
 
 
 func add_leaves(n: int) -> void:

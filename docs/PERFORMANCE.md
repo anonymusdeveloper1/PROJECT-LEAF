@@ -83,6 +83,19 @@ of the pixels and triangles. A weaker GPU would show the gap.
 There is no phone "before" figure, because the APK from before this work had no benchmark mode. On the PC, the same
 scene went from 1.77 M to 247 k triangles on High.
 
+## H1: the pools (25 Nov 2026)
+
+Arrows, damage numbers, text pop-ups, hit bursts and sprays, and leaf and timber pickups are now reused instead of
+created and freed (`game/core/pools.gd`). Shockwave, swipe, flower_ring and bellow share one mesh and one material per
+colour. Measured with `--perf` on the PC, quality High:
+
+| Scene | Before | After |
+|---|---|---|
+| Camp | 2.2 ms frame (p95 2.38) | 1.88 ms (p95 2.08) |
+| Fight, 17 foes | 4.02 ms (p95 6.27) | 2.94 ms (p95 3.70) |
+
+Phone numbers are still to come. Pool sizes (`balance.json` `pools`) are first guesses, to be measured on the phone.
+
 ## Running the benchmark
 
 The autotest mode `--perf` (in `autotest.gd`, `_perf` and `_measure`) builds a grown camp and measures 6 s standing

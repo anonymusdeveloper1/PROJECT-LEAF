@@ -1125,6 +1125,8 @@ func _perf() -> void:
 		for e in foes:
 			e.visible = false
 		await _measure("fight_foes_hidden", 4.0)
+	out["pools"] = Pools.stats()                           # H1: how many pooled objects the run made and reused
+	_log("perf pools", out["pools"])
 	var f := FileAccess.open(shots.path_join("perf.json"), FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(out, "  "))
@@ -3056,6 +3058,8 @@ func _phase_e() -> bool:
 # ---------------------------------------------------------------- Phase F: missions, enemies, home goals (autotest_f_*.gd)
 ## --fightf (roads, waves, bonuses), --enemyf (boar daze, siege, Golden Grub, Gloom Totem), --homegoals (the home's
 ## goal lists, mission gates, caps). Each file's run() does its checks and logs EXPECT PASS / EXPECT FAIL lines.
+## H1: --pools (autotest_pools.gd: the object pools and the event board) and --saves (autotest_saves.gd: the sample
+## saves); a mode whose file is missing logs one EXPECT FAIL saying so.
 func _phase_f() -> bool:
 	var a := Data.args()
 	var file := ""
@@ -3081,8 +3085,15 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_mounted_aim.gd"
 	elif a.has("--tailor"):                             # 23 Nov 2026: the Tailor's Nook and the cat's outfits
 		file = "res://scripts/autotest_cat_skins.gd"
+	elif a.has("--pools"):                              # H1: the object pools and the event board
+		file = "res://scripts/autotest_pools.gd"
+	elif a.has("--saves"):                              # H1: the sample saves load, upgrade and save (autotest_saves.gd)
+		file = "res://scripts/autotest_saves.gd"
 	if file == "":
 		return false
+	if not ResourceLoader.exists(file):
+		_expect("the test file %s is there" % file, false)
+		return true
 	var e = load(file).new()
 	e.t = self
 	e.main = main

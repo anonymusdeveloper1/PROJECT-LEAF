@@ -2,6 +2,15 @@ class_name Fx
 extends RefCounted
 ## The splashes that give LEAF its look: leaf bursts on hits, confetti on kills, a ring of flowers on upgrades,
 ## petals when the Gloom lifts, floating damage numbers, the boss's shockwave. All one-shot and self-cleaning.
+## H1 (docs/ARCHITECTURE.md part 4):
+##   Object Pool  the damage numbers and text pop-ups (one Label3D pool, LABEL_POOL) and the one-shot particle bursts
+##                (_burst: "fx_burst_<particles>", _spray: "fx_spray_<particles>"; one pool per particle count, so a
+##                reused burst never resizes) come from Pools and go back when they have played out. Each take sets every
+##                property it uses, so it looks exactly as a new one did. prewarm() makes the first ones at camp start
+##                (balance.json "pools": numbers, hit_fx).
+##   Flyweight    shockwave, swipe, flower_ring and bellow share one mesh and one material per colour; their fade is
+##                the instance's own transparency instead of the material's alpha. Colour ramps (_grad, _fade_ramp)
+##                and the bursts' size curve are made once per set of colours and shared.
 
 static var _leaf_mesh: ArrayMesh
 static var _mat: StandardMaterial3D
@@ -71,16 +80,63 @@ static func _material() -> StandardMaterial3D:
 	return _mat
 
 
+const LABEL_POOL := &"fx_label"            # H1: the damage numbers and text pop-ups (Pools)
+static var _new_label: Callable             # makes a Label3D for that pool
+static var _new_particles: Callable         # makes a CPUParticles3D for the burst pools
+static var _burst_size: Curve               # a burst's size over its life (the same for every burst)
+static var _grads := {}                     # colour list -> its Gradient (_grad), made once
+
+
+## H1: the first damage numbers and hit bursts, made ahead when the camp opens (balance.json "pools").
+static func prewarm() -> void:
+	Pools.prewarm(LABEL_POOL, _label_maker(), Pools.size_for("numbers"))
+	Pools.prewarm(_burst_key(Quality.particles(HIT_N)), _particles_maker(), Pools.size_for("hit_fx"))
+
+
+static func _label_maker() -> Callable:
+	if not _new_label.is_valid():
+		_new_label = func() -> Node: return Label3D.new()
+	return _new_label
+
+
+static func _particles_maker() -> Callable:
+	if not _new_particles.is_valid():
+		_new_particles = func() -> Node: return CPUParticles3D.new()
+	return _new_particles
+
+
+## The pool of one-shot bursts with n particles (one pool per count: a reused burst never resizes its buffers).
+static func _burst_key(n: int) -> StringName:
+	return StringName("fx_burst_%d" % n)
+
+
+## A pooled Label3D for a number or a pop-up, its last tween (if any) stopped.
+static func _take_label() -> Label3D:
+	var l := Pools.take(LABEL_POOL, _label_maker()) as Label3D
+	_stop_tween(l, &"tw")
+	return l
+
+
+## Stops the tween kept in node's meta `key` (a pooled object's last animation), if it is still running.
+static func _stop_tween(node: Node, key: StringName) -> void:
+	if node.has_meta(key):
+		var old: Variant = node.get_meta(key)
+		if old is Tween and (old as Tween).is_valid():
+			(old as Tween).kill()
+		node.remove_meta(key)
+
+
 static func _burst(parent: Node, pos: Vector3, colors: Gradient, amount: int, speed: float, life: float,
 		size: float, gravity := -6.0, spread := 180.0, mesh: Mesh = null) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
-	var p := CPUParticles3D.new()
+	var n := Quality.particles(amount)
+	var p := Pools.take(_burst_key(n), _particles_maker()) as CPUParticles3D
 	p.mesh = mesh if mesh != null else _leaf()
 	p.material_override = _material()
 	p.one_shot = true
 	p.explosiveness = 0.92
-	p.amount = Quality.particles(amount)
+	p.amount = n
 	p.lifetime = life
 	p.direction = Vector3.UP
 	p.spread = spread
@@ -95,19 +151,25 @@ static func _burst(parent: Node, pos: Vector3, colors: Gradient, amount: int, sp
 	p.scale_amount_min = size * 0.7
 	p.scale_amount_max = size * 1.3
 	p.color_initial_ramp = colors
-	var fade := Curve.new()
-	fade.add_point(Vector2(0.0, 1.0))
-	fade.add_point(Vector2(0.75, 1.0))
-	fade.add_point(Vector2(1.0, 0.0))
-	p.scale_amount_curve = fade
+	if _burst_size == null:
+		_burst_size = Curve.new()
+		_burst_size.add_point(Vector2(0.0, 1.0))
+		_burst_size.add_point(Vector2(0.75, 1.0))
+		_burst_size.add_point(Vector2(1.0, 0.0))
+	p.scale_amount_curve = _burst_size
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(p)
 	p.global_position = pos
-	p.emitting = true
-	p.get_tree().create_timer(life + 0.3).timeout.connect(p.queue_free)
+	p.restart()                                 # a reused burst starts over: none of its last particles stay
+	Pools.give_back_in(p, life + 0.3)
 
 
+## The colours one after another, evenly spaced. Made once per list of colours and shared (nobody changes them).
 static func _grad(cols: Array) -> Gradient:
+	if _grads.has(cols):
+		return _grads[cols]
+	if _grads.size() > 256:
+		_grads.clear()                          # colours worked out on the fly: keep the cache small
 	var g := Gradient.new()
 	var offs := PackedFloat32Array()
 	var cs := PackedColorArray()
@@ -116,6 +178,7 @@ static func _grad(cols: Array) -> Gradient:
 		cs.append(cols[k])
 	g.offsets = offs
 	g.colors = cs
+	_grads[cols.duplicate()] = g
 	return g
 
 
@@ -129,8 +192,11 @@ static func puff(parent: Node, pos: Vector3, color: Color, amount := 10) -> void
 	_burst(parent, pos, _grad([color.lightened(0.3), color]), amount, 2.0, 0.6, 0.6, -4.0, 50.0)
 
 
+const HIT_N := 8                            # an enemy hit's leaf burst: how many leaves (before the graphics level)
+
+
 static func hit(parent: Node, pos: Vector3, base: Color) -> void:
-	_burst(parent, pos, _grad([base.lightened(0.2), Color(0.55, 0.8, 0.3), base]), 8, 3.0, 0.5, 1.0)
+	_burst(parent, pos, _grad([base.lightened(0.2), Color(0.55, 0.8, 0.3), base]), HIT_N, 3.0, 0.5, 1.0)
 
 
 static func kill(parent: Node, pos: Vector3, base: Color) -> void:
@@ -145,26 +211,32 @@ static func petals(parent: Node, pos: Vector3) -> void:
 	_burst(parent, pos, _grad([Color(1.0, 0.75, 0.85), Color(1.0, 0.95, 0.6), Color(0.7, 0.95, 0.5), Color(1, 1, 1)]), 30, 4.5, 2.2, 1.5, -1.2, 70.0)
 
 
+static var _flower_mesh: SphereMesh          # flower_ring: one flower mesh and four materials, shared
+static var _flower_mats: Array[StandardMaterial3D] = []
+
+
 ## A ring of flowers bursting outward on the ground (upgrades, new buildings).
 static func flower_ring(parent: Node, pos: Vector3, radius := 1.2) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
-	var cols := [Color(0.95, 0.3, 0.25), Color(1.0, 0.85, 0.3), Color(0.65, 0.45, 0.9), Color(1, 1, 1)]
+	if _flower_mesh == null:
+		_flower_mesh = SphereMesh.new()
+		_flower_mesh.radius = 0.09
+		_flower_mesh.height = 0.08
+		_flower_mesh.radial_segments = 5
+		_flower_mesh.rings = 2
+		for c: Color in [Color(0.95, 0.3, 0.25), Color(1.0, 0.85, 0.3), Color(0.65, 0.45, 0.9), Color(1, 1, 1)]:
+			var m := StandardMaterial3D.new()
+			m.albedo_color = c
+			m.emission_enabled = true
+			m.emission = c
+			m.emission_energy_multiplier = 0.4
+			_flower_mats.append(m)
 	for k in 14:
 		var a := TAU * k / 14.0
 		var f := MeshInstance3D.new()
-		var s := SphereMesh.new()
-		s.radius = 0.09
-		s.height = 0.08
-		s.radial_segments = 5
-		s.rings = 2
-		f.mesh = s
-		var m := StandardMaterial3D.new()
-		m.albedo_color = cols[k % cols.size()]
-		m.emission_enabled = true
-		m.emission = m.albedo_color
-		m.emission_energy_multiplier = 0.4
-		f.material_override = m
+		f.mesh = _flower_mesh
+		f.material_override = _flower_mats[k % _flower_mats.size()]
 		parent.add_child(f)
 		f.global_position = pos + Vector3(0, 0.05, 0)
 		f.scale = Vector3.ONE * 0.1
@@ -182,22 +254,29 @@ static func flower_ring(parent: Node, pos: Vector3, radius := 1.2) -> void:
 static func number(parent: Node, pos: Vector3, value: float, color := Color(1, 1, 1), big := false) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
-	var l := Label3D.new()
+	var l := _take_label()
 	l.text = str(int(round(value)))
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = true
-	l.fixed_size = true
-	l.pixel_size = 0.00078 if big else 0.0006
-	l.font_size = 48
-	l.outline_size = 12
-	l.modulate = color
-	l.outline_modulate = Color(0.1, 0.06, 0.1, 0.85)
+	_label_look(l, 0.00078 if big else 0.0006, 48, color)
+	l.set_meta(&"merge", "")                    # a number never merges with a "+N thing" pop-up
 	parent.add_child(l)
 	l.global_position = pos + Vector3(randf_range(-0.15, 0.15), 0, randf_range(-0.1, 0.1))
 	var tw := l.create_tween().set_parallel()
+	l.set_meta(&"tw", tw)
 	tw.tween_property(l, "global_position", l.global_position + Vector3(0, 0.6, 0), 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(l, "modulate:a", 0.0, 0.22).set_delay(0.3)
-	tw.chain().tween_callback(l.queue_free)
+	tw.chain().tween_callback(Pools.give_back.bind(l))
+
+
+## How a number or pop-up looks (every property is set on each take, so a reused label looks like a new one).
+static func _label_look(l: Label3D, pixel: float, font: int, color: Color) -> void:
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.no_depth_test = true
+	l.fixed_size = true
+	l.pixel_size = pixel
+	l.font_size = font
+	l.outline_size = 12
+	l.modulate = color
+	l.outline_modulate = Color(0.1, 0.06, 0.1, 0.85)
 
 
 ## Recent "+N thing" popups, by thing: a second one of the same kind landing close by within a moment adds to it.
@@ -222,23 +301,19 @@ static func text(parent: Node, pos: Vector3, s: String, color := Color(1, 0.9, 0
 	if kind != "" and _recent.has(kind):
 		var r: Array = _recent[kind]                     # [label, n, when]
 		var old = r[0]                                   # untyped: it may have been freed
-		if is_instance_valid(old) and now - int(r[2]) < MERGE_MS and (old as Label3D).global_position.distance_to(pos) < MERGE_M:
+		# H1: a pooled label may be back in its pool, or showing something else by now
+		if is_instance_valid(old) and (old as Node).is_inside_tree() and String((old as Node).get_meta(&"merge", "")) == kind \
+				and now - int(r[2]) < MERGE_MS and (old as Label3D).global_position.distance_to(pos) < MERGE_M:
 			r[1] = int(r[1]) + n
 			r[2] = now
 			old.text = "+%d %s" % [int(r[1]), kind]
 			old.modulate.a = 1.0
 			_float(old, old.global_position)
 			return
-	var l := Label3D.new()
+	var l := _take_label()
 	l.text = s
-	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	l.no_depth_test = true
-	l.fixed_size = true
-	l.pixel_size = 0.00068
-	l.font_size = 44
-	l.outline_size = 12
-	l.modulate = color
-	l.outline_modulate = Color(0.1, 0.06, 0.1, 0.85)
+	_label_look(l, 0.00068, 44, color)
+	l.set_meta(&"merge", kind)
 	parent.add_child(l)
 	l.global_position = pos
 	if kind != "":
@@ -256,7 +331,35 @@ static func _float(l: Label3D, from: Vector3) -> void:
 	l.set_meta("tw", tw)
 	tw.tween_property(l, "global_position", from + Vector3(0, 0.6, 0), 0.8).set_ease(Tween.EASE_OUT)
 	tw.tween_property(l, "modulate:a", 0.0, 0.3).set_delay(0.5)
-	tw.chain().tween_callback(l.queue_free)
+	tw.chain().tween_callback(Pools.give_back.bind(l))
+
+
+static var _rings := {}                      # inner radius -> the shared flat torus (shockwave, bellow)
+
+
+## A flat ring of outer radius 1 (inner `inner`), made once per inner radius and shared.
+static func _ring(inner: float) -> TorusMesh:
+	if not _rings.has(inner):
+		var t := TorusMesh.new()
+		t.inner_radius = inner
+		t.outer_radius = 1.0
+		t.rings = 24
+		t.ring_segments = 4
+		_rings[inner] = t
+	return _rings[inner]
+
+
+## A plain see-through colour (unshaded), one material per colour, shared (shockwave, bellow). Fade it with the
+## instance's transparency, never through the material.
+static func _flat_mat(color: Color) -> StandardMaterial3D:
+	var key := "flat:" + color.to_html()
+	if not _fx_mats.has(key):
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.albedo_color = color
+		_fx_mats[key] = m
+	return _fx_mats[key]
 
 
 ## A flat ring that grows outward on the ground: the boss's slam.
@@ -264,24 +367,15 @@ static func shockwave(parent: Node, pos: Vector3, radius: float, color := Color(
 	if parent == null or not parent.is_inside_tree():
 		return
 	var mi := MeshInstance3D.new()
-	var t := TorusMesh.new()
-	t.inner_radius = 0.85
-	t.outer_radius = 1.0
-	t.rings = 24
-	t.ring_segments = 4
-	mi.mesh = t
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.albedo_color = color
-	mi.material_override = m
+	mi.mesh = _ring(0.85)
+	mi.material_override = _flat_mat(color)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(mi)
 	mi.global_position = pos + Vector3(0, 0.08, 0)
 	mi.scale = Vector3(0.2, 0.15, 0.2)
 	var tw := mi.create_tween().set_parallel()
 	tw.tween_property(mi, "scale", Vector3(radius, 0.15, radius), 0.45).set_ease(Tween.EASE_OUT)
-	tw.tween_property(m, "albedo_color:a", 0.0, 0.45).set_delay(0.1)
+	tw.tween_property(mi, "transparency", 1.0, 0.45).set_delay(0.1)    # H1: fades itself, not the shared material
 	tw.chain().tween_callback(mi.queue_free)
 	_burst(parent, pos, _grad([Color(0.6, 0.45, 0.3), Color(0.45, 0.7, 0.3)]), 24, 6.0, 0.8, 1.2)
 
@@ -332,14 +426,7 @@ static func swipe(parent: Node, pos: Vector3, yaw: float, radius: float, color :
 		_arc_mesh = st.commit()
 	var mi := MeshInstance3D.new()
 	mi.mesh = _arc_mesh
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	m.vertex_color_use_as_albedo = true
-	m.cull_mode = BaseMaterial3D.CULL_DISABLED
-	m.albedo_color = color
-	mi.material_override = m
+	mi.material_override = _fx_mat("swipe", color)   # H1: one shared material per colour (unshaded, added, see-through)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(mi)
 	mi.global_position = pos
@@ -348,7 +435,7 @@ static func swipe(parent: Node, pos: Vector3, yaw: float, radius: float, color :
 	var tw := mi.create_tween().set_parallel()
 	tw.tween_property(mi, "rotation:y", yaw + 0.6, 0.16).set_ease(Tween.EASE_OUT)
 	tw.tween_property(mi, "scale", Vector3.ONE * radius * 1.15, 0.22)
-	tw.tween_property(m, "albedo_color:a", 0.0, 0.22).set_delay(0.06)
+	tw.tween_property(mi, "transparency", 1.0, 0.22).set_delay(0.06)  # fades itself, not the shared material
 	tw.chain().tween_callback(mi.queue_free)
 
 
@@ -530,24 +617,15 @@ static func bellow(parent: Node, pos: Vector3, radius: float) -> void:
 	var cols: Array = [Color(1.0, 0.92, 0.6, 0.8), Color(1.0, 0.75, 0.4, 0.7), Color(1.0, 0.6, 0.3, 0.6)]
 	for k in 3:
 		var mi := MeshInstance3D.new()
-		var t := TorusMesh.new()
-		t.inner_radius = 0.9
-		t.outer_radius = 1.0
-		t.rings = 24
-		t.ring_segments = 4
-		mi.mesh = t
-		var m := StandardMaterial3D.new()
-		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		m.albedo_color = cols[k]
-		mi.material_override = m
+		mi.mesh = _ring(0.9)                                # H1: shared ring and material (Flyweight)
+		mi.material_override = _flat_mat(cols[k])
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(mi)
 		mi.global_position = pos
 		mi.scale = Vector3(0.1, 0.1, 0.1)
 		var tw := mi.create_tween().set_parallel()
 		tw.tween_property(mi, "scale", Vector3(radius, 0.5, radius), 0.5).set_delay(0.12 * k).set_ease(Tween.EASE_OUT)
-		tw.tween_property(m, "albedo_color:a", 0.0, 0.4).set_delay(0.12 * k + 0.15)
+		tw.tween_property(mi, "transparency", 1.0, 0.4).set_delay(0.12 * k + 0.15)
 		tw.chain().tween_callback(mi.queue_free)
 	shockwave(parent, Vector3(pos.x, 0.0, pos.z), radius, Color(1.0, 0.85, 0.5))
 
@@ -868,6 +946,11 @@ static func _fade_curve() -> Curve:
 
 ## The colours one after another over a particle's life, the last fading to clear.
 static func _fade_ramp(cols: Array, alpha := 1.0) -> Gradient:
+	var key := [cols, alpha]                    # H1: made once per colour list and alpha, shared (nobody changes them)
+	if _grads.has(key):
+		return _grads[key]
+	if _grads.size() > 256:
+		_grads.clear()
 	var g := Gradient.new()
 	var offs := PackedFloat32Array()
 	var cs := PackedColorArray()
@@ -879,6 +962,7 @@ static func _fade_ramp(cols: Array, alpha := 1.0) -> Gradient:
 	cs.append(Color(cols[n - 1] if n > 0 else Color.WHITE, 0.0))
 	g.offsets = offs
 	g.colors = cs
+	_grads[[cols.duplicate(), alpha]] = g
 	return g
 
 
@@ -907,12 +991,13 @@ static func _spray(parent: Node, pos: Vector3, dir: Vector3, cols: Array, amount
 		size: float, spread: float, kind := "spark", gravity := Vector3.ZERO) -> void:
 	if parent == null or not parent.is_inside_tree() or amount <= 0:
 		return
-	var p := CPUParticles3D.new()
+	var n := Quality.particles(amount)
+	var p := Pools.take(StringName("fx_spray_%d" % n), _particles_maker()) as CPUParticles3D   # H1: pooled
 	p.mesh = _mist_mesh() if kind == "mist" else _spark_mesh()
 	p.material_override = _fx_mat(kind)
 	p.one_shot = true
 	p.explosiveness = 0.9
-	p.amount = Quality.particles(amount)
+	p.amount = n
 	p.lifetime = life
 	p.direction = dir.normalized() if dir.length() > 0.01 else Vector3.UP
 	p.spread = spread
@@ -928,8 +1013,8 @@ static func _spray(parent: Node, pos: Vector3, dir: Vector3, cols: Array, amount
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(p)
 	p.global_position = pos
-	p.emitting = true
-	p.get_tree().create_timer(life + 0.3).timeout.connect(p.queue_free)
+	p.restart()                                 # a reused spray starts over
+	Pools.give_back_in(p, life + 0.3)
 
 
 static func _mist_mesh() -> QuadMesh:
@@ -955,8 +1040,9 @@ static func shot_burst(parent: Node, pos: Vector3, dir: Vector3, fx: Dictionary)
 
 ## An arrow's trail in flight (arrow.gd launch): its streak and the bow's own bits (see above), riding on the arrow
 ## (length: the arrow's own, nock to tip). The particles stay where they appear (local_coords off), so they trail
-## behind. Returns the nodes, for drop_trail.
-static func arrow_trail(arrow: Node3D, length: float, fx: Dictionary) -> Array:
+## behind. Returns the nodes, for drop_trail (or, on a pooled arrow, fade_trail and restart_trail).
+## H1: start false builds it idle (a pooled arrow waiting for its first flight); restart_trail sets it going.
+static func arrow_trail(arrow: Node3D, length: float, fx: Dictionary, start := true) -> Array:
 	var out: Array = []
 	if arrow == null or fx.is_empty():
 		return out
@@ -968,7 +1054,10 @@ static func arrow_trail(arrow: Node3D, length: float, fx: Dictionary) -> Array:
 	arrow.add_child(st)
 	var w := float(fx.get("trail_w", 0.035))
 	st.scale = Vector3(w, w, 0.05)
-	st.create_tween().tween_property(st, "scale:z", float(fx.get("trail_len", 0.8)), 0.12)   # it grows out as the arrow leaves
+	if start:
+		var grow := st.create_tween()
+		grow.tween_property(st, "scale:z", float(fx.get("trail_len", 0.8)), 0.12)   # it grows out as the arrow leaves
+		st.set_meta(&"tw", grow)
 	out.append(st)
 	var n := int(fx.get("trail_n", 8))
 	var mid := Vector3(0, 0, length * 0.5)
@@ -986,7 +1075,51 @@ static func arrow_trail(arrow: Node3D, length: float, fx: Dictionary) -> Array:
 		"frost":
 			out.append(_trail_bits(arrow, mid, "mist", [Color(0.85, 0.95, 1.0), col], roundi(n * 1.4), 0.5, 1.6, 0.15))
 			out.append(_trail_bits(arrow, mid, "spark", [Color(1, 1, 1), col], maxi(2, n / 2), 0.35, 0.7, 0.3))
+	if not start:
+		for p in out:
+			if p is CPUParticles3D:
+				(p as CPUParticles3D).emitting = false
 	return out
+
+
+## H1: a pooled arrow's trail sets off again at its next flight: the streak starts short, clear of its last fade, and
+## grows out; the bits start over (none of the last flight's stay).
+static func restart_trail(nodes: Array, fx: Dictionary) -> void:
+	for n in nodes:
+		if n == null or not is_instance_valid(n):
+			continue
+		if n is CPUParticles3D:
+			(n as CPUParticles3D).restart()
+		elif n is GeometryInstance3D:
+			var st := n as GeometryInstance3D
+			_stop_tween(st, &"tw")
+			_stop_tween(st, &"fade_tw")
+			st.transparency = 0.0
+			st.scale.z = 0.05
+			var grow := st.create_tween()
+			grow.tween_property(st, "scale:z", float(fx.get("trail_len", 0.8)), 0.12)
+			st.set_meta(&"tw", grow)
+
+
+## H1: a pooled arrow is gone: its trail stops and fades where it is, as drop_trail's does, but stays on the arrow
+## (which stands still now). Returns the seconds until all of it has faded, when the arrow can go back to its pool.
+static func fade_trail(nodes: Array) -> float:
+	var wait := 0.0
+	for n in nodes:
+		if n == null or not is_instance_valid(n) or not (n as Node).is_inside_tree():
+			continue
+		if n is CPUParticles3D:
+			var p := n as CPUParticles3D
+			p.emitting = false
+			wait = maxf(wait, p.lifetime + 0.1)
+		elif n is GeometryInstance3D:
+			var g := n as GeometryInstance3D
+			_stop_tween(g, &"fade_tw")
+			var tw := g.create_tween()
+			tw.tween_property(g, "transparency", 1.0, 0.12)
+			g.set_meta(&"fade_tw", tw)
+			wait = maxf(wait, 0.12)
+	return wait
 
 
 ## Bits that keep coming off a moving arrow (glints, sparks, mist) until stopped.

@@ -12,6 +12,7 @@ extends Node3D
 ## Mounted shooting uses five upper-body loops from assets/cat/mounted/shooting.res. The torso and arms turn for
 ## rear-quarter shots on one Shoot clock; the root, seated pelvis and knees follow the mount's heading.
 ## The hood, capelet and skirt are not in the clips: cloth.gd simulates them on top, after the body is posed.
+## H1: the arrows she shoots come from Pools (arrow.gd POOL, _new_arrow, prewarm_arrows); the nocked one is her own.
 
 ## The hero model to use, without ".glb" (its clips are hero_clips()). 23 Nov 2026: the outfit she wears
 ## (Save.cat_skin, balance.json cat_skins: res://assets/cat/skins/<id>.glb, the same skeleton and clips) when its file
@@ -1089,8 +1090,7 @@ func _fire() -> void:
 		var dir := aim_at - start
 		if n > 1:
 			dir = dir.rotated(Vector3.UP, spread * (float(k) - (n - 1) * 0.5))
-		var arrow := Node3D.new()
-		arrow.set_script(ArrowScript)
+		var arrow := Pools.take(ArrowScript.POOL, _new_arrow)  # H1: from the arrow pool (arrow.gd)
 		main.add_child(arrow)
 		arrow.launch(start, dir, main, dmg, int(bow["pierce"]), fire, Save.bow, ice)
 	shots_fired += 1
@@ -1100,6 +1100,19 @@ func _fire() -> void:
 	var aim := (aim_at - start).normalized()
 	Fx.shot_burst(main, start + aim * ArrowScript.length_for(Save.bow) * 0.8, aim, Data.bow_fx(Save.bow))
 	_recoil_flash()
+
+
+## H1: a new arrow for the pool (Pools.take makes one only when none is waiting), already wearing the equipped bow's
+## model and trail, so a shot with that bow makes nothing new.
+func _new_arrow() -> Node:
+	var a: Node3D = ArrowScript.new()
+	a.dress(Save.bow, Data.bow_burn(Save.bow))
+	return a
+
+
+## H1: the first arrows, made ahead when the camp opens (balance.json pools.arrows, by graphics level).
+func prewarm_arrows() -> void:
+	Pools.prewarm(ArrowScript.POOL, _new_arrow, Pools.size_for("arrows"))
 
 
 var _bow_mesh: MeshInstance3D                           # the cat's SK_CatBow (found once)

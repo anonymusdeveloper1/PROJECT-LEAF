@@ -19,9 +19,11 @@ config/icon="res://icon.png"
 
 [autoload]
 
+Events="*res://core/events.gd"
 Data="*res://scripts/data.gd"
 Save="*res://scripts/save.gd"
 Quality="*res://scripts/quality.gd"
+Pools="*res://core/pools.gd"
 
 [display]
 

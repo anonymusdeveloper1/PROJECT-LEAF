@@ -8,6 +8,7 @@ extends Node
 ##            It stays pending across restarts; defeated member IDs are retained. Nothing happens while closed.
 ##   end      held: shards, leaves, timber, keys. Lost: a few shards. The damage stays either way, nothing is taken.
 ## Everything the player sees of it is on the signpost (the Watch card), the HUD's top right, banners and toasts.
+## H1: raid_started and raid_ended are also announced on the event board (Events), with the same arguments.
 
 signal raid_started(spec: Dictionary)      # Phase C (dish boosts, the guardian) and Phase E listen
 signal raid_ended(won: bool, perfect: bool)
@@ -441,6 +442,7 @@ func try_warning() -> void:
 	_warn_total = warn
 	present_warning()
 	raid_started.emit(main.fight.raid)
+	Events.raid_started.emit(main.fight.raid)          # H1: the same news on the event board
 	var g = main.get("guardian")
 	if g != null:
 		if g.has_method("on_raid_start"):
@@ -671,6 +673,7 @@ func finish(won: bool, perfect: bool, held: int) -> void:
 	if g != null and g.has_method("on_raid_end"):
 		g.on_raid_end(won)
 	raid_ended.emit(won, perfect)
+	Events.raid_ended.emit(won, perfect)               # H1: the same news on the event board
 	_update_watch_model(true)
 	# 7. saved; a sound
 	Save.save_game()
@@ -705,7 +708,7 @@ func persist() -> void:
 func restore_on_load() -> void:
 	refresh_open()
 	var r: Dictionary = Save.raids
-	if Save.save_v < 2:
+	if Save.loaded_v > 0 and Save.loaded_v < 2:
 		Save.save_v = 2
 		if open:
 			r["meter"] = maxf(float(r["meter"]), float(cfg()["meter"]["first_fill"]))

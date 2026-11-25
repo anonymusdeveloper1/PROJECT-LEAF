@@ -15,6 +15,15 @@
 - The owner's ten Meshy models are in `art/source/meshy/phase_h/`.
 
 **H1** is being built on `feature/h1-quick-fixes`. The work is done by agents as `docs/PHASE_H_PLAN.md` Part F sets out.
+- **Done (25 Nov 2026):**
+  - Random Raids are held only when every raider is defeated (part 1);
+  - +30% leaves from defeated enemies, and the Wishing Well at Hearthtree 3 with faster healing in waves (part 2);
+  - "Burrow" became "expedition" in the text (part 4);
+  - the architecture's first pieces: Events, Pools, the safer save, `content/index.json`, and the `--pools` and
+    `--saves` tests;
+  - PC speed: camp 2.2 to 1.88 ms, fight 4.02 to 2.94 ms.
+- **Next:** part 3 (amber as the one sell-only material, no Hollow keys, the old-save conversion). Then the docs, the
+  APK on the phone and the owner's review. Phone speed numbers come with the APK.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin

@@ -1,8 +1,9 @@
 extends Node
-## Data (autoload): the balance numbers in res://data/balance.json, and the cat's numbers worked out from them and
-## from what the player has bought (Save).
+## Data (autoload): the balance numbers and content catalogues, and the cat's numbers worked out from balance
+## and what the player has bought (Save).
 
 var b: Dictionary = {}
+var _catalogues: Dictionary = {}
 var run_mods := {}                   # Phase E: a Burrows run's boons and attachments (burrow.gd sets it, clears it on leaving)
 var _args := PackedStringArray()
 var _args_read := false
@@ -14,6 +15,45 @@ func _ready() -> void:
 		b = parsed
 	else:
 		push_error("data/balance.json did not parse")
+	_load_content_index()
+
+
+func _load_content_index() -> void:
+	const INDEX_PATH := "res://content/index.json"
+	if not FileAccess.file_exists(INDEX_PATH):
+		return
+	var index: Variant = JSON.parse_string(FileAccess.get_file_as_string(INDEX_PATH))
+	if not index is Dictionary:
+		return
+	var kinds: Variant = index.get("kinds", {})
+	if not kinds is Dictionary:
+		return
+	for kind: String in kinds:
+		var ids: Variant = kinds[kind]
+		if not ids is Array:
+			continue
+		var entries: Dictionary = {}
+		for id: Variant in ids:
+			if not id is String:
+				continue
+			var entry_path := "res://content/%s/%s/entry.json" % [kind, id]
+			if FileAccess.file_exists(entry_path):
+				var entry: Variant = JSON.parse_string(FileAccess.get_file_as_string(entry_path))
+				if entry is Dictionary:
+					entries[id] = entry
+		_catalogues[kind] = entries
+
+
+## Shared content entries in index order. Callers treat entries as read-only.
+func catalog(kind: String) -> Array:
+	var entries: Dictionary = _catalogues.get(kind, {})
+	return entries.values()
+
+
+## One shared content entry, or an empty dictionary for an unknown id.
+func item(kind: String, id: String) -> Dictionary:
+	var entries: Dictionary = _catalogues.get(kind, {})
+	return entries.get(id, {})
 
 
 ## The game's own command-line arguments (after "--"). On a debug build a one-shot file user://test_args.txt (one
@@ -72,7 +112,11 @@ func mission_index(id: String) -> int:
 
 ## How far the player has come: the number of different missions won.
 func progress() -> int:
-	return Save.missions_done.size()
+	var won := 0
+	for entry: Dictionary in b["missions"]:
+		if Save.missions_done.has(String(entry["id"])):
+			won += 1
+	return won
 
 
 ## The first mission not won yet (mission_count() when all are won).
@@ -260,8 +304,8 @@ func _goal(g: Dictionary) -> Dictionary:
 			prog = ("%s lv %d/%d" % [bn, have, lv]) if have > 0 else ("Buy the %s, then lv %d" % [bn, lv])
 			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
 		"bow_any":
-			for k in Save.bows:
-				have = maxi(have, int(Save.bows[k]))
+			for k: String in b["bows"]:
+				have = maxi(have, int(Save.bows.get(k, 0)))
 			need = lv
 			text = "A bow at lv %d" % lv
 			prog = "Best bow lv %d/%d" % [have, lv]
@@ -344,8 +388,8 @@ func _stat_station(id: String) -> String:
 ## mission gates lead the way); the Gloomwood's card still compares it with depth_power.
 func power() -> int:
 	var p := 0
-	for k in Save.stats:
-		p += int(Save.stats[k])
+	for k: String in b["stats"]:
+		p += int(Save.stats.get(k, 0))
 	p += int(Save.bows.get(Save.bow, 1)) - 1 + int(round((float(bow_info(Save.bow)["damage"]) - 1.0) * 6.0))
 	p += (Save.camp_level - 1) * 3
 	for sp in Save.placed:
@@ -691,20 +735,35 @@ func has_items(needs: Dictionary) -> bool:
 
 
 func take_items(needs: Dictionary) -> void:
-	for k in needs:
-		Save.pantry[k] = maxi(0, int(Save.pantry.get(k, 0)) - int(needs[k]))
+	var changed := false
+	for k: String in needs:
+		var have := int(Save.pantry.get(k, 0))
+		var remaining := maxi(0, have - int(needs[k]))
+		Save.pantry[k] = remaining
+		changed = changed or remaining != have
+	if changed:
+		Save.mark_dirty()
+		Events.bag_changed.emit()
 
 
 ## Puts ingredients in the pantry, each up to the pantry's cap. Returns what did not fit.
 func add_items(d: Dictionary) -> Dictionary:
 	var cap := int(b["cooking"]["pantry_cap"])
-	var left := {}
-	for k in d:
+	var left: Dictionary = {}
+	var gained: Dictionary = {}
+	for k: String in d:
 		var have := int(Save.pantry.get(k, 0))
 		var put := clampi(int(d[k]), 0, maxi(0, cap - have))
 		Save.pantry[k] = have + put
+		if put > 0:
+			gained[k] = put
 		if int(d[k]) - put > 0:
 			left[k] = int(d[k]) - put
+	if not gained.is_empty():
+		Save.mark_dirty()
+		for k: String in gained:
+			Events.item_gained.emit("food", k, int(gained[k]))
+		Events.bag_changed.emit()
 	return left
 
 

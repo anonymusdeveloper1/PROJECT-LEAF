@@ -7379,5 +7379,28 @@
       ],
       "from_mission": 11
     }
+  },
+  "pools": {
+    "_note": "Phase H (H1, 25 Nov 2026): the object pools (core/pools.gd, docs/ARCHITECTURE.md part 4). How many of each are made ahead when the camp opens, per graphics level [Low, Medium, High]. Not a cap: a pool that runs out makes more and keeps them. arrows: the cat's arrows in flight; numbers: damage numbers and text pop-ups (one shared pool); hit_fx: the leaf bursts of enemy hits (Fx.hit); pickups: leaves and the other pickups. First guesses, to be measured on the phone (--perf, --raidperf, docs/PERFORMANCE.md).",
+    "arrows": [
+      16,
+      24,
+      24
+    ],
+    "numbers": [
+      16,
+      24,
+      24
+    ],
+    "hit_fx": [
+      8,
+      16,
+      16
+    ],
+    "pickups": [
+      24,
+      32,
+      32
+    ]
   }
 }

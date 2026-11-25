@@ -934,7 +934,7 @@ func on_enemy_died(e) -> void:
 		_grub = null
 		for p in get_tree().get_nodes_in_group("pickups"):
 			if owns(p.global_position):
-				get_tree().create_timer(0.6).timeout.connect(p.call_home)
+				p.call_home_in(0.6)                     # H1: not if it is back in its pool and dropped again by then
 		return
 	# G4: the Saddlebags (a Saddlery attachment now, working everywhere) add to a kill's leaves; loot_mult is the old
 	# Burrows-only bags' (none since G4) and any boon's
@@ -1896,5 +1896,5 @@ func _chest_loot(at: Vector3, kind: String, sealed: bool, share: float) -> void:
 			main.drop_shards_fx(sh, at)
 	for p in get_tree().get_nodes_in_group("pickups"):
 		if owns(p.global_position):
-			get_tree().create_timer(0.7).timeout.connect(p.call_home)
+			p.call_home_in(0.7)                         # H1: not if it is back in its pool and dropped again by then
 	main.hud.refresh()

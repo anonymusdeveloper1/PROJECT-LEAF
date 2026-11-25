@@ -4,6 +4,8 @@ extends Node3D
 ## (interact.gd). Tap the signpost to pick the woods to fight in. Outside the camp the Gloom's creatures come down the
 ## trails; the cat shoots by itself, as in the Cat Ranger prototype.
 ## This node builds everything in code and ties it together: world, cat, camera, camp, defences, fight and HUD.
+## H1: the pickups come from Pools (pickup.gd POOL, _pickup); _ready makes the pools' first arrows, numbers, hit bursts
+## and pickups ahead (balance.json "pools").
 
 const PlayerScript := preload("res://scripts/player.gd")
 const JoystickScript := preload("res://scripts/joystick.gd")
@@ -162,6 +164,10 @@ func _ready() -> void:
 	burrows.check_open(true)                      # a save that already won every mission: the Old Hollow opens soon
 	burrows.call_deferred("check_saved_run")      # a saved run that no longer fits the game is closed kindly
 	_check_home_ready()                           # Phase F: knows whether the home's goals are met (no toast at start)
+	# H1: the pools' first objects, made now so the first fight makes none (balance.json "pools", by graphics level)
+	player.prewarm_arrows()
+	Fx.prewarm()
+	Pools.prewarm(PickupScript.POOL, _new_pickup, Pools.size_for("pickups"))
 	if Data.args().has("--autotest"):
 		var t := Node.new()
 		t.set_script(AutotestScript)
@@ -510,10 +516,21 @@ func drop_leaves(at: Vector3, value: int) -> void:
 	for k in n:
 		var v := left / (n - k)
 		left -= v
-		var p := Node3D.new()
-		p.set_script(PickupScript)
+		var p := _pickup()
 		add_child(p)
 		p.setup(self, v, at)
+
+
+## H1: a pickup from the pickup pool (pickup.gd), to add and set up.
+func _pickup() -> Node3D:
+	return Pools.take(PickupScript.POOL, _new_pickup) as Node3D
+
+
+## H1: a new pickup for the pool (made only when none is waiting), already wearing the leaf's model.
+func _new_pickup() -> Node:
+	var p: Node3D = PickupScript.new()
+	p.wear()
+	return p
 
 
 ## The Gloom shards a raid paid, shown flying to the cat (display only: they were banked at once). The HUD counter
@@ -531,11 +548,10 @@ func _shard_shower(shards: int, n: int, at: Vector3) -> void:
 	for k in n:
 		var v := left / (n - k)
 		left -= v
-		var p := Node3D.new()
-		p.set_script(PickupScript)
+		var p := _pickup()
 		add_child(p)
 		p.setup(self, v, at, "shard")
-		get_tree().create_timer(0.8).timeout.connect(p.call_home)
+		p.call_home_in(0.8)                             # H1: not if it is back in its pool and dropped again by then
 
 
 func collect_shard_fx(v: int, at: Vector3) -> void:
@@ -548,8 +564,7 @@ func collect_shard_fx(v: int, at: Vector3) -> void:
 func drop_item(at: Vector3, kind: String, n: int) -> void:
 	if n <= 0:
 		return
-	var p := Node3D.new()
-	p.set_script(PickupScript)
+	var p := _pickup()
 	add_child(p)
 	p.setup(self, n, at, kind)
 

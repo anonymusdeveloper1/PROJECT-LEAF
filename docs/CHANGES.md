@@ -2,6 +2,44 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 25 Nov 2026 · H1 (in progress), on `feature/h1-quick-fixes`
+
+Parts 1, 2 and 4 of step H1 are built. Part 3 (amber as the one sell-only material, no Hollow keys, the old-save
+conversion) is not done yet.
+
+- **Random Raids (part 1):** toppling the leader no longer routs the rest. The raid is held, and pays, only when
+  every raider is defeated. If the last 1 to 3 raiders do nothing for `flee_after` (45 s), they walk once to the
+  campfire so the raid can end. The leader banner and the signpost card say "defeat every raider to hold the camp".
+  Raid Missions are unchanged: their stragglers still flee after 45 quiet seconds.
+- **Leaves (part 2):** `kill_leaf_bonus` 1.3 in `balance.json` gives +30% on the leaves defeated enemies drop in
+  Raid Missions, Random Raids and the Gloomwood. It applies after `mission.enemy_leaf_mult` 1.5 and never to stolen
+  leaves, chests, wave pay or raid pay.
+- **The Wishing Well:**
+  - built at Hearthtree 3 (`needs_home` 3; it used to need 4 missions); a save that already has it keeps it;
+  - its card has only its Upgrade row, and the card's subtitle shows its rates;
+  - it mends 1% / 1.5% / 2.5% of max health a second in waves (it was 0.5 / 1 / 2) and 3 / 6 / 10% between waves
+    (unchanged);
+  - it also mends the standing Moss Warden; a downed golem gets up by its own rules;
+  - a worn Well is still repaired from the signpost's Mend list;
+  - Hearthtree 3's goal list no longer asks for the Well; Hearthtree 4 still asks for Well level 2;
+  - the new `--homegoals` check makes sure no Hearthtree goal asks for a station that is not open yet.
+- **Text (part 4):** "Burrow" became "expedition" in player-facing text. The Gloomwood and the Old Hollow keep their
+  names, and the Gloomwood's grub holes are "The Grubling holes".
+- **The architecture's first pieces** (`docs/ARCHITECTURE.md` part 13, H1):
+  - `game/core/events.gd` (autoload, now the first): the signals and who sends them.
+  - `game/core/pools.gd` (autoload): pooled arrows, damage numbers and text pop-ups, hit bursts and sprays, and leaf
+    and timber pickups. Sizes are in `balance.json` `pools`, per graphics level. Shockwave, swipe, flower_ring and
+    bellow share one mesh and one material per colour.
+  - The save: `save_upgrades.gd` (versioned, no step yet); `Save.mark_dirty()` and `Save.flush()` (every 10 s while
+    dirty, and on pause, background or close); `Save.hold_flush` (no flush during a Raid Mission wave, one at its
+    end, which stops leaf farming by force-closing); atomic writes through a `.tmp` file; the `.bak` copy is loaded
+    if the main save cannot be read; a backup before an upgrade; `Save.loaded_v`; `Events.currency_changed` and
+    `Events.save_loaded`.
+  - `Data` reads `game/content/index.json` (empty for now) through `catalog()` and `item()`.
+  - New test modes `--pools` and `--saves`. `game/tests/` holds sample saves and is left out of the phone build.
+- **Speed:** on the PC the camp frame went from 2.2 ms to 1.88 ms and a 17-foe fight from 4.02 ms to 2.94 ms
+  (`docs/PERFORMANCE.md`). Phone numbers are still to come.
+
 ## Cosmetic skin identity and Meshy references (24 Nov 2026; design only)
 
 - Saved the selected effect-free spectral A-pose, visible tail and matching quiver, then revised it using direct

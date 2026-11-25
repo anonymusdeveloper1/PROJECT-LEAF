@@ -8,6 +8,7 @@ extends Node
 ##   Medium  3D about 810 px across, MSAA 2x, sun shadows at 1024 px, no glow, 70% of the grass
 ##   High    full resolution, MSAA 2x, sun shadows at 2048 px, glow, all the grass
 ## Tests: --quality=low|medium|high sets the level for that run only (and nothing steps down by itself).
+## H1: every change is also announced on the event board (Events.quality_changed), besides its own `changed`.
 
 signal changed
 signal stepped_down
@@ -111,6 +112,7 @@ func cycle() -> void:
 	_save()
 	apply_viewport()
 	changed.emit()
+	Events.quality_changed.emit(level)               # H1: the same news on the event board
 
 
 # ---------------------------------------------------------------- the first guess
@@ -200,6 +202,7 @@ func _process(delta: float) -> void:
 	_save()
 	apply_viewport()
 	changed.emit()
+	Events.quality_changed.emit(level)               # H1: the same news on the event board
 	stepped_down.emit()
 
 

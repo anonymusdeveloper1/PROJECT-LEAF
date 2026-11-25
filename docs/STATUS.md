@@ -1,6 +1,20 @@
-# Project LEAF: where we are (24 November 2026)
+# Project LEAF: where we are (25 November 2026)
 
 **The full description of the game as it is now: `docs/GAME_GUIDE.md`.**
+
+**25 Nov 2026 · Phase H started.** The owner approved `docs/PHASE_H_PLAN.md` (version 1.2) and the architecture in
+`docs/ARCHITECTURE.md`. The four rule changes are now in `CLAUDE.md` and `docs/GAME_GUIDE.md`:
+- only timers keep running while the game is closed (from H3);
+- purple shards are the paid currency and buy looks only, and Bramble never buys shards;
+- the Mushroom Cottage leaves the camp (H5);
+- numbers live in `game/data/` and `game/content/`.
+
+**H0:**
+- Concepts are made and reviewed, in `concepts/h_*`.
+- The owner picked the Hollow Jailer as the intro boss.
+- The owner's ten Meshy models are in `art/source/meshy/phase_h/`.
+
+**H1** is being built on `feature/h1-quick-fixes`. The work is done by agents as `docs/PHASE_H_PLAN.md` Part F sets out.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin

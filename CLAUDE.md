@@ -1,8 +1,9 @@
 # Project LEAF: rules for Claude and its agents
 
 A low-poly 3D action game for Android, made in Godot 4.7.2 (`game/`). Read `docs/STATUS.md` first, then
-`docs/GAME_GUIDE.md` (the game as it is; part 11 is for developers). The current work plan is `docs/PHASE_G_PLAN.md`
-(agreed 20 Nov 2026; built in steps G1–G5). Phase F (`docs/PHASE_F_PLAN.md`) is already in the game.
+`docs/GAME_GUIDE.md` (the game as it is; part 11 is for developers). The current work plan is `docs/PHASE_H_PLAN.md`
+(started 25 Nov 2026; built in steps H0–H11), and **every agent reads `docs/ARCHITECTURE.md` before writing game
+code**: Phase H moves the game over to it step by step. Phases F and G are already in the game.
 
 ## 3D models: the owner makes every one in Meshy (the owner's rule, 19 November 2026)
 
@@ -38,7 +39,12 @@ Split the work into subagents and pick the model by how hard the task is:
 - **Haiku**: simple, mechanical tasks (look-ups, renames, small doc or data edits, listing files).
 - **Sonnet**: easy to medium, well-specified tasks (a test file, a tool script, a small self-contained feature).
 - **Opus**: normal and hard tasks (game systems, enemy AI, balance, anything that spans several files or needs design
-  judgement).
+  judgement), and **every review** of work done by Sonnet, Haiku and Codex (read-only).
+- **Fable** (the owner, 25 November 2026): only the really hard problems, when Opus is stuck or a design is risky.
+- **Codex CLI** (GPT-6.2 Sol, the owner's own quota; the owner, 25 November 2026): medium to fairly hard, well-fenced
+  tasks and all concept images, never the hardest tasks. It runs read-only and returns a patch that Claude reads and
+  applies. If Codex stops (quota, error), Sonnet or Haiku finishes the same brief.
+- The full flow (brief, build, review, test, the owner) is in `docs/PHASE_H_PLAN.md`, Part F.
 
 Rules for running agents side by side:
 - **No git.** Each writing agent owns its own files, and two agents never edit the same file at the same time.
@@ -66,12 +72,16 @@ Rules for running agents side by side:
     (the owner's rule).
 - **Test lightly** (the owner saves quota): run `--smoke` plus the changed feature's own mode, once. Add
   `--disable-vsync` before `--`. Get a build on the phone early; polish comes later, separately.
-- **Every gameplay number lives in `game/data/balance.json`**, not in code.
+- **Every gameplay number lives in data, not in code:** `game/data/balance.json` for the general rules, and
+  `game/content/` (one folder per thing, `docs/ARCHITECTURE.md`) as Phase H moves content there (the owner, 25 Nov 2026).
 - **Keep the design rules** in `docs/GAME_GUIDE.md` part 11:
   - one cat guarding a campfire camp (a camp, not a village);
-  - nothing happens while the game is closed;
-  - looks-only selling, and rewarded ads only;
+  - **only timers keep running while the game is closed** (the owner, 25 Nov 2026): cooking, crop growth, and later
+    long jobs that use the timer system. Raids, fights, the Well and the rest of the camp still wait;
+  - looks-only selling: **purple shards are the paid currency and buy only looks**, and Bramble never buys shards for
+    leaves (the owner, 25 Nov 2026); rewarded ads only;
   - nothing tall between the camera and where the cat walks;
   - no HUD in the middle third of the screen.
+- **The Mushroom Cottage leaves the camp** in Phase H (H5); its pet upgrades move to the Market (the owner, 25 Nov 2026).
 - **The owner speaks through speech-to-text.** Read words by sound when they don't fit: "kit" is the cat, "rows" are
   roads, "Google project" is the Godot project.

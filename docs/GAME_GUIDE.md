@@ -50,7 +50,9 @@ awning, a lake beside it. The Gloom is violet crystal. The Gloomwood is a night 
 - **Not Clash of Clans.** One cat guards one campfire camp. No villagers, no workers, no build timers, nothing that
   makes resources by itself. It is a camp, never a village.
 - **Nothing happens while the game is closed.** No timer runs, no raid attacks, no plant grows, nothing is lost. The
-  game never reads the clock.
+  game never reads the clock. **Rule change (the owner, 25 Nov 2026, Phase H):** only timers will keep running while
+  the game is closed: cooking, crop growth, and later long jobs that use the timer system (H3). Raids, fights, the Well
+  and the rest of the camp still wait. Until H3 is built, nothing runs while the game is closed.
 - **Not open world.** The camp is home and the enemies come to it. Going out happens in small separate places: the
   Gloomwood now, islands by boat later.
 - **No menus.** You go to a thing and its card opens (part 2).
@@ -1461,11 +1463,17 @@ and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\
 - **3D models** (`CLAUDE.md`): the owner makes models in Meshy. Claude may design bows, arrows and mount attachments
   in Blender. Claude finishes the owner's meshes and can rebuild broken parts to match the design, as with the
   outfit cloaks and the Nook. Concept images (`tools/gen_concepts.ps1`, Codex CLI) are made at the owner's request.
-- **Agents and review.** Haiku handles simple work, Sonnet well-specified tasks and Opus harder systems and balance.
-  End with an Opus or Codex review. Codex worked read-only for review, fixes and docs and supplied patches.
+- **Agents and review** (updated 25 Nov 2026): who does what is in `CLAUDE.md` and `docs/PHASE_H_PLAN.md` Part F.
+  Opus reviews all work by Sonnet, Haiku and Codex; Codex works read-only and supplies patches.
+- **Architecture** (agreed 25 Nov 2026): `docs/ARCHITECTURE.md` is the target structure (one folder per thing, eight
+  singletons, the patterns and the house rules). Phase H moves the game over to it step by step; read it before
+  writing game code.
 - **Godot MCP** uses the local `.mcp.json` and `tools/mcp/` to connect to the Godot 4.7.2 console.
-- Keep the design rules: nothing moves while the game is closed; camp, not village; looks-only selling; nothing tall
-  between the camera and where the cat can walk; nothing of the HUD in the middle third of the screen.
+- Keep the design rules (updated by the owner, 25 Nov 2026): only timers keep running while the game is closed (from
+  H3); camp, not village; looks-only selling, with purple shards the paid currency for looks only and Bramble never
+  buying shards; nothing tall between the camera and where the cat can walk; nothing of the HUD in the middle third of
+  the screen. Numbers live in data (`game/data/`, and `game/content/` as Phase H moves content there).
+- **Phase H removes the Mushroom Cottage** (H5): the pet's upgrades move to the Market's Pets tab.
 - The owner tests on the phone: build complete and playable, keep testing light, and back up first.
 
 ---

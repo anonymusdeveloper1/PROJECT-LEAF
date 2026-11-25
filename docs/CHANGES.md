@@ -2,9 +2,9 @@
 
 Each merged branch adds an entry here, newest first.
 
-## 25 Nov 2026 · H1, on `feature/h1-quick-fixes`
+## 25-26 Nov 2026 · H1 (merged into `development` on 26 Nov)
 
-Parts 1, 2 and 4 of step H1 are committed; part 3 is built and tested, being committed now.
+All four parts of step H1 are committed and merged into `development` (26 Nov 2026, after the owner's phone review).
 
 - **Random Raids (part 1, `8e796fc`):** toppling the leader no longer routs the rest. The raid is held, and pays, only when
   every raider is defeated. If the last 1 to 3 raiders do nothing for `flee_after` (45 s), they walk once to the

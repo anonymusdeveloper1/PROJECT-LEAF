@@ -170,7 +170,7 @@ and its rough size.
 
 ### H1: quick fixes and numbers
 
-**Status (25 Nov 2026):** points 1 to 7 are built and tested on `feature/h1-quick-fixes`. Points 1, 2, 3 and 7 are committed; points 4, 5 and 6 (amber, no keys, old saves converted; save version 3; Lucky Paw's chests give 50% more leaves and timber, never more amber) are being committed now.
+**Status (26 Nov 2026):** H1 is done: points 1 to 7 are built, tested, played by the owner on the phone and merged into `development` (Lucky Paw's chests now give 50% more leaves and timber, never more amber).
 
 **What you'll see:**
 - a Random Raid keeps fighting after its leader falls;

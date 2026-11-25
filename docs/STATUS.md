@@ -14,7 +14,7 @@
 - The owner picked the Hollow Jailer as the intro boss.
 - The owner's ten Meshy models are in `art/source/meshy/phase_h/`.
 
-**H1** is built and tested on `feature/h1-quick-fixes` (parts 1, 2 and 4 committed; part 3 built and tested, being committed now). The work is done by agents as `docs/PHASE_H_PLAN.md` Part F sets out.
+**H1** is done and merged into `development` (26 Nov 2026, after the owner played it on the phone; not pushed yet). The work is done by agents as `docs/PHASE_H_PLAN.md` Part F sets out.
 - **Done (25 Nov 2026):**
   - Random Raids are held only when every raider is defeated, stragglers walk to the fire, +30% leaves from defeated
     enemies, and the Wishing Well at Hearthtree 3 with faster healing in waves (part 1);
@@ -25,7 +25,9 @@
   - the architecture's first pieces: Events, Pools, the safer save, `content/index.json`, and the `--pools` and
     `--saves` tests (part 2);
   - PC speed: camp 2.2 to 1.88 ms, fight 4.02 to 2.94 ms.
-- **Next:** the commit, the APK on the phone and the owner's review. Phone speed numbers come with the APK.
+- **Phone (26 Nov 2026):** the H1 APK is on the owner's phone; its save went from version 2 to 3 (38 amber, 7 glowstone,
+  5 heartwood and 3 keys became 2,500 leaves). Phone speed numbers are still to be measured.
+- **Next:** H2 (the HUD listens to Events, commands for the cat's buttons, `hud.gd` split), on `feature/h2-hud`.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin

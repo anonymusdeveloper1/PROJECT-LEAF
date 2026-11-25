@@ -157,6 +157,54 @@
       "notes": "Honeybell stalks with 3 golden bell flowers hanging open. Garden plant, merged by garden.gd into the one plant mesh at a marker_plot_<i> transform. Origin on the soil top (Z = 0 = the mound top), no collision."
     },
     {
+      "name": "emberpepper_growing",
+      "file": "emberpepper_growing.glb",
+      "size_m": [
+        0.18,
+        0.24,
+        0.18
+      ],
+      "collision": null,
+      "tris": 176,
+      "notes": "H3 crop (Phase H), finished from the owner's Meshy model"
+    },
+    {
+      "name": "emberpepper_ripe",
+      "file": "emberpepper_ripe.glb",
+      "size_m": [
+        0.35,
+        0.4,
+        0.3
+      ],
+      "collision": null,
+      "tris": 386,
+      "notes": "H3 crop (Phase H), finished from the owner's Meshy model"
+    },
+    {
+      "name": "swiftroot_ripe",
+      "file": "swiftroot_ripe.glb",
+      "size_m": [
+        0.36,
+        0.38,
+        0.28
+      ],
+      "collision": null,
+      "tris": 160,
+      "notes": "H3 crop (Phase H), finished from the owner's Meshy model"
+    },
+    {
+      "name": "swiftroot_growing",
+      "file": "swiftroot_growing.glb",
+      "size_m": [
+        0.28,
+        0.23,
+        0.26
+      ],
+      "collision": null,
+      "tris": 140,
+      "notes": "H3 crop (Phase H), finished from the owner's Meshy model"
+    },
+    {
       "name": "cook_pot",
       "file": "cook_pot.glb",
       "size_m": [

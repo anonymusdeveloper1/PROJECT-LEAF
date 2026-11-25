@@ -34,13 +34,10 @@
       ],
       "mastery": [
         {
-          "leaves": 400,
-          "amber": 6
+          "leaves": 760
         },
         {
-          "leaves": 550,
-          "amber": 9,
-          "glowstone": 3
+          "leaves": 1450
         }
       ]
     },
@@ -63,13 +60,10 @@
       ],
       "mastery": [
         {
-          "leaves": 400,
-          "amber": 6
+          "leaves": 760
         },
         {
-          "leaves": 550,
-          "amber": 9,
-          "glowstone": 3
+          "leaves": 1450
         }
       ]
     },
@@ -111,13 +105,10 @@
       ],
       "mastery": [
         {
-          "leaves": 400,
-          "amber": 6
+          "leaves": 760
         },
         {
-          "leaves": 550,
-          "amber": 9,
-          "glowstone": 3
+          "leaves": 1450
         }
       ]
     },
@@ -140,13 +131,10 @@
       ],
       "mastery": [
         {
-          "leaves": 400,
-          "amber": 6
+          "leaves": 760
         },
         {
-          "leaves": 550,
-          "amber": 9,
-          "glowstone": 3
+          "leaves": 1450
         }
       ]
     },
@@ -460,10 +448,8 @@
           ]
         },
         {
-          "leaves": 15000,
+          "leaves": 17160,
           "timber": 110,
-          "amber": 20,
-          "glowstone": 8,
           "needs_burrows": true,
           "needs_depth": 1,
           "goals": [
@@ -500,11 +486,8 @@
           ]
         },
         {
-          "leaves": 25000,
+          "leaves": 33480,
           "timber": 150,
-          "amber": 60,
-          "glowstone": 24,
-          "heartwood": 5,
           "needs_burrows": true,
           "needs_depth": 2,
           "goals": [
@@ -515,11 +498,8 @@
           ]
         },
         {
-          "leaves": 40000,
+          "leaves": 54400,
           "timber": 200,
-          "amber": 90,
-          "glowstone": 45,
-          "heartwood": 9,
           "needs_burrows": true,
           "needs_depth": 3,
           "goals": [
@@ -788,15 +768,10 @@
       ],
       "mastery": [
         {
-          "leaves": 600,
-          "amber": 6,
-          "glowstone": 2
+          "leaves": 1200
         },
         {
-          "leaves": 800,
-          "amber": 9,
-          "glowstone": 3,
-          "heartwood": 1
+          "leaves": 2100
         }
       ],
       "draw_mult": 1.0
@@ -851,15 +826,10 @@
       ],
       "mastery": [
         {
-          "leaves": 600,
-          "amber": 6,
-          "glowstone": 2
+          "leaves": 1200
         },
         {
-          "leaves": 800,
-          "amber": 9,
-          "glowstone": 3,
-          "heartwood": 1
+          "leaves": 2100
         }
       ],
       "draw_mult": 1.1
@@ -914,15 +884,10 @@
       ],
       "mastery": [
         {
-          "leaves": 600,
-          "amber": 6,
-          "glowstone": 2
+          "leaves": 1200
         },
         {
-          "leaves": 800,
-          "amber": 9,
-          "glowstone": 3,
-          "heartwood": 1
+          "leaves": 2100
         }
       ],
       "burn": {
@@ -981,15 +946,10 @@
       ],
       "mastery": [
         {
-          "leaves": 780,
-          "amber": 6,
-          "glowstone": 2
+          "leaves": 1380
         },
         {
-          "leaves": 1040,
-          "amber": 9,
-          "glowstone": 3,
-          "heartwood": 1
+          "leaves": 2340
         }
       ],
       "frost": {
@@ -1050,15 +1010,10 @@
       ],
       "mastery": [
         {
-          "leaves": 600,
-          "amber": 6,
-          "glowstone": 2
+          "leaves": 1200
         },
         {
-          "leaves": 800,
-          "amber": 9,
-          "glowstone": 3,
-          "heartwood": 1
+          "leaves": 2100
         }
       ],
       "draw_mult": 1.0
@@ -1072,9 +1027,7 @@
       "range_bonus": 1.0,
       "bench_level": 3,
       "craft": {
-        "leaves": 2000,
-        "glowstone": 16,
-        "heartwood": 3
+        "leaves": 5120
       },
       "needs_burrows": true,
       "hidden": true,
@@ -1115,15 +1068,10 @@
       ],
       "mastery": [
         {
-          "leaves": 600,
-          "amber": 6,
-          "glowstone": 2
+          "leaves": 1200
         },
         {
-          "leaves": 800,
-          "amber": 9,
-          "glowstone": 3,
-          "heartwood": 1
+          "leaves": 2100
         }
       ],
       "draw_mult": 1.0
@@ -1224,10 +1172,7 @@
           "arrow_fletch": "#FFE18C",
           "arrow_glow": 0.65,
           "hp": 1000,
-          "upgrade": 2800,
-          "amber": 20,
-          "glowstone": 8,
-          "heartwood": 2,
+          "upgrade": 5760,
           "name": "Amber",
           "needs_burrows": true
         }
@@ -1276,9 +1221,7 @@
         {
           "dps": 42,
           "slow": 0.55,
-          "upgrade": 1500,
-          "amber": 14,
-          "glowstone": 6,
+          "upgrade": 3060,
           "name": "Amber Thorns",
           "needs_burrows": true
         }
@@ -1332,9 +1275,7 @@
         },
         {
           "hp": 2000,
-          "upgrade": 1800,
-          "amber": 16,
-          "glowstone": 6,
+          "upgrade": 3480,
           "model": "barricade_heartwood",
           "name": "Heartwood",
           "needs_burrows": true
@@ -2248,12 +2189,7 @@
       "leaves": 100,
       "leaves_per_level": 15,
       "timber": 3,
-      "timber_per_levels": 4,
-      "keys": {
-        "held": 1,
-        "elite_extra": 1,
-        "max": 3
-      }
+      "timber_per_levels": 4
     },
     "streak_ribbons": [
       3,
@@ -5957,7 +5893,7 @@
     }
   },
   "burrows": {
-    "_note": "The Burrows (docs/DUNGEON_SPEC.md; Phase E: docs/PHASE_E_SPEC.md), open once every mission is won. Entry is free and unlimited (the user, 18 Nov 2026); a Hollow key is only a bonus: entering with one starts the run with a boon. A Burrow is a dungeon: one continuous map at night (data/dungeons/<map>.json), a path the cat walks from the way in past fights (packs that wake, spawners that fire) to a boss in a big arena (or a treasure clearing), built far from the camp at origin. Replays are levels of the same map: level 1 is open when the Hollow opens, beating level N opens N+1 (Save burrow stats depth = the highest level beaten). Every per-depth table below is per level. Monster health x strength_by_depth x (1 + fight_ramp x the fight's number); bosses x the map's hp_mult; damage = the kind's damage + damage_add_by_depth. Packs: the map's base + per_level x (level - 1) monsters from the level's tier pool (tiers[].first = the level a pool starts), at most max_alive_by_quality; a Gloomtouched elite may join a pack (pack_elite_chance_by_level, from level 1) and from level 2 a Root Snapper (snapper_chance_by_depth). A waking pack wakes any pack asleep within link_r of it (a pull). The spring heals spring.heal of the cat's health; a dew bud blooms where a fight with a pip was won with dew.bud_chance. Harder from 19 Nov 2026 (the user: \"make the dungeon quite a lot harder\"): strength, damage_add, fight_ramp, elites, wake_r, link_r, max_alive (Medium/High), boss_minions_max, dew, spring, and pay +25% (leaf_mult_by_depth, drops) to match; the boss's own tuning is in the map's end.mods. The first run ever at level 1 uses the map's fixed packs. Keys only from play; nothing is ever given, refilled or taken by time. Satchel: all of it banked on a root lift, knockout_keep of it on a knock-out; leaves, timber and shards are banked at once. A drop value v = floor(v) + a chance frac(v) of one more. Past level 5: strength +strength_per_depth_after a level, pay x (1 + pay_per_depth_after x (level - 5)). `list` holds every Burrow (one now): a new one is data plus models. sealed_guardian: the Moss Warden waits sealed behind the boss on the first clear of that level.",
+    "_note": "The Burrows (docs/DUNGEON_SPEC.md; Phase E: docs/PHASE_E_SPEC.md), open once every mission is won. Entry is free and unlimited (the user, 18 Nov 2026). H1 (25 Nov 2026): no Hollow keys; amber is the only material (its drops: the amber block). A Burrow is a dungeon: one continuous map at night (data/dungeons/<map>.json), a path the cat walks from the way in past fights (packs that wake, spawners that fire) to a boss in a big arena (or a treasure clearing), built far from the camp at origin. Replays are levels of the same map: level 1 is open when the Hollow opens, beating level N opens N+1 (Save burrow stats depth = the highest level beaten). Every per-depth table below is per level. Monster health x strength_by_depth x (1 + fight_ramp x the fight's number); bosses x the map's hp_mult; damage = the kind's damage + damage_add_by_depth. Packs: the map's base + per_level x (level - 1) monsters from the level's tier pool (tiers[].first = the level a pool starts), at most max_alive_by_quality; a Gloomtouched elite may join a pack (pack_elite_chance_by_level, from level 1) and from level 2 a Root Snapper (snapper_chance_by_depth). A waking pack wakes any pack asleep within link_r of it (a pull). The spring heals spring.heal of the cat's health; a dew bud blooms where a fight with a pip was won with dew.bud_chance. Harder from 19 Nov 2026 (the user: \"make the dungeon quite a lot harder\"): strength, damage_add, fight_ramp, elites, wake_r, link_r, max_alive (Medium/High), boss_minions_max, dew, spring, and pay +25% (leaf_mult_by_depth, drops) to match; the boss's own tuning is in the map's end.mods. The first run ever at level 1 uses the map's fixed packs. Nothing is ever given, refilled or taken by time. Satchel: all of it banked on a root lift, knockout_keep of it on a knock-out; leaves, timber and shards are banked at once. A drop value v = floor(v) + a chance frac(v) of one more. Past level 5: strength +strength_per_depth_after a level, pay x (1 + pay_per_depth_after x (level - 5)). `list` holds every Burrow (one now): a new one is data plus models. sealed_guardian: the Moss Warden waits sealed behind the boss on the first clear of that level.",
     "origin": [
       400.0,
       0.0,
@@ -5976,13 +5912,6 @@
     "reveal_old_save_s": 6.0,
     "reveal_wait_s": 1.0,
     "reveal_wait_max": 4,
-    "keys": {
-      "cap": 3,
-      "open_fill": 3,
-      "replay": 1,
-      "first_clear": 1,
-      "overflow_leaves": 150
-    },
     "meals_in_runs": true,
     "knockout_keep": 0.5,
     "strength_by_depth": [
@@ -6084,45 +6013,12 @@
       "fight_chance": 0.12,
       "spring_chance": 0.3,
       "life_s": 10.0,
-      "leaves": 30,
-      "amber": 1
+      "leaves": 30
     },
     "save_hurt_every_s": 1.5,
     "save_hurt_low_hp": 2,
     "drops": {
-      "kill_amber_chance": [
-        0,
-        0.075,
-        0.0875,
-        0.1,
-        0.1125,
-        0.125
-      ],
       "chest": {
-        "amber": [
-          0,
-          2.5,
-          2.5,
-          3.75,
-          3.75,
-          5
-        ],
-        "glowstone": [
-          0,
-          0,
-          1.25,
-          1.25,
-          1.25,
-          2.5
-        ],
-        "heartwood": [
-          0,
-          0,
-          0,
-          0,
-          0.25,
-          0.25
-        ],
         "leaves": [
           0,
           50,
@@ -6142,57 +6038,7 @@
       },
       "unhurt_share": 0.5,
       "sealed_mult": 2.0,
-      "elite": {
-        "amber": [
-          0,
-          1,
-          1,
-          1,
-          2,
-          2
-        ],
-        "glowstone": [
-          0,
-          0,
-          1,
-          1,
-          1,
-          1
-        ],
-        "heartwood": [
-          0,
-          0,
-          0,
-          0,
-          0.25,
-          0.25
-        ]
-      },
       "boss": {
-        "amber": [
-          0,
-          2.5,
-          3.75,
-          3.75,
-          5,
-          5
-        ],
-        "glowstone": [
-          0,
-          0,
-          1.25,
-          2.5,
-          2.5,
-          3.75
-        ],
-        "heartwood": [
-          0,
-          0,
-          0,
-          1,
-          1,
-          1
-        ],
         "leaves": [
           0,
           190,
@@ -6217,16 +6063,17 @@
           7.5,
           10
         ]
-      },
-      "first_clear": {
-        "heartwood": [
-          0,
-          0,
-          0,
-          1,
-          1,
-          2
-        ]
+      }
+    },
+    "amber": {
+      "_note": "H1 (25 Nov 2026, the owner): amber is the one expedition material. It pays for nothing; Bramble buys it (market.buys). All its drops are here (first guesses, tune by play): each value v gives floor(v) and a chance frac(v) of one more (0.5 = a 1 in 2 chance of one). boss: the end's chest (the boss chest, or a treasure end). sealed: the Gloom-bound chest (breaking its seal doubles it, as all that chest's loot: drops.sealed_mult). elite: a Gloomtouched elite's kill. grub: the Amber Grub caught. first_clear: a level beaten for the first time (straight into the satchel). chest_source: which of these a chest pays by, from its map type in the level data (only sealed pays; the boss chest pays boss in code; any type not named pays no amber). Ordinary kills and the other chests drop none. Lucky Paw (boons.lucky) gives no extra amber (the owner, 25 Nov 2026): only more leaves and timber. Picked up, it goes into the satchel; a knock-out keeps half (knockout_keep, rounded down).",
+      "boss": 1,
+      "sealed": 0.5,
+      "elite": 0.1,
+      "grub": 0.5,
+      "first_clear": 1,
+      "chest_source": {
+        "sealed": "sealed"
       }
     },
     "dash": {
@@ -6323,8 +6170,9 @@
       },
       "lucky": {
         "name": "Lucky Paw",
-        "note": "Every chest gives one more of each material in it",
-        "chest_plus": 1
+        "note": "Chests give 50% more leaves and timber",
+        "_note": "H1 (25 Nov 2026, the owner): leaves and timber only, never more amber (it used to give one more of each material). chest_mult multiplies a chest's leaves and timber (burrow_run.chest_amounts); 1.5 is a first guess, tune by play. Keep the player note's percentage in step.",
+        "chest_mult": 1.5
       }
     },
     "materials": {
@@ -6332,16 +6180,6 @@
         "name": "Root Amber",
         "short": "amber",
         "color": "#F2A23A"
-      },
-      "glowstone": {
-        "name": "Glowstone",
-        "short": "glowstone",
-        "color": "#5FE0C8"
-      },
-      "heartwood": {
-        "name": "Heartwood",
-        "short": "heartwood",
-        "color": "#A8743A"
       }
     },
     "list": [
@@ -6649,17 +6487,14 @@
     "snack_every_s": 3.0
   },
   "attachments": {
-    "_note": "Phase E: attachments for the mount and the pet. They help in the Burrows only (burrow_run.gd adds their mods to Data.run_mods with the boons), one worn per companion, bought with what the Burrows pay and worn on the Stable (Market Stall) and Nest (Mushroom Cottage) cards. Card-only for now: no model on the companions yet. mods: mount_hp (+share of the mount's health), thump_mult (+share of its Stomp, the Thump before G4), loot_mult (x chests and kills), trap_warn (+s on trap and spore warnings), pet_dmg (+share of Sprig's sparks), hp (+cat health). G4 (21 Nov 2026): the Mossweave Saddle (mount_saddle) and the Saddlebags (mount_bags) moved to the Saddlery (mount_attachments, working everywhere; old saves keep them there: saddlery.old_attachments). The Thunder Shoes stay here as they were.",
+    "_note": "Phase E: attachments for the mount and the pet. They help in the Burrows only (burrow_run.gd adds their mods to Data.run_mods with the boons), one worn per companion, bought with leaves (H1: no materials) and worn on the Stable (Market Stall) and Nest (Mushroom Cottage) cards. Card-only for now: no model on the companions yet. mods: mount_hp (+share of the mount's health), thump_mult (+share of its Stomp, the Thump before G4), loot_mult (x chests and kills), trap_warn (+s on trap and spore warnings), pet_dmg (+share of Sprig's sparks), hp (+cat health). G4 (21 Nov 2026): the Mossweave Saddle (mount_saddle) and the Saddlebags (mount_bags) moved to the Saddlery (mount_attachments, working everywhere; old saves keep them there: saddlery.old_attachments). The Thunder Shoes stay here as they were.",
     "items": {
       "mount_shoes": {
         "slot": "mount",
         "name": "Thunder Shoes",
-        "note": "Your mount's Stomp hits 60% harder in the Burrows",
+        "note": "Your mount's Stomp hits 60% harder on expeditions",
         "cost": {
-          "leaves": 1200,
-          "amber": 16,
-          "glowstone": 8,
-          "heartwood": 1
+          "leaves": 3520
         },
         "mods": {
           "thump_mult": 0.6
@@ -6668,11 +6503,9 @@
       "pet_lantern": {
         "slot": "pet",
         "name": "Glowworm Lantern",
-        "note": "Traps and spore bombs glow 0.3 s earlier in the Burrows",
+        "note": "Traps and spore bombs glow 0.3 s earlier on expeditions",
         "cost": {
-          "leaves": 800,
-          "amber": 10,
-          "glowstone": 6
+          "leaves": 2120
         },
         "mods": {
           "trap_warn": 0.3
@@ -6681,12 +6514,9 @@
       "pet_charm": {
         "slot": "pet",
         "name": "Ember Charm",
-        "note": "Your pet's sparks hit 60% harder in the Burrows",
+        "note": "Your pet's sparks hit 60% harder on expeditions",
         "cost": {
-          "leaves": 1200,
-          "amber": 14,
-          "glowstone": 8,
-          "heartwood": 1
+          "leaves": 3400
         },
         "mods": {
           "pet_dmg": 0.6
@@ -6695,11 +6525,9 @@
       "pet_bell": {
         "slot": "pet",
         "name": "Dew Bell",
-        "note": "+2 health for the cat in the Burrows",
+        "note": "+2 health for the cat on expeditions",
         "cost": {
-          "leaves": 900,
-          "amber": 12,
-          "glowstone": 4
+          "leaves": 2100
         },
         "mods": {
           "hp": 2
@@ -6742,7 +6570,7 @@
     }
   },
   "mount_skills": {
-    "_note": "G4: the skills the mount learns at the Saddlery. While the cat rides it in a fight (a mission, a raid, the Burrows) it uses each one by itself on its own timer (every_s, frame time only), never two at once (saddlery.gap_s; priority: which ready one goes first). price[0] learns it (level 1); price[n] buys level n + 1 (levels 2-5, never above the Saddlery's level); a price with needs_burrows also asks for Burrow materials and is sold only once the Burrows are open (after the missions). Never real money. By level: damage x (1 + damage_per_level x (level - 1)); stun_s + stun_add_per_level x (level - 1); taken + taken_add_per_level x (level - 1). Distances are from the mount's middle, plus the enemy's own radius. Stomp, Ram and Pounce are on the ground (fliers are missed); Bellow reaches fliers too. Bosses are stunned boss_stun_s at most. Stomp also takes the Burrows' thump_mult (the Thunder Shoes). clip: the mount's animation (Thump while the mount has no such clip). Ram and Pounce move the mount and the cat by code (dash_m over dash_s; a leap over leap_s, its clip in place; hop_m only when the mount has no Pounce clip).",
+    "_note": "G4: the skills the mount learns at the Saddlery. While the cat rides it in a fight (a mission, a raid, the Burrows) it uses each one by itself on its own timer (every_s, frame time only), never two at once (saddlery.gap_s; priority: which ready one goes first). price[0] learns it (level 1); price[n] buys level n + 1 (levels 2-5, never above the Saddlery's level); a price with needs_burrows is sold only once the Burrows are open (after the missions); H1: every price is leaves and timber. Never real money. By level: damage x (1 + damage_per_level x (level - 1)); stun_s + stun_add_per_level x (level - 1); taken + taken_add_per_level x (level - 1). Distances are from the mount's middle, plus the enemy's own radius. Stomp, Ram and Pounce are on the ground (fliers are missed); Bellow reaches fliers too. Bosses are stunned boss_stun_s at most. Stomp also takes the Burrows' thump_mult (the Thunder Shoes). clip: the mount's animation (Thump while the mount has no such clip). Ram and Pounce move the mount and the cat by code (dash_m over dash_s; a leap over leap_s, its clip in place; hop_m only when the mount has no Pounce clip).",
     "priority": [
       "bellow",
       "pounce",
@@ -6775,18 +6603,13 @@
             "timber": 60
           },
           {
-            "leaves": 3000,
+            "leaves": 3840,
             "timber": 80,
-            "amber": 8,
-            "glowstone": 3,
             "needs_burrows": true
           },
           {
-            "leaves": 4500,
+            "leaves": 6460,
             "timber": 110,
-            "amber": 14,
-            "glowstone": 6,
-            "heartwood": 1,
             "needs_burrows": true
           }
         ]
@@ -6820,18 +6643,13 @@
             "timber": 70
           },
           {
-            "leaves": 3500,
+            "leaves": 4580,
             "timber": 90,
-            "amber": 10,
-            "glowstone": 4,
             "needs_burrows": true
           },
           {
-            "leaves": 5000,
+            "leaves": 7200,
             "timber": 120,
-            "amber": 16,
-            "glowstone": 7,
-            "heartwood": 1,
             "needs_burrows": true
           }
         ]
@@ -6866,18 +6684,13 @@
             "timber": 80
           },
           {
-            "leaves": 4200,
+            "leaves": 5520,
             "timber": 100,
-            "amber": 12,
-            "glowstone": 5,
             "needs_burrows": true
           },
           {
-            "leaves": 6000,
+            "leaves": 8840,
             "timber": 130,
-            "amber": 18,
-            "glowstone": 8,
-            "heartwood": 2,
             "needs_burrows": true
           }
         ]
@@ -6911,18 +6724,13 @@
             "timber": 90
           },
           {
-            "leaves": 4800,
+            "leaves": 6360,
             "timber": 110,
-            "amber": 14,
-            "glowstone": 6,
             "needs_burrows": true
           },
           {
-            "leaves": 6800,
+            "leaves": 9880,
             "timber": 140,
-            "amber": 20,
-            "glowstone": 9,
-            "heartwood": 2,
             "needs_burrows": true
           }
         ]
@@ -6967,18 +6775,13 @@
             "timber": 75
           },
           {
-            "leaves": 4000,
+            "leaves": 5320,
             "timber": 95,
-            "amber": 12,
-            "glowstone": 5,
             "needs_burrows": true
           },
           {
-            "leaves": 5800,
+            "leaves": 8240,
             "timber": 125,
-            "amber": 18,
-            "glowstone": 8,
-            "heartwood": 1,
             "needs_burrows": true
           }
         ]
@@ -7002,18 +6805,13 @@
             "timber": 60
           },
           {
-            "leaves": 3100,
+            "leaves": 3940,
             "timber": 80,
-            "amber": 8,
-            "glowstone": 3,
             "needs_burrows": true
           },
           {
-            "leaves": 4600,
+            "leaves": 6560,
             "timber": 110,
-            "amber": 14,
-            "glowstone": 6,
-            "heartwood": 1,
             "needs_burrows": true
           }
         ]
@@ -7037,18 +6835,13 @@
             "timber": 65
           },
           {
-            "leaves": 3400,
+            "leaves": 4480,
             "timber": 85,
-            "amber": 10,
-            "glowstone": 4,
             "needs_burrows": true
           },
           {
-            "leaves": 5000,
+            "leaves": 7200,
             "timber": 115,
-            "amber": 16,
-            "glowstone": 7,
-            "heartwood": 1,
             "needs_burrows": true
           }
         ]
@@ -7057,7 +6850,7 @@
   },
   "camp_name": "the Hearthtree",
   "market": {
-    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for leaves). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade.",
+    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade. H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials.",
     "sells": [
       {
         "id": "berries",
@@ -7078,43 +6871,14 @@
         "id": "fish",
         "amount": 1,
         "leaves": 25
-      },
-      {
-        "id": "amber",
-        "amount": 1,
-        "leaves": 60,
-        "after_missions": true
-      },
-      {
-        "id": "glowstone",
-        "amount": 1,
-        "leaves": 120,
-        "after_missions": true
-      },
-      {
-        "id": "heartwood",
-        "amount": 1,
-        "leaves": 400,
-        "after_missions": true
       }
     ],
     "buys": [
       {
         "id": "amber",
         "amount": 1,
-        "leaves": 25,
-        "after_missions": true
-      },
-      {
-        "id": "glowstone",
-        "amount": 1,
-        "leaves": 50,
-        "after_missions": true
-      },
-      {
-        "id": "heartwood",
-        "amount": 1,
-        "leaves": 150,
+        "leaves": 1000,
+        "shards": 1,
         "after_missions": true
       }
     ]
@@ -7402,5 +7166,17 @@
       32,
       32
     ]
+  },
+  "save_upgrades": {
+    "_note": "core/save_upgrades.gd: what an upgrade step needs from the data. Frozen with the save format it upgrades: never tune these, they are what the older game paid. to_v3 (H1, 25 Nov 2026, the owner): a version-2 save's amber, glowstone and heartwood (its mats, and the satchel of a run saved halfway) and its Hollow keys turn into leaves at what Bramble paid for them before H1 (mat_leaves: each material; key_leaves: each key; key_cap: the most keys the old loader held, more are cut down to it).",
+    "to_v3": {
+      "mat_leaves": {
+        "amber": 25,
+        "glowstone": 50,
+        "heartwood": 150
+      },
+      "key_leaves": 150,
+      "key_cap": 3
+    }
   }
 }

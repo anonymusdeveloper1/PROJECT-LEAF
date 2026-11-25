@@ -39,7 +39,7 @@ itself. You move her, pick where to stand, and spend what you earn to grow the c
 3. **After Raid Mission 15** the game goes on two ways, side by side:
    - **Gloom Raids**: short attacks on the camp. A meter fills while you play; when it is full, a raid comes.
    - **The Gloomwood**: a dungeon at night. The cat walks a road past fights to a boss and brings home rare
-     materials. They pay for the top upgrades. The first win frees the camp's guardian, the Moss Warden.
+     amber, which Bramble buys. The first win frees the camp's guardian, the Moss Warden.
 
 **The mood.** Bright and cute. Low-poly with visible facets and flat colours, like the Cat Ranger herself. The camp is
 wild and lush: a hollow mossy tree home, round roofs and doors, warm lights, flowers, a market stall with a striped
@@ -56,7 +56,7 @@ awning, a lake beside it. The Gloom is violet crystal. The Gloomwood is a night 
 - **Not open world.** The camp is home and the enemies come to it. Going out happens in small separate places: the
   Gloomwood now, islands by boat later.
 - **No menus.** You go to a thing and its card opens (part 2).
-- **Never pay-to-win.** Money will only buy looks, and Burrow-only helpers that can also be earned by playing
+- **Never pay-to-win.** Money will only buy looks, and expedition-only helpers that can also be earned by playing
   (part 9). None of the money side is built yet.
 
 The owner plays on a Samsung Galaxy S24. The APK with the full update was installed at
@@ -86,8 +86,8 @@ On a PC: WASD or the arrow keys move, the mouse works as a finger, and Space das
 
 Most camp cards work between waves. During a wave, the signpost and built barricade rows can still be tapped.
 
-**New (23 Nov 2026) · Bag.** Tap Bag at the bottom-left for a shared grid of square item slots. Food, keys,
-materials, unplaced defences and dishes appear as icons with counts. Leaves, timber and shards sit above the grid.
+**New (23 Nov 2026) · Bag.** Tap Bag at the bottom-left for a shared grid of square item slots. Food, amber,
+unplaced defences and dishes appear as icons with counts. Leaves, timber and shards sit above the grid.
 The cat appears beside the selected item's details, seated on her current mount while riding. Tap a slot to see its
 name and uses. Gameplay continues while the panel is open.
 The X, an outside tap, Escape or Android Back closes it. The garden and cooking pot show food icons and owned totals.
@@ -115,7 +115,7 @@ handles cooking. The Bag displays their supplies.
 ### The screen
 
 - **Top bar** (one slim strip under the phone's status bar):
-  - left: golden leaves, timber and Gloom shards; in the Gloomwood, the satchel's materials too; the dish eaten this
+  - left: golden leaves, timber and Gloom shards; in the Gloomwood, the satchel's amber too; the dish eaten this
     chapter; "Endgame test save" when the debug save is on.
   - right: the fight's bar. In a raid it is the campfire's health. Between waves it previews the next one:
     "Wave 6 of 20 ready · Next: every road", "Next: Fernwood and Mossback's Den" or "Next: a rush from Fernwood!".
@@ -203,11 +203,13 @@ Saddlery go to 5. From home level 4 on, the home itself grows.
 | 3 | Treehouse | 3,500 leaves, 40 timber | 6.0 m | 600 | 4 |
 | 4 | Big Treehouse | 9,000 leaves, 60 timber | 6.5 m | 900 | 5 |
 | 5 | Great Tree Home | 10,500 leaves, 80 timber | 7.0 m | 1,300 | 6 |
-| 6 | Tree Hall | 15,000 leaves, 110 timber, 20 amber, 8 glowstone | 7.5 m | 1,800 | 7 |
-| 7 | Old Oak Hall | 25,000 leaves, 150 timber, 60 amber, 24 glowstone, 5 heartwood | 7.6 m | 2,400 | 8 |
-| 8 | Heart Oak | 40,000 leaves, 200 timber, 90 amber, 45 glowstone, 9 heartwood | 7.7 m | 3,000 | 9 |
+| 6 | Tree Hall | 17,160 leaves, 110 timber | 7.5 m | 1,800 | 7 |
+| 7 | Old Oak Hall | 33,480 leaves, 150 timber | 7.6 m | 2,400 | 8 |
+| 8 | Heart Oak | 54,400 leaves, 200 timber | 7.7 m | 3,000 | 9 |
 
-**New (22 Nov 2026): new prices for homes 3, 5, 6, 7 and 8** (leaves and timber; they were 3,500/60, 8,000/60, 15,000/200, 25,000/90 and 40,000/135). Homes 2 and 4 are unchanged, and so are the Burrow materials. Each level costs more than the one before.
+**New (22 Nov 2026): new prices for homes 3, 5, 6, 7 and 8** (leaves and timber; they were 3,500/60, 8,000/60, 15,000/200, 25,000/90 and 40,000/135). Homes 2 and 4 are unchanged. Each level costs more than the one before.
+
+**New (H1, 25 Nov 2026): no expedition materials in any price.** Homes 6, 7 and 8 now cost 17,160 leaves + 110 timber, 33,480 + 150 and 54,400 + 200: the old leaves plus amber x 60, glowstone x 120 and heartwood x 400 (what Bramble used to ask for them). Every other price that asked for materials works the same way (part 8).
 
 The goals (all of them must be met). The raid that ends each step is the first goal:
 
@@ -217,7 +219,7 @@ The goals (all of them must be met). The raid that ends each step is the first g
 | 3 | Raid 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2. (New, H1, 25 Nov 2026: this list no longer asks for the Wishing Well, which opens at Hearthtree 3; Hearthtree 4 still asks for Well level 2.) Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Raids 7 to 10 |
 | 4 | Raid 9 won (Croaking Choir). Target, Bow Shop, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Raids 11 to 13 |
 | 5 | Raid 12 won (Two Fronts). Target and Bow Shop at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9. (New, 22 Nov 2026: Thorn Volley is hidden, so it is no longer a goal here.) 5 towers at level 3; Thorn Spikes level 3. | Raids 14 and 15 |
-| 6 | All 15 raids won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the Burrows go on |
+| 6 | All 15 raids won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the expeditions go on |
 | 7 | Gloomwood level 2 beaten | |
 | 8 | Gloomwood level 3 beaten | |
 
@@ -243,10 +245,10 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 | Signpost | **Raid Missions:** 15 down to 1 in spacious animated cards; To finish / Completed, Start / Replay, and saved-run resume. **Random Raids:** unlocks after all 15 Raid Missions, retaining Watch controls (part 7). | From the start |
 | Training Target | Damage, Draw speed and Range for the cat (Range from level 2). 5 levels. | Shop, after raid 1's first wave |
 | Bow Shop | **New (21 Nov 2026, G3): the Bow Bench is now the Bow Shop** (same place, same model). One card with a tile per bow, one button each: **Upgrade** for the equipped bow, **Equip** for an owned bow (between waves only; during a wave it says "Between waves"), **Buy** for a bow not owned yet (or "Needs Bow Shop level N"). Buying equips the bow if no wave is on. Each bow keeps its own level. Bow levels; 5 levels. See part 11 for the bows' data. **New (22 Nov 2026):** the shop has four bows, in the table below the buildings. | Shop, after raid 1 is won |
-| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25; after all raids also amber for 60, glowstone for 120 and heartwood for 400. **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the raids amber, glowstone and heartwood. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
+| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25. Bramble sells no materials (New, H1, 25 Nov 2026). **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the missions amber: 1 amber for 1,000 leaves and 1 Gloom shard. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
 | Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for raid 3. |
 | Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
-| Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Levels 4 and 5 also need Burrow materials, after the raids. Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
+| Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Skill and attachment levels 4 and 5 open after the Raid Missions (New, H1, 25 Nov 2026: they cost leaves and timber only, no materials). Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
 | Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. **New (H1, 25 Nov 2026):** it is built at **Hearthtree 3** (it used to need 4 raids won; a save that already has it keeps it). Its card has only its Upgrade row, and the card's subtitle shows its rates. In waves it mends **1%, 1.5% or 2.5%** of max health a second (it was 0.5, 1 and 2); between waves 3%, 6% and 10% as before. It also mends the standing Moss Warden; a downed golem gets up by its own rules. A worn Well is still repaired from the signpost's Mend list. | Shop, at Hearthtree 3 |
 | Garden and cooking pot | Grow food and cook dishes (part 6) | Gift for winning raid 1, with 4 Sunberries |
 | Fishing Spot | Fishing at the lake (part 6) | Gift for winning raid 6 |
@@ -462,7 +464,7 @@ turns and tilts. Loading, string draw, release, recoil and the arrow trail are a
 hide their arrow until repaired. An upgrade loads the new tier automatically.
 
 Buying a barricade level on the Hearthtree's card makes every row tougher at once. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
-and opens after the raids; level 5 (Heartwood, Amber, Amber Thorns) costs Gloomwood materials. Broken defences are
+and opens after the raids; level 5 (Heartwood, Amber, Amber Thorns) costs leaves only and still opens with the Gloomwood (New, H1, 25 Nov 2026: it asked for expedition materials before). Broken defences are
 mended free when a raid is won; after a camp fall or a raid they stay broken until mended in the shop or with
 "Mend all".
 
@@ -556,7 +558,7 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 ### The Saddlery: the mount's skills and attachments (New, 21 Nov 2026, G4)
 
 - Build it on the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (part 3).
-  Buy skills and attachments with leaves and timber. Levels 4 and 5 also need Burrow materials. Item levels are
+  Buy skills and attachments with leaves and timber. Levels 4 and 5 open after the Raid Missions (until then the tile says "Level 4 opens after the Raid Missions", or "Level 5 ..." for an item at level 4). Item levels are
   capped by the Saddlery's level.
 - **Skills.** The mount uses them by itself while the cat rides in a fight, each on its own timer. Never two at once: a
   shared gap of 0.6 s.
@@ -576,9 +578,9 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
   |---|---|---|
   | **Fire-spitter** | Flame balls at the cat's current arrow range and firing pace. Its firing unit automatically tracks enemies while riding, including to the side and rear. Each hit deals 8 damage to the enemy and foes within 1.25 m, plus 8 burn damage a second for 2 s | +40% of base impact and burn damage |
   | **Mossweave Saddle** | The mount has 15% more health | +15% (level 5: +75%) |
-  | **Saddlebags** | Kills drop 5% more leaves (raids, raids and the Burrows) | +5% (level 5: +25%) |
+  | **Saddlebags** | Kills drop 5% more leaves (raids, raids and the expeditions) | +5% (level 5: +25%) |
 
-  The worn Saddlery attachment works in raids, raids and the Burrows. Claude made the models for both mounts.
+  The worn Saddlery attachment works in raids, raids and the expeditions. Claude made the models for both mounts.
   Fire-spitter speed follows the cat's draw upgrades, current bow and food boosts, independently of the mount skill gap.
   **Flame visuals (23 Nov 2026):** shots have a hot round core, directional flame tail and sparks. Hits create a
   glowing scorch with low, animated ground flames. It extinguishes after 3 seconds, fading during the last 0.8 s;
@@ -734,7 +736,7 @@ Raids start with the first win of raid 15. They come only while you are playing 
 
 ### Winning and losing
 
-- **Held**: Gloom shards, leaves, timber and a Hollow key (2 for an elite raid). A **perfect defence** (no building
+- **Held**: Gloom shards, leaves, timber (New, H1, 25 Nov 2026: no Hollow key any more). A **perfect defence** (no building
   lost, the fire never out) pays 50% more shards; a camp that was whole when the raid began pays 20% more. Perfect
   streaks put ribbons on the signpost.
 - **Lost** (the camp falls): only the damage stays, plus 2 shards per complete third of the assault defended. Nothing is taken, the fire relights
@@ -764,8 +766,8 @@ Bramble buys 5 shards for 100 leaves.
 
 ## 8. After the raids: the Gloomwood
 
-**The Burrows** is the working name for the dungeons (accepted by the owner). The first one is **the Gloomwood**,
-reached through **the Old Hollow** at the south edge of the camp. After the raids, the Burrows are most of the
+**The expeditions** (called the Burrows in the code) are the dungeons. The first one is **the Gloomwood**,
+reached through **the Old Hollow** at the south edge of the camp. After the raids, the expeditions are most of the
 game: go in, bring back what the camp needs, upgrade, go again on a harder level.
 
 ### Getting in
@@ -775,8 +777,7 @@ game: go in, bring back what the camp needs, upgrade, go again on a harder level
 - **Entry is free and unlimited.** It is blocked only while a fight is on or a raid is coming. A damaged camp only
   shows a warning on the card.
 - The cat goes in with its **pet and mount**. The Warden stays home.
-- The card: "The Gloomwood · Level N" (**Go in**), "Play another level" (lower levels are easier), "Use a Hollow key:
-  yes/no", your materials, and any mending the camp needs.
+- The card: "The Gloomwood · Level N" (**Go in**), "Play another level" (lower levels are easier), your amber, and any mending the camp needs. (New, H1, 25 Nov 2026: the "Use a Hollow key" row is gone.)
 
 ### The road
 
@@ -828,31 +829,32 @@ everyone. The holes and the dark always send their own kinds; the packs come fro
 
 | Level | Monsters in the packs | Pays |
 |---|---|---|
-| 1 | Thornlings, Grublings, Glowcaps, Boars, Moles | amber |
-| 2 | Grublings, Glowcaps, Brutes, Puffballs, Frogs | amber, glowstone |
-| 3 | Beetles, Moles, Crows, Boars, Thornlings, Grublings | amber, glowstone, heartwood |
-| 4 | Moths, Pitchers, Glowcaps, Snails, Beetles | the same; Mossback is Gloomtouched |
+| 1 | Thornlings, Grublings, Glowcaps, Boars, Moles | amber (rare) |
+| 2 | Grublings, Glowcaps, Brutes, Puffballs, Frogs | amber (rare) |
+| 3 | Beetles, Moles, Crows, Boars, Thornlings, Grublings | amber (rare) |
+| 4 | Moths, Pitchers, Glowcaps, Snails, Beetles | amber (rare); Mossback is Gloomtouched |
 | 5 and up | Stumps, Beetles, Glowcaps, Moths, Puffballs, Crows, Grublings | stronger and richer every level |
 
 The Gloomwood's own creatures (stand-ins until the owner's models come): the **Grubling** bursts out of the ground,
 the **Glowcap** keeps away and lobs spore bombs where the cat is going, the **Root Snapper** never moves and bites
-along a line, and the rare **Amber Grub** runs for a hole and digs away after 10 s (catch it for leaves and amber).
+along a line, and the rare **Amber Grub** runs for a hole and digs away after 10 s (catch it for leaves and, half the time, amber).
 
 ### The satchel
 
-Materials (**Root Amber**, **Glowstone**, **Heartwood**) go into the **satchel**. Leaves, timber and shards are banked
-at once. A root lift (at the Moonwell, or after the boss) brings all of the satchel home. A knock-out (Sprig drags the
+**Amber** (Root Amber) is the one expedition material (New, H1, 25 Nov 2026: glowstone and heartwood are gone). It goes into the **satchel**. Leaves, timber and shards are banked
+at once. Amber is rare and pays for nothing: you sell it to Bramble. Where it drops (`balance.json` `burrows.amber`; a number like 0.5 is a 1 in 2 chance): the boss or end chest 1, the Gloom-bound chest 0.5 (breaking its seal doubles it, like all its loot), a Gloomtouched elite's kill 0.1, the Amber Grub caught 0.5, and a level's first clear 1 (straight into the satchel). Ordinary kills and the other chests drop none. A root lift (at the Moonwell, or after the boss) brings all of the satchel home. A knock-out (Sprig drags the
 cat back up the hollow) or "Leave it" on a saved run brings half. "Go home" at the way in, before anything woke, is as
-if the run never happened (a used key comes back).
+if the run never happened.
 
-### Boons and keys
+### Boons
 
 - **Boons** last one run: Sharp Thorns (arrows +25%), Quick Paws (the dash recharges faster and goes further),
   Mossheart (+3 health), Sprig's Fury (Sprig spits 50% faster), Dewdrop Charm (healing dew three times as often),
-  Lucky Paw (one more of each material in every chest). The Moonwell offers two; take one.
-- **Hollow keys** are only a bonus: going in with one gives the run a boon from the start. You hold at most 3. The
-  ring is filled to 3 when the Hollow opens; then keys come only from play (a raid held, a replay won, a level's first
-  clear). A key that does not fit turns into 150 leaves. Nothing refills by time.
+  Lucky Paw (chests give 50% more leaves and timber, but never more amber: the owner, 25 Nov 2026). The Moonwell
+  offers two; take one. Boons come only from
+  the shrines inside the Gloomwood.
+- **No Hollow keys** (New, H1, 25 Nov 2026): there is no key boon at the start of a run, no key row on the way-in card,
+  and no key from raids, replays or first clears.
 - **Dew drops** sometimes fall from kills and heal 1; a dew bud may bloom where a fight was won.
 
 ### Checkpoints and saving
@@ -862,18 +864,24 @@ is paused. Close the game and the run waits at the Hollow: **Go back in** puts t
 saved health, boons and satchel. Fights before it stay won; fights after it are full again. Chests opened, the spring
 drunk and the boon taken stay done.
 
-### What materials buy
+### What amber buys: nothing
 
-- **Mastery**: levels 11 and 12 of Damage, Draw speed, Health and Move speed, and of every bow.
-- **The Foxfire Bow** (Bow Shop level 3; 2,000 leaves, 16 glowstone, 3 heartwood): goes through two enemies. (New, 22 Nov 2026: hidden, not sold; see the bows in part 3.)
-- **Level-5 defences**: Heartwood barricades, Amber towers, Amber Thorns.
-- **Home levels 7 and 8** (part 3).
+Amber is sell-only: Bramble buys 1 amber for 1,000 leaves and 1 Gloom shard. Nothing is bought with it. Lucky Paw never gives more of it.
+
+### Prices that used to ask for materials (now leaves)
+
+Everything that used to ask for materials now asks for leaves (timber is unchanged): the old leaves plus amber x 60, glowstone x 120 and heartwood x 400. Examples:
+
+- **Mastery**: levels 11 and 12 of Damage, Draw speed, Health and Move speed (760 and 1,450 leaves), and of every bow (about 1,200 and 2,100; Frost 1,380 and 2,340).
+- **The Foxfire Bow** (Bow Shop level 3; 5,120 leaves): goes through two enemies. (New, 22 Nov 2026: hidden, not sold; see the bows in part 3.)
+- **Level-5 defences**: Heartwood barricades, Amber towers, Amber Thorns (tower level 5 is 5,760 leaves). They still open only after the expeditions do.
+- **Home levels 6 to 8** (part 3): 17,160, 33,480 and 54,400 leaves, with 110, 150 and 200 timber.
 - **Gloomwood attachments** are bought and worn on the Stable and Nest cards, one per companion. At the Stable,
   **Thunder Shoes** make Stomp 60% stronger in the Gloomwood. At the Nest, the Glowworm Lantern makes traps and
   spore bombs glow 0.3 s earlier, the Ember Charm makes sparks 60% harder, and the Dew Bell gives the cat +2 health.
   The Mossweave Saddle and Saddlebags are Saddlery gear and work wherever the mount wears them.
 
-The Warden's level 4 costs leaves and timber, not materials (the owner's rule: guardian upgrades cost leaves).
+The Warden's level 4 also costs leaves and timber (the owner's rule: guardian upgrades cost leaves).
 
 ### More dungeons
 
@@ -891,8 +899,7 @@ boss: a map can end in a **treasure clearing** instead, and the owner wants some
 | Golden leaves | Kills, waves, bonuses, chests, raid rewards, raids, the Gloomwood. **New (H1, 25 Nov 2026):** the leaves that defeated enemies drop in Raid Missions, Random Raids and the Gloomwood are 30% more (`kill_leaf_bonus` 1.3, applied after the mission's 1.5). Stolen leaves, chests, wave pay and raid pay are not raised. | Almost everything |
 | Timber | Raid waves held (G1), chapter chests, raid rewards, driftwood, raids, the Gloomwood | Buildings, home levels, rebuilding the campfire; buy 5 for 50 leaves, sell 5 for 30 leaves (G1) |
 | Gloom shards | Raids, Gloomwood boss chests | Part 7's list; sell 5 for 100 leaves |
-| Hollow keys (0 to 3) | Raids held, a level's first clear | A boon at the start of a run |
-| Root Amber, Glowstone, Heartwood | The Gloomwood only | Part 8's list |
+| Root Amber | The Gloomwood only (rare) | Nothing: sell it to Bramble for 1,000 leaves and 1 shard |
 
 ### The chain (New, 19 Nov 2026, Phase F)
 
@@ -941,7 +948,7 @@ The owner's rules (18 November 2026):
   screens and no banners, ever.
 - **Sold**: looks (new pets and mounts with the same strength, colour skins, cosmetics) and **attachments** for the
   pet and mount, which help only in the Gloomwood and can also be earned by playing.
-- **Never sold**: leaves, timber, shards, keys, materials, stats, raid progress, raid wins, the guardians, or
+- **Never sold**: leaves, timber, shards, amber, stats, raid progress, raid wins, the guardians, or
   anything that skips the raids. A player who never pays can get every gameplay thing by playing.
 
 Claude's proposals, waiting for the owner (`GAME_PLAN.md` section 0, "Making money"): a premium currency (working name
@@ -1061,13 +1068,13 @@ plane (120 m) and the sun's shadow box, so the camp is not drawn while the cat i
 - New dungeon: a new `game/data/dungeons/<id>.json` plus an entry in `balance.json` `burrows.list` (its `map`,
   `entrance`, `tiers`). End it with `"end": {"type": "boss", ...}` or `{"type": "treasure"}`; `test_glade.json` is a
   tiny treasure-end map used by `--dungeontreasure`. Bump the map's `version` when a fight, checkpoint or chest id
-  changes: a saved run on another version is closed kindly (satchel banked, key given back).
+  changes: a saved run on another version is closed kindly (satchel banked).
 
 ### The data files
 
 | File | What is in it |
 |---|---|
-| `game/data/balance.json` | Every number. Blocks: `cat`, `stats`, `stations`, `home_names`, `bows`, `defences`, `enemies`, `patches` (the 4 trails), `missions` and `mission` (the rules and pay; Phase F keys below), `raid` (the **raid** camp-falls numbers), `gloom_raids`, `guardian`, `garden`, `ingredients`, `cooking`, `fishing`, `looks`, `building_hp`, `burrows`, `attachments`, and (New, G1b and G2) `squads`, `enemy_roles`, `market`, `camp_name`. Most blocks start with a `_note`. |
+| `game/data/balance.json` | Every number. Blocks: `cat`, `stats`, `stations`, `home_names`, `bows`, `defences`, `enemies`, `patches` (the 4 trails), `missions` and `mission` (the rules and pay; Phase F keys below), `raid` (the **raid** camp-falls numbers), `gloom_raids`, `guardian`, `garden`, `ingredients`, `cooking`, `fishing`, `looks`, `building_hp`, `burrows`, `attachments`, `save_upgrades`, and (New, G1b and G2) `squads`, `enemy_roles`, `market`, `camp_name`. Most blocks start with a `_note`. |
 | `game/data/dungeons/<id>.json` | One dungeon map: spine, clearings, branches, arena, fights, checkpoints, chests, traps, lanterns, `floor`, woods, theme, `end`. Positions are `[x, z]`, `{"s": arc length, "off": metres right}` or `{"in": clearing}`. |
 | `game/assets/<group>/<id>/<id>.glb` and `.json` | Characters (enemies, companions, NPCs): clips, events, speeds, spring chains |
 | `game/assets/props/*.glb` and `<group>.json` | Blender props and their lists (`camp_life.json`, `raids.json`, `burrows.json` and others) |
@@ -1080,7 +1087,7 @@ The Android export includes `*.json` and leaves out `_autotest/*`, `build/*` and
 The design is `docs/PHASE_F_PLAN.md`. The numbers are all in `balance.json`.
 
 - **Data keys.**
-  - `stations.camp.levels[n]`: the price (`leaves`, `timber`, and amber, glowstone and heartwood for homes 6 to 8) and
+  - `stations.camp.levels[n]`: the price (`leaves` and `timber`; no materials since H1) and
     `goals`. Goal types: `mission {n}`, `station {id, level}`, `stat {id, level}`, `bow {id, level}`, `bow_any
     {level}`, `bow_owned {id}`, `towers {count, level}`, `defence {id, level}`, `all_stats {level}`, `depth {n}`.
     `needs_burrows` and `needs_depth` on homes 6 to 8 are kept for older code.
@@ -1214,7 +1221,7 @@ The design is `docs/PHASE_G_PLAN.md` (step G4). The numbers are in `balance.json
     and previews are in the local `art/` folders.
 - **Tests:** `--saddlery` (`game/scripts/autotest_g4_saddle.gd`); see the test modes table.
 - **Results on the PC:** `--saddlery` passed 94 checks, including flame balls, splash, firing cadence, arrow range and tracking while steering. Add `--rideclear` to measure rider clearance.
-  See `docs/CHANGES.md` for the known `--topup` and `--raidloss` failures.
+  The `--topup` and `--raidloss` failures listed in `docs/CHANGES.md` are gone since H1: both pass on 25 Nov 2026.
 - **Backup** before G4: `D:\DevCache\backup\pre_g4_20261121` (scripts, data, both mounts' files and `.blend`).
 
 ### Loop fixes (22 Nov 2026) (New, 22 Nov 2026, loop fixes)
@@ -1345,10 +1352,10 @@ The first pieces of `docs/ARCHITECTURE.md` (the target structure). Step H1 only.
   - `pools.gd`: pooled arrows, damage numbers and text pop-ups, hit bursts and sprays, and leaf and timber pickups.
     Pool sizes are in `balance.json` `pools`, per graphics level. A pool that runs out makes more.
   - Shockwave, swipe, flower_ring and bellow now share one mesh and one material per colour (`fx.gd`).
-  - `save_upgrades.gd`: versioned save upgrades. There is no step yet.
+  - `save_upgrades.gd`: versioned save upgrades. Its one step so far, 2→3 (H1 part 3), turns old amber, glowstone, heartwood and Hollow keys into leaves (`balance.json` `save_upgrades.to_v3`).
 - **`game/content/`:** `index.json` is empty for now. `Data.catalog()` and `Data.item()` read it.
-- **`game/tests/`:** sample saves for `--saves`. The folder is left out of the phone build.
-- **Balance blocks:** `kill_leaf_bonus` (1.3, see part 9) and `pools` (arrows, numbers, hit_fx, pickups: three numbers
+- **`game/tests/`:** sample saves for `--saves` (`v2_sample.json` and `v3_sample.json`). The folder is left out of the phone build.
+- **Balance blocks:** `kill_leaf_bonus` (1.3, see part 9), `save_upgrades` (`to_v3`: the frozen rates for the 2→3 step), `burrows.amber` (the amber drops) and `pools` (arrows, numbers, hit_fx, pickups: three numbers
   each, for Low, Medium and High).
 - **Save notes:** under "Saving".
 - **Raids:** `raids.gd` holds a Random Raid until every raider is defeated. The leader no longer routs the others.
@@ -1393,7 +1400,7 @@ On the phone `user://` is the app's `files/` folder (package `com.projectleaf.ga
 (`Save.mission_run`) and every raid end. Raids save quietly (`Save.save_game(true)`) every 10 meter points, at stir,
 at full, at each wave held, and on pause, focus-out or close (`main._notification` calls `raids.persist()` and
 `burrows.persist()`). A Burrows run saves at checkpoints, when hurt (throttled) and on pause. Old saves load field by
-field with defaults (`d.get`); `save_v` is 2. A dish eaten mid-chapter goes back into the pot on load.
+field with defaults (`d.get`); `save_v` is 3 (the 2 to 3 step turns old amber, glowstone, heartwood and keys into leaves). A dish eaten mid-chapter goes back into the pot on load.
 
 **New (H1, 25 Nov 2026):**
 - `Save.mark_dirty()` and `Save.flush()`: while the save is dirty it is flushed every 10 s, and on pause, background
@@ -1402,13 +1409,13 @@ field with defaults (`d.get`); `save_v` is 2. A dish eaten mid-chapter goes back
   by force-closing the game.
 - Writes are atomic, through a `.tmp` file. If the main save cannot be read, the `.bak` copy is loaded. A backup is
   written before an upgrade.
-- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (none yet).
+- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (2→3 so far).
 - Currency changes send `Events.currency_changed`. `Events.save_loaded` is sent after a load.
 
 ### The debug endgame start
 
 Debug builds only. `--endgame` opens a **separate save** as if all 15 raids were won: home level 5, a grown cat
-(Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, 3 Hollow keys, food, the Gloomwood open (the Warden still to be found). The HUD
+(Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, no Hollow keys, food, the Gloomwood open (the Warden still to be found). The HUD
 says "Endgame test save". It stays on at every launch until one launch with `--endgame-off`; then the real save is
 back, untouched. `--endgame --fresh` starts it over (an older endgame save keeps its old levels until then). On the phone, put the argument on a line in `files/test_args.txt`.
 Release builds ignore both.
@@ -1438,11 +1445,11 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck`, `--taps`, `--arrows` |
 | Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (goals and raid access), `--fightf` (90 passes: manual waves, rewards, save/resume, losses, legacy saves, squads and Gloom Raids), `--enemyf` (boars, support enemies, grub and totem) |
 | G1b and G2 | `autotest_g2_def.gd`, `autotest_towers.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (168 checks: pads, repair, the Well, five tower levels, full-circle arrows and loading cycles), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
-| G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, late damage and leaf budgets, upgrades, equipping, pierce, burn, frost, models and shot effects; 77 passes) |
-| G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 110 passes); add `--rideclear` for the clearance sweep |
+| G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, late damage and leaf budgets, upgrades, equipping, pierce, burn, frost, models and shot effects; 78 passes, 25 Nov 2026) |
+| G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 111 passes, 25 Nov 2026); add `--rideclear` for the clearance sweep |
 | Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
 | Supplies inventory | `autotest_inventory.gd` | `--inventory` (53 checks covering the shared slot grid, currency layout, cat and mount preview, real input, gathering, cooking, trades, food choice, live combat, healing, dungeon resume, settlement and older saves) |
-| H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/` load, upgrade and save) |
+| H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/`, `v2_sample.json` and `v3_sample.json`, load, upgrade and save) |
 | Mounted target lock | `autotest_mounted_aim.gd` | `--mountedaim` (69 checks: strict 280-degree arc boundaries, rear blind spot, both mounts, real arrows and hits, torso aiming above a forward-facing root, hips and feet, outfits and different bows, left/right steering and forward gait, target reacquisition, Ram direction and dismounting mid-shot) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it

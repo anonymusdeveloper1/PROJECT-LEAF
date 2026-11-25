@@ -2151,7 +2151,6 @@ func _shards() -> void:
 	Save.wear = {"home": 0.3}
 	Save.unlocks = ["watch:lookout"]
 	Save.fire_look = "shardfire"
-	Save.burrow_keys = 2
 	var got := [0]
 	var cb := func(): got[0] += 1
 	Save.changed.connect(cb)
@@ -2165,16 +2164,15 @@ func _shards() -> void:
 	Save.wear = {}
 	Save.unlocks = []
 	Save.fire_look = ""
-	Save.burrow_keys = 0
 	Save.load_game()
 	_expect("fields kept through save and load", Save.shards == 7 and absf(float(Save.raids["meter"]) - 42.5) < 0.01 and int(Save.raids["held"]) == 3
 		and String(Save.raids["plan"].get("type", "")) == "siege" and int(Save.raids["plan"]["seed"]) == 12345 and (Save.raids["plan"]["lanes"] as Array) == [2]
 		and absf(float(Save.wear.get("home", 0.0)) - 0.3) < 0.001 and Save.unlocks == ["watch:lookout"] and Save.fire_look == "shardfire"
-		and Save.burrow_keys == 2 and Save.save_v == 2,
+		and Save.save_v == SaveUpgrades.CURRENT_VERSION and not Save._loaded_fields.has("burrow_keys"),
 		{"shards": Save.shards, "raids": Save.raids, "wear": Save.wear, "unlocks": Save.unlocks, "save_v": Save.save_v})
 	# an old save (before Phase D): none of the new keys, and a plan of a kind that does not exist
 	var d = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
-	for k in ["shards", "wear", "unlocks", "fire_look", "burrow_keys", "save_v"]:
+	for k in ["shards", "wear", "unlocks", "fire_look", "save_v"]:
 		d.erase(k)
 	d["raids"] = {"meter": 30.0, "plan": {"type": "nope", "lanes": [1]}, "pending": true, "run": {"wave_done": 1}}
 	var f := FileAccess.open(Save.path, FileAccess.WRITE)
@@ -2182,10 +2180,10 @@ func _shards() -> void:
 	f.close()
 	Save.load_game()
 	_expect("an old save loads with the defaults", Save.shards == 0 and Save.wear.is_empty() and Save.unlocks.is_empty() and Save.fire_look == ""
-		and Save.burrow_keys == 0 and Save.save_v == 1, {"save_v": Save.save_v})
+		and Save.loaded_v == 1 and Save.save_v == SaveUpgrades.CURRENT_VERSION, {"save_v": Save.save_v, "loaded_v": Save.loaded_v})
 	_expect("a plan of an unknown kind is dropped with pending and run", (Save.raids["plan"] as Dictionary).is_empty()
 		and not bool(Save.raids["pending"]) and (Save.raids["run"] as Dictionary).is_empty() and absf(float(Save.raids["meter"]) - 30.0) < 0.01, {"raids": Save.raids})
-	Save.save_v = 2
+	Save.save_v = SaveUpgrades.CURRENT_VERSION
 	Save.save_game()
 	await _shard_goods()
 
@@ -2292,7 +2290,12 @@ func _raid() -> void:
 	_expect("shards: the formula x1.5 (perfect) (+0.2 when ready)", Save.shards - shards0 == want, {"got": Save.shards - shards0, "want": want, "ready": run_ready, "level": lv})
 	_expect("leaves paid (100 + 15 x level at least)", Save.leaves - leaves0 >= 100 + 15 * lv, {"got": Save.leaves - leaves0})
 	_expect("renown +1, meter 0, perfect streak 1", int(r["renown"]) == 1 and float(r["meter"]) < 1.0 and int(r["streak"]) == 1, {"r": r})
-	_expect("a burrow key", Save.burrow_keys == 1, {"keys": Save.burrow_keys})
+	# H1: the file on disk after a save, the Save node and the raid pay (the old _loaded_fields test was always true)
+	Save.save_game(true)
+	var sf: Variant = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
+	_expect("no Hollow key any more (H1): the saved file has no key field, the raid pay names none", sf is Dictionary
+		and not (sf as Dictionary).has("burrow_keys") and not "burrow_keys" in Save and not (Data.gr()["pay"] as Dictionary).has("keys"),
+		{"pay": Data.gr()["pay"]})
 	_expect("the plan and the run are cleared", (r["plan"] as Dictionary).is_empty() and not bool(r["pending"]) and (r["run"] as Dictionary).is_empty())
 	_expect("the raid save fields are untouched", _mission_fields() == mf, {"before": mf, "after": _mission_fields()})
 	_expect("the fire burns", not Save.fire_ruined and not main.world.fire_out)
@@ -2304,7 +2307,7 @@ func _raid() -> void:
 	await _shot("raid_04_after")
 	if main.guardian != null:
 		_expect("the Warden is up and going home after the raid", main.guardian.state != "sleep" and main.guardian.state != "down", {"state": main.guardian.state})
-	_log("raid", {"plan": plan, "raids": r, "shards": Save.shards, "keys": Save.burrow_keys})
+	_log("raid", {"plan": plan, "raids": r, "shards": Save.shards})
 
 
 ## A Gloom Raid lost (--raidloss): only the damage stays. Nothing else is taken, the fire is not ashes; then a won
@@ -2701,7 +2704,7 @@ func _raidintro() -> void:
 	Save.load_game()
 	main.defences.relink_saved()
 	main.raids.restore_on_load()
-	_expect("an old save: the meter at 70 and the save brought up to date", absf(float(Save.raids["meter"]) - 70.0) < 0.01 and Save.save_v == 2 and Save.flag("told_raids"),
+	_expect("an old save: the meter at 70 and the save brought up to date", absf(float(Save.raids["meter"]) - 70.0) < 0.01 and Save.save_v == SaveUpgrades.CURRENT_VERSION and Save.flag("told_raids"),
 		{"meter": Save.raids["meter"], "save_v": Save.save_v})
 
 

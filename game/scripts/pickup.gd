@@ -10,7 +10,7 @@ const POOL := &"pickup"                 # its pool (Pools)
 var main
 var value := 2
 var kind := "leaf"                      # "leaf", or "shard" (display only: a raid's shards are banked at once); Phase E:
-                                        # "amber", "glowstone", "heartwood" (into the run's satchel) and "dew" (heals)
+                                        # a material of Data.MATS, i.e. amber (into the run's satchel) and "dew" (heals)
 var taken := false
 var trip := 0                           # H1: counts its drops, so a call meant for an earlier drop leaves it alone
 var _vel := Vector3.ZERO
@@ -59,7 +59,7 @@ func wear() -> void:
 		_model = Props.instance("gloom_shard" if Props.has("gloom_shard") else "gloom_crystal")
 		_model.scale = Vector3.ONE * (1.6 if Props.has("gloom_shard") else 0.25)
 		_model.position.y = -0.09
-	elif kind in ["amber", "glowstone", "heartwood"]:
+	elif kind in Data.MATS:                 # H1: amber is the one expedition material
 		_model = Props.instance("mat_" + kind)
 		_model.scale = Vector3.ONE * 1.7
 	elif kind == "dew":
@@ -108,7 +108,7 @@ func _collect() -> void:
 	remove_from_group("pickups")
 	if kind == "shard":
 		main.collect_shard_fx(value, global_position)   # never touches Save: its value is already banked
-	elif kind in ["amber", "glowstone", "heartwood"]:
+	elif kind in Data.MATS:
 		main.burrows.collect_mat(kind, value, global_position)
 	elif kind == "dew":
 		main.drink_dew(value, global_position)

@@ -93,13 +93,13 @@ var wear := {}                                     # building id -> share of hea
 var unlocks: Array = []                            # bought with shards: "watch:lookout", "watch:tracker",
                                                    # "skin:mount:thistle:gloomlit", "fire:shardfire", ...
 var fire_look := ""                                # "" or "shardfire"
-var burrow_keys := 0                               # Hollow keys (0-3): a bonus only (a boon at the start of a run); earned in
-                                                   # play (raids held, replays won, first clears); never refilled by time
+# H1 (25 Nov 2026): no Hollow keys any more; an older save's "burrow_keys" became leaves (core/save_upgrades.gd 2 -> 3)
 var save_v := Upgrades.CURRENT_VERSION             # format version written by save_game()
 ## Version read from disk before upgrades. Zero means no save was loaded.
 var loaded_v := 0
 # Phase E: the Burrows. No timestamps anywhere: a run in progress waits at the Hollow while the game is closed.
-var mats := {"amber": 0, "glowstone": 0, "heartwood": 0}   # Burrows materials
+var mats := {"amber": 0}                           # the expedition materials (H1: amber only; an older save's glowstone and
+                                                   # heartwood became leaves, core/save_upgrades.gd 2 -> 3)
 var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}
 var burrow_run := {}                               # a run under way (burrow.gd); {} = none
 var attach := {"owned": [], "mount": "", "pet": ""}   # attachments for the mount and the pet (Burrows only), bought in play
@@ -308,10 +308,9 @@ func load_game() -> void:
 	for u in d.get("unlocks", []):
 		unlocks.append(String(u))
 	fire_look = String(d.get("fire_look", ""))
-	burrow_keys = clampi(int(d.get("burrow_keys", 0)), 0, 3)
 	save_v = int(d.get("save_v", 1))
 	# Phase E (an older save has none of these: the defaults stay; ids added later keep their defaults)
-	mats = {"amber": 0, "glowstone": 0, "heartwood": 0}
+	mats = {"amber": 0}
 	var md = d.get("mats", {})
 	if typeof(md) == TYPE_DICTIONARY:
 		for k in md:
@@ -473,8 +472,7 @@ func _endgame_seed() -> void:
 	raids = RAIDS_DEFAULT.duplicate(true)
 	raids["meter"] = 20.0
 	save_v = Upgrades.CURRENT_VERSION
-	burrow_keys = 3
-	mats = {"amber": 0, "glowstone": 0, "heartwood": 0}
+	mats = {"amber": 0}
 	burrows = {}
 	burrow_run = {}
 	attach = {"owned": [], "mount": "", "pet": ""}
@@ -616,7 +614,7 @@ func save_game(quiet := false) -> void:
 		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
 		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,
 		"pantry": pantry, "snack_choice": snack_choice, "meal_ready": meal_ready, "meal_on": meal_on, "fish_log": fish_log, "fish_dry": fish_dry,
-		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look, "burrow_keys": burrow_keys,
+		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look,
 		"save_v": save_v,
 		"mats": mats, "burrows": burrows, "burrow_run": burrow_run, "attach": attach,
 		"saddlery": saddlery,

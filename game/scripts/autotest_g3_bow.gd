@@ -147,6 +147,17 @@ func _card() -> void:
 	_x("balance.json: the Frost Bow comes right after Ember; Thorn Volley and Foxfire are kept, marked hidden",
 		keys.find("frost") == keys.find("ember") + 1 and HIDDEN.all(func(b): return keys.has(b) and Data.bow_hidden(b))
 		and not ORDER.any(func(b): return Data.bow_hidden(b)), {"bows": keys})
+	var no_mats := true
+	for bid in keys:
+		var prices: Array = (Data.b["bows"][bid].get("mastery", []) as Array).duplicate()
+		prices.append(Data.b["bows"][bid].get("craft", {}))
+		for c in prices:
+			if c is Dictionary:
+				for m in ["amber", "glowstone", "heartwood"]:
+					no_mats = no_mats and not (c as Dictionary).has(m)
+	_x("H1: every bow's mastery and craft price is leaves (and timber) only; Foxfire crafts for 5,120 leaves", no_mats
+		and Data.craft_cost("foxfire") == {"leaves": 5120} and Data.bow_cost("twig", (Data.b["bows"]["twig"]["cost"] as Array).size()).keys() == ["leaves"]
+		and int(Data.bow_cost("twig", (Data.b["bows"]["twig"]["cost"] as Array).size())["leaves"]) == 1200, {"foxfire": Data.craft_cost("foxfire")})
 	var tiles := _tiles()
 	var titles: Array = tiles.map(func(r): return r["title"])
 	_x("four bow tiles in order twig, sunwood, ember, frost (Volley and Foxfire hidden)", titles == ORDER.map(func(b): return _bname(b)), {"tiles": titles})

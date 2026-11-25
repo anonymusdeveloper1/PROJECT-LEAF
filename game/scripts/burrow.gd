@@ -2,8 +2,8 @@ extends Node3D
 ## The Burrows (Phase E, docs/PHASE_E_SPEC.md; dungeons as paths since docs/DUNGEON_SPEC.md), open once every mission
 ## is won. This node is main.burrows. In the camp it keeps each Burrow's hollow (balance.json burrows.list: the Old
 ## Hollow, the way into the Gloomwood): its model, sealed with Gloom crystals from the first mission won and opened by
-## the last mission's first win, its marker and card (the levels: the highest open one, or a lower one), the Hollow keys
-## (a bonus only: entry is free and unlimited). The run itself is burrow_run.gd (main.area while the cat is in it).
+## the last mission's first win, its marker and card (the levels: the highest open one, or a lower one). Entry is free
+## and unlimited (H1: no Hollow keys any more). The run itself is burrow_run.gd (main.area while the cat is in it).
 ## Nothing here reads a clock: a run in progress is saved at its checkpoints and waits at the Hollow while the game is
 ## closed.
 
@@ -15,7 +15,6 @@ const GOLD := Color(1.0, 0.82, 0.3)
 var main
 var runner                          # burrow_run.gd: the run; main.area points to it while the cat is below ground
 var entrances := {}                 # burrow id -> {"node", "ring", "seal", "eyes", "glow", "pos": Vector3}
-var use_key := true                 # the Hollow card's choice: spend a key on the next run for a boon at the start
 var pick_level := 0                 # the Hollow card's level (0: the highest open one)
 var map_override := ""              # tests only: play another map (a treasure-end test map) through the same Hollow
 var _eye_t := 0.0
@@ -145,7 +144,6 @@ func open_hollow(celebrate: bool) -> void:
 		refresh()
 		return
 	Save.set_flag("hollow_open")
-	Save.burrow_keys = maxi(Save.burrow_keys, int(cfg()["keys"]["open_fill"]))
 	Save.save_game()
 	var first: Dictionary = Data.burrow_list()[0]
 	var e: Dictionary = entrances.get(String(first["id"]), {})
@@ -171,24 +169,6 @@ func open_hollow(celebrate: bool) -> void:
 	refresh()
 	main.stations.refresh()
 	main.hud.refresh()
-
-
-# ---------------------------------------------------------------- Hollow keys (a bonus only)
-## Every key comes through here (raids held, first clears; the "replay" key is kept but no longer comes, Phase F has no
-## mission replays): at most keys.cap held; one more turns into leaves. Returns how many fitted.
-func grant_key(_reason: String, n := 1) -> int:
-	var k: Dictionary = cfg()["keys"]
-	var cap := int(k["cap"])
-	var fit := clampi(cap - Save.burrow_keys, 0, n)
-	Save.burrow_keys += fit
-	var over := n - fit
-	if over > 0:
-		Save.leaves += over * int(k["overflow_leaves"])
-		main.hud.toast("Key ring full: +%d leaves" % (over * int(k["overflow_leaves"])))
-	elif fit > 0:
-		main.hud.toast("+%d Hollow key%s (%d of %d)" % [fit, "" if fit == 1 else "s", Save.burrow_keys, cap])
-	Save.save_game()
-	return fit
 
 
 # ---------------------------------------------------------------- the Hollow card
@@ -233,7 +213,7 @@ func card(id: String) -> Dictionary:
 	var why := blocker()
 	if not Save.burrow_run.is_empty() and String(Save.burrow_run.get("burrow", id)) == id:
 		return {"title": nm, "sub": "Your run is waiting", "anchor": anchor, "rows": runner.run_card_rows(id, why)}
-	var sub := "The way into %s · Hollow keys %d of %d" % [String(bd["name"]), Save.burrow_keys, int(cfg()["keys"]["cap"])]
+	var sub := "The way into %s" % String(bd["name"])
 	if Save.meal_ready != "" and bool(cfg().get("meals_in_runs", true)):
 		sub += " · your %s goes down with you" % String(Data.recipe(Save.meal_ready).get("name", "dish"))
 	if why != "":
@@ -250,9 +230,6 @@ func card(id: String) -> Dictionary:
 	if top > 1:
 		rows.append({"text": "Play another level", "note": "Levels 1 to %d are open · lower ones are easier" % top, "cost": {},
 			"label": "Lower" if lv > 1 else "Highest", "enabled": true, "action": _cycle_level.bind(top)})
-	if Save.burrow_keys > 0:
-		rows.append({"text": "Use a Hollow key: %s" % ("yes" if use_key else "no"), "note": "A key gives the run a boon from the start · you have %d" % Save.burrow_keys,
-			"cost": {}, "label": "Change", "enabled": true, "action": _toggle_key})
 	rows.append({"text": "Your materials", "note": Data.mats_text(Save.mats), "cost": {}, "label": "", "enabled": false, "action": Callable()})
 	var warn := camp_warning()
 	if warn != "":
@@ -260,19 +237,9 @@ func card(id: String) -> Dictionary:
 	return {"title": nm, "sub": sub, "anchor": anchor, "rows": rows}
 
 
-func _pays(d: int) -> String:
-	var bits: Array = ["amber"]
-	var dr: Dictionary = cfg()["drops"]
-	if Data.depth_drop(dr["boss"], "glowstone", d) > 0.0:
-		bits.append("glowstone")
-	if Data.depth_drop(dr["boss"], "heartwood", d) > 0.0:
-		bits.append("heartwood")
-	return ", ".join(bits)
-
-
-func _toggle_key() -> void:
-	use_key = not use_key
-	main.hud.refresh_card()
+## What a level pays besides leaves and timber: its materials (H1: amber only, the same at every level).
+func _pays(_d: int) -> String:
+	return ", ".join(Data.MATS.map(func(k: String) -> String: return Data.mat_name(k)))
 
 
 ## The card's Change: the next lower level, round to the highest open one again.

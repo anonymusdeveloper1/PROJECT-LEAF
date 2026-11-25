@@ -5,7 +5,7 @@ extends Node
 ## runs); the foes stand still; the cat's own _process is stopped while the moves are tried (no arrows muddy the hits).
 ##   (a) the building: Locked ("Win 8 missions first") before mission 8; after it, Locked at Hearthtree 1 ("Needs the
 ##       Hearthtree at level 2", since 21 Nov 2026); then Build pays its price; its card
-##   (b) Buy Stomp, Upgrade, the Saddlery's level as the cap, Burrow materials for level 4, Max
+##   (b) Buy Stomp, Upgrade, the Saddlery's level as the cap, level 4 only after the Raid Missions (H1: its price is leaves and timber), Max
 ##   (c) no built-in move: riding with nothing learned does nothing in a fight
 ##   (d) each skill by try_move: Stomp, Ram, Pounce, Bellow; never two moves in the same moment
 ##   (e) attachments: Mossweave Saddle health, Saddlebags leaves, Fire-spitter burns; their models on the saddle bone
@@ -217,11 +217,13 @@ func _buy() -> void:
 	Save.saddlery["skills"]["stomp"] = 3
 	tl = _tile("skills", "stomp")
 	_x("level 4 is blocked 'burrows' before the raids end, with its note", Data.saddle_block("skills", "stomp") == "burrows" and not bool(tl.get("enabled", true))
-		and String(tl.get("text", "")) == "Level 4 needs Burrow materials, after the raids", {"text": tl.get("text", ""), "block": Data.saddle_block("skills", "stomp")})
+		and String(tl.get("text", "")) == "Level 4 opens after the Raid Missions", {"text": tl.get("text", ""), "block": Data.saddle_block("skills", "stomp")})
 	st._saddle_buy("skills", "stomp")
 	_x("and it cannot be bought", Data.skill_level("stomp") == 3)
 	Save.set_flag("hollow_open")
 	_x("once the Burrows are open level 4 is no longer blocked by that", Data.saddle_block("skills", "stomp") == "")
+	var p4 := Data.saddle_price("skills", "stomp", 4)
+	_x("H1: level 4's price is leaves and timber only", p4.keys() == ["leaves", "timber"] and int(p4["leaves"]) > int(p2["leaves"]), {"price": p4})
 	Save.flags.erase("hollow_open")
 	Save.saddlery["skills"]["stomp"] = 5
 	tl = _tile("skills", "stomp")

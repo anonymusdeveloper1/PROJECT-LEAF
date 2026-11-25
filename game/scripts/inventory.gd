@@ -60,8 +60,6 @@ func _items() -> Array:
 	for id in Data.b["ingredients"]:
 		if Data.food_known(String(id)):
 			items.append({"id": id, "kind": "food", "icon": id, "name": Data.item_name(String(id), 2).capitalize()})
-	if Data.raids_open() or Save.burrow_keys > 0:
-		items.append({"id": "keys", "kind": "resource", "icon": "keys", "name": "Hollow keys"})
 	var sat: Dictionary = main.area.satchel() if main.area != null else {}
 	for id in Data.MATS:
 		if Data.raids_open() or Data.have(id) > 0 or int(sat.get(id, 0)) > 0:
@@ -283,14 +281,11 @@ func _update_live() -> void:
 			_buttons["auto"].disabled = Save.snack_choice == "auto"
 			_labels["reason"].text = reason
 		"material":
-			description = "For mastery, defences and camp upgrades."
+			description = "Rare. Bramble buys it at the Market."     # H1: amber pays for nothing; it is sold
 			if main.area != null:
 				_labels["amount"].text = "At camp %d · This run %d" % [Data.have(selected), _count(entry)]
 				var kept: Dictionary = main.area._banked_preview(float(Data.burrow_cfg()["knockout_keep"]))
 				description += "\nRoot lift keeps all. After a knock-out, keep %d." % int(kept.get(selected, 0))
-		"resource":
-			_labels["amount"].text = "%d/%d" % [Save.burrow_keys, int(Data.burrow_cfg()["keys"]["cap"])]
-			description = "A bonus boon when you enter a dungeon."
 		"build": description = "Ready to place with the camp build controls."
 		"dish":
 			var dish := Data.recipe(String(Save.get(selected)))

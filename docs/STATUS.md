@@ -14,16 +14,18 @@
 - The owner picked the Hollow Jailer as the intro boss.
 - The owner's ten Meshy models are in `art/source/meshy/phase_h/`.
 
-**H1** is being built on `feature/h1-quick-fixes`. The work is done by agents as `docs/PHASE_H_PLAN.md` Part F sets out.
+**H1** is built and tested on `feature/h1-quick-fixes` (parts 1, 2 and 4 committed; part 3 built and tested, being committed now). The work is done by agents as `docs/PHASE_H_PLAN.md` Part F sets out.
 - **Done (25 Nov 2026):**
-  - Random Raids are held only when every raider is defeated (part 1);
-  - +30% leaves from defeated enemies, and the Wishing Well at Hearthtree 3 with faster healing in waves (part 2);
+  - Random Raids are held only when every raider is defeated, stragglers walk to the fire, +30% leaves from defeated
+    enemies, and the Wishing Well at Hearthtree 3 with faster healing in waves (part 1);
+  - one expedition material, amber, that Bramble buys for 1,000 leaves and 1 shard; no Hollow keys; every price that
+    asked for materials now asks for leaves; save version 3 turns old materials and keys into leaves; Lucky Paw now
+    gives chests 50% more leaves and timber, and never more amber (part 3);
   - "Burrow" became "expedition" in the text (part 4);
   - the architecture's first pieces: Events, Pools, the safer save, `content/index.json`, and the `--pools` and
-    `--saves` tests;
+    `--saves` tests (part 2);
   - PC speed: camp 2.2 to 1.88 ms, fight 4.02 to 2.94 ms.
-- **Next:** part 3 (amber as the one sell-only material, no Hollow keys, the old-save conversion). Then the docs, the
-  APK on the phone and the owner's review. Phone speed numbers come with the APK.
+- **Next:** the commit, the APK on the phone and the owner's review. Phone speed numbers come with the APK.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin
@@ -347,7 +349,7 @@ Concept images are made and were sent; the game uses stand-ins until the models 
     `game/scripts/autotest_e.gd`; see `game/README.md`). Phase E's room modes are gone with the rooms.
   - New (20 Nov 2026, G1b and G2): `--rows`, `--campg`, `--cards` (in `game/scripts/autotest_g2_*.gd`; `--cards` at 480x1040 with `--safe-top=73 --safe-bottom=42`); `--fightf` now checks squads.
   - G3, G4 and outfits: `--bowshop`, `--saddlery` and `--tailor` (see `docs/GAME_GUIDE.md`, Test modes).
-  - Known old results: `--topup` 8 failures and `--raidloss` 2 failures (see `docs/CHANGES.md`).
+  - Known old results: none since H1. On 25 Nov 2026 `--topup` passes 23 (its checks were brought up to Phase F's caps and the one-worn rule) and `--raidloss` passes 14.
   - the layout and the HUD: `--layout`, `--layoutsave=1/2`, `--hudcheck` (in `game/scripts/autotest_layout.gd`); run
     them at 540x960 and 540x1170; `--safe-top=N --safe-bottom=N` (HUD pixels) fake the phone's bars
   - **If the PC's screen is off or asleep, add `--disable-vsync` before `--`**: otherwise Godot runs at about 4 frames a

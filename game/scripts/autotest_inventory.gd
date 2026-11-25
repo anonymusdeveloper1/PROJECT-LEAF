@@ -112,7 +112,8 @@ func _camp() -> void:
 	t._expect("supplies use square slots", absf(slot.size.x - slot.size.y) < 1.0, {"size": str(slot.size)})
 	var currency: Label = main.hud.inventory._labels["wallet_leaves"]
 	t._expect("currency count fits on one line", currency.get_line_count() == 1 and currency.size.x >= currency.get_minimum_size().x)
-	t._expect("food, keys, materials and build supplies share the grid", main.hud.inventory.slots.has("fish") and main.hud.inventory.slots.has("keys") and main.hud.inventory.slots.has("amber") and main.hud.inventory.slots.has("tower"))
+	t._expect("food, amber and build supplies share the grid; no keys slot (H1)", main.hud.inventory.slots.has("fish") and not main.hud.inventory.slots.has("keys")
+		and main.hud.inventory.slots.has("amber") and not main.hud.inventory.slots.has("glowstone") and main.hud.inventory.slots.has("tower"))
 	main.set_riding(true, false)
 	await t._wait(0.5)
 	t._expect("mounted Bag preview shows both cat and current mount", main.hud.inventory.preview.cat_copy != null and main.hud.inventory.preview.mount_copy != null)
@@ -120,9 +121,10 @@ func _camp() -> void:
 	main.set_riding(false, false)
 	await t._wait(0.4)
 	t._expect("dismounting returns preview to the cat alone", main.hud.inventory.preview.mount_copy == null)
-	main.hud.inventory._select("keys")
+	main.hud.inventory._select("amber")
 	await t._wait(0.2)
-	t._expect("currency strip and key details show current amounts", main.hud.inventory._labels["wallet_leaves"].text == str(Save.leaves) and _words().contains("Hollow keys"))
+	t._expect("currency strip and amber details show current amounts (H1: amber is sold, it pays for nothing)", main.hud.inventory._labels["wallet_leaves"].text == str(Save.leaves)
+		and _words().contains("Owned %d" % Data.have("amber")) and _words().contains("Bramble buys it") and not _words().contains("mastery"))
 	await t._shot("inventory_resources_camp")
 	main.hud.hide_card()
 
@@ -143,8 +145,8 @@ func _dungeon() -> void:
 	t._expect("the real dungeon entry succeeded", area != null)
 	if area == null:
 		return
-	area.run["satchel"] = {"amber": 5, "glowstone": 3, "heartwood": 1}
-	Save.mats = {"amber": 10, "glowstone": 6, "heartwood": 2}
+	area.run["satchel"] = {"amber": 5}
+	Save.mats = {"amber": 10}
 	hud_open()
 	main.hud.inventory._select("amber")
 	await t._wait(0.2)
@@ -211,7 +213,7 @@ func _dungeon() -> void:
 	await main.burrows.resume_run()
 	t._expect("resuming restores consumed food and healed health", main.area != null and int(Save.pantry["fish"]) == stock - 2 and main.player.hp == int(saved["burrow_run"]["hp"]))
 	await area._leave("down")
-	t._expect("material settlement agrees with Bag preview", int(Save.mats["amber"]) == 12 and int(Save.mats["glowstone"]) == 7)
+	t._expect("material settlement agrees with Bag preview", int(Save.mats["amber"]) == 12, {"mats": Save.mats})
 	t._expect("camp food action explains dungeon use", main.snack_reason("fish") == "Eat in a dungeon")
 
 

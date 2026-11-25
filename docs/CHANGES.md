@@ -2,19 +2,18 @@
 
 Each merged branch adds an entry here, newest first.
 
-## 25 Nov 2026 · H1 (in progress), on `feature/h1-quick-fixes`
+## 25 Nov 2026 · H1, on `feature/h1-quick-fixes`
 
-Parts 1, 2 and 4 of step H1 are built. Part 3 (amber as the one sell-only material, no Hollow keys, the old-save
-conversion) is not done yet.
+Parts 1, 2 and 4 of step H1 are committed; part 3 is built and tested, being committed now.
 
-- **Random Raids (part 1):** toppling the leader no longer routs the rest. The raid is held, and pays, only when
+- **Random Raids (part 1, `8e796fc`):** toppling the leader no longer routs the rest. The raid is held, and pays, only when
   every raider is defeated. If the last 1 to 3 raiders do nothing for `flee_after` (45 s), they walk once to the
   campfire so the raid can end. The leader banner and the signpost card say "defeat every raider to hold the camp".
   Raid Missions are unchanged: their stragglers still flee after 45 quiet seconds.
-- **Leaves (part 2):** `kill_leaf_bonus` 1.3 in `balance.json` gives +30% on the leaves defeated enemies drop in
+- **Leaves (part 1):** `kill_leaf_bonus` 1.3 in `balance.json` gives +30% on the leaves defeated enemies drop in
   Raid Missions, Random Raids and the Gloomwood. It applies after `mission.enemy_leaf_mult` 1.5 and never to stolen
   leaves, chests, wave pay or raid pay.
-- **The Wishing Well:**
+- **The Wishing Well (part 1):**
   - built at Hearthtree 3 (`needs_home` 3; it used to need 4 missions); a save that already has it keeps it;
   - its card has only its Upgrade row, and the card's subtitle shows its rates;
   - it mends 1% / 1.5% / 2.5% of max health a second in waves (it was 0.5 / 1 / 2) and 3 / 6 / 10% between waves
@@ -23,20 +22,44 @@ conversion) is not done yet.
   - a worn Well is still repaired from the signpost's Mend list;
   - Hearthtree 3's goal list no longer asks for the Well; Hearthtree 4 still asks for Well level 2;
   - the new `--homegoals` check makes sure no Hearthtree goal asks for a station that is not open yet.
-- **Text (part 4):** "Burrow" became "expedition" in player-facing text. The Gloomwood and the Old Hollow keep their
+- **One expedition material, no keys (part 3):**
+  - Amber is the only material left. Glowstone and heartwood are gone, and amber pays for nothing: Bramble buys 1 amber
+    for 1,000 leaves and 1 Gloom shard (Market, after the missions) and sells no materials.
+  - Amber drops (`balance.json` `burrows.amber`; a value is its whole part plus a chance for one more): the boss or end
+    chest 1, the Gloom-bound chest 0.5 (breaking the seal doubles it), a Gloomtouched elite's kill 0.1, the Amber Grub
+    caught 0.5, a level's first clear 1 (straight into the satchel). Ordinary kills and other chests drop none. A
+    knock-out still keeps half the satchel, rounded down.
+  - Lucky Paw (the owner, 25 Nov 2026): chests give 50% more leaves and timber (`boons.lucky.chest_mult` 1.5) and never
+    more amber. It used to give one more of each material.
+  - The Hollow keys are removed everywhere: no key boon at the start of a run, no key row on the way-in card, no key
+    from raids, replays or first clears.
+  - Every price that asked for materials now asks for leaves (timber is unchanged): the old leaves plus amber x 60,
+    glowstone x 120 and heartwood x 400. Hearthtree 6, 7 and 8 are 17,160, 33,480 and 54,400 leaves (110, 150 and 200
+    timber); the Foxfire Bow is 5,120; tower level 5 is 5,760.
+  - Save version 3 (`core/save_upgrades.gd`): an older save's amber (25 leaves each), glowstone (50), heartwood (150)
+    and Hollow keys (150 each, at most 3) turn into leaves, a half-done run's satchel included. The rates are in
+    `balance.json` `save_upgrades.to_v3`.
+  - Texts: the Bag says amber is "Rare. Bramble buys it at the Market."; the Saddlery tile says "Level 4 opens after
+    the Raid Missions" (or "Level 5 ..."); the sealed chest note says "Leaves and timber, maybe amber".
+- **Text (part 4, `e296fd1`):** "Burrow" became "expedition" in player-facing text. The Gloomwood and the Old Hollow keep their
   names, and the Gloomwood's grub holes are "The Grubling holes".
-- **The architecture's first pieces** (`docs/ARCHITECTURE.md` part 13, H1):
+- **The architecture's first pieces (part 2, `f96fd95`)** (`docs/ARCHITECTURE.md` part 13, H1):
   - `game/core/events.gd` (autoload, now the first): the signals and who sends them.
   - `game/core/pools.gd` (autoload): pooled arrows, damage numbers and text pop-ups, hit bursts and sprays, and leaf
     and timber pickups. Sizes are in `balance.json` `pools`, per graphics level. Shockwave, swipe, flower_ring and
     bellow share one mesh and one material per colour.
-  - The save: `save_upgrades.gd` (versioned, no step yet); `Save.mark_dirty()` and `Save.flush()` (every 10 s while
+  - The save: `save_upgrades.gd` (versioned; its first step, 2→3, is in part 3 above); `Save.mark_dirty()` and `Save.flush()` (every 10 s while
     dirty, and on pause, background or close); `Save.hold_flush` (no flush during a Raid Mission wave, one at its
     end, which stops leaf farming by force-closing); atomic writes through a `.tmp` file; the `.bak` copy is loaded
     if the main save cannot be read; a backup before an upgrade; `Save.loaded_v`; `Events.currency_changed` and
     `Events.save_loaded`.
   - `Data` reads `game/content/index.json` (empty for now) through `catalog()` and `item()`.
   - New test modes `--pools` and `--saves`. `game/tests/` holds sample saves and is left out of the phone build.
+- **Tests brought up to date (no game change):** `--topup` (the Training Target and the Bow Shop at level 5 for the
+  4/6/8/9/10 caps, the saddle worn) 23 pass, 0 fail; `--burrowsave` (the first Damage price and the map's fight count
+  read from the data) 16 pass; `--raidloss` 14 pass. Several amber and key checks in `--dungeon`, `--burrowfoes`,
+  `--burrowhooks`, `--raid` and `--saves` were made exact (a value forced, a saved file read), and `--saves` also loads
+  a v3 sample (`game/tests/saves/v3_sample.json`).
 - **Speed:** on the PC the camp frame went from 2.2 ms to 1.88 ms and a 17-foe fight from 4.02 ms to 2.94 ms
   (`docs/PERFORMANCE.md`). Phone numbers are still to come.
 

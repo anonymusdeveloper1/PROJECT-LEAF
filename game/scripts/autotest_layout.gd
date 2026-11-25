@@ -587,8 +587,7 @@ func _hudcheck() -> void:
 	Save.leaves = 60000
 	Save.timber = 900
 	Save.shards = 300
-	Save.mats = {"amber": 80, "glowstone": 40, "heartwood": 9}
-	Save.burrow_keys = 2
+	Save.mats = {"amber": 80}                          # H1: amber is the one material; no Hollow keys
 	main.on_purchase()
 	main.player.global_position = Vector3(0, 0, 1.6)
 	await t._wait(4.0)

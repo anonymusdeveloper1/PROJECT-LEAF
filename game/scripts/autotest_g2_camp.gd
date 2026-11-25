@@ -6,7 +6,8 @@ extends Node
 ##       Grow tile "Hearthtree level 2" last after the goals
 ##   (b) at Hearthtree 1 the Market and the Mushroom Cottage are not offered; at 2 they are; a goal for one not built
 ##       points to the Hearthtree's card; building the Market brings Thistle, who can be ridden
-##   (c) the Market: buying timber, a food item and (after the missions) amber changes the right stocks; selling amber
+##   (c) the Market: buying timber and a food item changes the right stocks; (H1) after the missions Bramble buys amber
+##       for leaves and a Gloom shard, and sells none
 ##   (d) the Well opens at Hearthtree 3, has one Upgrade row, and mends standing structures to full at both rates
 ##   (e) the Training Target and Bow Bench cards are made of item tiles (and section headings)
 ##   (f) an old save with the stall and cottage (gifts of missions 2 and 3) keeps them, with Thistle and Sprig
@@ -206,30 +207,37 @@ func _market() -> void:
 	_x("a full pantry: the berries tile is off and nothing is bought", not bool(full["enabled"]) and int(Save.pantry["berries"]) == cap - 1
 		and Save.leaves == l0, {"tile": full.get("text", "")})
 	Save.pantry["berries"] = 2
-	# Burrow materials: only once every mission is won
-	var ai := _index_of("sells", "amber")
-	var ae: Dictionary = Data.b["market"]["sells"][ai] if ai >= 0 else {}
+	# H1: Bramble sells no amber; he buys it (after the missions) for leaves and a Gloom shard
+	var shown_sells: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
+	_x("H1: Bramble sells no amber, glowstone or heartwood", _index_of("sells", "amber") < 0 and _index_of("sells", "glowstone") < 0
+		and _index_of("sells", "heartwood") < 0 and not shown_sells)
+	_x("H1: he buys only amber of the materials", _index_of("buys", "glowstone") < 0 and _index_of("buys", "heartwood") < 0)
+	var si := _index_of("buys", "amber")
+	var se: Dictionary = Data.b["market"]["buys"][si] if si >= 0 else {}
+	_x("H1: amber sells for 1,000 leaves and 1 shard each", si >= 0 and int(se.get("amount", 0)) == 1 and int(se.get("leaves", 0)) == 1000
+		and int(se.get("shards", 0)) == 1, {"entry": se})
+	Data.give("amber", 2)
 	var a0 := int(Save.mats.get("amber", 0))
 	l0 = Save.leaves
-	var shown_before: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
-	st._market_buy(ai)
-	_x("before the raids are won: no amber for sale, and none bought", ai >= 0 and not shown_before and int(Save.mats["amber"]) == a0 and Save.leaves == l0)
+	var sh0 := Save.shards
+	var buys_before: bool = st._market_buys().any(func(r): return String(r.get("icon", "")) == "amber")
+	st._market_sell(si)
+	_x("before the raids are won: amber is not bought", not buys_before and int(Save.mats["amber"]) == a0 and Save.leaves == l0 and Save.shards == sh0)
 	var keep: Array = Save.missions_done.duplicate()
 	Save.missions_done = []
 	for i in Data.mission_count():
 		Save.missions_done.append(String(Data.mission(i)["id"]))
-	var amber_text := "An expedition material · you have %d" % a0
-	var shown_after: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber" and String(r.get("text", "")) == amber_text)
-	st._market_buy(ai)
-	_x("after the raids: amber shows its expedition note and can be bought", shown_after and int(Save.mats["amber"]) == a0 + int(ae.get("amount", 0))
-		and Save.leaves == l0 - int(ae.get("leaves", 0)), {"amber": Save.mats["amber"], "leaves": Save.leaves})
-	var si := _index_of("buys", "amber")
-	var se: Dictionary = Data.b["market"]["buys"][si] if si >= 0 else {}
-	l0 = Save.leaves
-	var a1 := int(Save.mats["amber"])
+	var amber_note := "Bramble pays 1,000 leaves and 1 Gloom shard · you have %d" % a0
+	var sell_tile: Array = st._market_buys().filter(func(r): return String(r.get("icon", "")) == "amber")
+	_x("after the raids: the amber tile says what Bramble pays", sell_tile.size() == 1 and String(sell_tile[0].get("text", "")) == amber_note
+		and bool(sell_tile[0].get("enabled", false)), {"tiles": sell_tile})
 	st._market_sell(si)
-	_x("Bramble buys amber back for leaves", si >= 0 and int(Save.mats["amber"]) == a1 - int(se.get("amount", 0)) and Save.leaves == l0 + int(se.get("leaves", 0)),
-		{"amber": Save.mats["amber"], "leaves": Save.leaves})
+	_x("Bramble buys amber for leaves and a shard", int(Save.mats["amber"]) == a0 - int(se.get("amount", 0)) and Save.leaves == l0 + int(se.get("leaves", 0))
+		and Save.shards == sh0 + int(se.get("shards", 0)), {"amber": Save.mats["amber"], "leaves": Save.leaves, "shards": Save.shards})
+	Save.mats["amber"] = 0
+	l0 = Save.leaves
+	st._market_sell(si)
+	_x("with no amber nothing is sold", int(Save.mats["amber"]) == 0 and Save.leaves == l0)
 	var rows: Array = st._card_stall()["rows"]
 	var heads: Array = rows.filter(func(r): return _kind(r) == "section").map(func(r): return String(r["text"]))
 	_x("the Market's card: Bramble sells, Bramble buys, the Stable and the upgrade", heads.has("Bramble sells") and heads.has("Bramble buys")

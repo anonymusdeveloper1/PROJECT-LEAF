@@ -2147,10 +2147,10 @@ var _icons := {}
 
 
 ## The ids icon() draws here; every other id is a shop tile's picture from ui_icons.gd.
-const OWN_ICONS := ["leaves", "timber", "shards", "shard", "keys", "amber", "glowstone", "heartwood", "tick", "todo"]
+const OWN_ICONS := ["leaves", "timber", "shards", "shard", "amber", "tick", "todo"]
 
 
-## An icon, made once in code and kept: a currency (leaves, timber, shards, keys, amber, glowstone, heartwood), a goal's
+## An icon, made once in code and kept: a currency (leaves, timber, shards, amber), a goal's
 ## mark ("tick", "todo"), or a shop tile's picture (Phase G2, ui_icons.gd: "bow", "target", "heart", "tower", ...).
 ## A Texture2D is used as it is (the bows' pictures, G3). An unknown id gives a plain round disc (a tile writes its
 ## title's first letter on it).
@@ -2166,10 +2166,7 @@ func icon(k) -> Texture2D:
 		match id:
 			"tick": _icons[id] = _make_tick(true)       # a goal met (the home's card)
 			"todo": _icons[id] = _make_tick(false)      # a goal still to meet
-			"keys": _icons[id] = _make_key()
 			"amber": _icons[id] = _make_gem(Color(1.0, 0.78, 0.36), Color(0.95, 0.55, 0.15), Color(0.6, 0.3, 0.08), false)
-			"glowstone": _icons[id] = _make_gem(Color(0.75, 1.0, 0.94), Color(0.3, 0.82, 0.72), Color(0.1, 0.42, 0.38), true)
-			"heartwood": _icons[id] = _make_heart()
 			_: _icons[id] = UiIcons.texture(id)
 	return _icons[id]
 
@@ -2192,7 +2189,7 @@ func _picture(path: String) -> Texture2D:
 	return _pictures[path]
 
 
-## A faceted gem: a diamond (amber) or a rounded pebble (glowstone), light left facet, dark outline (64 x 64).
+## A faceted gem: a diamond (amber), light left facet, dark outline (64 x 64).
 func _make_gem(light: Color, mid: Color, dark: Color, round_: bool) -> ImageTexture:
 	var n := 64
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
@@ -2234,53 +2231,6 @@ func _make_tick(on: bool) -> ImageTexture:
 				col.a = clampf(29.0 - d, 0.0, 1.0) if d > 28.0 else col.a
 			elif d < 25.0 and d > 19.0:
 				col = Color(0.6, 0.45, 0.3, clampf(minf(25.0 - d, d - 19.0), 0.0, 1.0))
-			if col.a > 0.0:
-				img.set_pixel(x, y, col)
-	return ImageTexture.create_from_image(img)
-
-
-## Heartwood: a brown knot with an amber core.
-func _make_heart() -> ImageTexture:
-	var n := 64
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	for y in n:
-		for x in n:
-			var p := Vector2(x + 0.5, y + 0.5) - Vector2(32, 32)
-			var d := p.length() + 3.0 * sin(atan2(p.y, p.x) * 5.0)
-			if d >= 27.0:
-				continue
-			var col := Color(0.58, 0.36, 0.18)
-			if d > 23.0:
-				col = Color(0.32, 0.18, 0.08)
-			elif d < 11.0:
-				col = Color(1.0, 0.72, 0.25) if d < 8.0 else Color(0.85, 0.5, 0.15)
-			elif int(d) % 6 == 0:
-				col = Color(0.45, 0.27, 0.13)
-			img.set_pixel(x, y, col)
-	return ImageTexture.create_from_image(img)
-
-
-## A Hollow key: a golden key with an acorn head.
-func _make_key() -> ImageTexture:
-	var n := 64
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
-	var gold := Color(1.0, 0.82, 0.3)
-	var dark := Color(0.55, 0.36, 0.08)
-	for y in n:
-		for x in n:
-			var p := Vector2(x + 0.5, y + 0.5)
-			var col := Color(0, 0, 0, 0)
-			var head := p.distance_to(Vector2(20, 22))
-			if head < 14.0:
-				col = Color(0.62, 0.4, 0.18) if p.y < 16.0 else gold
-				if head > 11.5:
-					col = dark
-				elif head < 4.5:
-					col = Color(0, 0, 0, 0)
-			elif p.x > 28 and p.x < 58 and absf(p.y - 22.0) < 4.0:
-				col = gold if absf(p.y - 22.0) < 2.6 else dark
-			elif (absf(p.x - 50.0) < 3.0 or absf(p.x - 42.0) < 3.0) and p.y > 22.0 and p.y < 34.0:
-				col = gold if absf(p.x - 50.0) < 1.8 or absf(p.x - 42.0) < 1.8 else dark
 			if col.a > 0.0:
 				img.set_pixel(x, y, col)
 	return ImageTexture.create_from_image(img)

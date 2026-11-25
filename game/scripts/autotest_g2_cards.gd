@@ -23,7 +23,7 @@ var _ring                 # the test card's stand-in marker (kept while its card
 
 const UiIcons := preload("res://scripts/ui_icons.gd")
 const ICON_IDS := ["bow", "target", "damage", "draw", "range", "heart", "speed", "magnet", "timber", "leaves", "berries",
-	"herbs", "honey", "fish", "goldfish", "shard", "amber", "glowstone", "heartwood", "tower", "barricade", "spikes", "well",
+	"herbs", "honey", "fish", "goldfish", "shard", "amber", "tower", "barricade", "spikes", "well",
 	"home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair", "settings"]
 
 

@@ -128,8 +128,9 @@ Other modes (add after `--autotest --fresh`):
   1,000 health to measure the health each fight takes and Mossback's time to kill; `=items` rides Thistle, feeds it
   and eats lunches but never dodges: it must still fall), `--dungeoncareful` (the same cat with the mount, lunches,
   dashes through telegraphs and backing off: it must win); `--floormaps=<dir>` saves the night floor's maps as
-  pictures; kept from Phase E: `--burrowsave` (the save fields, currencies and
-  costs, old saves, the reveal and the keys once, a Phase E room run closed kindly, nothing by time), `--hollow` (the
+  pictures; kept from Phase E: `--burrowsave` (the save fields, amber as the one material and no
+  glowstone, heartwood or keys, costs, old saves, the reveal, a Phase E room run closed kindly with its satchel banked,
+  nothing by time), `--hollow` (the
   sealed hollow from the first raid won, the reveal, the clearing and the path, the card's levels), `--dash` (the
   Leaf Dash, close calls, the flick gesture), `--traps` (log, thorns, crystal, spores, tide on the map; the logs'
   chest shut for a hurt cat), `--burrowfoes` (Grubling, Glowcap, Root Snapper, Amber Grub), `--topup` (mastery, the
@@ -163,6 +164,14 @@ Other modes (add after `--autotest --fresh`):
   any raid; older tests that start a won raid (replays) or one past the home gate after `_veteran` fail or need it.
   Run them one after another, never in parallel (they share the test save).
 
+- H1 (25 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines): `--saves` (`scripts/autotest_saves.gd`, sample saves in
+  `game/tests/saves/`: the v2 sample loads, is backed up and is upgraded to v3, with its amber, glowstone, heartwood,
+  Hollow keys and a half-done run's satchel turned into leaves at `save_upgrades.to_v3`'s rates; no double conversion;
+  the v3 sample loads unchanged (leaves, its amber and an unknown material, the run's satchel), with no backup, and is
+  saved back as v3 with no key field; the older-save path; a corrupt main file
+  loads the `.bak` copy) and `--pools` (`scripts/autotest_pools.gd`: after a wave the object pools keep a steady size
+  and no pooled object was freed; the event board).
+
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
 bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Current PC result: 77 pass,
@@ -171,7 +180,8 @@ including the stronger late upgrades, real arrow/burn damage and leaf affordabil
 **New (21 Nov 2026, G4):** `--saddlery` (`scripts/autotest_g4_saddle.gd`): the Saddlery card, its skills and attachments
 (buying, upgrading, the caps by the Saddlery's level). Results on the PC: 44 pass. `--topup` was updated for the saddle
 that moved to the Saddlery: 15 pass, 8 fail. The 8 are older stat, bow, mastery and home-7-8 expectations from before
-Phase F's caps, not from G4.
+Phase F's caps, not from G4. H1 (25 Nov 2026): `--topup` was brought up to Phase F's caps and the one-worn
+rule (the Training Target and the Bow Shop at level 5, the saddle worn): 23 pass, 0 fail.
 
 The supplies inventory is covered by `--inventory` (`scripts/autotest_inventory.gd`, 53 PC passes). It checks the shared
 slot grid, currency layout, cat and ridden-mount preview, touch input, food counts, harvesting, cooking, Market purchases,
@@ -187,7 +197,7 @@ mid-shot. The Saddlery mode passed 94 checks, including flame-ball splash, upgra
 The raids and the Burrows open only after all 15 raids are won. To play them at once, start a debug build with
 `--endgame` (on the PC: `... -- --endgame`; on the phone: a line `--endgame` in the app's `files/test_args.txt`, as
 for the other phone test arguments). It opens a **separate save** (`user://leaf_save_endgame.json`), never the real
-one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well, Cottage, Stall and Garden at 3; an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, 3 Hollow keys, food in
+one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well, Cottage, Stall and Garden at 3; an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, no Hollow keys (they are gone), food in
 the pantry and the Burrows open (the Moss Warden is not there yet: it is found in the first Burrow). The HUD says
 "Endgame test save" at the top left. The slot stays on at every launch until a launch with `--endgame-off`; then the
 real save is back, untouched. `--endgame --fresh` starts the endgame save over. Release builds ignore both.
@@ -218,7 +228,7 @@ real save is back, untouched. `--endgame --fresh` starts the endgame save over. 
 | `scripts/hud.gd` | Leaves, timber, the fight, banners, tips and the cards (dialogs in the middle of the screen, with a close button) |
 | `scripts/threat_arrows.gd` | The arrows at the screen's edge toward foes off the screen in a wave, a raid or below ground |
 | `scripts/grass.gd` | Grass that bends away from whoever walks through it |
-| `scripts/burrow.gd` | The Burrows in the camp (Phase E): each hollow (sealed, the reveal, its marker and card with the levels), Hollow keys |
+| `scripts/burrow.gd` | The Burrows in the camp (Phase E): each hollow (sealed, the reveal, its marker and card with the levels); no Hollow keys since H1 |
 | `scripts/burrow_run.gd` | A Burrows run (`main.area` while the cat is in a dungeon): fights (packs and spawners), checkpoints, chests, the Moonwell, boons, the boss and its arena, the satchel, the Moss Warden's seal, the camera, saving and resuming |
 | `scripts/dungeon_map.gd` | One dungeon's map built from `data/dungeons/<id>.json`: the path, clearings and arena (the walkable ground for `constrain`), the night woods kept off the camera's side, lanterns, glow caps, halos and fireflies, the stream and bridge, the gate, the stones |
 | `scripts/night_floor.gd` | A dungeon's night floor (its map's `floor` block): one plane drawn by `shaders/night_ground.gdshader` (`_lite` on Low) from a ground map, a light map (the lanterns' and torches' pools baked in) and a style map (the road's sections); torches, stone lanterns, barrels, relics, roots, the arena's swords and rune stones, grass tufts and big leaves |

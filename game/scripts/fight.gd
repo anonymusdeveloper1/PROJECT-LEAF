@@ -2050,9 +2050,7 @@ func _win(extra_leaves := 0, extra_timber := 0) -> void:
 			if barricade_gift > 0:
 				Save.add_leaves(barricade_gift)
 	if not first_win:                              # repeat completion rewards; first-clear gifts and unlocks remain one-time
-		main.raids.add_gloom("replay_won")
-		if Data.burrows_open() and main.get("burrows") != null:
-			main.burrows.grant_key("replay", int(Data.burrow_cfg()["keys"]["replay"]))   # a bonus key (Phase E)
+		main.raids.add_gloom("replay_won")              # (H1: no "replay" Hollow key any more)
 	Save.save_game()
 	Sfx.play("win", -3.0)
 	var title_txt := "Held without fire!" if rebuilt else "%s won!" % String(m["name"])

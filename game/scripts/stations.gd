@@ -14,7 +14,7 @@ extends Node3D
 ## graphics setting. The signpost lists all Raid Missions, with completed replays and the next unfinished mission;
 ## its separate Random Raids view unlocks once every Raid Mission is finished.
 ## The buildings round the campfire (world.SPOTS; the well stands on the lake's near shore):
-##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) Burrow materials; Thistle
+##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) buys amber; Thistle
 ##                                        the hare comes free with it: ride it (mount.gd)
 ##   Mushroom Cottage  (Hearthtree 2)     Sprig the leaf dragon moves in and fights beside the cat (pet.gd)
 ##   Wishing Well      (Hearthtree 3)     mends the camp by itself (well_tick): never tapped, only upgraded
@@ -61,7 +61,7 @@ func build(m) -> void:
 
 
 ## The home and the campfire by home level (1-6). A level whose model is not made yet shows the one before it.
-## Home levels 7 and 8 (Phase E, paid with Burrows materials) have no models of their own yet: they show level 6's.
+## Home levels 7 and 8 (Phase E; H1: paid with leaves and timber) have no models of their own yet: they show level 6's.
 const HOME_MODELS := ["home_tree_1", "home_tree_1", "home_treehouse", "home_tree_4", "home_tree_5", "home_tree_6", "home_tree_7", "home_tree_8"]
 const FIRE_MODELS := ["campfire_1", "campfire_2", "campfire_2", "campfire_hearth", "campfire_bonfire", "campfire_brazier", "campfire_7", "campfire_8"]
 const HOME_FOOT := [1.15, 1.32, 1.15, 1.5, 1.7, 1.9, 1.9, 1.9]   # footprint radius of the home, by home level
@@ -1477,7 +1477,7 @@ func _buy_piece(type: String) -> void:
 	main.hud.refresh_build()
 
 
-## What a defence level costs: leaves, Gloom shards for level 4, and Burrows materials for level 5 (Phase E).
+## What a defence level costs: leaves, and Gloom shards for level 4 (H1: level 5 is leaves only, after the Burrows open).
 func _def_cost(type: String, lv: int) -> Dictionary:
 	var l: Dictionary = Data.defence_info(type)["levels"][lv - 1]
 	var c := {"leaves": int(l["upgrade"])}
@@ -1927,7 +1927,7 @@ func _upgrade_bow() -> void:
 	main.on_purchase()
 
 
-## Buys bow bid on the Bow Shop (its balance.json craft price: leaves, timber, materials), once the shop is big enough.
+## Buys bow bid on the Bow Shop (its balance.json craft price: leaves and timber), once the shop is big enough.
 ## Between waves it goes straight into the cat's paw; bought while a wave is on it waits (Equip after the wave). A hidden
 ## bow (22 Nov 2026) is not sold.
 func _craft(bid: String) -> void:
@@ -1962,9 +1962,9 @@ func _equip(bid: String) -> void:
 ## "Attachments" (Fire-spitter, Mossweave Saddle, Saddlebags: mount_attachments), in balance.json's order, then its own
 ## upgrade ("Upgrade"). Each tile has one button:
 ##   not learned yet     "Buy" (its level-1 price, leaves and timber); badge "New"
-##   learned             "Upgrade" (the next level's price; levels 4-5 also Burrow materials); off at the Saddlery's
+##   learned             "Upgrade" (the next level's price; levels 4-5 only once the Burrows are open); off at the Saddlery's
 ##                       level (the line "Upgrade the Saddlery for more") or while the next level needs the Burrows
-##                       ("Level 4 needs Burrow materials, after the missions"); badge "Level 2/5" and a level bar
+##                       ("Level 4 opens after the Raid Missions"); badge "Level 2/5" and a level bar
 ##   at its top          no button; badge "Max"
 ## Its line says what it does at its level (level 1 before it is learned): _saddle_note. Learning and upgrading work
 ## any time (mid-wave too, like the bows' levels). Never real money. Every skill learned works (mount.gd).
@@ -2017,7 +2017,7 @@ func _saddle_tile(part: String, id: String) -> Dictionary:
 		"cap":
 			return _tile(icon, nm, "Upgrade the %s for more" % _name("saddlery"), {}, "Upgrade", false, Callable(), badge, bar)
 		"burrows":
-			return _tile(icon, nm, "Level %d needs Burrow materials, after the raids" % (lv + 1), {}, "Upgrade", false, Callable(), badge, bar)
+			return _tile(icon, nm, "Level %d opens after the Raid Missions" % (lv + 1), {}, "Upgrade", false, Callable(), badge, bar)
 	var nc := Data.saddle_price(part, id, lv + 1)
 	return _tile(icon, nm, says + Data.mats_line(nc), nc, "Upgrade", block == "", _saddle_buy.bind(part, id), badge, bar)
 
@@ -2047,7 +2047,7 @@ func _saddle_note(part: String, id: String, lv: int) -> String:
 
 
 ## Learns (level 1) or upgrades skill or attachment id at the Saddlery: built and standing, never past its level, the
-## Burrows open for levels that ask for their materials, and the price paid. 22 Nov 2026: an attachment is upgraded only
+## Burrows open for levels marked needs_burrows, and the price paid. 22 Nov 2026: an attachment is upgraded only
 ## while it is worn; one bought while nothing is worn is worn at once.
 func _saddle_buy(part: String, id: String) -> void:
 	var info := Data.saddle_info(part, id)
@@ -2172,13 +2172,17 @@ func _skin_tile(id: String) -> Dictionary:
 	return t
 
 
-## "3,000 leaves", "1,500 leaves and 40 timber": a price in words.
-func _price_words(cost: Dictionary) -> String:
+## "3,000 leaves", "1,500 leaves and 40 timber": a price in words. gloom: shards read "Gloom shard(s)" (what Bramble
+## pays) instead of the plain currency id.
+func _price_words(cost: Dictionary, gloom := false) -> String:
 	var bits: Array = []
 	for k in cost:
 		var n := int(cost[k])
 		if n > 0:
-			bits.append("%s %s" % [_thousands(n), Data.mat_name(String(k)) if String(k) in Data.MATS else String(k)])
+			var word := Data.mat_name(String(k)) if String(k) in Data.MATS else String(k)
+			if gloom and String(k) == "shards":
+				word = "Gloom shard" if n == 1 else "Gloom shards"
+			bits.append("%s %s" % [_thousands(n), word])
 	if bits.size() <= 1:
 		return "".join(bits)
 	return ", ".join(bits.slice(0, bits.size() - 1)) + " and " + String(bits[bits.size() - 1])
@@ -2299,7 +2303,7 @@ func _card_stall() -> Dictionary:
 
 
 ## What Bramble sells: timber (balance.json trade.buy), then each market.sells entry (food goes to the pantry, up to its
-## cap; Burrow materials, only once every mission is won, to the materials).
+## cap; an expedition material, if one is ever listed, to the materials. H1: he sells no amber).
 func _market_sells() -> Array:
 	var out: Array = []
 	var tb: Dictionary = Data.b["trade"].get("buy", {"timber": 5, "leaves": 50})
@@ -2317,10 +2321,8 @@ func _market_sells() -> Array:
 		var title := "%d %s" % [n, Data.mat_name(id) if mat else Data.item_name(id, n)]
 		var room := mat or int(Save.pantry.get(id, 0)) + n <= cap
 		var text := ""
-		if id == "amber":
+		if mat:
 			text = "An expedition material · you have %d" % Data.have(id)
-		elif mat:
-			text = "A Burrow material · you have %d" % Data.have(id)
 		elif room:
 			text = "Food for cooking and dungeon healing · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
 		else:
@@ -2330,7 +2332,7 @@ func _market_sells() -> Array:
 
 
 ## What Bramble buys: timber (trade.sell), Gloom shards once there are enough (as before), and each market.buys entry
-## (Burrow materials, once every mission is won).
+## (H1: amber, once every mission is won), for what the entry pays (_market_pay: leaves, and shards).
 func _market_buys() -> Array:
 	var out: Array = []
 	var ts: Dictionary = Data.b["trade"].get("sell", {"timber": 5, "leaves": 30})
@@ -2348,9 +2350,19 @@ func _market_buys() -> Array:
 		var id := String(e["id"])
 		var n := int(e.get("amount", 1))
 		var nm := Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n)
-		out.append(_quiet(_tile(id, "Sell %d %s" % [n, nm], "Bramble pays %d leaves · you have %d" % [int(e.get("leaves", 0)), _stock(id)],
+		out.append(_quiet(_tile(id, "Sell %d %s" % [n, nm], "Bramble pays %s · you have %d" % [_price_words(_market_pay(e), true), _stock(id)],
 			{id: n} if Data.CURRENCIES.has(id) else {}, "Sell", _stock(id) >= n, _market_sell.bind(i))))
 	return out
+
+
+## H1: what Bramble pays for a market.buys entry: every currency the entry names (Data.CURRENCIES, above 0), e.g.
+## {"leaves": 1000, "shards": 1} for amber.
+func _market_pay(e: Dictionary) -> Dictionary:
+	var pay := {}
+	for k in Data.CURRENCIES:
+		if int(e.get(k, 0)) > 0:
+			pay[k] = int(e[k])
+	return pay
 
 
 ## An everyday trade: always there, so it never lights the Market's "!" (the shard trade still does, as before).
@@ -2397,7 +2409,7 @@ func _market_buy(i: int) -> void:
 		main.hud.toast("%s · leaves %d" % [Data.food_receipt({id: n}), Save.leaves])
 
 
-## Sells market.buys[i] to Bramble: the item is taken, he pays its leaves.
+## Sells market.buys[i] to Bramble: the item is taken, he pays what the entry names (H1: leaves, and shards).
 func _market_sell(i: int) -> void:
 	var list: Array = Data.b.get("market", {}).get("buys", [])
 	if i < 0 or i >= list.size() or Save.ruined.has("stall") or int(Save.stations.get("stall", 0)) <= 0:
@@ -2412,15 +2424,20 @@ func _market_sell(i: int) -> void:
 			return
 	else:
 		Data.take_items({id: n})
-	Save.add_leaves(int(e.get("leaves", 0)))
+	var pay := _market_pay(e)
+	for k in pay:
+		Data.give(String(k), int(pay[k]))
 	Save.save_game()
 	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
 	main.on_purchase()
-	main.hud.toast("Sold %d %s · now %d · leaves %d" % [n, Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n), _stock(id), Save.leaves])
+	var now: Array = []
+	for k in pay:
+		now.append("%s %d" % [k, Data.have(String(k))])
+	main.hud.toast("Sold %d %s · now %d · %s" % [n, Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n), _stock(id), " · ".join(now)])
 
 
-## Phase E: attachments for the mount or the pet (balance.json attachments): Burrows-only help, bought with what the
-## Burrows pay, one worn at a time. Shown once the Burrows are open. Card-only for now (no model on the companion).
+## Phase E: attachments for the mount or the pet (balance.json attachments): Burrows-only help, bought with the price
+## balance.json names (leaves today), one worn at a time. Shown once the Burrows are open. Card-only for now (no model on the companion).
 func _attach_rows(slot: String) -> Array:
 	var rows: Array = []
 	if not Data.burrows_open():

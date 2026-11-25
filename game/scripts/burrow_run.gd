@@ -12,8 +12,9 @@ const EnemyScript := preload("res://scripts/enemy.gd")
 const TrapScript := preload("res://scripts/trap.gd")
 const AREA_PATCH := 99              # monsters in a Burrow: never a trail index (-1 would silently use the last trail)
 const RUN_V := 2                    # the saved run's format (1 = Phase E's room runs: closed kindly)
+const AMBER := "amber"              # H1: the one expedition material, dropped by the rules in balance.json burrows.amber
 
-var b                               # main.burrows (the camp side: the hollows, keys, the card)
+var b                               # main.burrows (the camp side: the hollows, the card)
 var main
 var run := {}                       # the live copy of Save.burrow_run while a run is on
 var map                             # dungeon_map.gd: kept between runs (building it is the slow part)
@@ -85,43 +86,31 @@ func end_type() -> String:
 
 
 # ---------------------------------------------------------------- going in
-## A new run at `lvl` (the card's Go in): free; a Hollow key (when the card's choice is on) gives a boon from the start.
+## A new run at `lvl` (the card's Go in): free, with no boon (H1: no Hollow keys; boons come from the shrines).
 func start_run(id: String, lvl: int) -> void:
 	if active or leaving or b.blocker() != "":
 		return
-	var with_key: bool = b.use_key and Save.burrow_keys > 0
-	if with_key:
-		Save.burrow_keys -= 1
 	var st := Save.burrow_stats(id)
 	st["runs"] = int(st["runs"]) + 1
 	var s := hash([int(st["runs"]), lvl, id])
 	var boons: Array = []
-	if with_key:
-		boons.append(_key_boon(s))
 	var mid := Data.burrow_map_id(id)
 	if b.map_override != "":
 		mid = b.map_override
 	run = {"v": RUN_V, "map": mid, "map_v": int(Data.dungeon(mid).get("version", 1)), "burrow": id, "level": lvl, "seed": s,
 		"checkpoint": "wayin", "cleared": [], "chests": [], "hp": main.player.hp, "boons": boons, "satchel": {}, "spring_used": false,
-		"boon_taken": false, "first_run": int(st["runs"]) == 1 and lvl == 1, "meal": "", "key": with_key, "boss_down": false, "woke": false}
+		"boon_taken": false, "first_run": int(st["runs"]) == 1 and lvl == 1, "meal": "", "boss_down": false, "woke": false}
 	Save.burrow_run = run
 	Save.save_game()
 	await _go_down(false)
 
 
-## "Go back in": the saved run at its last checkpoint, with its health, boons and satchel. No key is spent.
+## "Go back in": the saved run at its last checkpoint, with its health, boons and satchel.
 func resume_run() -> void:
 	if active or leaving or b.blocker() != "" or Save.burrow_run.is_empty():
 		return
 	run = Save.burrow_run.duplicate(true)
 	await _go_down(true)
-
-
-func _key_boon(s: int) -> String:
-	var ids: Array = (cfg()["boons"] as Dictionary).keys()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash([s, "key"])
-	return String(ids[rng.randi() % ids.size()])
 
 
 func _go_down(resumed: bool) -> void:
@@ -470,7 +459,7 @@ func _setup_wayin() -> void:
 
 
 func _card_home() -> Dictionary:
-	var note := "Your key comes back" if bool(run.get("key", false)) else "Back to the camp, nothing lost"
+	var note := "Back to the camp, nothing lost"
 	return {"title": "The way home", "sub": "Up the hollow, before anything wakes", "anchor": main.player.global_position + Vector3(0, 2.0, 0), "rows": [
 		{"text": "Go home", "note": note, "cost": {}, "label": "Go home", "enabled": not leaving and not bool(run.get("woke", false)), "action": _back_up}]}
 
@@ -510,7 +499,7 @@ func _card_sealed(id: String) -> Dictionary:
 	var ch: Dictionary = chests.get(id, {})
 	var ok: bool = not leaving and String(ch.get("state", "")) == "shut"
 	return {"title": "A Gloom-bound chest", "sub": "Crusted with Gloom crystals", "anchor": main.player.global_position + Vector3(0, 2.0, 0), "rows": [
-		{"text": "Open it", "note": "Amber, maybe glowstone", "cost": {}, "label": "Open", "enabled": ok, "action": _chest_open.bind(id)},
+		{"text": "Open it", "note": "Leaves and timber, maybe amber", "cost": {}, "label": "Open", "enabled": ok, "action": _chest_open.bind(id)},
 		{"text": "Break the Gloom seal", "note": "Twice the loot · a Gloomtouched guard bursts out", "cost": {}, "label": "Break", "enabled": ok, "action": _chest_break.bind(id)}]}
 
 
@@ -521,7 +510,7 @@ func _chest_open(id: String) -> void:
 	ch["state"] = "done"
 	_drop_seal(id, false)
 	main.hud.hide_card()
-	_open_chest(ch["node"], "chest", false)
+	_open_chest(ch["node"], "chest", false, 1.0, _chest_amber_source(ch["def"]))
 	_chest_done(id)
 
 
@@ -916,7 +905,8 @@ func wake_pack(e) -> void:
 		_wake_fight(f)
 
 
-## A monster in the Burrow fell (enemy.gd _die): leaves (never from a boss), a chance of amber and of a dew drop.
+## A monster in the Burrow fell (enemy.gd _die): leaves (never from a boss), a chance of a dew drop, and for an elite a
+## chance of amber (H1: ordinary kills drop none; balance.json burrows.amber).
 func on_enemy_died(e) -> void:
 	var at: Vector3 = e.global_position
 	var info: Dictionary = e.info
@@ -929,7 +919,7 @@ func on_enemy_died(e) -> void:
 		var ag: Dictionary = cfg()["amber_grub"]
 		var leaves := roundi(float(ag["leaves"]) * leaf_mult())
 		main.drop_leaves(at, roundi(leaves * kill_leaf_bonus))
-		main.drop_item(at, "amber", int(ag["amber"]))
+		_roll_amber(at, "grub", 1.0)
 		main.hud.toast("Caught it! The Amber Grub bursts into treasure")
 		_grub = null
 		for p in get_tree().get_nodes_in_group("pickups"):
@@ -941,13 +931,8 @@ func on_enemy_died(e) -> void:
 	var lv := Data.saddlebag_leaves(int(round(float(info.get("leaves", 0)) * leaf_mult() * float(Data.run_mods.get("loot_mult", 1.0)))))
 	if lv > 0:
 		main.drop_leaves(at, roundi(lv * kill_leaf_bonus))
-	var dr: Dictionary = cfg()["drops"]
-	var ch: Array = dr["kill_amber_chance"]
-	if randf() < float(ch[clampi(level(), 0, ch.size() - 1)]) * float(Data.run_mods.get("loot_mult", 1.0)):
-		main.drop_item(at, "amber", 1)
 	if e.has_meta("elite"):
-		for k in Data.MATS:
-			_roll_drop(at, k, Data.depth_drop(dr["elite"], k, level()))
+		_roll_amber(at, "elite", float(Data.run_mods.get("loot_mult", 1.0)))
 	var dew: Dictionary = cfg()["dew"]
 	var dc := float(dew["elite_chance"] if e.has_meta("elite") else dew["chance"]) * float(Data.run_mods.get("dew_mult", 1.0))
 	if randf() < dc:
@@ -966,15 +951,18 @@ func _check_guard(id: String) -> void:
 		if is_instance_valid(e) and not e.dead:
 			return
 	ch["state"] = "done"
-	_open_chest(ch["node"], "chest", true)
+	_open_chest(ch["node"], "chest", true, 1.0, _chest_amber_source(ch["def"]))
 	_chest_done(id)
+
+
+## How many fall for a drop value v: floor(v), and one more with chance frac(v).
+func _roll_count(v: float) -> int:
+	return int(floor(v)) + (1 if randf() < v - floor(v) else 0)
 
 
 ## v of a material at `at`: floor(v), and one more with chance frac(v).
 func _roll_drop(at: Vector3, kind: String, v: float) -> int:
-	var n := int(floor(v))
-	if randf() < v - floor(v):
-		n += 1
+	var n := _roll_count(v)
 	if n > 0:
 		if kind in Data.MATS:
 			main.drop_item(at, kind, n)
@@ -984,6 +972,26 @@ func _roll_drop(at: Vector3, kind: String, v: float) -> int:
 			Save.timber += n
 			Fx.text(main, at + Vector3(0, 1.0, 0), "+%d timber" % n, Color(0.95, 0.8, 0.55))
 	return n
+
+
+## H1: the amber source a chest's map type pays by (balance.json burrows.amber.chest_source; a type it does not name pays
+## none).
+func _chest_amber_source(def: Dictionary) -> String:
+	var m: Variant = cfg().get("amber", {}).get("chest_source", {})
+	return String((m as Dictionary).get(String(def.get("type", "")), "")) if m is Dictionary else ""
+
+
+## H1: the amber that `source` pays (balance.json burrows.amber: "boss", "sealed", "elite", "grub", "first_clear"; a
+## source it does not name pays none), as a drop value (floor(v), and one more with chance frac(v)).
+func amber_value(source: String) -> float:
+	var am: Dictionary = cfg().get("amber", {})
+	var v: Variant = am.get(source, 0.0) if source != "" else 0.0
+	return float(v) if v is float or v is int else 0.0
+
+
+## Drops the amber that `source` pays x mult at `at` (a pickup into the satchel). Returns how many fell.
+func _roll_amber(at: Vector3, source: String, mult: float) -> int:
+	return _roll_drop(at, AMBER, amber_value(source) * mult)
 
 
 # ---------------------------------------------------------------- the boss
@@ -1029,7 +1037,7 @@ func _boss_wakes() -> void:
 
 
 ## The boss fell: its helpers vanish into petals, the roots open, its chest waits, the lift rises (after the seal, if
-## the Moss Warden waits behind it). The first clear of a level raises the record and pays heartwood and a key.
+## the Moss Warden waits behind it). The first clear of a level raises the record and pays amber (H1).
 func _boss_beaten(e) -> void:
 	_boss = null
 	_boss_down = true
@@ -1051,7 +1059,8 @@ func _boss_beaten(e) -> void:
 	main.hud.refresh()
 
 
-## A level's end reached (the boss down, or the treasure opened): the record, and on a first clear heartwood and a key.
+## A level's end reached (the boss down, or the treasure opened): the record, and on a first clear its amber (straight
+## into the satchel; balance.json burrows.amber.first_clear).
 ## Returns whether it was the first clear of this level.
 func _record_clear() -> bool:
 	var st := Save.burrow_stats(bid())
@@ -1059,11 +1068,10 @@ func _record_clear() -> bool:
 	st["best"] = maxi(int(st["best"]), level())
 	if first:
 		st["depth"] = level()
-		var hw := Data.depth_drop(cfg()["drops"]["first_clear"], "heartwood", level())
-		if hw > 0.0:
+		var n := _roll_count(amber_value("first_clear"))
+		if n > 0:
 			var sat: Dictionary = run["satchel"]
-			sat["heartwood"] = int(sat.get("heartwood", 0)) + int(round(hw))
-		b.grant_key("first_clear", int(cfg()["keys"]["first_clear"]))
+			sat[AMBER] = int(sat.get(AMBER, 0)) + n
 	return first
 
 
@@ -1177,13 +1185,10 @@ func _card_lift(where: String) -> Dictionary:
 		{"text": "Climb out", "note": "Bring home: %s" % bring, "cost": {}, "label": "Climb", "enabled": not leaving and not _seal_due, "action": climb_out}]}
 
 
-## The way home at the way in, before anything woke: as if the run never happened (the key comes back).
+## The way home at the way in, before anything woke: as if the run never happened.
 func _back_up() -> void:
 	if leaving or bool(run.get("woke", false)):
 		return
-	if bool(run.get("key", false)):
-		Save.burrow_keys = mini(Save.burrow_keys + 1, int(cfg()["keys"]["cap"]))
-		main.hud.toast("The key slips back into your pocket")
 	var st := Save.burrow_stats(bid())
 	st["runs"] = maxi(0, int(st["runs"]) - 1)
 	await _leave("back")
@@ -1313,6 +1318,7 @@ func _clear_foes() -> void:
 
 # ---------------------------------------------------------------- the satchel
 ## Banks the satchel x share (rounded down per material; a whole share never brings less than the satchel itself).
+## Only the expedition materials (Data.MATS) are banked: an older run's others became leaves (core/save_upgrades.gd).
 func _bank(share: float) -> Dictionary:
 	var got := _banked_preview(share)
 	for k in got:
@@ -1324,6 +1330,8 @@ func _banked_preview(share: float) -> Dictionary:
 	var sat: Dictionary = run.get("satchel", {})
 	var got := {}
 	for k in sat:
+		if not k in Data.MATS:
+			continue
 		var n := int(sat[k])
 		var m := int(floor(n * share + 0.0001))
 		if share >= 1.0:
@@ -1364,9 +1372,9 @@ func _mods() -> Dictionary:
 		list.append(a.get("mods", {}))
 	for e in list:
 		for k in e:
-			if k in ["name", "note"]:
+			if k in ["name", "note"] or String(k).begins_with("_"):
 				continue
-			if k in ["pet_rate", "dew_mult", "loot_mult"]:
+			if k in ["pet_rate", "dew_mult", "loot_mult", "chest_mult"]:
 				m[k] = float(m.get(k, 1.0)) * float(e[k])
 			else:
 				m[k] = float(m.get(k, 0.0)) + float(e[k])
@@ -1422,7 +1430,7 @@ func on_cat_hurt() -> void:
 
 
 ## At start: a saved run of another format (Phase E's rooms) or map version is closed kindly: the whole satchel is
-## banked and the key is given back.
+## banked.
 func check_saved_run() -> void:
 	var r: Dictionary = Save.burrow_run
 	if r.is_empty():
@@ -1455,8 +1463,6 @@ func check_saved_run() -> void:
 	if not known:
 		run["burrow"] = String(Data.burrow_list()[0]["id"])
 	_bank(1.0)
-	if bool(r.get("key", false)):
-		Save.burrow_keys = mini(Save.burrow_keys + 1, int(cfg()["keys"]["cap"]))
 	run = {}
 	Save.burrow_run = {}
 	Save.save_game()
@@ -1703,7 +1709,7 @@ func _tick_chests(cat: Vector3) -> void:
 		if bool(ch.get("end", false)):
 			if (end_type() == "treasure" or _boss_down) and cat.distance_to(ch["at"]) < 1.45:
 				ch["state"] = "done"
-				_open_chest(ch["node"], "boss", false)
+				_open_chest(ch["node"], "boss", false, 1.0, "boss")
 				_chest_done("end")
 				if end_type() == "treasure":
 					_boss_down = true
@@ -1863,29 +1869,44 @@ func _grub_tick(d: float) -> void:
 
 
 ## A chest's loot: leaves fly to the cat, timber (and Gloom shards) are banked at once, materials go in the satchel.
-## kind: "boss" (the end's chest) or "chest" (x share); sealed doubles it.
-func _open_chest(chest: Node3D, kind: String, sealed: bool, share := 1.0) -> void:
+## kind: "boss" (the end's chest) or "chest" (x share); sealed doubles it. amber_from: the balance.json burrows.amber
+## source it pays amber by (H1: "boss" for the end's chest, "sealed" for the Gloom-bound chest; "" pays none).
+func _open_chest(chest: Node3D, kind: String, sealed: bool, share := 1.0, amber_from := "") -> void:
 	_lid_open(chest, false)
 	Fx.flower_ring(main, chest.global_position, 1.0)
 	Fx.sparkle(main, chest.global_position + Vector3(0, 0.8, 0))
 	Sfx.play("win", -8.0)
-	_chest_loot(chest.global_position + Vector3(0, 0.6, 0), kind, sealed, share)
+	_chest_loot(chest.global_position + Vector3(0, 0.6, 0), kind, sealed, share, amber_from)
 	_save_run(true)
 
 
-func _chest_loot(at: Vector3, kind: String, sealed: bool, share: float) -> void:
+## A chest's leaves and timber: its drops table at this level x share, x sealed_mult when sealed, x loot_mult, and x
+## Lucky Paw's chest_mult (H1, the owner: Lucky Paw gives chests more leaves and timber, never more amber).
+func chest_amounts(kind: String, sealed: bool, share: float) -> Dictionary:
 	var dr: Dictionary = cfg()["drops"]
 	var table: Dictionary = dr["boss"] if kind == "boss" else dr["chest"]
-	var mult := share * (float(dr["sealed_mult"]) if sealed else 1.0) * float(Data.run_mods.get("loot_mult", 1.0))
-	var plus := int(Data.run_mods.get("chest_plus", 0))
-	for k in Data.MATS:
-		var v := Data.depth_drop(table, k, level()) * mult
-		if v > 0.0 or (plus > 0 and int(round(Data.depth_drop(table, k, level()))) > 0):
-			_roll_drop(at, k, v + (plus if v > 0.0 else 0))
-	var lv := int(round(Data.depth_drop(table, "leaves", level()) * mult))
+	var mult := _chest_mult(sealed, share) * float(Data.run_mods.get("chest_mult", 1.0))
+	return {"leaves": int(round(Data.depth_drop(table, "leaves", level()) * mult)),
+		"timber": int(round(Data.depth_drop(table, "timber", level()) * mult))}
+
+
+## share x sealed_mult (when sealed) x loot_mult: what every part of a chest's loot is scaled by, amber included.
+func _chest_mult(sealed: bool, share: float) -> float:
+	var dr: Dictionary = cfg()["drops"]
+	return share * (float(dr["sealed_mult"]) if sealed else 1.0) * float(Data.run_mods.get("loot_mult", 1.0))
+
+
+func _chest_loot(at: Vector3, kind: String, sealed: bool, share: float, amber_from := "") -> void:
+	var dr: Dictionary = cfg()["drops"]
+	var table: Dictionary = dr["boss"] if kind == "boss" else dr["chest"]
+	var v := amber_value(amber_from) * _chest_mult(sealed, share)   # no Lucky Paw on amber (H1, the owner)
+	if v > 0.0:
+		_roll_drop(at, AMBER, v)
+	var got := chest_amounts(kind, sealed, share)
+	var lv := int(got["leaves"])
 	if lv > 0:
 		main.drop_leaves(at, lv)
-	var tb := int(round(Data.depth_drop(table, "timber", level()) * mult))
+	var tb := int(got["timber"])
 	if tb > 0:
 		Save.timber += tb
 		Fx.text(main, at + Vector3(0, 0.6, 0), "+%d timber" % tb, Color(0.95, 0.8, 0.55))

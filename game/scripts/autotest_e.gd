@@ -110,7 +110,6 @@ func _endgame_camp() -> void:
 	Save.raids["pending"] = false
 	main.raids.refresh_open()
 	main.burrows.open_hollow(false)
-	Save.burrow_keys = 0
 	Save.save_game()
 	await t._wait(0.5)
 
@@ -129,7 +128,6 @@ func _strong_cat() -> void:
 
 func _enter(lvl := 1) -> void:
 	main.set_riding(false, false)
-	main.burrows.use_key = false
 	await main.burrows.enter("old_hollow", lvl)
 	await t._wait(0.6)
 
@@ -207,8 +205,6 @@ func _walk_to(s_to: float, fight := true, timeout := 90.0) -> Dictionary:
 func _dungeon() -> void:
 	await _endgame_camp()
 	_strong_cat()                                        # the endgame save's cat; invincible: the walk checks every stop
-	Save.burrow_keys = 2
-	main.burrows.use_key = true
 	var mf := {"run": Save.mission_run.duplicate(), "done": Save.missions_done.size()}
 	var sun0: float = main.world.sun.light_energy
 	var r = _r()
@@ -222,7 +218,43 @@ func _dungeon() -> void:
 	_x("the night: its own camera environment, the sun a dim blue moon", main.cam.environment != null and main.world.sun.light_energy < sun0 - 0.3)
 	_x("the first run ever: six fights and a boss on the HUD", r.fight_pips().size() == 7 and main.hud._stage_l.text.contains("Gloomwood · Level 1"),
 		{"pips": r.fight_pips().size(), "status": main.hud._stage_l.text})
-	_x("a key was spent for a boon at the start", Save.burrow_keys == 1 and (r.run["boons"] as Array).size() == 1, {"keys": Save.burrow_keys})
+	_x("H1: no Hollow keys: the run starts with no boon and no key flag", (r.run["boons"] as Array).is_empty() and not r.run.has("key"), {"run": r.run})
+	var am: Dictionary = r.cfg()["amber"]
+	_x("H1: amber_value: none or unknown sources pay 0, the five named sources read the block", r.amber_value("") == 0.0 and r.amber_value("unhurt") == 0.0
+		and r.amber_value("boss") == float(am["boss"]) and r.amber_value("sealed") == float(am["sealed"]) and r.amber_value("elite") == float(am["elite"])
+		and r.amber_value("grub") == float(am["grub"]) and r.amber_value("first_clear") == float(am["first_clear"]), {"amber": am})
+	# H1: a first clear pays its amber straight into the satchel (burrow_run._record_clear). Made certain for one call:
+	# first_clear forced to 2.0 (floor 2, no chance part: exactly 2 every run, and a hard-coded 1 fails too), the level's
+	# record set to "not beaten". The value, the record and the satchel are put back before anything else runs, so the
+	# boss's own first clear still pays at the end of this walk.
+	var bst: Dictionary = Save.burrow_stats(r.bid())
+	var bst0: Dictionary = bst.duplicate()
+	var sat_keep: Dictionary = r.satchel().duplicate()
+	var fc0: Variant = am["first_clear"]
+	am["first_clear"] = 2.0
+	bst["depth"] = r.level() - 1
+	var a_fc0 := int(r.satchel().get("amber", 0))
+	var fc_first: bool = r._record_clear()
+	var fc_got := int(r.satchel().get("amber", 0)) - a_fc0
+	am["first_clear"] = fc0
+	bst.merge(bst0, true)
+	r.satchel().clear()
+	r.satchel().merge(sat_keep)
+	_x("H1: a first clear puts its amber straight into the satchel (first_clear forced to 2.0: exactly 2)", fc_first and fc_got == 2
+		and int(Save.burrow_stats(r.bid())["depth"]) == int(bst0["depth"]), {"first": fc_first, "got": fc_got, "stats": Save.burrow_stats(r.bid())})
+	# H1 (the owner): Lucky Paw gives chests more leaves and timber (chest_mult), never more amber (no chest_plus any more)
+	var lucky: Dictionary = r.cfg()["boons"]["lucky"]
+	var mods0: Dictionary = Data.run_mods
+	Data.run_mods = {}
+	var plain: Dictionary = r.chest_amounts("chest", false, 1.0)
+	Data.run_mods = {"chest_mult": float(lucky["chest_mult"])}
+	var with_paw: Dictionary = r.chest_amounts("chest", false, 1.0)
+	Data.run_mods = mods0
+	var tbl: Dictionary = r.cfg()["drops"]["chest"]
+	_x("H1: Lucky Paw: a chest's leaves and timber x chest_mult, and no extra amber", not lucky.has("chest_plus") and float(lucky["chest_mult"]) > 1.0
+		and int(with_paw["leaves"]) == int(round(Data.depth_drop(tbl, "leaves", r.level()) * float(lucky["chest_mult"])))
+		and int(with_paw["timber"]) == int(round(Data.depth_drop(tbl, "timber", r.level()) * float(lucky["chest_mult"])))
+		and int(with_paw["leaves"]) > int(plain["leaves"]), {"plain": plain, "lucky": with_paw})
 	_x("the way home is open at the way in", m.parts.has("home_ring") and m.parts["home_ring"].visible)
 	var hiding := _camera_side_check(m)
 	_x("nothing tall hides walkable ground from the camera (trees, bushes, big rocks, glow caps)", hiding["bad"] == 0, hiding)
@@ -263,6 +295,7 @@ func _dungeon() -> void:
 	await t._wait(1.0)
 	await t._shot("dungeon_05_nook_card")
 	var sat0: Dictionary = r.satchel().duplicate()
+	var timber0 := Save.timber
 	var broke: bool = t._press("Break")
 	await t._wait(0.6)
 	_x("breaking the seal: a Gloomtouched guard and 2 friends", broke and r._nook_guard.size() == 3 and r._nook_guard[0].gloomtouched)
@@ -270,10 +303,23 @@ func _dungeon() -> void:
 	await t._shot("dungeon_06_nook_guard")
 	times["nook"] = await _fight_here()
 	await t._wait(2.0)
-	var got := 0
-	for k in r.satchel():
-		got += int(r.satchel()[k]) - int(sat0.get(k, 0))
-	_x("the guard beaten: the chest opens with twice the loot", String(r.chests["nook"]["state"]) == "done" and got >= 4, {"satchel": r.satchel()})
+	# Twice the loot (drops.sealed_mult), shown exactly by the timber: it is banked the moment the chest opens and no kill
+	# gives any (an unbroken chest at level 1 gives 3, a broken one 5).
+	var tb_got := Save.timber - timber0
+	var tb_want := int(r.chest_amounts("chest", true, 1.0)["timber"])
+	var tb_plain := int(r.chest_amounts("chest", false, 1.0)["timber"])
+	_x("the guard beaten: the chest opens with twice the loot (its timber x sealed_mult)", String(r.chests["nook"]["state"]) == "done"
+		and tb_got == tb_want and tb_want > tb_plain, {"timber": tb_got, "want": tb_want, "unbroken": tb_plain})
+	# H1: the chest's amber (burrows.amber.sealed 0.5 x sealed_mult 2 = exactly 1). Only the guard is elite (its 0.1 roll
+	# may add one); its two friends drop none. Bounds from the drop values: floor of each at least, ceil of each at most.
+	var v_chest: float = r.amber_value("sealed") * r._chest_mult(true, 1.0)
+	var v_guard: float = r.amber_value("elite") * float(Data.run_mods.get("loot_mult", 1.0))
+	var a_lo := int(floor(v_chest)) + int(floor(v_guard))
+	var a_hi := int(ceil(v_chest)) + int(ceil(v_guard))
+	await t._until(func(): return int(r.satchel().get("amber", 0)) - int(sat0.get("amber", 0)) >= a_lo, 3.0)
+	var got := int(r.satchel().get("amber", 0)) - int(sat0.get("amber", 0))
+	_x("H1: the broken seal's amber is doubled too (sealed x sealed_mult; the guard's elite roll may add one)", got >= a_lo and got <= a_hi,
+		{"satchel": r.satchel(), "got": got, "lo": a_lo, "hi": a_hi})
 	await t._go_straight(m.w2(m.branches["nook"][0]), 0.5, 8.0)
 	var wk1: Dictionary = await _walk_to(46.0)
 	times.merge(wk1)
@@ -349,6 +395,7 @@ func _dungeon() -> void:
 	_x("every fight on the way woke and was won", all_won, {"times": times})
 	t._log("fights", {"times": times})
 	# 10. the arena: in, the roots close, Mossback wakes; the fight for real
+	var amber_arena := int(r.satchel().get("amber", 0))     # the first clear's amber comes on top of this when the boss falls
 	await _walk_to(m.length - 8.0, false)
 	var sealed: bool = await t._until(func(): return m.sealed and r._boss != null and r._boss.awake, 3.0)
 	_x("into the arena: the roots close, Mossback wakes with its bar", sealed and main.hud.boss == r._boss)
@@ -379,6 +426,9 @@ func _dungeon() -> void:
 	_x("the boss down: the roots open, level 1 beaten, the Warden sealed behind it", not m.sealed and Data.burrow_depth("old_hollow") == 1 and r._seal_due,
 		{"sealed": m.sealed, "level": Data.burrow_depth("old_hollow"), "seal": r._seal_due})
 	_x("the lift waits for the seal", not m.parts["end_lift_ring"].visible)
+	# The satchel before the boss chest: taken here, because the walk to the seal passes the chest and opens it.
+	var chest_shut := String(r.chests["end"]["state"]) == "shut"
+	var amber0 := int(r.satchel().get("amber", 0))
 	await t._go_straight(m.parts["seal_ring"].global_position, 0.2, 10.0)
 	await t._wait(1.0)
 	_x("standing by the seal does not break it (a tap does)", r._seal_due and main.hud._card == null)
@@ -391,6 +441,13 @@ func _dungeon() -> void:
 	await t._wait(1.6)
 	_x("the boss chest opened", String(r.chests["end"]["state"]) == "done")
 	await t._shot("dungeon_17_chest")
+	var want_amber := int(r.amber_value("boss"))
+	var amber_in: bool = await t._until(func(): return int(r.satchel().get("amber", 0)) - amber0 >= want_amber, 4.0)
+	# the first clear's amber went straight into the satchel when the boss fell (amber0 - amber_arena; anything picked up
+	# in the arena can only add to it), and the boss chest's came on top of that
+	_x("H1: the first clear's amber came in when the boss fell, the boss chest's on top of it", chest_shut and amber_in
+		and amber0 - amber_arena >= int(r.amber_value("first_clear")), {"satchel": r.satchel(), "arena": amber_arena, "before": amber0, "want": want_amber,
+		"chest_shut_before": chest_shut})
 	var mats0: Dictionary = Save.mats.duplicate()
 	var sat1: Dictionary = r.satchel().duplicate()
 	await t._use(m.parts["end_lift_ring"], 0.2, 10.0)
@@ -403,7 +460,11 @@ func _dungeon() -> void:
 		if int(Save.mats.get(k, 0)) < int(mats0.get(k, 0)) + int(sat1[k]):
 			grew = false
 	_x("the lift home banks the whole satchel", grew and not sat1.is_empty(), {"satchel": sat1, "mats": Save.mats})
-	_x("keys: 2 - 1 spent + 1 first-clear key = 2", Save.burrow_keys == 2, {"keys": Save.burrow_keys})
+	# H1: no key field: the file on disk after a save (the old _loaded_fields test was true whatever was written)
+	Save.save_game(true)
+	var sf: Variant = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
+	var no_key: bool = sf is Dictionary and not (sf as Dictionary).has("burrow_keys") and not "burrow_keys" in Save
+	_x("H1: only amber in the Bag, no key field in the saved file", Save.mats.keys() == ["amber"] and no_key, {"mats": Save.mats})
 	_x("no run saved, the raids untouched", Save.burrow_run.is_empty() and not main.fight.active and Save.mission_run == mf["run"]
 		and Save.missions_done.size() == int(mf["done"]))
 	_x("back in the camp at the return spot, the camp's light again", main.area == null and main.player.global_position.distance_to(Vector3(0, 0, 15.5)) < 0.6
@@ -531,7 +592,7 @@ func _dungeonfall() -> void:
 	await _endgame_camp()
 	var r = _r()
 	await _enter(1)
-	r.run["satchel"] = {"amber": 5, "glowstone": 3}
+	r.run["satchel"] = {"amber": 5}
 	var mats0: Dictionary = Save.mats.duplicate()
 	main.player.invincible = false
 	main.player.hp = 1
@@ -542,7 +603,7 @@ func _dungeonfall() -> void:
 	await t._wait(0.5)
 	_x("knocked out: the run ends, back at camp", down and Save.burrow_run.is_empty())
 	_x("full health at the return spot", main.player.hp == Data.cat_max_hp() and main.player.global_position.distance_to(Vector3(0, 0, 15.5)) < 0.6, {"hp": main.player.hp})
-	_x("half the satchel banked (2 amber, 1 glowstone)", int(Save.mats["amber"]) - int(mats0["amber"]) == 2 and int(Save.mats["glowstone"]) - int(mats0["glowstone"]) == 1, {"mats": Save.mats})
+	_x("half the satchel banked (2 of 5 amber, rounded down)", int(Save.mats["amber"]) - int(mats0["amber"]) == 2, {"mats": Save.mats})
 	_x("leaves never taken", Save.leaves >= leaves0)
 	_x("a fall is counted", int(Save.burrow_stats("old_hollow")["falls"]) == 1)
 	_x("the map is hidden and nothing of the run is left", not _map().visible and get_tree().get_nodes_in_group("foes").is_empty() and main.cam.environment == null)
@@ -558,8 +619,6 @@ func _dungeonresume(phase: int) -> void:
 	if phase == 1:
 		await _endgame_camp()
 		_strong_cat()
-		Save.burrow_keys = 2
-		main.burrows.use_key = true
 		await main.burrows.enter("old_hollow", 1)
 		await t._wait(0.6)
 		var hops := 0
@@ -598,7 +657,7 @@ func _dungeonresume(phase: int) -> void:
 		r.run["satchel"] = {"amber": 3}
 		main.burrows.persist()
 		var f := FileAccess.open("user://resume_d.json", FileAccess.WRITE)
-		f.store_string(JSON.stringify({"hp": main.player.hp, "boons": r.run["boons"], "keys": Save.burrow_keys, "won": won}))
+		f.store_string(JSON.stringify({"hp": main.player.hp, "boons": r.run["boons"], "won": won}))
 		f.close()
 		_x("phase 1: the run saved with its health", int(Save.burrow_run["hp"]) == main.player.hp and (Save.burrow_run["cleared"] as Array).has("bridge"))
 		await t._shot("dresume_1_bridge")
@@ -610,7 +669,6 @@ func _dungeonresume(phase: int) -> void:
 	await t._at_ring(main.burrows.ring())
 	await t._wait(1.3)
 	await t._shot("dresume_2_card")
-	var keys0 := Save.burrow_keys
 	_x("the card: Go back in at the Moonwell", _card_has("Go back in"))
 	t._press("Go back in")
 	await t._until(func(): return r.active and not r.leaving, 6.0)
@@ -620,7 +678,6 @@ func _dungeonresume(phase: int) -> void:
 	_x("back in at the Moonwell", main.player.global_position.distance_to(mw) < 1.5, {"at": main.player.global_position, "cp": mw})
 	_x("the saved health and boons", main.player.hp == int(want["hp"]) and r.run["boons"] == want["boons"], {"hp": main.player.hp, "want": want})
 	_x("the satchel kept", int(r.satchel().get("amber", 0)) == 3)
-	_x("no key spent on a resume", Save.burrow_keys == keys0)
 	var cl: Array = r.run["cleared"]
 	_x("the fights before the checkpoint stay won, the bridge is full again", cl.size() == (want["won"] as Array).size() and not cl.has("bridge")
 		and String(_fight("bridge")["state"]) != "done" and String(_fight("camp")["state"]) == "done", {"cleared": cl})
@@ -633,7 +690,7 @@ func _dungeonresume(phase: int) -> void:
 	_x("climbed out: the satchel banked", int(Save.mats["amber"]) >= 3)
 	# "Leave it" on a saved run: half the satchel
 	Save.burrow_run = {"v": 2, "map": "old_hollow", "map_v": int(Data.dungeon("old_hollow")["version"]), "burrow": "old_hollow", "level": 1, "seed": 7,
-		"checkpoint": "moonwell", "cleared": [], "chests": [], "hp": 5, "boons": [], "satchel": {"amber": 5, "glowstone": 2}, "first_run": false, "key": false}
+		"checkpoint": "moonwell", "cleared": [], "chests": [], "hp": 5, "boons": [], "satchel": {"amber": 5}, "first_run": false}
 	var m0: Dictionary = Save.mats.duplicate()
 	main.player.global_position = Vector3(0, 0, 14.0)
 	await t._wait(0.5)
@@ -641,8 +698,8 @@ func _dungeonresume(phase: int) -> void:
 	await t._wait(1.3)
 	t._press("Leave")
 	await t._wait(0.5)
-	_x("Leave it: half the satchel banked, the run gone", Save.burrow_run.is_empty() and int(Save.mats["amber"]) - int(m0["amber"]) == 2
-		and int(Save.mats["glowstone"]) - int(m0["glowstone"]) == 1, {"mats": Save.mats, "before": m0})
+	_x("Leave it: half the satchel banked, the run gone", Save.burrow_run.is_empty() and int(Save.mats["amber"]) - int(m0["amber"]) == 2,
+		{"mats": Save.mats, "before": m0})
 
 
 # ---------------------------------------------------------------- the arena
@@ -874,7 +931,7 @@ func _dungeonlevels() -> void:
 
 # ---------------------------------------------------------------- Phase E modes, on the dungeon map
 ## Phase D: a pending raid blocks the Hollow; the meter never moves during a run; a finished run adds 15 points (never
-## past 95); a raid held with a full key ring pays 150 leaves instead of a 4th key. Phase C: a dish in the pot goes
+## past 95); a raid held pays its leaves (H1: no Hollow key any more). Phase C: a dish in the pot goes
 ## down with the cat (its boost applies), is used up when the run ends, and is back in the pot after a quit mid-run.
 func _burrowhooks() -> void:
 	await _endgame_camp()
@@ -882,7 +939,6 @@ func _burrowhooks() -> void:
 	main.set_riding(false, false)
 	var b = main.burrows
 	var r = b.runner
-	b.use_key = false
 	main.raids.manual = true                               # the test steps the meter itself: the raid stays at the gate
 	Save.raids["pending"] = true
 	await b.enter("old_hollow", 1)
@@ -914,7 +970,6 @@ func _burrowhooks() -> void:
 	Save.raids["meter"] = 90.0
 	main.raids.add_gloom("burrow_run")
 	_x("never past 95", float(Save.raids["meter"]) <= 95.0 + 0.01, {"meter": Save.raids["meter"]})
-	Save.burrow_keys = 3
 	Save.raids["plan"] = {"type": "siege", "lanes": [0], "level": 3, "leader": "", "first": false, "seed": 9, "called": false}
 	Save.raids["run"] = {"wave_done": 3, "ready": false}
 	var l0 := Save.leaves
@@ -922,7 +977,10 @@ func _burrowhooks() -> void:
 	await t._wait(0.3)
 	var pay: Dictionary = Data.gr()["pay"]
 	var raid_leaves := int(pay["leaves"]) + int(pay["leaves_per_level"]) * 3
-	_x("a raid held with a full ring: +150 leaves for the key", Save.burrow_keys == 3 and Save.leaves - l0 == raid_leaves + 150, {"got": Save.leaves - l0, "raid": raid_leaves})
+	Save.save_game(true)                                   # H1: no key: the raid pay names none, the saved file has no key field
+	var sf: Variant = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
+	var no_key: bool = sf is Dictionary and not (sf as Dictionary).has("burrow_keys") and not "burrow_keys" in Save and not pay.has("keys")
+	_x("H1: a raid held pays its leaves, and no Hollow key", Save.leaves - l0 == raid_leaves and no_key, {"got": Save.leaves - l0, "raid": raid_leaves, "pay": pay})
 	Save.pantry = {"berries": 4, "herbs": 0, "honey": 0, "fish": 1, "goldfish": 0}
 	await b.enter("old_hollow", 1)
 	await t._wait(0.5)
@@ -964,8 +1022,11 @@ func _topup() -> void:
 		Save.stats[s] = 10
 	Save.bows["sunwood"] = 10
 	Save.bow = "sunwood"
-	Save.stations["bench"] = 3
-	Save.stations["target"] = 3
+	# Phase F: the Training Target and the Bow Shop have 5 levels each, capping stats and bows at 4/6/8/9/10
+	# (stat_cap_by_station_level, bow_cap_by_bench_level); only at level 5 (10) do the Burrows add mastery (11-12). This
+	# test was written when level 3 allowed 10, so both are at their top level here.
+	Save.stations["bench"] = (Data.b["stations"]["bench"]["levels"] as Array).size()
+	Save.stations["target"] = (Data.b["stations"]["target"]["levels"] as Array).size()
 	Save.def_levels = {"barricade": 4, "tower": 4, "spikes": 4}
 	main.stations.free_guardian()
 	Save.stations["stone"] = 3
@@ -980,9 +1041,11 @@ func _topup() -> void:
 	st._upgrade_defence("tower")
 	_x("level 5 refused before the Burrows open", main.defences.level("tower") == 4)
 	main.burrows.open_hollow(false)
-	Save.mats = {"amber": 400, "glowstone": 250, "heartwood": 40}
+	Save.mats = {"amber": 400}
+	Save.leaves += 400 * 60 + 250 * 120 + 40 * 400       # H1: the glowstone and heartwood (and amber) this test gave, as leaves
 	await t._wait(0.3)
 	var m0: Dictionary = Save.mats.duplicate()
+	var lm0 := Save.leaves
 	_x("the Burrows open: stats capped at 12", Data.stat_cap("damage") == 12 and Data.stat_cap("health") == 12 and Data.stat_cap("range") <= 10)
 	st._buy_stat("damage")
 	st._buy_stat("damage")
@@ -990,7 +1053,12 @@ func _topup() -> void:
 	st._buy_stat("health")
 	st._buy_stat("health")
 	_x("damage and health to 12, no further", int(Save.stats["damage"]) == 12 and int(Save.stats["health"]) == 12, {"stats": Save.stats})
-	_x("mastery paid in amber and glowstone", int(Save.mats["amber"]) == int(m0["amber"]) - 30 and int(Save.mats["glowstone"]) == int(m0["glowstone"]) - 6, {"mats": Save.mats})
+	var mastery := 0
+	for sid in ["damage", "health"]:
+		for c in Data.b["stats"][sid]["mastery"]:
+			mastery += int(c["leaves"])
+	_x("H1: mastery paid in leaves only, no amber taken", int(Save.mats["amber"]) == int(m0["amber"]) and lm0 - Save.leaves == mastery,
+		{"mats": Save.mats, "paid": lm0 - Save.leaves, "want": mastery})
 	_x("the Training Target card shows mastery done", _row_texts(st._card_target()).contains("Damage · Max"), {"rows": _row_texts(st._card_target())})
 	st._upgrade_bow()
 	st._upgrade_bow()
@@ -1019,9 +1087,12 @@ func _topup() -> void:
 	_x("home level 7 waits for level 2 of the Gloomwood", Save.camp_level == 6)
 	Save.burrow_stats("old_hollow")["depth"] = 3
 	var a0 := int(Save.mats["amber"])
+	var p7 := Data.home_price(7)
+	var l7 := Save.leaves
 	st._grow_camp()
 	await t._wait(0.5)
-	_x("home level 7: paid with Burrows materials", Save.camp_level == 7 and int(Save.mats["amber"]) == a0 - 40, {"level": Save.camp_level})
+	_x("H1: home level 7 paid in leaves and timber, no amber", Save.camp_level == 7 and int(Save.mats["amber"]) == a0 and not p7.has("amber")
+		and l7 - Save.leaves == int(p7.get("leaves", 0)), {"level": Save.camp_level, "price": p7})
 	st._grow_camp()
 	await t._wait(0.5)
 	_x("home level 8: its tables extended (fire, light, towers, home)", Save.camp_level == 8 and Data.fire_hp() == 3000 and main.defences.tower_cap() == 9
@@ -1036,12 +1107,17 @@ func _topup() -> void:
 	st._buy_attach("mount_shoes")
 	st._buy_attach("pet_bell")
 	_x("bought and worn", Save.attach["mount"] == "mount_shoes" and Save.attach["pet"] == "pet_bell")
-	# G4: the Mossweave Saddle is a Saddlery attachment (+15% a level) and works everywhere, camp and runs alike
+	# G4: the Mossweave Saddle is a Saddlery attachment (+15% a level) and works everywhere, camp and runs alike.
+	# 22 Nov 2026 (the owner's rule): the mount wears one attachment at a time and only the worn one acts, so it is worn here.
 	var mmax: int = main.mount.max_hp()
 	var cmax: int = Data.cat_max_hp()
+	var worn0: Variant = Save.saddlery.get("worn", "")
 	Save.saddlery["attach"]["saddle"] = 2
+	Save.saddlery["worn"] = "saddle"
+	var hm := 1.0 + float(Data.saddle_info("attach", "saddle")["hp_per_level"]) * 2.0
 	var msaddle: int = main.mount.max_hp()
-	_x("the Saddlery's saddle (level 2) gives the mount +30% health at camp", msaddle == roundi(mmax * 1.3) and Data.mount_hp_mult() == 1.3, {"mount": msaddle, "was": mmax})
+	_x("the Saddlery's saddle (level 2, worn) gives the mount +30% health at camp", msaddle == roundi(mmax * hm) and msaddle > mmax
+		and is_equal_approx(Data.mount_hp_mult(), hm), {"mount": msaddle, "was": mmax, "mult": Data.mount_hp_mult(), "want": hm})
 	var r = _r()
 	await _enter(1)
 	_x("in a run: the saddle's mount health still there, and the bell's cat health", main.mount.max_hp() == msaddle and Data.cat_max_hp() == cmax + 2,
@@ -1050,6 +1126,7 @@ func _topup() -> void:
 	await t._wait(0.4)
 	_x("back at camp: no Burrows help (the saddle stays: it is the Saddlery's)", main.mount.max_hp() == msaddle and Data.cat_max_hp() == cmax)
 	Save.saddlery["attach"].erase("saddle")
+	Save.saddlery["worn"] = worn0
 	await t._shot("topup_stall_card")
 
 
@@ -1241,10 +1318,28 @@ func _burrowfoes() -> void:
 		main.pet.process_mode = Node.PROCESS_MODE_INHERIT
 	p.hp = Data.cat_max_hp()
 	p.invincible = true
+	# H1: the grub pays amber only 1 time in 2 (balance.json burrows.amber.grub). The data is checked as it is; for the
+	# catch the roll is made certain: grub forced to 2.0 (floor 2, no chance part: exactly 2 every run, so a lost call,
+	# a wrong source key or a hard-coded 1 all fail), put back the moment the catch has paid (the roll is made inside
+	# the kill, before r._grub is cleared), before any check
+	var av: float = r.amber_value("grub")
+	_x("the Amber Grub's amber is a 1 in 2 chance (burrows.amber.grub 0.5)", is_equal_approx(av, 0.5), {"grub": av})
+	var am: Dictionary = r.cfg()["amber"]
+	var g0: Variant = am["grub"]
+	am["grub"] = 2.0
+	var a0 := int(r.satchel().get("amber", 0))
+	var lv0: int = Save.leaves
 	ag.hp = 1.0
 	ag.hit(Vector3.FORWARD, 5.0)
-	await t._until(func(): return int(r.satchel().get("amber", 0)) >= 1, 5.0)
-	_x("caught: the Amber Grub pays amber into the satchel", int(r.satchel().get("amber", 0)) >= 1, {"satchel": r.satchel()})
+	if r._grub != null:
+		await t._until(func(): return r._grub == null, 5.0)
+	am["grub"] = g0
+	await t._until(func(): return r._grub == null and Save.leaves > lv0, 5.0)
+	await t._until(func(): return int(r.satchel().get("amber", 0)) - a0 >= 2, 3.0)
+	var got := int(r.satchel().get("amber", 0)) - a0
+	_x("caught: the Amber Grub is gone and its leaves came home", r._grub == null and Save.leaves > lv0, {"leaves": Save.leaves - lv0})
+	_x("caught: the Amber Grub pays its amber into the satchel (grub forced to 2.0: exactly 2)", got == 2 and is_equal_approx(r.amber_value("grub"), av),
+		{"got": got, "satchel": r.satchel()})
 
 
 # ---------------------------------------------------------------- the Leaf Dash
@@ -1412,7 +1507,6 @@ func _hollow() -> void:
 	_x("the path keeps 1.5 m off the garden ring and clear of the bed and the reserved ground", min_ring >= 1.5 and min_bed >= 1.1 + 0.55 and not in_res,
 		{"ring": snappedf(min_ring, 0.01), "bed": snappedf(min_bed, 0.01), "reserved": in_res})
 	t._veteran(15)
-	Save.burrow_keys = 1
 	main.hud.banner("A banner on screen", Color(1, 1, 1), "the reveal waits for it")
 	b.check_open()
 	await t._wait(2.0)
@@ -1421,20 +1515,20 @@ func _hollow() -> void:
 	var opened: bool = await t._until(func(): return Data.burrows_open(), 16.0)
 	await t._wait(0.4)
 	await t._shot("hollow_02_reveal")
-	_x("the reveal: the flag, keys filled to 3", opened and Save.flag("hollow_open") and Save.burrow_keys == 3, {"keys": Save.burrow_keys})
+	_x("the reveal: the flag (H1: no Hollow keys to fill)", opened and Save.flag("hollow_open") and not "burrow_keys" in Save)
 	await t._wait(1.5)
 	_x("open: the seal gone, the glow on, the ring gold", not (e["seal"] as Node3D).visible and (e["glow"] as Node3D).visible and rg.visible)
+	var l0 := Save.leaves
 	b.check_open()
 	await t._wait(0.2)
-	_x("keys filled only once", Save.burrow_keys == 3)
-	var l0 := Save.leaves
-	var fit: int = b.grant_key("test", 1)
-	_x("a 4th key becomes 150 leaves", fit == 0 and Save.leaves - l0 == 150 and Save.burrow_keys == 3, {"leaves": Save.leaves - l0})
+	_x("checked again: still open, nothing given", Data.burrows_open() and Save.leaves == l0)
+	_x("H1: no key ring any more", not b.has_method("grant_key"))
 	await t._at_ring(rg)
 	await t._wait(1.2)
 	spec = b.card("old_hollow")
 	var texts: Array = (spec["rows"] as Array).map(func(rw): return String(rw["text"]))
-	_x("the open card: the Gloomwood at level 1 and the key row", texts.size() >= 2 and String(texts[0]).contains("Gloomwood · Level 1") and " ".join(texts).contains("Hollow key"), {"rows": texts})
+	_x("the open card: the Gloomwood at level 1, no key row (H1)", texts.size() >= 2 and String(texts[0]).contains("Gloomwood · Level 1")
+		and not " ".join(texts).to_lower().contains("key") and not String(spec["sub"]).to_lower().contains("key"), {"rows": texts, "sub": spec["sub"]})
 	# a lower level once higher ones are open
 	Save.burrow_stats("old_hollow")["depth"] = 2
 	spec = b.card("old_hollow")
@@ -1454,7 +1548,6 @@ func _hollow() -> void:
 	main.player.global_position = Vector3(0.0, 0, 16.0)
 	await t._wait(1.2)
 	await t._shot("hollow_05_notch")
-	Save.burrow_keys = 1
 	Save.raids["pending"] = true
 	_x("blocked while a raid is pending", b.blocker() != "")
 	Save.raids["pending"] = false
@@ -1463,22 +1556,35 @@ func _hollow() -> void:
 
 # ---------------------------------------------------------------- plumbing
 func _burrowsave() -> void:
-	Save.mats = {"amber": 5, "glowstone": 2, "heartwood": 0}
-	Save.burrow_keys = 1
+	Save.mats = {"amber": 5}
 	Save.leaves = 100
 	_x("can afford leaves + amber", Data.can_afford({"leaves": 50, "amber": 5, "needs_burrows": true, "mats": {"x": 9}}))
-	_x("can't afford 1 heartwood", not Data.can_afford({"heartwood": 1}))
-	_x("pay leaves, amber and a key", Data.pay({"leaves": 50, "amber": 3, "keys": 1}) and Save.leaves == 50 and int(Save.mats["amber"]) == 2 and Save.burrow_keys == 0,
-		{"leaves": Save.leaves, "mats": Save.mats, "keys": Save.burrow_keys})
-	_x("a failed pay takes nothing", not Data.pay({"leaves": 10, "glowstone": 3}) and Save.leaves == 50 and int(Save.mats["glowstone"]) == 2)
-	_x("costs: stat, bow and craft", Data.stat_cost("damage", 0) == {"leaves": 15} and Data.craft_cost("sunwood").has("leaves") and Data.bow_cost("twig", 1).has("leaves"),
-		{"stat": Data.stat_cost("damage", 0), "craft": Data.craft_cost("sunwood")})
-	var dm := Data.dungeon(Data.burrow_map_id("old_hollow"))
-	_x("the Gloomwood's map loads: its path, 6 fights, a boss", (dm.get("spine", []) as Array).size() > 10 and (dm.get("fights", []) as Array).size() == 6
-		and String(dm.get("end", {}).get("type", "")) == "boss" and String(dm.get("name", "")) == "The Gloomwood")
+	_x("H1: Data knows no glowstone, heartwood or keys", not Data.CURRENCIES.has("glowstone") and not Data.CURRENCIES.has("heartwood")
+		and not Data.CURRENCIES.has("keys") and Data.MATS == ["amber"] and Data.have("heartwood") == 0 and Data.have("keys") == 0, {"currencies": Data.CURRENCIES})
+	_x("pay leaves and amber", Data.pay({"leaves": 50, "amber": 3}) and Save.leaves == 50 and int(Save.mats["amber"]) == 2,
+		{"leaves": Save.leaves, "mats": Save.mats})
+	_x("a failed pay takes nothing", not Data.pay({"leaves": 10, "amber": 3}) and Save.leaves == 50 and int(Save.mats["amber"]) == 2)
+	# the first Damage level costs its balance.json price (stats.damage.cost[0]), in leaves only (it was 15 when this was
+	# written; the number is read from the data now)
+	var c0 := int((Data.b["stats"]["damage"]["cost"] as Array)[0])
+	_x("costs: stat, bow and craft", c0 > 0 and Data.stat_cost("damage", 0) == {"leaves": c0} and Data.craft_cost("sunwood").has("leaves") and Data.bow_cost("twig", 1).has("leaves"),
+		{"stat": Data.stat_cost("damage", 0), "want": c0, "craft": Data.craft_cost("sunwood")})
+	# the map as Data loads it holds every fight its file defines (9 today: 6 named and 3 ambushes; it was 6 when this
+	# was written), each with an id and its monsters (a pack or spawners)
+	var map_id := Data.burrow_map_id("old_hollow")
+	var dm := Data.dungeon(map_id)
+	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/dungeons/%s.json" % map_id))
+	var n_file: int = ((raw as Dictionary).get("fights", []) as Array).size() if raw is Dictionary else -1
+	var dfights: Array = dm.get("fights", [])
+	var fights_ok: bool = n_file > 0 and dfights.size() == n_file
+	for f in dfights:
+		if not (f is Dictionary and String((f as Dictionary).get("id", "")) != "" and ((f as Dictionary).has("pack") or (f as Dictionary).has("spawners"))):
+			fights_ok = false
+	_x("the Gloomwood's map loads: its path, every fight its file defines, a boss", (dm.get("spine", []) as Array).size() > 10 and fights_ok
+		and String(dm.get("end", {}).get("type", "")) == "boss" and String(dm.get("name", "")) == "The Gloomwood", {"fights": dfights.size(), "in_file": n_file})
 	_x("one Burrow in the list, its id old_hollow, named the Gloomwood", Data.burrow_list().size() >= 1 and String(Data.burrow_list()[0]["id"]) == "old_hollow"
 		and String(Data.burrow_list()[0]["name"]) == "The Gloomwood")
-	Save.mats = {"amber": 7, "glowstone": 3, "heartwood": 1}
+	Save.mats = {"amber": 7}
 	Save.burrow_stats("old_hollow")["depth"] = 2
 	Save.burrow_stats("old_hollow")["runs"] = 5
 	Save.attach = {"owned": ["mount_saddle"], "mount": "mount_saddle", "pet": ""}
@@ -1505,52 +1611,50 @@ func _burrowsave() -> void:
 	await _burrowsave_open()
 
 
-## The reveal for an old save that won every mission, the keys filled once, a Phase E room run closed kindly, and
-## nothing moving by time.
+## The reveal for an old save that won every mission (once), a Phase E room run closed kindly, and nothing moving by
+## time.
 func _burrowsave_open() -> void:
 	var b = main.burrows
 	t._veteran(15)
 	Save.flags.erase("hollow_open")
-	Save.burrow_keys = 2
 	Save.save_game()
 	Save.load_game()
 	b.check_open(true)
 	_x("not open at once (the reveal waits for the banners)", not Data.burrows_open())
 	var opened: bool = await t._until(func(): return Data.burrows_open(), 14.0)
-	_x("an old save that won every raid: the Hollow opens, keys topped up to 3", opened and Save.burrow_keys == 3, {"keys": Save.burrow_keys})
-	Save.burrow_keys = 1
+	_x("an old save that won every raid: the Hollow opens", opened)
+	var l1 := Save.leaves
 	Save.save_game()
 	Save.load_game()
 	b.check_open(true)
 	await t._wait(1.0)
-	_x("only once: a second load gives nothing", Save.burrow_keys == 1)
-	# a run saved in Phase E's room format: closed kindly, the whole satchel banked, the key given back
+	_x("only once: a second load gives nothing", Data.burrows_open() and Save.leaves == l1)
+	# a run saved in Phase E's room format: closed kindly, the whole satchel banked
 	var a0 := int(Save.mats.get("amber", 0))
 	Save.burrow_run = {"v": 1, "rooms_v": 1, "burrow": "old_hollow", "depth": 1, "seed": 3, "step": 1, "picked": ["den", "treasure"], "hp": 4,
-		"satchel": {"amber": 4}, "key": true, "chain": 0}
+		"satchel": {"amber": 4}, "chain": 0}
 	Save.save_game()
 	Save.load_game()
 	b.check_saved_run()
-	_x("a Phase E room run is closed kindly (satchel banked, key back)", Save.burrow_run.is_empty() and int(Save.mats["amber"]) == a0 + 4 and Save.burrow_keys == 2,
-		{"mats": Save.mats, "keys": Save.burrow_keys})
+	_x("a Phase E room run is closed kindly (satchel banked)", Save.burrow_run.is_empty() and int(Save.mats["amber"]) == a0 + 4,
+		{"mats": Save.mats})
 	# a run on an older map version: the same
 	Save.burrow_run = {"v": 2, "map": "old_hollow", "map_v": 999, "burrow": "old_hollow", "level": 1, "seed": 3, "checkpoint": "moonwell", "cleared": [], "chests": [],
-		"hp": 4, "satchel": {"amber": 2}, "key": false}
+		"hp": 4, "satchel": {"amber": 2}}
 	b.check_saved_run()
 	_x("a run on another version of the map is closed kindly", Save.burrow_run.is_empty() and int(Save.mats["amber"]) == a0 + 6)
 	# a good run stays
 	Save.burrow_run = {"v": 2, "map": "old_hollow", "map_v": int(Data.dungeon("old_hollow")["version"]), "burrow": "old_hollow", "level": 1, "seed": 3,
-		"checkpoint": "moonwell", "cleared": [], "chests": [], "hp": 4, "satchel": {"amber": 2}, "key": false}
+		"checkpoint": "moonwell", "cleared": [], "chests": [], "hp": 4, "satchel": {"amber": 2}}
 	b.check_saved_run()
 	_x("a run of this format stays for Go back in", not Save.burrow_run.is_empty())
 	Save.burrow_run = {}
-	var k0 := Save.burrow_keys
 	var m0: Dictionary = Save.mats.duplicate()
 	Save.save_game()
 	Save.load_game()
 	Save.load_game()
 	await t._wait(5.0)
-	_x("nothing changes with time (keys, materials)", Save.burrow_keys == k0 and Save.mats == m0)
+	_x("nothing changes with time (materials)", Save.mats == m0)
 
 
 # ---------------------------------------------------------------- how hard (19 Nov 2026): the standing and the careful cat
@@ -1714,7 +1818,6 @@ func _dungeonstand(mode: String) -> void:
 	var r = _r()
 	_careful = mode == "careful"
 	_items = mode in ["careful", "items"]
-	main.burrows.use_key = false
 	main.set_riding(false, false)
 	await main.burrows.enter("old_hollow", 1)
 	await t._wait(0.8)

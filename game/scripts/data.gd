@@ -482,7 +482,7 @@ func stat_cap(id: String) -> int:
 	if st < need:
 		return 0
 	var cap := int(caps[clampi(st, 0, caps.size() - 1)])
-	# Phase E: mastery (levels 11-12, paid with Burrows materials) once the Burrows are open; never by home level
+	# Phase E: mastery (levels 11-12, paid with the price balance.json names, leaves today) once the Burrows are open; never by home level
 	var mastery: Array = stat_info(id).get("mastery", [])
 	if burrows_open() and cap >= (stat_info(id)["cost"] as Array).size() and not mastery.is_empty():
 		cap = (stat_info(id)["cost"] as Array).size() + mastery.size()
@@ -499,7 +499,7 @@ func bow_cap() -> int:
 	return cap
 
 
-## What raising a stat from level lv costs: leaves, then (mastery, past the cost list) leaves and materials.
+## What raising a stat from level lv costs: leaves, then (mastery, past the cost list) the price balance.json names (leaves today).
 func stat_cost(id: String, lv: int) -> Dictionary:
 	var costs: Array = stat_info(id)["cost"]
 	if lv < costs.size():
@@ -781,8 +781,11 @@ func meal_boost(k: String) -> float:
 # ---------------------------------------------------------------- money
 ## Everything a cost dictionary can ask for. Cost dictionaries may also hold other keys (needs_missions, needs_burrows,
 ## mats, ...): those are not money, so can_afford and pay loop over these only.
-const CURRENCIES := ["leaves", "timber", "shards", "keys", "amber", "glowstone", "heartwood"]
-const MATS := ["amber", "glowstone", "heartwood"]
+## H1 (25 Nov 2026, the owner): amber is the one expedition material. No price asks for it: it is held (the Bag) and
+## sold to Bramble, who takes it with pay(). Glowstone, heartwood and the Hollow keys are gone (an old save's turned
+## into leaves: core/save_upgrades.gd).
+const CURRENCIES := ["leaves", "timber", "shards", "amber"]
+const MATS := ["amber"]                  # the expedition materials (balance.json burrows.materials), held in Save.mats
 
 
 func have(k: String) -> int:
@@ -790,8 +793,7 @@ func have(k: String) -> int:
 		"leaves": return Save.leaves
 		"timber": return Save.timber
 		"shards": return Save.shards
-		"keys": return Save.burrow_keys
-	return int(Save.mats.get(k, 0))
+	return int(Save.mats.get(k, 0)) if k in MATS else 0
 
 
 func give(k: String, n: int) -> void:
@@ -799,8 +801,11 @@ func give(k: String, n: int) -> void:
 		"leaves": Save.leaves += n
 		"timber": Save.timber += n
 		"shards": Save.shards += n
-		"keys": Save.burrow_keys = clampi(Save.burrow_keys + n, 0, 3)
-		_: Save.add_mat(k, n)
+		_:
+			if k in MATS:
+				Save.add_mat(k, n)
+			else:
+				push_warning("Data.give: %s is not a currency" % k)
 
 
 func take(k: String, n: int) -> void:
@@ -885,7 +890,8 @@ func mat_name(id: String) -> String:
 	return String(burrow_cfg()["materials"].get(id, {}).get("short", id))
 
 
-## " · have 12 amber, 4 glowstone": the materials a cost asks for, as the player has them ("" when it asks for none).
+## " · have 12 amber": the materials a cost asks for, as the player has them ("" when it asks for none; since H1 no
+## price asks for one).
 func mats_line(cost: Dictionary) -> String:
 	var bits: Array = []
 	for k in MATS:
@@ -894,7 +900,7 @@ func mats_line(cost: Dictionary) -> String:
 	return " · have " + ", ".join(bits) if not bits.is_empty() else ""
 
 
-## "9 amber · 4 glowstone" (only those above 0), "nothing" when empty.
+## "9 amber" (only those above 0), "nothing yet" when empty.
 func mats_text(d: Dictionary) -> String:
 	var bits: Array = []
 	for k in MATS:
@@ -1072,7 +1078,7 @@ func saddle_price(part: String, id: String, lv: int) -> Dictionary:
 	return out
 
 
-## Level lv asks for Burrow materials, and is sold only once the Burrows are open (after the missions).
+## Level lv is sold only once the Burrows are open (after the missions). Since H1 its price is leaves and timber.
 func saddle_needs_burrows(part: String, id: String, lv: int) -> bool:
 	var prices: Array = saddle_info(part, id).get("price", [])
 	return lv >= 1 and lv <= prices.size() and bool((prices[lv - 1] as Dictionary).get("needs_burrows", false))

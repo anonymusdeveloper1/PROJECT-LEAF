@@ -352,13 +352,13 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ## 10. The save
 
-- **A version number** (today 2). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
-  (2→3, 3→4 …), run in order when an older save loads. Before upgrading, the old file is copied to a backup.
+- **A version number** (today 3). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
+  (2→3 is built, 3→4 …), run in order when an older save loads. Before upgrading, the old file is copied to a backup.
 - **What the player owns has one form for every kind:** `owned[kind][id] = {"level": 1, …}`.
 - **New content** starts locked. **Unknown ids** in a save are kept but ignored, so content that is hidden or comes back
   later is not lost. **Removed content** is refunded or turned into something else by an upgrade step (as amber,
   glowstone, heartwood and the keys become leaves in H1).
-- **Sample saves** of every version live in `tests/saves/`, and a test loads each one.
+- **Sample saves** of every version live in `tests/saves/` (today `v2_sample.json` and `v3_sample.json`), and a test loads each one.
 
 ## 11. Tests
 
@@ -400,7 +400,7 @@ depends on whom, so **there are exactly eight**, each with one job:
   each physics step;
 - states as words with `match` blocks;
 - MultiMesh already used for grass, trees, props and the dungeon floor;
-- the save at version 2, with versioned upgrades ready (no step yet), dirty-flag flushing and atomic writes (H1).
+- the save at version 3 (the 2→3 step turns old amber, glowstone, heartwood and Hollow keys into leaves), dirty-flag flushing and atomic writes (H1).
 
 ## 14. Decided later, during the steps
 

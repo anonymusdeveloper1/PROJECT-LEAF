@@ -6,7 +6,7 @@ extends Node
 ##   plan     made at stir_at: kind, trails, level, leader, seed. What was announced is what comes.
 ##   pending  full: preparation, then one continuous assault from every trail in small mixed groups (up to 50).
 ##            It stays pending across restarts; defeated member IDs are retained. Nothing happens while closed.
-##   end      held: shards, leaves, timber, keys. Lost: a few shards. The damage stays either way, nothing is taken.
+##   end      held: shards, leaves, timber (H1: no Hollow key any more). Lost: a few shards. The damage stays either way, nothing is taken.
 ## Everything the player sees of it is on the signpost (the Watch card), the HUD's top right, banners and toasts.
 ## H1: raid_started and raid_ended are also announced on the event board (Events), with the same arguments.
 
@@ -592,23 +592,17 @@ func finish(won: bool, perfect: bool, held: int) -> void:
 	var shards := 0
 	var leaves := 0
 	var timber := 0
-	var keys := 0
-	if won:
+	if won:                                           # H1: no Hollow key any more, the rest as before
 		var mult := 1.0 + (float(pay["perfect"]) if perfect else 0.0) + (float(pay["ready"]) if ready else 0.0)
 		shards = int(round((float(pay["shards"]) + float(pay["shards_per_level"]) * lv) * float(t.get("shards", 1.0)) * mult))
 		leaves = int(pay["leaves"]) + int(pay["leaves_per_level"]) * lv
 		timber = int(pay["timber"]) + lv / int(pay["timber_per_levels"])
-		keys = int(pay["keys"]["held"]) + (int(pay["keys"]["elite_extra"]) if kind == "elite" else 0)
 	else:
 		shards = int(pay["lost_per_wave_held"]) * maxi(0, held)
 	var first_shards := Save.shards == 0 and shards > 0 and not Save.flag("told_shards")
 	Save.shards += shards                             # banked at once: a crash can never lose them
 	Save.leaves += leaves
 	Save.timber += timber
-	if keys > 0 and main.get("burrows") != null:
-		main.burrows.grant_key("raid", keys)            # Phase E: a full key ring turns the extra key into leaves
-	else:
-		Save.burrow_keys = mini(int(pay["keys"]["max"]), Save.burrow_keys + keys)
 	# 3. counters
 	var lvc: Dictionary = cfg()["level"]
 	if won:
@@ -709,7 +703,7 @@ func restore_on_load() -> void:
 	refresh_open()
 	var r: Dictionary = Save.raids
 	if Save.loaded_v > 0 and Save.loaded_v < 2:
-		Save.save_v = 2
+		Save.save_v = maxi(Save.save_v, 2)              # H1: never below the version the save upgrades brought it to
 		if open:
 			r["meter"] = maxf(float(r["meter"]), float(cfg()["meter"]["first_fill"]))
 			_intro()
@@ -745,7 +739,7 @@ func on_all_missions_won() -> void:
 		return
 	var r: Dictionary = Save.raids
 	r["meter"] = maxf(float(r["meter"]), float(cfg()["meter"]["first_fill"]))
-	Save.save_v = 2
+	Save.save_v = maxi(Save.save_v, 2)                  # H1: never back below the current save version
 	main.world.swap_sign()
 	main.stations.sign_tab = "raids"
 	_update_watch_model(true)

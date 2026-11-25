@@ -1,0 +1,228 @@
+{
+  "save_v": 3,
+  "leaves": 2200,
+  "timber": 76,
+  "shards": 28,
+  "camp_level": 5,
+  "stations": {
+    "target": 4,
+    "bench": 4,
+    "well": 3,
+    "cottage": 2,
+    "stall": 3,
+    "stone": 2,
+    "garden": 1,
+    "fishing": 1,
+    "saddlery": 2,
+    "tailor": 1
+  },
+  "stats": {
+    "damage": 7,
+    "draw": 5,
+    "range": 5,
+    "health": 6,
+    "speed": 4,
+    "magnet": 3
+  },
+  "bows": {
+    "twig": 4,
+    "sunwood": 6
+  },
+  "bow": "sunwood",
+  "claimed": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "items": {
+    "tower": 1,
+    "spikes": 2
+  },
+  "placed": [
+    {
+      "type": "barricade",
+      "slot": [
+        0,
+        2
+      ],
+      "row": 3
+    },
+    {
+      "type": "tower",
+      "x": -8.25,
+      "z": 11.5,
+      "rot": 0
+    }
+  ],
+  "def_levels": {
+    "barricade": 3,
+    "tower": 2,
+    "spikes": 2
+  },
+  "flags": {
+    "shop_open": true,
+    "hollow_open": true,
+    "warden_awake": true,
+    "told_raids": true
+  },
+  "best_night": 15,
+  "stages_won": 16,
+  "stages_lost": 1,
+  "riding": false,
+  "ruined": [],
+  "fire_ruined": false,
+  "missions_done": [
+    "embers",
+    "bramble",
+    "toadstool",
+    "stumps",
+    "bandits",
+    "mossback",
+    "moths",
+    "spitters",
+    "choir",
+    "shieldwall",
+    "creep",
+    "fronts",
+    "owlwitch",
+    "tide",
+    "thornstag"
+  ],
+  "mount_look": "thistle",
+  "pet_look": "sprig",
+  "mount_skin": "natural",
+  "pet_skin": "natural",
+  "mission_run": {},
+  "guardian_look": "moss_warden",
+  "guardian_skin": "natural",
+  "guardian_post": -1,
+  "garden": [
+    {
+      "crop": "sunberry",
+      "grow": 2,
+      "wet": 1
+    },
+    {
+      "crop": "fernmint",
+      "grow": 1,
+      "wet": 0
+    },
+    {
+      "crop": "",
+      "grow": 0,
+      "wet": 0
+    },
+    {
+      "crop": "",
+      "grow": 0,
+      "wet": 0
+    },
+    {
+      "crop": "",
+      "grow": 0,
+      "wet": 0
+    },
+    {
+      "crop": "",
+      "grow": 0,
+      "wet": 0
+    }
+  ],
+  "pantry": {
+    "berries": 5,
+    "herbs": 3,
+    "honey": 1,
+    "fish": 2,
+    "goldfish": 0
+  },
+  "snack_choice": "auto",
+  "meal_ready": "berry_tart",
+  "meal_on": "",
+  "fish_log": {
+    "minnow": 2
+  },
+  "fish_dry": 2,
+  "raids": {
+    "meter": 26.5,
+    "plan": {},
+    "pending": false,
+    "warn_left": 0,
+    "run": {},
+    "renown": 2,
+    "held": 1,
+    "lost": 0,
+    "perfect": 1,
+    "streak": 1,
+    "best_streak": 1,
+    "since_elite": 1,
+    "elite_turn": 0,
+    "last_types": [],
+    "last_lanes": [],
+    "first_done": true,
+    "last_lost": false
+  },
+  "wear": {
+    "home": 0.25
+  },
+  "unlocks": [
+    "watch:lookout"
+  ],
+  "fire_look": "",
+  "mats": {
+    "amber": 3,
+    "future_mat": 1
+  },
+  "burrows": {
+    "old_hollow": {
+      "depth": 1,
+      "runs": 2,
+      "won": 1,
+      "falls": 1,
+      "best": 1
+    }
+  },
+  "burrow_run": {
+    "v": 2,
+    "map": "old_hollow",
+    "map_v": 2,
+    "burrow": "old_hollow",
+    "level": 2,
+    "seed": 7,
+    "checkpoint": "moonwell",
+    "cleared": [],
+    "chests": [],
+    "hp": 5,
+    "boons": [
+      "sharp"
+    ],
+    "satchel": {
+      "amber": 2
+    },
+    "first_run": false,
+    "spring_used": false,
+    "boon_taken": true,
+    "meal": "",
+    "boss_down": false,
+    "woke": false
+  },
+  "attach": {
+    "owned": [],
+    "mount": "",
+    "pet": ""
+  },
+  "saddlery": {
+    "skills": {
+      "stomp": 2
+    },
+    "attach": {
+      "saddle": 2
+    },
+    "worn": "saddle"
+  },
+  "cat_skin": "dusk_ranger",
+  "cat_skins_owned": [
+    "original",
+    "dusk_ranger"
+  ]
+}

@@ -7,8 +7,7 @@ extends Node
 ##   (b) at Hearthtree 1 the Market and the Mushroom Cottage are not offered; at 2 they are; a goal for one not built
 ##       points to the Hearthtree's card; building the Market brings Thistle, who can be ridden
 ##   (c) the Market: buying timber, a food item and (after the missions) amber changes the right stocks; selling amber
-##   (d) the Well: a hurt campfire and building mend toward the cap between waves, a little in a wave, never above the
-##       cap between waves, never a broken thing or the ashes; no wish row, no "!" for wishing
+##   (d) the Well opens at Hearthtree 3, has one Upgrade row, and mends standing structures to full at both rates
 ##   (e) the Training Target and Bow Bench cards are made of item tiles (and section headings)
 ##   (f) an old save with the stall and cottage (gifts of missions 2 and 3) keeps them, with Thistle and Sprig
 ##   (g) (21 Nov 2026) a ruined Hearthtree during the missions costs the after-the-missions price (gloom_raids.repair
@@ -241,21 +240,33 @@ func _market() -> void:
 func _well() -> void:
 	var st = _st()
 	var f = main.fight
+	var home_before := Save.camp_level
+	var missions_before: Array = Save.missions_done.duplicate()
+	Save.camp_level = 2
+	Save.missions_done.clear()
+	for i in 4:
+		Save.missions_done.append(String(Data.mission(i)["id"]))
+	_x("four wins at Hearthtree 2 leave the Well locked", not Data.station_open("well"))
+	Save.camp_level = 3
+	Save.missions_done = missions_before
+	_x("Hearthtree 3 opens the Well before four wins", Data.progress() < 4 and Data.station_open("well"))
+	Save.camp_level = home_before
 	Save.stations["well"] = 1
 	Save.leaves = 0
+	Save.wear["well"] = float(Data.gr()["repair"]["wear_step"])
 	st.refresh()
-	var wr: Array = st._card_well()["rows"]
-	_x("no wish row on the Well's card, no wish left anywhere", not _words(wr).to_lower().contains("make a wish")
-		and not wr.any(func(r): return String(r.get("label", "")) == "Wish") and not st.has_method("_wish") and f.get("wished") == null,
-		{"rows": _words(wr)})
-	_x("the Well's card says what it does and sells its next level", _words(wr).contains("between waves") and wr.any(func(r): return String(r.get("label", "")) == "Upgrade"))
+	var card: Dictionary = st._card_well()
+	var wr: Array = card["rows"]
+	_x("an existing Well below its build gate still works", st.shown("well") and st.well_level() == 1)
+	_x("the Well has only its Upgrade row even when worn", wr.size() == 1 and String(wr[0]["label"]) == "Upgrade", {"rows": _words(wr)})
+	Save.wear.erase("well")
 	_x("the Well's marker shows no '!' for wishing", not st.rings["well"].pulse)
 	var bet1: float = st.well_between(1)
 	var reg1: float = st.well_regen(1)
-	_x("Well numbers: between waves 3/6/10% a second, in waves 0.5/1/2%", absf(bet1 - 0.03) < 1e-6 and absf(st.well_between(2) - 0.06) < 1e-6
-		and absf(st.well_between(3) - 0.10) < 1e-6 and absf(reg1 - 0.005) < 1e-6 and absf(st.well_regen(2) - 0.01) < 1e-6 and absf(st.well_regen(3) - 0.02) < 1e-6)
-	_x("the Well's card says it mends to full, between waves and in waves", _words(wr).contains("back to full") and _words(wr).contains("in waves")
-		and _words(wr).contains("broken things need a repair"), {"rows": _words(wr)})
+	_x("Well numbers: between waves 3/6/10% a second, in waves 1/1.5/2.5%", absf(bet1 - 0.03) < 1e-6 and absf(st.well_between(2) - 0.06) < 1e-6
+		and absf(st.well_between(3) - 0.10) < 1e-6 and absf(reg1 - 0.01) < 1e-6 and absf(st.well_regen(2) - 0.015) < 1e-6 and absf(st.well_regen(3) - 0.025) < 1e-6)
+	var sub := String(card["sub"])
+	_x("the Well's card shows its current mending rates", sub.contains("Mends to full") and sub.contains("3%/s between waves, 1%/s in waves"))
 	# a breather of a mission, faked for these lines only (no frame passes while it is on)
 	var keep := {"active": f.active, "in_wave": f.in_wave, "on_break": f.on_break, "last_stand": f.last_stand, "gate_hp": f.gate_hp, "gate_max": f.gate_max}
 	var keep_hp: Dictionary = st.hp.duplicate()
@@ -268,12 +279,21 @@ func _well() -> void:
 	f.gate_hp = 600.0 * 0.2
 	var full: float = st.full_hp("home")
 	st.hp["home"] = full * 0.2
+	var saved_warden: Node3D = main.guardian
+	var warden := Node3D.new()
+	warden.set_script(preload("res://scripts/guardian.gd"))
+	warden.main = main
+	warden.state = "idle"
+	var warden_max: float = warden.max_hp()
+	warden.hp = warden_max * 0.2
+	main.guardian = warden
 	for k in 30:
 		st.well_tick(0.1)
 	var g3s: float = f.gate_hp / f.gate_max
 	var h3s: float = float(st.hp["home"]) / full
 	_x("between waves: a hurt campfire and building mend by %s a second (3 s)" % st._pct(bet1), absf(g3s - (0.2 + bet1 * 3.0)) < 0.002 and absf(h3s - (0.2 + bet1 * 3.0)) < 0.002,
 		{"fire": snappedf(g3s, 0.001), "home": snappedf(h3s, 0.001)})
+	_x("between waves: the standing Warden mends at the same rate", is_equal_approx(warden.hp / warden_max, 0.2 + bet1 * 3.0))
 	for k in 600:
 		st.well_tick(0.1)
 	var g60: float = f.gate_hp / f.gate_max
@@ -294,12 +314,14 @@ func _well() -> void:
 	f.in_wave = true
 	f.gate_hp = 600.0 * 0.3
 	st.hp["home"] = full * 0.3
+	warden.hp = warden_max * 0.3
 	for k in 10:
 		st.well_tick(0.1)
 	var gain: float = f.gate_hp / f.gate_max - 0.3
 	var hgain: float = float(st.hp["home"]) / full - 0.3
 	_x("in a wave: +%s a second" % st._pct(reg1), gain > 0.0 and absf(gain - reg1) < 0.0005 and absf(hgain - reg1) < 0.0005 and gain < bet1,
 		{"gain": snappedf(gain, 0.0001), "home": snappedf(hgain, 0.0001), "regen": reg1})
+	_x("in a wave: the standing Warden mends at the same rate", is_equal_approx(warden.hp / warden_max, 0.3 + reg1))
 	f.gate_hp = 600.0 * 0.999
 	for k in 100:
 		st.well_tick(0.1)
@@ -308,9 +330,16 @@ func _well() -> void:
 	st.hp["home"] = 0.0
 	f.last_stand = true
 	f.gate_hp = 0.0
+	warden.state = "down"
+	warden.hp = 0.0
+	var recovery := Data.guardian_revive_s()
+	warden._down_t = recovery
 	for k in 50:
 		st.well_tick(0.1)
 	_x("never a broken building or the ashes", float(st.hp["home"]) == 0.0 and f.gate_hp == 0.0)
+	_x("the Well leaves the downed Warden's health and recovery timer alone", warden.state == "down" and warden.hp == 0.0 and warden._down_t == recovery)
+	main.guardian = saved_warden
+	warden.free()
 	f.last_stand = false
 	f.gate_hp = 300.0
 	Save.ruined.append("well")

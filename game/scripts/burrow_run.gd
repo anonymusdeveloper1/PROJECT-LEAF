@@ -923,9 +923,12 @@ func on_enemy_died(e) -> void:
 	if e == _boss or e.has_meta("boss_of_room"):
 		_boss_beaten(e)
 		return
+	## Enemy drops get the bonus here. The boss chest pays through its own loot table.
+	var kill_leaf_bonus := float(Data.b["kill_leaf_bonus"])
 	if String(e.id) == "amber_grub":
 		var ag: Dictionary = cfg()["amber_grub"]
-		main.drop_leaves(at, int(round(float(ag["leaves"]) * leaf_mult())))
+		var leaves := roundi(float(ag["leaves"]) * leaf_mult())
+		main.drop_leaves(at, roundi(leaves * kill_leaf_bonus))
 		main.drop_item(at, "amber", int(ag["amber"]))
 		main.hud.toast("Caught it! The Amber Grub bursts into treasure")
 		_grub = null
@@ -937,7 +940,7 @@ func on_enemy_died(e) -> void:
 	# Burrows-only bags' (none since G4) and any boon's
 	var lv := Data.saddlebag_leaves(int(round(float(info.get("leaves", 0)) * leaf_mult() * float(Data.run_mods.get("loot_mult", 1.0)))))
 	if lv > 0:
-		main.drop_leaves(at, lv)
+		main.drop_leaves(at, roundi(lv * kill_leaf_bonus))
 	var dr: Dictionary = cfg()["drops"]
 	var ch: Array = dr["kill_amber_chance"]
 	if randf() < float(ch[clampi(level(), 0, ch.size() - 1)]) * float(Data.run_mods.get("loot_mult", 1.0)):

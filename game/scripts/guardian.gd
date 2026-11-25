@@ -253,6 +253,12 @@ func up() -> bool:
 	return visible and main.fight.active and state in ["idle", "walk", "punch", "slam", "hit"]
 
 
+## The Well mends the Warden while it stands. Recovery from a knockdown follows its own timer.
+func well_mend(share: float) -> void:
+	if hp > 0.0 and hp < _max and up():
+		hp = minf(_max, hp + _max * share)
+
+
 func _flat(p: Vector3) -> float:
 	return Vector2(p.x - global_position.x, p.z - global_position.z).length()
 

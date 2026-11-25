@@ -103,7 +103,7 @@ Other modes (add after `--autotest --fresh`):
   `--guardianab` (Mossback Wakes with and without the Warden), `--garden`, `--cook`, `--fishing`, `--feed` (feeding a
   knocked-out mount), `--camplife` (the camp at home levels 1-6 with everything built).
 - Phase D, the Gloom Raids (each logs `EXPECT PASS` / `EXPECT FAIL` lines): `--raid` (a raid held: the warning,
-  meeting it early, the leader and the rout, the pay), `--raidloss` (a raid lost: only the damage stays), `--meter`
+  meeting it early, the leader, every raider fought to the last, the pay), `--raidloss` (a raid lost: only the damage stays), `--meter`
   (the meter fills only from clamped live play and actions), `--raidsave` (closing mid-raid: it comes back at its
   warning), `--raidresume=1` (with `--fresh`), then `--raidresume=2`, then `--raidresume=3` (a real restart),
   `--raidtypes` (siege, sky, sneak, elite), `--wear` (wear, Patch, Mend some, Mend all), `--shards` (shards and what

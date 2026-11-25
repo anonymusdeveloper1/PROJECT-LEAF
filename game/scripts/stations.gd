@@ -17,7 +17,7 @@ extends Node3D
 ##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) Burrow materials; Thistle
 ##                                        the hare comes free with it: ride it (mount.gd)
 ##   Mushroom Cottage  (Hearthtree 2)     Sprig the leaf dragon moves in and fights beside the cat (pet.gd)
-##   Wishing Well      (after 4 missions) mends the camp by itself (well_tick): never tapped, only upgraded
+##   Wishing Well      (Hearthtree 3)     mends the camp by itself (well_tick): never tapped, only upgraded
 ##   Saddlery   (mission 8, Hearthtree 2) G4: teaches the mount skills and makes it attachments (_card_saddlery); levels
 ##                                        1-5, never above the Hearthtree; a stand-in model until the owner's comes
 ##   Tailor's Nook      (Hearthtree 3)    23 Nov 2026: the cat's outfits, looks only (_card_tailor; balance.json
@@ -609,14 +609,9 @@ func free_guardian() -> void:
 
 
 # ---------------------------------------------------------------- the Wishing Well mends the camp (Phase G2)
-## Built and standing, the Well quietly mends what is hurt but not broken (balance.json well.passive, by its level):
-##   between waves (a breather, a chapter break, a raid's warning, or no fight on)  up to FULL health, between_by_level
-##       of its max health a second (3%, 6%, 10%)
-##   in a mission wave or a raid wave  regen_by_level of its max health every second (0.5%, 1%, 2%)
-## It mends the campfire (only while a fight is on), every standing building (hp) and, through defences.well_mend,
-## every barricade piece and tower. Never above full, never a ruin, a broken piece (0 health) or the ashes; a thing
-## above the cap stays as it is. Real play time only: nothing while the game is frozen or the cat is
-## below ground, and the frame time is clamped (nothing happens while the game is closed).
+## The standing Well mends the campfire, buildings, defences and the Moss Warden up to full.
+## It uses well.passive rates from balance.json and skips ruins, broken pieces, ashes and a downed Warden.
+## Mending runs on live camp time with a clamped frame step.
 func _physics_process(delta: float) -> void:
 	if main == null or main.frozen or main.fight == null or main.get("area") != null:
 		return
@@ -643,6 +638,8 @@ func well_tick(dt: float) -> void:
 			hp[id] = _mended(float(hp[id]), full_hp(id), rate * dt, cap)
 	if main.defences != null and main.defences.has_method("well_mend"):
 		main.defences.well_mend(dt, rate, cap)
+	if main.guardian != null:
+		main.guardian.well_mend(rate * dt)
 
 
 ## `now` raised by `step` (a share) of `full`, never past `cap` of it, and never lowered (above the cap it stays).
@@ -660,8 +657,8 @@ func well_level() -> int:
 	return int(Save.stations.get("well", 0))
 
 
-func _well_pick(key: String, lv: int, fallback: Array) -> float:
-	var t: Array = (Data.b.get("well", {}) as Dictionary).get("passive", {}).get(key, fallback)
+func _well_pick(key: String, lv: int) -> float:
+	var t: Array = (Data.b.get("well", {}) as Dictionary).get("passive", {}).get(key, [])
 	if t.is_empty():
 		return 0.0
 	return float(t[clampi(lv, 0, t.size() - 1)])
@@ -669,12 +666,12 @@ func _well_pick(key: String, lv: int, fallback: Array) -> float:
 
 ## In a wave: the share of its max health everything mends every second (well.passive.regen_by_level).
 func well_regen(lv: int) -> float:
-	return _well_pick("regen_by_level", lv, [0, 0.005, 0.01, 0.02])
+	return _well_pick("regen_by_level", lv)
 
 
 ## Between waves: the share of its max health everything mends every second, up to full (well.passive.between_by_level).
 func well_between(lv: int) -> float:
-	return _well_pick("between_by_level", lv, [0, 0.03, 0.06, 0.10])
+	return _well_pick("between_by_level", lv)
 
 
 ## True while a wave is on: the camp's stations only work between waves (every new action checks it itself).
@@ -1292,7 +1289,7 @@ func _card_shop() -> Dictionary:
 
 
 ## The Buildings shelf: the Training Target and the Bow Shop (once the first mission shows them), then the Wishing
-## Well (after 4 missions), the Mushroom Cottage and the Market (Hearthtree 2), the Saddlery (8 missions and
+## Well (Hearthtree 3), the Mushroom Cottage and the Market (Hearthtree 2), the Saddlery (8 missions and
 ## Hearthtree 2). Once the first mission is won, a building that is not open yet shows as a locked tile with what it
 ## needs.
 func _building_tiles() -> Array:
@@ -1721,7 +1718,7 @@ func _station_upgrade_row(id: String) -> Dictionary:
 	if id == "target":
 		gives = "Stats up to level %d%s" % [int(Data.b["stat_cap_by_station_level"][lv + 1]), ", unlocks Range" if lv + 1 == 2 else ""]
 	elif id == "well":
-		gives = _well_line(lv + 1, true)
+		gives = _well_line(lv + 1)
 	elif id == "cottage":
 		gives = "%s: %d damage every %.1fs" % [Data.pet_name(), int(Data.pick("pet", "damage_by_level", lv + 1)), Data.pick("pet", "every_by_level", lv + 1)]
 	elif id == "stall":
@@ -2217,24 +2214,18 @@ func _wear_skin(id: String) -> void:
 	main.on_purchase()
 
 
-## Phase G2: the Wishing Well is never tapped to use: it mends the camp by itself (well_tick). Its card says what it
-## does at its level now and sells its next level.
+## The standing Well's only row is its upgrade.
 func _card_well() -> Dictionary:
 	if Save.ruined.has("well"):
 		return _ruin_card("well", "Wishing Well", _anchor("well", 1.9))
-	var rows: Array = _wear_row("well")
 	var lv := int(Save.stations["well"])
-	rows.append({"text": "Keeps the camp mended", "note": "%s · broken things need a repair" % _well_line(lv),
-		"cost": {}, "label": "", "enabled": false, "action": Callable()})
-	_add_section(rows, "Upgrade", [_station_upgrade_row("well")])
-	return {"title": "Wishing Well", "sub": "Level %d · it mends the camp by itself" % lv, "rows": rows, "anchor": _anchor("well", 1.9)}
+	return {"title": "Wishing Well", "sub": "Level %d · %s" % [lv, _well_line(lv)],
+		"rows": [_station_upgrade_row("well")], "anchor": _anchor("well", 1.9)}
 
 
-## "Up to 75% between waves, +0.5% a second in waves": what the Well does at level lv (short: for a tile).
-func _well_line(lv: int, short := false) -> String:
-	if short:
-		return "Mends to full · %s/s between waves, %s/s in waves" % [_pct(well_between(lv)), _pct(well_regen(lv))]
-	return "Mends everything that isn't broken back to full · %s a second between waves, %s in waves" % [_pct(well_between(lv)), _pct(well_regen(lv))]
+## The Well's mending rates at level lv.
+func _well_line(lv: int) -> String:
+	return "Mends to full · %s/s between waves, %s/s in waves" % [_pct(well_between(lv)), _pct(well_regen(lv))]
 
 
 ## 0.75 -> "75%", 0.005 -> "0.5%", 0.0025 -> "0.25%".

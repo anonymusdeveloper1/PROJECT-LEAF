@@ -719,8 +719,8 @@ Raids start with the first win of raid 15. They come only while you are playing 
    roster starts at 36–46 plus the existing level increment, with a **50-enemy total cap** including leader and boss
    summons. A separate live-enemy limit keeps the field manageable; more arrive as room opens. Completion also pays
    **7 golden leaves and 2 timber** on top of the final raid reward. **Raid Missions retain their normal wave system.**
-3. **The leader** joins last: the Gloom Herald, or a boss in an elite raid. **Topple the leader and the
-   raid breaks**: the rest flee and drop their leaves.
+3. **The leader** joins last: the Gloom Herald, or a boss in an elite raid. **New (H1, 25 Nov 2026): the raid is held
+   when every raider is defeated**: toppling the leader no longer makes the rest flee.
 
 | Kind | From | Trails | Leader | Who comes |
 |---|---|---|---|---|

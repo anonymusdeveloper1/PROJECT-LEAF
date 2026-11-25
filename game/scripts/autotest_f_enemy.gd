@@ -187,7 +187,9 @@ func _siege() -> void:
 # ---------------------------------------------------------------- the Golden Grub
 func _grub() -> void:
 	var w = main.world
-	var leaves := int(Data.enemy("golden_grub")["leaves"])
+	var base := int(Data.enemy("golden_grub")["leaves"])
+	var prior_drop := roundi(base * float(Data.b["mission"]["enemy_leaf_mult"]))
+	var leaves := roundi(prior_drop * float(Data.b["kill_leaf_bonus"]))
 	main.player.global_position = Vector3(0, 0, 2.5)        # by the fire (it holds its fire)
 	var g = main.fight.spawn("golden_grub", w.spawn_point(0, 0.0), 0)
 	_x("a Golden Grub is a foe (the cat's auto-aim takes it) and a bonus (no wave waits for it)",

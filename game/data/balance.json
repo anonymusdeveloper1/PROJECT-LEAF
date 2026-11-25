@@ -1,5 +1,7 @@
 {
   "_note": "All game balance. Times in seconds, distances in metres, speeds in m/s. Costs: leaves (and timber where given).",
+  "_note_kill_leaf_bonus": "Phase H (H1, 25 Nov 2026): +30% on the leaves defeated enemies drop in Raid Missions, Random Raids and the Gloomwood. Not chests, wave pay or raid pay. Applied after mission.enemy_leaf_mult.",
+  "kill_leaf_bonus": 1.3,
   "cat": {
     "hp": 5,
     "speed": 2.6,
@@ -256,11 +258,6 @@
               "type": "station",
               "id": "stall",
               "level": 2
-            },
-            {
-              "type": "station",
-              "id": "well",
-              "level": 1
             },
             {
               "type": "stat",
@@ -599,7 +596,7 @@
           "timber": 25
         }
       ],
-      "needs_missions": 4
+      "needs_home": 3
     },
     "cottage": {
       "name": "Mushroom Cottage",
@@ -1886,7 +1883,7 @@
   ],
   "lanes": 4,
   "well": {
-    "_note": "Phase G2 (changed 22 Nov 2026): no more wishes. Built, the Well quietly mends the campfire, every building, barricade piece and tower that is not broken, all the way up to full health. Between waves it mends between_by_level of their max health every second, during waves regen_by_level. Broken things (0 health) need a repair or a mission won. wish_cost and mend_by_level are kept only for old code.",
+    "_note": "The built Well mends damaged camp structures and the standing Moss Warden up to full health. It mends between_by_level of max health per second between waves and regen_by_level during waves. Broken structures need a repair or a mission won. The Warden recovers from knockdowns on its own. wish_cost and mend_by_level are kept only for old code.",
     "wish_cost": 20,
     "mend_by_level": [
       0,
@@ -1903,9 +1900,9 @@
       ],
       "regen_by_level": [
         0,
-        0.005,
         0.01,
-        0.02
+        0.015,
+        0.025
       ]
     }
   },
@@ -2013,7 +2010,7 @@
     }
   },
   "gloom_raids": {
-    "_note": "Random Raids after all Raid Missions: one continuous assault, started with Defend Camp. The live-play Gloom meter and preparation rules are unchanged. assault.count plus floor(level/count_per_level) sets a seeded roster, capped by assault.max_enemies (50 including its leader and boss summons). Groups of assault.group_size arrive across shuffled rounds of all four trails: assault.member_gap within groups, random assault.group_gap between them. The leader joins last and retains its rout. The existing per-quality live cap applies with no round breaks. Defeated member IDs and capped summons survive saves; legacy three-wave checkpoints reduce the remaining roster once. Camp/renown level, strength and completion rewards retain their existing formulas; loss consolation uses the defended proportion in legacy_waves shares. All timing uses live frame delta, never wall time.",
+    "_note": "Random Raids after all Raid Missions: one continuous assault, started with Defend Camp. The live-play Gloom meter and preparation rules are unchanged. assault.count plus floor(level/count_per_level) sets a seeded roster, capped by assault.max_enemies (50 including its leader and boss summons). Groups of assault.group_size arrive across shuffled rounds of all four trails: assault.member_gap within groups, random assault.group_gap between them. The leader joins last. Victory requires defeating every raider. The existing per-quality live cap applies with no round breaks. Defeated member IDs and capped summons survive saves; legacy three-wave checkpoints reduce the remaining roster once. Camp/renown level, strength and completion rewards retain their existing formulas; loss consolation uses the defended proportion in legacy_waves shares. All timing uses live frame delta, never wall time.",
     "meter": {
       "full": 100,
       "per_minute": 10,
@@ -2263,10 +2260,6 @@
       5,
       10
     ],
-    "rout": {
-      "max_pickups": 12,
-      "max_petals_low": 8
-    },
     "lane_guard": {
       "tower": 150,
       "tower_reach_bonus": 1.0
@@ -5388,7 +5381,7 @@
     }
   ],
   "mission": {
-    "_note": "how every mission runs (Draft 7): `waves` waves in chapters of `chapter_waves`; every chapter's last wave is an elite wave (the mission's `elite` enemies, more each chapter) and the mission's last wave brings its `boss`. Wave w has count[0]..count[1] ordinary enemies from its chapter's pool, spawned every[0]..every[1] s apart, at strength (base_strength + strength_per_mission x mission) x (1 + wave_ramp x (w - 1)); at most `max_alive` at once. A `breather` (s) between waves; after a chapter the camp rests until the player goes on from the signpost, and the game is saved there. Pay: kills drop `kill_pay` of their leaves; a cleared wave pays (wave_bonus + wave_bonus_step x w) leaves; a chapter pays chest_leaves / chest_timber [chapter]; all of it x (1 + pay_per_mission x mission). The win pays the mission's `reward` (replays: `replay_reward` of it). The campfire can be rebuilt once per chapter (`rebuild_s` on the ashes, `rebuild_timber`) and comes back at `rebuild_hp`; at every chapter break it is fed back to full. If a wave's last `flee_left` enemies (no boss) go `flee_after` s without one coming or falling, they flee so the wave can end.",
+    "_note": "how every mission runs (Draft 7): `waves` waves in chapters of `chapter_waves`; every chapter's last wave is an elite wave (the mission's `elite` enemies, more each chapter) and the mission's last wave brings its `boss`. Wave w has count[0]..count[1] ordinary enemies from its chapter's pool, spawned every[0]..every[1] s apart, at strength (base_strength + strength_per_mission x mission) x (1 + wave_ramp x (w - 1)); at most `max_alive` at once. A `breather` (s) between waves; after a chapter the camp rests until the player goes on from the signpost, and the game is saved there. Pay: kills drop `kill_pay` of their leaves; a cleared wave pays (wave_bonus + wave_bonus_step x w) leaves; a chapter pays chest_leaves / chest_timber [chapter]; all of it x (1 + pay_per_mission x mission). The win pays the mission's `reward` (replays: `replay_reward` of it). The campfire can be rebuilt once per chapter (`rebuild_s` on the ashes, `rebuild_timber`) and comes back at `rebuild_hp`; at every chapter break it is fed back to full. If a wave's last `flee_left` enemies (no boss) go `flee_after` s without one coming or falling, they flee so the wave can end (Raid Missions only since H1: Random Raid raiders stay until killed).",
     "chapter_waves": 5,
     "breather": 0,
     "_note_wave_control": "23 Nov 2026: campaign raids and Gloom Raids wait for the player to start every wave. Cleared campaign waves save wave_done, keeping continuous numbering across five-wave supply chests, app restarts and camp falls. Older chapter-only saves resume at that chapter's first wave. Wave-clear leaves and timber are doubled; enemy_leaf_mult increases fresh kill drops without multiplying stolen leaves. Early-start timer pay is retired.",

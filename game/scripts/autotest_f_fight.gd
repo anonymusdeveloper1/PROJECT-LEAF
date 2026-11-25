@@ -713,7 +713,7 @@ func _manual_progress() -> void:
 	_x("the signpost offers the first Raid Mission and locks Random Raids", first_rows.size() == 1 and String(first_rows[0]["label"]) == "Start" and not bool(sign["tabs"][1]["enabled"]))
 	f.start_mission(0)
 	_x("first raid starts at wave 1 of 15 from the player's action", f.in_wave and f.wave == 1 and f.waves() == 15)
-	# Real kill drops gain 50%, while returned stolen leaves keep their original amount.
+	# Apply the H1 bonus to the existing kill drop, then add the returned stolen leaves.
 	for p in get_tree().get_nodes_in_group("pickups"):
 		p.queue_free()
 		p.remove_from_group("pickups")
@@ -726,7 +726,10 @@ func _manual_progress() -> void:
 		dropped += int(p.value)
 		p.remove_from_group("pickups")
 		p.queue_free()
-	_x("real enemy drops gain 50% without multiplying stolen leaves", dropped == roundi(base_drop * 1.5) + 7, {"base": base_drop, "drop": dropped})
+	var prior_drop := roundi(base_drop * float(Data.b["mission"]["enemy_leaf_mult"]))
+	var bonus_mult := float(Data.b["kill_leaf_bonus"])
+	_x("real enemy drops gain 30% and return the original stolen leaves", dropped == roundi(prior_drop * bonus_mult) + 7,
+		{"prior": prior_drop, "drop": dropped})
 	f._clear_foes()
 	var before_leaves: int = Save.leaves
 	var before_timber: int = Save.timber

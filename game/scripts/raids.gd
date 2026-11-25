@@ -21,7 +21,6 @@ var manual := false                         # tests: main's frames do not tick t
 var _alerts := {}                           # building id -> seconds until the next "under attack" toast
 var _told_ten := false
 var _restored := false                      # the pending raid came back with the save: "A Gloom Raid is waiting!"
-var _rout_at = null                         # where the leader fell (the shard shower bursts from there)
 var _warn_total := 45.0                     # the warning's length when it started (the HUD bar)
 var last_ready := false                     # the last raid's ready bonus (tests)
 var _watch_share := -1.0                    # what the Watch's crystal shows now (it is updated only when this moves)
@@ -285,7 +284,7 @@ func spec_for(plan: Dictionary) -> Dictionary:
 		pool = [["thornling", 1]]
 	var leader := String(plan.get("leader", ""))
 	if not enemies.has(leader):
-		leader = ""                                 # no leader model yet: no rout, the last wave just ends the raid
+		leader = ""                                 # no leader model yet
 	var assault: Dictionary = cfg()["assault"]
 	var count_rng := RandomNumberGenerator.new()
 	count_rng.seed = int(plan["seed"])
@@ -542,12 +541,7 @@ func on_wave_begins(_w: int, _last: bool) -> void:
 func on_leader(e) -> void:
 	main.hud.boss = e
 	var id := String(e.id)
-	main.hud.banner("%s!" % leader_name(id), Color(0.85, 0.55, 1.0), "Topple it and the raid breaks")
-
-
-## fight._rout: the leader fell here, and the rest of the raid fled.
-func on_rout(at: Vector3, _fled: int) -> void:
-	_rout_at = at
+	main.hud.banner("%s!" % leader_name(id), Color(0.85, 0.55, 1.0), "Defeat every raider to hold the camp")
 
 
 ## A building was hit in a raid: a toast, at most once per building every alert_every_s.
@@ -672,9 +666,7 @@ func finish(won: bool, perfect: bool, held: int) -> void:
 			sub2 += "\n+%d shards for the raiders you held back" % shards
 		main.hud.banner("The Gloom broke through", Color(0.8, 0.6, 1.0), sub2, true)
 		main.hud.tip_after_delay(3.5, "Repair and mend from the signpost. The next raid will be a little gentler.", main.stations.rings.get("sign"))
-	var at: Vector3 = _rout_at if _rout_at != null else Vector3(0, 0.6, 0)
-	_rout_at = null
-	main.drop_shards_fx(shards, at)
+	main.drop_shards_fx(shards, Vector3(0, 0.6, 0))
 	var g = main.get("guardian")
 	if g != null and g.has_method("on_raid_end"):
 		g.on_raid_end(won)
@@ -962,7 +954,7 @@ func card_raid(anchor: Vector3) -> Dictionary:
 	var nm: String = f.title()
 	var leader := String(spec.get("leader", ""))
 	if f.in_wave:
-		var how := "topple %s to break it" % _the(leader_name(leader)) if leader != "" else "defend every trail"
+		var how := "defeat every raider to hold the camp"
 		return {"title": nm, "sub": "%d raiders left · %s" % [f.left_in_wave(), how], "rows": [], "anchor": anchor}
 	var rows: Array = []
 	var remaining := maxi(0, int(f.raid_total()) - (Save.raids["run"].get("defeated", []) as Array).size())

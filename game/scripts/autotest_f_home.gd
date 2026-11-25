@@ -19,6 +19,7 @@ var main
 
 func run() -> bool:
 	main.player.invincible = true
+	_station_goal_gates()
 	_start_fresh()
 	await t._wait(0.3)
 	_fresh_save()
@@ -32,6 +33,36 @@ func run() -> bool:
 
 func _x(what: String, ok: bool, extra := {}) -> bool:
 	return t._expect(what, ok, extra)
+
+
+## Every station goal must be reachable before the Hearthtree grows to the level that asks for it.
+func _station_goal_gates() -> void:
+	var stations: Dictionary = Data.b["stations"]
+	var levels: Array = stations["camp"]["levels"]
+	var wins: int = 0
+	for previous_home: int in levels.size():
+		# Raid Missions open in order, so a locked mission also blocks those after it.
+		while wins < Data.mission_count() and Data.mission_needs_home(wins) <= previous_home:
+			wins += 1
+		var burrows_open: bool = wins == Data.mission_count()
+		for goal: Variant in (levels[previous_home] as Dictionary).get("goals", []):
+			if not goal is Dictionary or String(goal.get("type", "")) != "station":
+				continue
+			var id: String = String(goal.get("id", ""))
+			var need: int = int(goal.get("level", 1))
+			var station: Dictionary = stations.get(id, {})
+			var upgrades: Array = station.get("levels", [])
+			var gift: int = Data.gift_mission(id)
+			# The Buildings shelf is open by the first win. The Guardian Stone is found in the Gloomwood.
+			var can_build: bool = Data.SHOP_BUILT.has(id) and Data.station_needs_home(id) <= previous_home \
+				and wins >= maxi(1, int(station.get("needs_missions", 0)))
+			var can_get: bool = can_build or (gift >= 0 and gift < wins) or (id == "stone" and burrows_open)
+			var can_level: bool = need >= 1 and need <= mini(previous_home, upgrades.size())
+			for upgrade: int in range(1, mini(need, upgrades.size())):
+				if bool((upgrades[upgrade] as Dictionary).get("needs_burrows", false)) and not burrows_open:
+					can_level = false
+			_x("Hearthtree %d station goal %s level %d is reachable at Hearthtree %d" % [previous_home + 1, id, need, previous_home],
+				stations.has(id) and can_get and can_level)
 
 
 func _caps_of(key: String, lv: int) -> int:

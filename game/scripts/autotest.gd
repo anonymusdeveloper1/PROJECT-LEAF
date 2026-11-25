@@ -697,7 +697,7 @@ func _gallery() -> void:
 
 
 ## The village: build all three, look at their cards, ride Thistle out with Sprig, fight a wave of Moonmoth Hollow,
-## then wish at the well with a hurt campfire.
+## then watch the Well mend a hurt campfire.
 func _village() -> void:
 	main.player.invincible = true
 	Save.claimed = [0, 1, 2, 3]
@@ -706,6 +706,8 @@ func _village() -> void:
 	for k in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done"]:
 		Save.set_flag(k)
 	Save.missions_done = ["embers", "bramble", "toadstool", "stumps"]
+	Save.camp_level = 3
+	main.on_camp_grown()
 	main.stations.gift("stall")
 	main.stations.gift("cottage")
 	await _use(main.stations.rings["shop"])
@@ -2225,8 +2227,7 @@ func _mission_fields() -> Dictionary:
 		"won": Save.stages_won, "lost": Save.stages_lost}
 
 
-## A Gloom Raid held (--raid, with --raid-small): the warning (the camp safe, the HUD), meet it early, the waves, the
-## leader and the rout, the pay (perfect, ready), the counters; the mission save fields untouched.
+## A Random Raid held (--raid, with --raid-small): the warning, the leader, the surviving raiders and the pay.
 func _raid() -> void:
 	await _raid_camp()
 	await _wait(0.5)
@@ -2251,8 +2252,7 @@ func _raid() -> void:
 	f.next_phase_now()
 	await _until(func(): return f.in_wave, 3.0)
 	_expect("Meet them now starts wave 1", f.in_wave and f.wave == 1 and not f.warning, {"wave": f.wave})
-	var routed := false
-	var fled_ok := true
+	var leader_down := false
 	var t := 0.0
 	while f.active and t < 150.0:
 		await _wait(0.3)
@@ -2264,7 +2264,7 @@ func _raid() -> void:
 		for e in get_tree().get_nodes_in_group("foes"):
 			if e.has_meta("leader") and not e.dead:
 				leader = e
-		if leader != null and not routed:
+		if leader != null and not leader_down:
 			# the leader is here: two raiders beside it, then topple it
 			main.fight.spawn("thornling", leader.global_position + Vector3(1.5, 0, 0), int(f.lane))
 			main.fight.spawn("thornling", leader.global_position + Vector3(-1.5, 0, 0), int(f.lane))
@@ -2272,17 +2272,14 @@ func _raid() -> void:
 			await _shot("raid_02_leader")
 			_expect("the leader has the boss bar", main.hud.boss == leader)
 			var others := get_tree().get_nodes_in_group("foes").size() - 1
-			var pickups0 := get_tree().get_nodes_in_group("pickups").size()
 			leader.hit(Vector3.FORWARD, leader.hp + 1.0)
-			routed = true
-			var left := 0
-			for e in get_tree().get_nodes_in_group("foes"):
-				if not e.dead:
-					left += 1
-			fled_ok = left == 0 and others >= 2 and get_tree().get_nodes_in_group("pickups").size() > pickups0
-			_expect("the rout: every other raider fled and dropped leaves", fled_ok, {"others": others, "left": left})
+			leader_down = leader.dead
+			var left: int = f._wave_foe_count()
+			_expect("the leader falls and the other raiders stay in the fight", leader_down and others > 0 and left == others and f.in_wave,
+				{"others": others, "left": left})
 			continue
 		_kill_foes(false)
+	_expect("the leader was defeated during the assault", leader_down)
 	await _wait(0.5)
 	await _shot("raid_03_held")
 	var run_ready: bool = main.raids.last_ready

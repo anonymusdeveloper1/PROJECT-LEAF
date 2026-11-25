@@ -381,7 +381,7 @@ func _raid_queue(_w: int, _last: bool) -> void:
 		var gap := _rng.randf_range(float(gaps[0]), float(gaps[1]))
 		for i in size:
 			var kind := _pick_kind(raid["chapters"][0]["pool"])
-			# The leader joins last, so its rout cannot cancel raiders that have not arrived yet.
+			## The leader joins last in the scheduled roster.
 			if member == total - 1 and String(raid["leader"]) != "":
 				kind = String(raid["leader"])
 			if not defeated.has(member):
@@ -1313,9 +1313,14 @@ func _physics_process(delta: float) -> void:
 	if mode != "raid":
 		_wave_extras(dt)
 	var foes := _wave_foe_count()
+	## After a quiet spell, the last Random Raid stragglers head to the fire, and Raid Mission stragglers flee.
 	if _queue.is_empty() and foes > 0 and foes <= int(_cfg().get("flee_left", 3)) and _quiet_t > float(_cfg().get("flee_after", 45.0)):
-		_stragglers_flee()
-		return
+		if mode != "raid":
+			_stragglers_flee()
+			return
+		for enemy: EnemyScript in _wave_foes():
+			if enemy.head_to_campfire():
+				_quiet_t = 0.0
 	if not _queue.is_empty():
 		_spawn_t -= dt
 		if _spawn_t <= 0.0 and foes < _max_alive():  # the field is full: spawning waits (missions: the group's cap)
@@ -1617,11 +1622,9 @@ func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 	return e
 
 
-func on_enemy_died(e) -> void:
+func on_enemy_died(e: Node3D) -> void:
 	_quiet_t = 0.0
 	_record_raid_member(e)
-	if mode == "raid" and active and is_instance_valid(e) and e.has_meta("leader"):
-		_rout(e)
 
 
 func _record_raid_member(enemy) -> void:
@@ -1661,7 +1664,8 @@ func _wave_foe_count() -> int:
 
 
 ## The last few enemies of a wave have been out of reach for a long while (stuck, or far off at a barricade): they
-## flee into the woods so the wave can end. No pay for them. A safety net, so a wave can never hang. A bonus runner is
+## flee into the woods so the wave can end. No pay for them. A safety net for Raid Missions only (H1: in a Random
+## Raid every raider stays until killed). A bonus runner is
 ## left alone (it runs off by itself).
 func _stragglers_flee() -> void:
 	var left := _wave_foes()
@@ -1669,7 +1673,6 @@ func _stragglers_flee() -> void:
 		if bool(Data.enemy(String(e.id)).get("boss", false)):
 			return                                  # never a boss: it has to be beaten
 	for e in left:
-		_record_raid_member(e)
 		e.dead = true
 		e.remove_from_group("foes")
 		e.remove_from_group("enemies")
@@ -2150,35 +2153,3 @@ func _raid_over(won: bool) -> void:
 	mode = "mission"          # after _end: main.on_stage_end still sees mode == "raid"
 	raid = {}
 	warning = false
-
-
-## The leader fell: the rest of the raid flees and drops its leaves.
-func _rout(leader) -> void:
-	_queue.clear()
-	_qinfo.clear()
-	var at: Vector3 = leader.global_position
-	var fled := 0
-	var pay := 0
-	var petals := Quality.particles(int(main.raids.cfg()["rout"]["max_petals_low"]) * 2)
-	for f in get_tree().get_nodes_in_group("foes"):
-		if f == leader or f.dead:
-			continue
-		pay += int(f.info.get("leaves", 0)) + int(f.carried)
-		_record_raid_member(f)
-		f.dead = true
-		f.remove_from_group("foes")
-		f.remove_from_group("enemies")
-		if fled < petals:
-			Fx.petals(main, f.global_position + Vector3(0, 0.4, 0))
-		f.queue_free()
-		fled += 1
-	# drop_leaves makes at most 6 pickups a call: at most max_pickups pickups in all, round the leader
-	var calls := maxi(1, int(main.raids.cfg()["rout"]["max_pickups"]) / 6)
-	for k in calls:
-		var part := pay / calls + (pay % calls if k == 0 else 0)
-		if part > 0:
-			main.drop_leaves(at + Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)), part)
-	main.raids.sfx("rout", "win", -6.0)
-	main.hud.boss = null
-	main.hud.banner("The raid breaks!", Color(1.0, 0.85, 0.4), "%d raider%s fled and dropped their leaves" % [fled, "" if fled == 1 else "s"])
-	main.raids.on_rout(at, fled)

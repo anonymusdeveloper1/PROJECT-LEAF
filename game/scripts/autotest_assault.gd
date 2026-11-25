@@ -76,7 +76,7 @@ func run() -> void:
 	_x("all raid types and difficulty levels use one roster of at most 50 including the leader", valid_count)
 	_x("every tested raid mixes arrivals across all four trails", valid_roads)
 	_x("arrival groups contain one to three enemies and vary in size", valid_groups and varied_sizes.size() == 3)
-	_x("the leader arrives after the roster so a rout never skips queued arrivals", leader_last)
+	_x("the leader arrives last in the roster", leader_last)
 	_x("different seeds produce different mixed arrival plans", rosters.size() > 3)
 	_prepare(12345)
 	_queue()
@@ -149,7 +149,10 @@ func run() -> void:
 	main.hud.hide_card()
 	var held_before: int = Save.raids["held"]
 	var shards_before := Save.shards
+	var leaves_before: int = Save.leaves
+	var timber_at_start: int = Save.timber
 	var all_arrivals := {}
+	var last_raider: Node3D
 	var no_breaks := true
 	for tick in 2000:
 		if not f.active:
@@ -158,9 +161,42 @@ func run() -> void:
 		f._physics_process(0.1)
 		for enemy in f._wave_foes():
 			all_arrivals[int(enemy.get_meta("raid_member", -1))] = true
-			_remove(enemy)
-	_x("all remaining raiders arrive and finish in one uninterrupted assault", no_breaks and not f.active and all_arrivals.size() == initial - defeated.size())
-	_x("one assault grants one victory and its completion reward", int(Save.raids["held"]) == held_before + 1 and Save.shards > shards_before and not bool(Save.raids["pending"]))
+			if last_raider == null:
+				last_raider = enemy
+			elif enemy != last_raider:
+				_remove(enemy)
+		if f.left_in_wave() <= 1:
+			break
+	_x("all remaining raiders arrive in one uninterrupted assault", no_breaks and all_arrivals.size() == initial - defeated.size())
+	var quiet_after: float = float(Data.b["mission"]["flee_after"])
+	var fire: Vector3 = main.world.station_pos("campfire")
+	if is_instance_valid(last_raider):
+		last_raider.set_physics_process(false)
+		last_raider.global_position = main.world.spawn_point(last_raider.patch, 0.0)
+		last_raider.state = "walk"
+		last_raider._goal = last_raider.global_position
+		last_raider._think_t = quiet_after
+	f._quiet_t = quiet_after
+	f._physics_process(0.1)
+	var distance_before: float = last_raider.global_position.distance_to(fire) if is_instance_valid(last_raider) else INF
+	for _tick: int in 30:
+		f._physics_process(0.1)
+		if is_instance_valid(last_raider) and not last_raider.dead:
+			last_raider._physics_process(0.1)
+	var last_standing: bool = is_instance_valid(last_raider) and not last_raider.dead and last_raider.hp > 0.0 \
+		and not last_raider.is_queued_for_deletion() and last_raider.is_in_group("foes")
+	_x("the last raider walks toward the campfire after the quiet timer passes",
+		last_standing and last_raider.global_position.distance_to(fire) < distance_before and f._quiet_t < quiet_after)
+	f._quiet_t = quiet_after
+	f._physics_process(0.1)
+	_x("a second quiet spell does not restart the last raider's walk", f._quiet_t > quiet_after)
+	_x("the last raider stays after the leader falls and the quiet timer passes", last_standing and f.active and f.in_wave and f.left_in_wave() == 1)
+	_x("the assault has yet to pay while a raider stands", int(Save.raids["held"]) == held_before and Save.shards == shards_before
+		and Save.leaves == leaves_before and Save.timber == timber_at_start)
+	if last_standing:
+		_remove(last_raider)
+	f._physics_process(0.1)
+	_x("the last kill ends the assault and pays once", not f.active and int(Save.raids["held"]) == held_before + 1 and Save.shards > shards_before and not bool(Save.raids["pending"]))
 	var paid := Save.shards
 	var leaves_paid := Save.leaves
 	var timber_paid := Save.timber

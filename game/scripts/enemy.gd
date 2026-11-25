@@ -44,6 +44,8 @@ const SlimeScript := preload("res://scripts/slime.gd")
 const TOTEM_GLOOM := 0.32                     # the faint violet a foe near a Gloom Totem shows (the shader's gloom)
 static var _ring_mat: StandardMaterial3D      # a Gloom Totem's reach ring on the ground (one material for all)
 
+enum CampApproach { NONE, DIRECT, TRAIL, ARRIVED }
+
 var main
 var id := "thornling"
 var info: Dictionary
@@ -62,6 +64,7 @@ var anchored := false
 var boss := false
 var carried := 0
 var state := "walk"
+var _camp_approach: CampApproach = CampApproach.NONE
 var s := 0.0                                  # how far along the trail
 var model: Node3D
 var anim: AnimationPlayer
@@ -702,11 +705,32 @@ func _cat_reachable(range_m: float) -> bool:
 	return d < range_m
 
 
+## A Random Raid straggler takes one walk to the campfire, then goes back to its usual attacks.
+func head_to_campfire() -> bool:
+	if dead or _camp_approach != CampApproach.NONE:
+		return false
+	_camp_approach = CampApproach.DIRECT
+	_think_t = 0.0
+	if state == "flee":
+		state = "walk"
+	return true
+
+
 func _think() -> void:
 	if patch >= 0 and main.world.trails.size() > patch:
 		s = main.world.trail_progress(patch, global_position)
 	if not awake:
 		return
+	if _camp_approach == CampApproach.DIRECT or _camp_approach == CampApproach.TRAIL:
+		var fire: Vector3 = main.world.station_pos("campfire")
+		var touch: float = float(main.stations.foot("campfire")) + radius + float(info["reach"])
+		if global_position.distance_to(fire) > touch:
+			state = "walk"
+			_goal = fire
+			if _camp_approach == CampApproach.TRAIL and s + radius < float(main.world.trail_length(patch)):
+				_goal = _trail_goal()
+			return
+		_camp_approach = CampApproach.ARRIVED
 	var p = main.player
 	var reach := float(info["reach"]) + radius + 0.3
 	# Phase G1b: a squad member on the march keeps formation (a Frog Shaman still heals, a Crow Drummer still drums)
@@ -951,7 +975,11 @@ func _think() -> void:
 				return
 		elif _siege(false):
 			return
-	_goal = main.world.trail_point(patch, s + 1.4) if patch >= 0 and main.world.trails.size() > patch else main.world.edge_point(clampi(patch, 0, 3))
+	_goal = _trail_goal()
+
+
+func _trail_goal() -> Vector3:
+	return main.world.trail_point(patch, s + 1.4) if patch >= 0 and main.world.trails.size() > patch else main.world.edge_point(clampi(patch, 0, 3))
 
 
 ## A Frog Shaman heals when its heal is ready and a wounded enemy is near. True when it started.
@@ -1350,6 +1378,24 @@ func _walk(delta: float, spd: float) -> void:
 			_start_dig()
 		elif fence != null:
 			_start_action("attack", fence)
+	if _camp_approach != CampApproach.DIRECT and _camp_approach != CampApproach.TRAIL:
+		return
+	if flyer or state != "walk" or want == Vector3.ZERO:
+		return
+	var advance: float = (position - before).dot(want.normalized())
+	if advance > 0.0 and not is_zero_approx(advance):
+		return
+	if _camp_approach == CampApproach.DIRECT and patch >= 0 and patch < main.world.trails.size():
+		# Rejoin this raider's own trail when the straight walk is blocked.
+		s = main.world.trail_progress(patch, global_position)
+		var on_trail: Vector3 = main.world.trail_point(patch, s)
+		global_position = main.world.constrain(on_trail, radius, true)
+		_last_pos = global_position
+		_camp_approach = CampApproach.TRAIL
+		_think_t = 0.0
+	else:
+		# A sideways step gives the walk room to turn around a solid obstacle.
+		position = main.world.constrain(before + want.cross(Vector3.UP), radius, true)
 
 
 func _face(dir: Vector3, delta: float, rate: float) -> void:
@@ -2325,6 +2371,8 @@ func _die() -> void:
 		var value := Data.saddlebag_leaves(int(info["leaves"]))
 		if main.fight.active:
 			value = roundi(value * float(Data.b["mission"]["enemy_leaf_mult"]))
+			## Apply the bonus to fresh leaves after the existing camp drop is worked out.
+			value = roundi(value * float(Data.b["kill_leaf_bonus"]))
 		value += carried                           # returned stolen leaves are never multiplied
 		main.drop_leaves(global_position, value)
 	Sfx.play("pop", -6.0)

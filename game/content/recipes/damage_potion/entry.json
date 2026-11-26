@@ -1,0 +1,15 @@
+{
+  "id": "damage_potion",
+  "name": "Damage Potion",
+  "plural": "Damage Potions",
+  "desc": "The cat's arrows hit 25% harder for 30 s.",
+  "icon": "damage_potion",
+  "color": "#f07a1a",
+  "needs": {"peppers": 2, "honey": 1},
+  "cook_s": 60,
+  "limit": 1,
+  "unlock": {},
+  "effects": [
+    {"type": "stat_mult", "target": "cat", "stat": "damage", "mult": 0.25, "seconds": 30}
+  ]
+}

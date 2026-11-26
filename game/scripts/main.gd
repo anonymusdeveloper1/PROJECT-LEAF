@@ -638,8 +638,6 @@ func on_stage_start() -> void:
 	if fishing:
 		fishing.stop("")                                    # a mission starts: the line comes in
 	var c: int = fight.chapter_of(fight.wave + 1)
-	if cooking and fight.wave % fight.chapter_waves() != 0 and Save.meal_on == "":
-		cooking.eat()                                   # a resumed wave keeps the retry's prepared dish useful
 	if c > 0:
 		hud.banner(fight.title(), Color(1.0, 0.9, 0.5), "Raid %d · wave %d of %d" % [fight.mission + 1, fight.wave + 1, fight.waves()])
 	else:
@@ -651,8 +649,6 @@ func on_stage_start() -> void:
 
 ## A wave starts: a banner for the first wave of a chapter, an elite wave and the last wave, a toast otherwise.
 func on_wave_start(n: int, elite := false, last := false) -> void:
-	if cooking and (n - 1) % fight.chapter_waves() == 0 and Save.meal_on == "":
-		cooking.eat()                                       # a chapter (or a raid) starts: the dish in the pot is eaten
 	if guardian:
 		guardian.on_wave_start()
 	if fishing:
@@ -682,12 +678,6 @@ func on_wave_cleared() -> void:
 	if fight.wave == 1 and not Save.flag("told_horn"):
 		Save.set_flag("told_horn")
 		hud.tip("Wave saved! Spend your golden leaves, then tap Start wave at the signpost. The next wave waits for you.", stations.rings["sign"])
-
-
-## A wave was held (a breather, a chapter break or the mission's last wave): the garden grows a step.
-func on_wave_held() -> void:
-	if garden:
-		garden.grow_wave()
 
 
 ## A chapter is held: the camp rests until the player goes on from the signpost (fight.gd saved the run).

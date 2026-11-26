@@ -99,7 +99,7 @@ func start_run(id: String, lvl: int) -> void:
 		mid = b.map_override
 	run = {"v": RUN_V, "map": mid, "map_v": int(Data.dungeon(mid).get("version", 1)), "burrow": id, "level": lvl, "seed": s,
 		"checkpoint": "wayin", "cleared": [], "chests": [], "hp": main.player.hp, "boons": boons, "satchel": {}, "spring_used": false,
-		"boon_taken": false, "first_run": int(st["runs"]) == 1 and lvl == 1, "meal": "", "boss_down": false, "woke": false}
+		"boon_taken": false, "first_run": int(st["runs"]) == 1 and lvl == 1, "boss_down": false, "woke": false}
 	Save.burrow_run = run
 	Save.save_game()
 	await _go_down(false)
@@ -132,9 +132,6 @@ func _go_down(resumed: bool) -> void:
 		main.player.hp = clampi(int(run.get("hp", main.player.hp)), 1, Data.cat_max_hp())
 	else:
 		main.player.hp = mini(main.player.hp + int(Data.run_mods.get("hp", 0)), Data.cat_max_hp())
-	if bool(cfg().get("meals_in_runs", true)) and main.cooking != null and Save.meal_ready != "":
-		main.cooking.eat("run")                               # a dish waiting in the pot goes down with the cat
-		run["meal"] = Save.meal_on
 	_build_map()
 	_env_on()
 	_setup(resumed)
@@ -1261,8 +1258,6 @@ func _leave(result: String) -> void:
 	Data.run_mods = {}
 	_env_off()
 	Events.boss_changed.emit(null)
-	if String(run.get("meal", "")) != "" and main.cooking != null:
-		main.cooking.finish(true)                          # the dish that went down is used up
 	run = {}
 	Save.burrow_run = {}
 	Save.save_game()

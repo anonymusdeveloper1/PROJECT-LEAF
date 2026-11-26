@@ -32,7 +32,7 @@ what, and the house rules that keep the game easy to grow.
 ```
 game/
   core/        data.gd, save.gd, save_upgrades.gd, events.gd, pools.gd, timers.gd, audio.gd, store.gd, quality.gd,
-               effects.gd (the effects list), enemy_grid.gd
+               effects.gd (the effects list), bag.gd (the Bag's counts and stacks, static functions), enemy_grid.gd
   parts/       health.gd, armour.gd, mover.gd, attack.gd, heal.gd, status.gd, effects_holder.gd, loot.gd,
                health_bar.gd, brain.gd, shooter.gd, skills.gd, attachment_slot.gd, level.gd …
   brains/      enemy/, boss/, companion/, cat/, mount/, game/      one small file per state
@@ -50,7 +50,7 @@ game/
                  bows/sunwood/
                  defences/acorn_tower/
                  buildings/bow_shop/
-                 crops/sunberries/
+                 crops/sunberry/          (the folder is the id, and ids never change: the save says "sunberry")
                  recipes/health_potion/
                  biomes/gloomwood/        look, props, room pieces, enemy list, music
                  expeditions/gloomwood/
@@ -78,7 +78,7 @@ depends on whom, so **there are exactly eight**, each with one job:
 | **Quality** | The graphics level (Low, Medium, High). | exists |
 | **Events** | The event board: signals only, no logic (part 4, Observer). | new, H1 |
 | **Pools** | Hands out reusable objects and takes them back (part 4, Object Pool). | new, H1 |
-| **Timers** | Real-time jobs that keep running while the game is closed: crops, cooking, later any long job. | new, H3 |
+| **Timers** | Real-time jobs that keep running while the game is closed: crops, cooking, later any long job. | exists, H3 (`core/timers.gd`; the jobs live in `Save.timers`) |
 | **Audio** | Plays sounds through a queue. Replaces today's static `Sfx` helper. | upgrade |
 | **Store** | The shard store and rewarded ads behind one front door, with a real and a pretend provider. | new, H10 |
 
@@ -227,6 +227,9 @@ depends on whom, so **there are exactly eight**, each with one job:
 ### Service Locator: swap the real thing for a pretend one
 - **Store and ads:** the real Google Play provider, or a pretend one for tests and for before the Play Console is set up.
 - **Audio:** real, or silent for tests.
+- **Timers:** the real clock, or a pretend one for tests (H3). `Timers.clock` is a Callable giving Unix seconds; a test
+  sets it to a method of its own node (real now + an offset, or held still) and calls `Timers.use_real_clock()` when it
+  ends, so no future `seen` stays in the test save. The 3 → 4 save step reads the same clock.
 - The Store and Audio singletons each hold their provider; the game only ever talks to the singleton.
 
 ### Update Method and data locality (through Godot)
@@ -250,9 +253,9 @@ depends on whom, so **there are exactly eight**, each with one job:
 |---|---|
 | `id` | the same as the folder name |
 | `name`, `desc` | what the player sees (all player text lives in data, never in code) |
-| `icon`, `model` | file names inside the folder (default `icon.png`, `model.glb`) |
+| `icon`, `model` | file names inside the folder (default `icon.png`, `model.glb`). **H3's crops and recipes, until their art moves into the folders:** `icon` is a picture id of `scripts/ui_icons.gd` (drawn in code; `hud.icon(id)`), and a crop's `model` is the base of its Props ids in `assets/props/` (`<model>_growing`, `<model>_ripe`) |
 | `price` | always the same form: `{"leaves": 900, "timber": 10}` or `{"shards": 60}` |
-| `unlock` | always the same form, for example `{"hearthtree": 3}`, `{"missions_won": 5}`, `{"building": ["bow_shop", 7]}`, `{"flag": "hollow_open"}` |
+| `unlock` | always the same form, for example `{"hearthtree": 3}`, `{"missions_won": 5}`, `{"building": ["bow_shop", 7]}`, `{"flag": "hollow_open"}`. `{}` is open from the start. `Data.unlocked(rule)` answers it (H3 knows `{}` and `{"building": [id, level]}`; another form warns and stays shut until it is added there) |
 | `hidden` | `true` keeps it out of the game until it is released (like the Foxfire Bow today) |
 | `effects` | a list from the effects list, for example `[{"type": "stat_mult", "stat": "damage", "mult": 0.25, "seconds": 30}]` |
 | `parts` | for things in the world: which parts and their numbers |
@@ -280,12 +283,17 @@ depends on whom, so **there are exactly eight**, each with one job:
 - **Example, an outfit** (made-up numbers): `{"id": "dusk_ranger", "name": "Dusk Ranger", "price": {"leaves": 2500}, "quiver":
   "dusk_quiver", "fx_color": "#8a7cff"}` plus its model fitted to the cat's skeleton.
 - **The effects list** lives in `core/effects.gd`, one small function per type: `stat_mult`, `stat_add`, `heal`,
-  `heal_over_time`, `slow`, `burn`, `chill`, `daze`, `shield`, `knockback` (the first list). A new type is code once;
-  every potion, upgrade, attachment and boon can then use it.
+  `heal_over_time`, `revive` (H3: brings a knocked-out mount back with `share` of its health), `slow`, `burn`, `chill`,
+  `daze`, `shield`, `knockback` (the first list). A new type is code once; every potion, upgrade, attachment and boon
+  can then use it.
+- **An effect's fields:** `type`; `target` (who it acts on: `"cat"` or `"mount"`; H3); `share` (of the target's max
+  health: heal, heal_over_time, revive; H3); `stat` and `mult` (the stat becomes × (1 + mult)); `seconds`. For example
+  the Health Potion's `{"type": "heal_over_time", "target": "cat", "share": 0.4, "seconds": 5}`.
 - **Finding the folders:** `tools/build_content_index` writes `content/index.json` (every folder by kind) before each
   build; Data reads it at start. (Listing folders inside an exported Android game is unreliable, so the game never
   lists them itself.) The content test fails if the index is out of date. `*.json` is already in the export's include
-  filter.
+  filter. **Until that tool exists** (H3), `index.json` is written by hand, and `--content` checks that it lists every
+  entry folder and nothing else.
 - **New folder from a template:** `tools/new_content <kind> <new_id> [--from <id>]` copies a template or an existing
   thing.
 - **Balancing many entries:** `tools/content_table <kind>` prints every entry's numbers in one table, so 30 enemies can
@@ -359,19 +367,31 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ## 10. The save
 
-- **A version number** (today 3). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
-  (2→3 is built, 3→4 …), run in order when an older save loads. Before upgrading, the old file is copied to a backup.
-- **What the player owns has one form for every kind:** `owned[kind][id] = {"level": 1, …}`.
+- **A version number** (today 4). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
+  (2→3 and 3→4 are built, 4→5 …), run in order when an older save loads. Before upgrading, the old file is copied to a
+  backup. A step reads only frozen numbers (`balance.json save_upgrades.to_vN`) and erases every field it converts.
+- **What the player owns has one form for every kind:** `owned[kind][id] = {"level": 1, …}`. **Not yet:** in H3 the
+  Bag is a simple `bag` of counts (`{"berries": 5, "health_potion": 1}`: food, fish and potions; `core/bag.gd` writes
+  it), towers and spikes stay in `items` and amber in `mats`; `owned` comes with H5's Buy command. The Timers jobs are
+  `timers` (`{"seen": Unix s, "jobs": {id: {"start", "len", "data", "told"}}}`).
 - **New content** starts locked. **Unknown ids** in a save are kept but ignored, so content that is hidden or comes back
-  later is not lost. **Removed content** is refunded or turned into something else by an upgrade step (as amber,
-  glowstone, heartwood and the keys become leaves in H1).
-- **Sample saves** of every version live in `tests/saves/` (today `v2_sample.json` and `v3_sample.json`), and a test loads each one.
+  later is not lost (an unknown id in the Bag is kept and never shown; a garden plot with an unknown crop id is kept as
+  it is, shown as empty, and planting there replaces it). **Removed content** is refunded or turned into something else
+  by an upgrade step (as amber, glowstone, heartwood and the keys become leaves in H1, and in H3 the pantry goes into
+  the Bag, an old dish becomes a Health Potion, and a half-grown crop keeps its share as a Timers job).
+- **Sample saves** of every version live in `tests/saves/` (today `v2_sample.json`, `v3_sample.json` and
+  `v4_sample.json`), and a test loads each one.
 
 ## 11. Tests
 
 - `--content`: every folder in the index has the shared fields; its id matches the folder; its model and icon exist;
   prices use known currencies; unlock rules point to things that exist; effects use known types; `base` points to a
-  real entry; the index is up to date. Then buy, save and load one entry of each kind.
+  real entry; the index is up to date. Then buy, save and load one entry of each kind. **In H3** (crops and recipes):
+  the index is written by hand, so the test checks that it lists every entry folder and nothing else; the model check
+  is `Props.has(<model>_ripe)` and `Props.has(<model>_growing)`, and the icon check is the `ui_icons.gd` id (an icon
+  not drawn yet is a note, not a failure, until the owner decides the icons); the effect types are checked in `--bag`.
+- `--timers`: Timers' jobs with a pretend clock: they follow it, end "while the game is closed", wait when the clock is
+  set back, and never mark the save dirty by the clock alone.
 - `--saves`: loads every sample save and checks nothing is lost.
 - `--pools`: after a wave, pool sizes are steady and no pooled object was freed.
 - Each system keeps its own test mode, plus `--smoke`.

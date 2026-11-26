@@ -270,7 +270,6 @@ func start_mission(i: int) -> void:
 	total_t = 0.0
 	_endgame_run = Data.raids_open()
 	_ruined_at_start = Save.ruined.duplicate()
-	Data.set_meal(Save.meal_on)                       # a wave checkpoint retains the dish already being eaten
 	gate_max = float(Data.fire_hp())
 	gate_hp = gate_max
 	_first = mission == 0 and not Save.missions_done.has(String(info()["id"]))
@@ -1756,7 +1755,6 @@ func _wave_cleared() -> void:
 	_totem_at = -1.0                            # a totem not grown yet is dropped
 	_say = []
 	_say_t = -1.0
-	main.on_wave_held()                         # the garden grows a step for every wave held
 	var bonus := wave_leaves()
 	var extra := _active_pay(bonus)             # [quick, intact]
 	var more := int(extra[0]) + int(extra[1])
@@ -1869,8 +1867,6 @@ func _chapter_done(bonus: int, wave_tim := 0) -> void:
 		last_stand = false
 		main.world.set_fire_out(false)
 		main.stations.set_fire_out(false)
-	if main.cooking:
-		main.cooking.finish(true)                 # the chapter's dish is used up
 	gate_hp = gate_max
 	_save_run(c + 1)
 	Fx.flower_ring(main, Vector3.ZERO, 1.6)
@@ -1878,9 +1874,12 @@ func _chapter_done(bonus: int, wave_tim := 0) -> void:
 	main.hud.banner("Wave %d of %d held!" % [wave, waves()], Color(1.0, 0.9, 0.5),
 		"Supply chest · +%d golden leaves · +%d timber · saved\nStart wave %d at the signpost when ready" % [leaves, timber, wave + 1])
 	main.on_chapter_done()
-	# the boss comes in the last chapter: a nudge to cook for it
-	if c + 2 == chapters() and not (info().get("boss", []) as Array).is_empty() and Save.meal_ready == "" and Data.garden_level() > 0:
-		main.hud.tip_after("The boss comes in the last chapter: cook a dish at the pot first!", main.stations.rings.get("pot"))
+	# the boss comes in the last chapter: a nudge to brew Health Potions for it (the potion the HUD's button uses,
+	# balance.json potions.hud.cat), when there are none in the Bag and the garden is built
+	var boss_potion := String(Data.b.get("potions", {}).get("hud", {}).get("cat", ""))
+	if c + 2 == chapters() and not (info().get("boss", []) as Array).is_empty() and boss_potion != "" and Bag.count(boss_potion) == 0 \
+			and Data.garden_level() > 0:
+		main.hud.tip_after("The boss comes in the last chapter: brew Health Potions at the pot first!", main.stations.rings.get("pot"))
 
 
 ## Every next wave starts only from the player's action. Waiting and repeated taps never pay extra leaves.
@@ -2111,8 +2110,6 @@ func _win(extra_leaves := 0, extra_timber := 0) -> void:
 func _end(won: bool) -> void:
 	if mode == "mission":
 		Save.hold_flush = false
-	if main.cooking:
-		main.cooking.finish(won)                  # won: the dish is used up; the camp fell: it goes back into the pot
 	active = false
 	in_wave = false
 	on_break = false
@@ -2185,7 +2182,6 @@ func _raid_wave_cleared() -> void:
 		Save.add_leaves(leaves)
 		Save.timber += timber
 		last_pay = {"wave": wave, "bonus": leaves, "quick": 0, "intact": 0, "timber": timber}
-		main.on_wave_held()
 		main.raids.on_wave_held(wave)
 	_raid_over(true)                                     # no intermediate wave or rest state
 

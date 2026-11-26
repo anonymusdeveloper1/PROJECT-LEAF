@@ -1,0 +1,12 @@
+{
+  "id": "sunberry",
+  "name": "Sunberries",
+  "desc": "Sweet berries for the Mount Health Potion.",
+  "icon": "berries",
+  "model": "sunberry",
+  "gives": "berries",
+  "yield": 3,
+  "grow_s": 240,
+  "price": {"leaves": 10},
+  "unlock": {}
+}

@@ -751,15 +751,11 @@ func _manual_progress() -> void:
 	_x("Start wave begins wave 2 immediately and a second tap cannot skip it", f.in_wave and f.wave == 2 and Save.leaves == banked)
 	f._clear_foes()
 	f._wave_cleared()
-	Save.meal_on = String(Data.b["cooking"]["recipes"][0]["id"])
-	var meal: String = Save.meal_on
-	Save.save_game()
+	Save.save_game()                            # H3: no dish to keep at a wave checkpoint any more (the dishes are gone)
 	t._reset_fight()
 	Save.load_game()
 	main.defences.relink_saved()
-	_x("save/load retains wave 2 and the active dish", int(Save.mission_run.get("wave_done", -1)) == 2 and Save.meal_on == meal)
-	Save.meal_on = ""
-	Data.set_meal("")
+	_x("save/load retains wave 2", int(Save.mission_run.get("wave_done", -1)) == 2)
 	banked = Save.leaves
 	f.start_mission(0)
 	_x("restart resumes at wave 3 without repeating completed rewards", f.wave == 3 and f.in_wave and Save.leaves == banked)

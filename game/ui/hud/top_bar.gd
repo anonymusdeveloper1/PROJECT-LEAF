@@ -1,7 +1,8 @@
 extends RefCounted
 ## The top of the screen's sides (H2, the owner's sketch): top-left the three currencies, small and always all three
 ## (leaves, timber, shards, counting up; below ground the satchel after them) with no dark strip behind them, and under
-## them one small line (the endgame label, the dish); top-right the Settings gear. A part of the HUD (hud.gd).
+## them one small line (the endgame label; the dish line, hidden since H3); top-right the Settings gear. A part of the
+## HUD (hud.gd).
 
 const HudStyle := preload("res://ui/hud/hud_style.gd")
 const ICON := 28.0                      # the currencies' icons, HUD pixels
@@ -101,9 +102,7 @@ func _build_gear() -> void:
 func refresh(_below: bool) -> void:
 	_refresh_timber(Save.timber)
 	hud._shard_box.visible = true                          # H2: all three always (also below ground)
-	var chip: String = hud.main.cooking.chip_text() if hud.main.cooking else ""
-	hud._meal_l.text = chip
-	hud._meal_l.visible = chip != ""
+	# H3: no dishes any more, so the dish line (hud._meal_l) stays hidden; it is kept for a later use (Q22)
 
 
 func _on_currency_changed(id: String, total: int) -> void:

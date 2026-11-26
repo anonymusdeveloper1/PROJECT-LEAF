@@ -1104,6 +1104,7 @@
     },
     "tower": {
       "name": "Acorn Tower",
+      "from_bag": true,
       "piece": 90,
       "aim_turn_deg_per_s": 540,
       "aim_tolerance_deg": 4,
@@ -1195,6 +1196,7 @@
     },
     "spikes": {
       "name": "Thorn Spikes",
+      "from_bag": true,
       "piece": 70,
       "levels": [
         {
@@ -2338,7 +2340,15 @@
     ]
   },
   "garden": {
-    "_note": "a planted plot grows grow_dry steps for every wave the camp holds, grow_wet while watered (watering lasts wet_waves_by_level waves held); ripe at the crop's grow. Never real time: nothing grows while the game is closed or while the cat waits in the camp.",
+    "_note": "H3 (26 Nov 2026): crops grow in real time through Timers (core/timers.gd, the job crop:<plot>), also while the game is closed. The crops are content folders (content/crops/<id>/entry.json: grow_s, yield, price). Watering is free: every growing plot that is not watered grows water_speed times as fast for the level's water_s_by_level seconds (or until it is ripe, if that is sooner). plots_by_level: open plots per garden level; extra_by_level: added to every harvest.",
+    "_legacy_note": "H3 legacy until P5: crops, grow_dry, grow_wet and wet_waves_by_level (the old wave-step garden; the old garden code still reads them until it is rewritten).",
+    "water_s_by_level": [
+      0,
+      300,
+      360,
+      420
+    ],
+    "water_speed": 2.0,
     "plots_by_level": [
       0,
       3,
@@ -2405,6 +2415,14 @@
       "honey",
       "honey"
     ],
+    "peppers": [
+      "Emberpepper",
+      "Emberpeppers"
+    ],
+    "roots": [
+      "Swiftroot",
+      "Swiftroots"
+    ],
     "fish": [
       "fish",
       "fish"
@@ -2415,7 +2433,9 @@
     ]
   },
   "cooking": {
-    "_note": "one dish waits in the pot (Save.meal_ready); it is eaten when the next chapter (or raid) starts and lasts that chapter (Save.meal_on), then it is used up; if the camp falls it goes back into the pot. Boost keys: hp (added), draw, damage, friends (pet, mount and Warden hits), fire (campfire health), guardian_hp (shares), guardian_revive_s (seconds). unlock: garden | fishing | fishing+stone | goldfish (one was ever caught).",
+    "_note": "H3 (26 Nov 2026): the recipes are content folders (content/recipes/<id>/entry.json; a recipe is its result's type and its id is the Bag item's id). You put ingredients in the pot's pot_slots slots; Cook takes them from the Bag and starts the Timers job cook:pot (the recipe's cook_s, real time, also while the game is closed); the result waits in the pot until Collect puts it in the Bag.",
+    "_legacy_note": "H3 legacy until P5: pantry_cap, max_rows and recipes (the old dishes; the old cooking code still reads them until it is rewritten).",
+    "pot_slots": 3,
     "pantry_cap": 20,
     "max_rows": 6,
     "recipes": [
@@ -2524,6 +2544,62 @@
         "color": "#ffb43c"
       }
     ]
+  },
+  "timers": {
+    "_note": "H3 (26 Nov 2026): Timers (core/timers.gd) runs real-time jobs that keep going while the game is closed. A job id is <kind>:<key>; its kind must be listed in jobs (a new long job is one entry here plus a small handler). check_every_s: how often (seconds of real time) ended jobs are told, besides on resume and 1 s after a save loads.",
+    "check_every_s": 1.0,
+    "jobs": {
+      "crop": {
+        "_note": "a garden plot growing (content/crops grow_s); garden.gd handles the end"
+      },
+      "cook": {
+        "_note": "the cooking pot (content/recipes cook_s); cooking.gd handles the end"
+      }
+    }
+  },
+  "bag": {
+    "_note": "H3 (26 Nov 2026): the Bag (core/bag.gd). slots: how many slots; stack: how many of one thing fit in a slot (food, fish, amber, towers and spikes; a potion is one stack of at most its recipe's limit). use: what Use does for a thing that is not a recipe (effects from the effects list; a thing without effects has no Use). desc: what the Bag says a thing is for, when it is not a recipe (recipes have their own desc).",
+    "slots": 24,
+    "stack": 20,
+    "use": {
+      "fish": {
+        "effects": [
+          {
+            "type": "heal",
+            "target": "mount",
+            "share": 0.1
+          }
+        ]
+      },
+      "goldfish": {
+        "effects": [
+          {
+            "type": "heal",
+            "target": "mount",
+            "share": 0.5
+          }
+        ]
+      }
+    },
+    "desc": {
+      "berries": "For cooking at the pot.",
+      "herbs": "For cooking at the pot.",
+      "honey": "For cooking at the pot.",
+      "peppers": "For cooking at the pot.",
+      "roots": "For cooking at the pot.",
+      "fish": "Mends the mount by 10% at once. Also cooks into Cooked Fish.",
+      "goldfish": "Mends the mount by 50% at once, or Bramble buys it for 300 leaves.",
+      "amber": "Rare. Bramble buys it.",
+      "tower": "A defence for the camp. Place it from the Bag.",
+      "spikes": "A defence for the camp. Place it from the Bag."
+    }
+  },
+  "potions": {
+    "_note": "H3 (26 Nov 2026): which potion each HUD potion button uses (bottom right): cat shows while the cat is hurt and the Bag holds one; mount while the mount is knocked out and the Bag holds one.",
+    "hud": {
+      "cat": "health_potion",
+      "mount": "mount_potion"
+    }
   },
   "fishing": {
     "_note": "a calm game at the lake (fishing.gd): cast, wait, tap anywhere on the bite; uncommon and rare catches add reel pulses (tap while the closing ring is green). Misses cost nothing. rare_pity: a rare at the latest on this catch. A rolled rare is the next unfound lake treasure treasure_share of the time.",
@@ -6462,6 +6538,7 @@
         }
       }
     ],
+    "_legacy_note": "H3 legacy until P5: lunch, snack_every_s and meals_in_runs (the old food snacks and dishes below ground; the old code still reads them until it is rewritten in H3).",
     "lunch": [
       {
         "item": "fish",
@@ -6850,7 +6927,7 @@
   },
   "camp_name": "the Hearthtree",
   "market": {
-    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade. H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials.",
+    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade. H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials. H3 (26 Nov 2026): he buys a Golden Carp for 300 leaves at any time; he does not sell Emberpeppers or Swiftroots. Food bought from him goes into the Bag.",
     "sells": [
       {
         "id": "berries",
@@ -6880,6 +6957,11 @@
         "leaves": 1000,
         "shards": 1,
         "after_missions": true
+      },
+      {
+        "id": "goldfish",
+        "amount": 1,
+        "leaves": 300
       }
     ]
   },
@@ -7177,6 +7259,31 @@
       },
       "key_leaves": 150,
       "key_cap": 3
+    },
+    "_note_v4": "to_v4 (H3, 26 Nov 2026): the pantry goes into the Bag (every count above 0); each old dish waiting in the pot or eaten mid-mission (old_dishes, in meal_ready and meal_on) becomes a dish_potion, up to potion_cap of them in the Bag, and each one past that pays dish_leaves leaves; the snack choice goes; a planted plot keeps its share of growth (its old steps of crop_steps) as a Timers job of crop_grow_s seconds that is already that far along; old watering is dropped; a plot with a crop id not listed here is kept as it is.",
+    "to_v4": {
+      "old_dishes": [
+        "berry_tart",
+        "fernmint_tea",
+        "honey_cake",
+        "hearth_stew",
+        "fish_skewers",
+        "root_stew",
+        "carp_feast"
+      ],
+      "dish_potion": "health_potion",
+      "potion_cap": 3,
+      "dish_leaves": 50,
+      "crop_steps": {
+        "sunberry": 4,
+        "fernmint": 5,
+        "honeybell": 6
+      },
+      "crop_grow_s": {
+        "sunberry": 240,
+        "fernmint": 300,
+        "honeybell": 360
+      }
     }
   }
 }

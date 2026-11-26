@@ -63,6 +63,8 @@ func show_card(ring) -> void:
 
 
 func hide_card() -> void:
+	_close_window()                                     # H3: the window's visit ends (the X, a tap outside, another card)
+	hud._card_window = null
 	if hud._card != null:
 		var c: PanelContainer = hud._card
 		hud._card = null
@@ -94,6 +96,28 @@ func hide_card() -> void:
 	hud._card_nav = null
 	hud._card_view_id = ""
 	hud._card_render_signature = ""
+
+
+## H3: the window whose visit is open hears that it ends (closed() once), and the card forgets it.
+func _close_window() -> void:
+	var w = hud._card_window_open
+	hud._card_window_open = null
+	if w != null:
+		w.closed()
+
+
+## H3: a {"kind": "window"} row. A window cannot tell a new visit from a rebuild (its content() runs on every rebuild),
+## so the card tells it: a window that is not the open visit's first hears the old one close, then opened() runs
+## before its first content(). A wave blank (no rows) and the rebuild after it are one visit: the window keeps its state.
+func _window_row(list: VBoxContainer, w) -> void:
+	if w == null:
+		return
+	if w != hud._card_window_open:
+		_close_window()
+		w.opened()
+		hud._card_window_open = w
+	list.add_child(w.content())
+	hud._card_window = w
 
 
 ## A tap on the dim (outside the dialog) closes it; a drag there does nothing.
@@ -301,6 +325,9 @@ func _card_frame() -> void:
 ## The dialog's contents: its name and line in the header, then the rows, in the body that scrolls inside the dialog
 ## when they are taller than it may be. Phase G2: a row {"kind": "section"} is a shelf heading; a run of rows
 ## {"kind": "item"} is one grid of shop tiles (_item_grid); any other row is a plain row, drawn as before (_plain_row).
+## H3: a row {"kind": "window", "window": w} is a whole window (the garden's, the pot's): w.content() is added and
+## hud._card_window = w, so the HUD ticks it (_window_row has the visit hooks). A card with a window gives a stable
+## view_id, so a leaf pickup or a save (Save.changed) does not rebuild it under a drag.
 func _fill_card(spec: Dictionary) -> void:
 	var scroll: int = hud._card_scroll.scroll_vertical if hud._card_scroll != null else 0
 	hud._card_anchor = spec.get("anchor", Vector3.ZERO)
@@ -309,6 +336,7 @@ func _fill_card(spec: Dictionary) -> void:
 	var signature: String = hud.p_sign._signpost_signature(spec) if view_id != "" else ""
 	if view_id != "" and view_id == hud._card_view_id and signature == hud._card_render_signature and is_instance_valid(hud._card_list):
 		return                                      # live HUD refreshes keep the list and its animations steady
+	hud._card_window = null                         # H3: a real rebuild; a window row below sets it again
 	var reveal: bool = view_id != "" and view_id != hud._card_view_id
 	hud._card_view_id = view_id
 	hud._card_render_signature = signature
@@ -344,8 +372,9 @@ func _fill_card(spec: Dictionary) -> void:
 			list.add_child(hud.inventory.content())
 			i += 1
 			continue
-		if kind == "pantry":
-			list.add_child(pantry_strip())
+		if kind == "window":
+			_window_row(list, row.get("window"))
+			prev = "window"
 			i += 1
 			continue
 		if kind == "item":
@@ -414,27 +443,6 @@ func _fill_card_tabs(tabs: Array) -> void:
 		button.set_meta("card_tab", true)
 		hud._card_tabs.add_child(button)
 		hud.p_sign._signpost_button_motion(button)
-
-
-func pantry_strip() -> Control:
-	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 12)
-	flow.add_theme_constant_override("v_separation", 6)
-	for id in Data.b["ingredients"]:
-		if not Data.food_known(String(id)):
-			continue
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 5)
-		flow.add_child(row)
-		var picture: TextureRect = _btn_icon(hud.icon(id))
-		picture.custom_minimum_size = Vector2(28, 28)
-		row.add_child(picture)
-		var label := Label.new()
-		label.text = "%s %d/%d" % [Data.item_name(String(id), 2).capitalize(), int(Save.pantry.get(id, 0)), int(Data.b["cooking"]["pantry_cap"])]
-		label.add_theme_font_size_override("font_size", 19)
-		label.add_theme_color_override("font_color", hud.TILE_INK)
-		row.add_child(label)
-	return flow
 
 
 ## A plain row (the card rows from before Phase G2): its words and note, and a button with its price. "done" (with

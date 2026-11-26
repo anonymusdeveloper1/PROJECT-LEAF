@@ -2,8 +2,9 @@ extends CanvasLayer
 ## Everything drawn on top of the game. There are no menus. The screen (H2, 26 Nov 2026: the owner's sketch and answers;
 ## docs/PHASE_H_PLAN.md H2; ui/hud/hud_layout.gd has every place):
 ##   the top      top-left the three currencies, small, no strip behind them (the satchel after them below ground), the
-##                dish and the endgame-save label under them; top-right the Settings gear; top-centre the raid bar (no
-##                words, no numbers), the campfire's thin bar under it in a fight, and the words line (the next wave's
+##                endgame-save label under them (the dish line is hidden since H3); top-right the Settings gear;
+##                top-centre the raid bar (no words, no numbers), the campfire's thin bar under it in a fight, and the
+##                words line (the next wave's
 ##                roads, the wave, the Gloom, the Gloomwood's level). Under them the boss bar, then the banners (a
 ##                compact strip), the toast and the status or hiding line, never into the middle third.
 ##   the bottom   row 1: the Bag and the build icon (the Hearthtree's buildings) at the left, the potion slot (the
@@ -16,7 +17,9 @@ extends CanvasLayer
 ##                close button, its rows below (scrolling inside when long). The X, a tap on the dim, Android's back
 ##                button or Escape close it. Inside (20 Nov 2026, the user: "like a whole shop store"; Phase G2) the
 ##                things to buy are shop tiles in a grid (rows {"kind": "item"}, 2 a row on a phone) under small shelf
-##                headings ({"kind": "section"}); the plain rows ({text, note, cost, label, ...}) draw as before.
+##                headings ({"kind": "section"}); the plain rows ({text, note, cost, label, ...}) draw as before. H3: a
+##                row {"kind": "window", "window": w} holds a window (the garden's, the pot's: ui/windows/) that builds
+##                its own contents, ticks while it shows and hears when a visit opens and closes (card.gd).
 ## The phone's safe area (status bar, camera hole, gesture bar) is kept clear (--safe-top= / --safe-bottom= try it on a
 ## PC, in HUD pixels).
 ## (H2, part 1: the code is split into the parts in ui/hud/; this node keeps the shared nodes and the calls other scripts make.)
@@ -25,6 +28,8 @@ const LifebarScript := preload("res://ui/hud/lifebar.gd")
 const ArrowsScript := preload("res://ui/hud/threat_arrows.gd")
 const InventoryScript := preload("res://scripts/inventory.gd")
 const SettingsWindowScript := preload("res://ui/hud/settings_window.gd")
+const GardenWindowScript := preload("res://ui/windows/garden_window.gd")
+const CookingWindowScript := preload("res://ui/windows/cooking_window.gd")
 const ROW_H := 72.0                     # the top bar's height with only the gear (hud_layout.gd GEAR_H)
 const DIALOG_W := 0.9
 const TILE_INK := Color(0.25, 0.16, 0.08)
@@ -51,7 +56,7 @@ var _shard_box: HBoxContainer
 var _shown_shards := 0
 var shards_held := 0                    # shards banked but still flying to the cat (the shower): not counted up yet
 var _held_t := 0.0
-var _meal_l: Label                     # the dish eaten this chapter, or waiting in the pot (Phase C)
+var _meal_l: Label                     # the old dish line (Phase C); hidden since H3, kept for a later use (Q22)
 var _eg_l: Label                       # "Endgame test save" (the debug endgame start)
 var _res: HBoxContainer                # the top bar's left: leaves, timber, shards, the satchel below ground
 var _line2: HBoxContainer              # ... its second line: the endgame label, the dish
@@ -101,6 +106,10 @@ var _build_icon: Button                # H2: the build icon next to the Bag (the
 var _bottom_h := 100.0                 # how tall the bottom rows that show are, up from the gesture bar (the edge arrows)
 var inventory
 var settings                           # H2: the Settings window (the gear), opened through the card
+var garden_window                      # H3: the garden's window (ui/windows/garden_window.gd), a {"kind": "window"} row
+var cooking_window                     # H3: the cooking pot's window (ui/windows/cooking_window.gd)
+var _card_window = null                # H3: the window in the open card's rows (its tick runs every frame); null when none
+var _card_window_open = null           # H3: the window whose opened() ran in this card's visit (card.gd); null when none
 var bag_button: Button
 var _snack_button: Button
 var _hide_l: Label
@@ -142,6 +151,8 @@ func build(m) -> void:
 	main = m
 	inventory = InventoryScript.new(self)
 	settings = SettingsWindowScript.new(self)
+	garden_window = GardenWindowScript.new(self)
+	cooking_window = CookingWindowScript.new(self)
 	_leaf_tex = p_icons._make_leaf()
 	_log_tex = p_icons._make_log()
 	_shard_tex = p_icons._make_shard()
@@ -274,6 +285,8 @@ func _on_fight_progress(done: int, total: int) -> void:
 
 func _process(delta: float) -> void:
 	inventory.tick(delta)
+	if _card_window != null:
+		_card_window.tick(delta)                    # H3: the open card's window (the garden's times, the pot's bar)
 	p_actions._refresh_snack()
 	if _card_ring == inventory and main.player.hp <= 0:
 		hide_card()
@@ -417,10 +430,6 @@ func card_buttons() -> Array:
 
 func close_button() -> Button:
 	return p_card.close_button()
-
-
-func pantry_strip() -> Control:
-	return p_card.pantry_strip()
 
 
 func _btn_icon(tex: Texture2D) -> TextureRect:

@@ -9,17 +9,38 @@ func _init(h) -> void:
 	hud = h
 
 
-## Only visible values belong in the cache; the actions are newly bound Callables on each refresh.
+## Only visible values belong in the cache; the actions are newly bound Callables on each refresh. H4: also a row's id,
+## title, badge, icon, picture, stats and goal tick, the tabs' id, icon and "!" dot, where the tabs sit, and the
+## footer's words, price and buttons, so a card with a view_id (the garden's) redraws when only one of those changes.
+## The footer's Upgrade stays on while the price is short (Q2 a), so whether each currency of its price can be paid
+## now is recorded too: the price line colours each one red or ink when it is drawn (shop_tiles._price_line).
 func _signpost_signature(spec: Dictionary) -> String:
-	var content: Array = [spec.get("title", ""), spec.get("sub", "")]
+	var content: Array = [spec.get("title", ""), spec.get("sub", ""), spec.get("tabs_at", "top")]
 	for tab in spec.get("tabs", []):
-		content.append([tab.get("text", ""), tab.get("selected", false), tab.get("enabled", true)])
+		content.append([tab.get("text", ""), tab.get("selected", false), tab.get("enabled", true), tab.get("id", ""),
+			tab.get("icon", ""), tab.get("dot", false)])
 	for row in spec.get("rows", []):
 		var visible_values := {}
-		for key in ["kind", "text", "note", "label", "enabled", "cost", "mission_index", "mission_name", "completed"]:
+		for key in ["kind", "text", "note", "label", "enabled", "cost", "mission_index", "mission_name", "completed",
+				"id", "title", "badge", "icon", "picture", "stats", "small", "done"]:
 			if row.has(key):
 				visible_values[key] = row[key]
 		content.append(visible_values)
+	var fv: Variant = spec.get("footer", {})
+	var foot: Dictionary = fv if fv is Dictionary else {}
+	if not foot.is_empty():
+		var buttons: Array = []
+		for b: Variant in foot.get("buttons", []):
+			if b is Dictionary:
+				var bd: Dictionary = b
+				buttons.append([bd.get("label", ""), bd.get("enabled", false), bd.get("tone", "green")])
+		var cv: Variant = foot.get("cost", {})
+		var fc: Dictionary = cv if cv is Dictionary else {}
+		var paid: Array = []                            # each currency of the price: can it be paid now (red or ink)
+		for k: String in Data.CURRENCIES:
+			if int(fc.get(k, 0)) > 0:
+				paid.append(Data.have(k) >= int(fc[k]))
+		content.append([foot.get("text", ""), foot.get("note", ""), fc, buttons, paid])
 	return JSON.stringify(content)
 
 

@@ -225,7 +225,7 @@ func load_game() -> void:
 	for k in saved_bows:
 		bows[k] = int(saved_bows[k])
 	bow = String(d.get("bow", "twig"))
-	if not (Data.b["bows"] as Dictionary).has(bow):
+	if not Data.has_bow(bow):
 		bow = "twig"
 		if not bows.has(bow):
 			bows[bow] = 1
@@ -443,10 +443,9 @@ func _endgame_seed() -> void:
 	camp_level = 5
 	stations = {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 1, "saddlery": 0,
 		"tailor": 0}
-	var st: Dictionary = Data.b.get("stations", {})
 	# G4: the Saddlery built, nothing learned; 23 Nov 2026: the Tailor's Nook built, only the original outfit owned
 	for id in ["target", "bench", "well", "cottage", "stall", "garden", "saddlery", "tailor"]:
-		stations[id] = mini(camp_level, (st.get(id, {}).get("levels", [{}, {}, {}]) as Array).size())
+		stations[id] = mini(camp_level, Data.building_levels(id).size())
 	stats = {"damage": 9, "draw": 9, "range": 6, "health": 9, "speed": 8, "magnet": 5}
 	bows = {"twig": 10, "sunwood": 9, "volley": 6}
 	bow = "sunwood"

@@ -20,7 +20,10 @@ extends CanvasLayer
 ##                things to buy are shop tiles in a grid (rows {"kind": "item"}, 2 a row on a phone) under small shelf
 ##                headings ({"kind": "section"}); the plain rows ({text, note, cost, label, ...}) draw as before. H3: a
 ##                row {"kind": "window", "window": w} holds a window (the garden's, the pot's: ui/windows/) that builds
-##                its own contents, ticks while it shows and hears when a visit opens and closes (card.gd).
+##                its own contents, ticks while it shows and hears when a visit opens and closes (card.gd). H4: each
+##                building's card is its own window (ui/windows/, made here: hud.windows, plugged into the markers by
+##                stations.use_windows); the confirm window (hud.confirm, ui/kit/confirm_window.gd) asks before a
+##                building's Upgrade.
 ## The phone's safe area (status bar, camera hole, gesture bar) is kept clear (--safe-top= / --safe-bottom= try it on a
 ## PC, in HUD pixels).
 ## (H2, part 1: the code is split into the parts in ui/hud/; this node keeps the shared nodes and the calls other scripts make.)
@@ -31,6 +34,8 @@ const InventoryScript := preload("res://scripts/inventory.gd")
 const SettingsWindowScript := preload("res://ui/hud/settings_window.gd")
 const GardenWindowScript := preload("res://ui/windows/garden_window.gd")
 const CookingWindowScript := preload("res://ui/windows/cooking_window.gd")
+const ConfirmWindowScript := preload("res://ui/kit/confirm_window.gd")
+const WindowList := preload("res://ui/windows/window_list.gd")
 const ROW_H := 72.0                     # the top bar's height with only the gear (hud_layout.gd GEAR_H)
 const DIALOG_W := 0.9
 const TILE_INK := Color(0.25, 0.16, 0.08)
@@ -109,6 +114,10 @@ var inventory
 var settings                           # H2: the Settings window (the gear), opened through the card
 var garden_window                      # H3: the garden's window (ui/windows/garden_window.gd), a {"kind": "window"} row
 var cooking_window                     # H3: the cooking pot's window (ui/windows/cooking_window.gd)
+## H4: the building windows (ui/windows/window_list.gd): marker id -> its window, plus the build menu under "build";
+## stations.use_windows plugs them into the markers.
+var windows: Dictionary = {}
+var confirm                            # H4: the confirm window (ui/kit/confirm_window.gd), opened through the card
 var _card_window = null                # H3: the window in the open card's rows (its tick runs every frame); null when none
 var _card_window_open = null           # H3: the window whose opened() ran in this card's visit (card.gd); null when none
 var bag_button: Button
@@ -152,6 +161,8 @@ func build(m) -> void:
 	settings = SettingsWindowScript.new(self)
 	garden_window = GardenWindowScript.new(self)
 	cooking_window = CookingWindowScript.new(self)
+	confirm = ConfirmWindowScript.new(self)
+	windows = WindowList.make_all(self)
 	_leaf_tex = p_icons._make_leaf()
 	_log_tex = p_icons._make_log()
 	_shard_tex = p_icons._make_shard()
@@ -189,6 +200,7 @@ func build(m) -> void:
 	Events.fight_progress.connect(_on_fight_progress)
 	p_layout._layout()
 	refresh()
+	main.stations.use_windows(windows)              # H4: each building's marker opens its window (and asks it for its "!")
 
 
 func refresh() -> void:

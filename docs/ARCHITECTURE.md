@@ -49,7 +49,7 @@ game/
                  companions/moss_warden/
                  bows/sunwood/
                  defences/acorn_tower/
-                 buildings/bow_shop/
+                 buildings/bench/         (the Bow Shop; a building's id is the save's)
                  crops/sunberry/          (the folder is the id, and ids never change: the save says "sunberry")
                  recipes/health_potion/
                  biomes/gloomwood/        look, props, room pieces, enemy list, music
@@ -63,7 +63,22 @@ game/
 
 - **Today** (H3) most scripts are still in `game/scripts/` (`core/`, `parts/`, `commands/` and `ui/` have their first
   files), the models are in `game/assets/`, and the numbers are in `game/data/balance.json` and the first content
-  folders (`settings`, `crops`, `recipes`). They move into this layout during Phase H (part 13).
+  folders (`settings`, `crops`, `recipes`; H4 adds `bows` and `buildings`). They move into this layout during Phase H
+  (part 13).
+- **Today in `ui/windows/`** (H4): one window file per building. `building_window.gd` is the shared base (the rows,
+  the pinned Upgrade `upgrade_footer`, `ask_upgrade` through the confirm window, `list_row`, `as_list`). Besides it:
+  `hearthtree_window.gd` (with the static helpers `defences_tab.gd` and `stat_list.gd`), `target_window.gd`,
+  `bow_shop_window.gd`, `well_window.gd`, `stone_window.gd`, `garden_card.gd`, `market_window.gd`,
+  `cottage_window.gd`, `saddlery_window.gd`, `tailor_window.gd`, `fishing_window.gd` and `build_menu_window.gd`, next to
+  H3's garden and cooking windows. A window only builds words and rows; the rules stay in `stations.gd` under their old
+  names, and windows call them as `st.<name>`. The HUD makes the windows (`hud.windows`, `hud.confirm`), and
+  `stations.use_windows` plugs each one into its marker.
+  - Known differences: the signpost's, the campfire's and the cooking pot's cards stay in `stations.gd` for now (they
+    are not buildings: no save entry, no content folder). `window_list.gd` is a known list of names in code (house
+    rule 3) until a building entry names its window.
+  - Also known: in H4 the dialog host (its frame, the pinned footer, the tabs on top or at the bottom, each with an
+    optional icon and a small "!" dot, and the visit hooks `card_opened`/`card_closed` on the window behind a card's
+    builder) is still `ui/hud/card.gd`. Stage 3 of H4 moves it to `ui/kit/card.gd` as a pure file move.
 - **Moving a script:** move it together with its `.uid` file, update every `preload("res://…")` path, then run the
   smoke test. A move commit changes nothing else.
 
@@ -187,7 +202,9 @@ depends on whom, so **there are exactly eight**, each with one job:
 - **The rule:** an event says **what happened**. It never asks for an answer, and the sender never depends on who
   listens.
 - **Today** (H3, 26 Nov 2026) there are 21 signals, and many direct calls like `main.hud.…` remain; those are replaced
-  as each step rewrites its part. `timer_finished` is sent by Timers (`check()`) since H3.
+  as each step rewrites its part. `timer_finished` is sent by Timers (`check()`) since H3. `building_upgraded` is sent
+  by `stations.gd` since H4, when a building is built, upgraded, given by a mission or found (the Guardian Stone), or
+  when the Hearthtree grows; `id` is the save's id (`home` for the Hearthtree).
 
 ### Prototype: variants written as "that one, but…"
 - An entry can say `"base": "thornling"` and list only what is different, for example the Gloomtouched elite (+health,
@@ -268,7 +285,7 @@ depends on whom, so **there are exactly eight**, each with one job:
 | `name`, `desc` | what the player sees (all player text lives in data, never in code) |
 | `icon`, `model` | file names inside the folder (default `icon.png`, `model.glb`). **H3's crops and recipes, until their art moves into the folders:** `icon` is a picture id of `scripts/ui_icons.gd` (drawn in code; `hud.icon(id)`), and a crop's `model` is the base of its Props ids in `assets/props/` (`<model>_growing`, `<model>_ripe`) |
 | `price` | always the same form: `{"leaves": 900, "timber": 10}` or `{"shards": 60}` |
-| `unlock` | always the same form, for example `{"hearthtree": 3}`, `{"missions_won": 5}`, `{"building": ["bow_shop", 7]}`, `{"flag": "hollow_open"}`. `{}` is open from the start. `Data.unlocked(rule)` answers it (H3 knows `{}` and `{"building": [id, level]}`; another form warns and stays shut until it is added there) |
+| `unlock` | always the same form, for example `{"building": ["home", 3]}`, `{"missions_won": 5}`, `{"building": ["bench", 7]}`, `{"flag": "hollow_open"}`. `{}` is open from the start. `Data.unlocked(rule)` answers it: it knows `{}`, `building`, `flag` and `missions_won`, every part must hold, and another form warns and stays shut; `Data.unlock_missing(rule)` lists the parts not met |
 | `hidden` | `true` keeps it out of the game until it is released (like the Foxfire Bow today) |
 | `effects` | a list from the effects list, for example `[{"type": "stat_mult", "stat": "damage", "mult": 0.25, "seconds": 30}]` |
 | `parts` | for things in the world: which parts and their numbers |
@@ -310,6 +327,21 @@ depends on whom, so **there are exactly eight**, each with one job:
   lists them itself.) The content test fails if the index is out of date. `*.json` is already in the export's include
   filter. **Until that tool exists** (H3), `index.json` is written by hand, and `--content` checks that it lists every
   entry folder and nothing else.
+- **Bows and buildings** (H4) are content kinds (`content/bows/<id>`, `content/buildings/<id>`), with ids equal to the
+  save's ids (`home` is the Hearthtree, `bench` the Bow Shop, `stall` the Market). Callers never read
+  `Data.b["bows"]` or `Data.b["stations"]` (they are gone); they ask the Data API (`Data.building`, `building_levels`,
+  `build_price`, `level_price`, `building_desc`, `menu_buildings`, `bow_info`, `bow_ids`, `bow_shop_level`,
+  `bow_waits`, `has_bow` …).
+  - A bow's model, arrow and shop picture stay in `assets/` by id (`player.bow_path`, `arrow.arrow_path`,
+    `Data.bow_picture`). A building's picture is `assets/ui/buildings/<id>.png`, found through
+    `Data.building_picture` (`""` when there is none yet, like the Saddlery).
+  - A building's `arrives` field says how it comes: `menu` (bought in the build menu), `gift` (a mission gives it),
+    `found` or `always`. `Data.from_menu` replaces the old `SHOP_BUILT` list.
+  - **H4 exception:** buildings' models, spots, footprints and ring offsets stay in `stations.gd` and `world.gd` until
+    a step adds a building with its own spot (the Workshop in H6).
+  - The window words live in `balance.json "windows"`, read through `Data.word(key)`. General building tables stay in
+    `balance.json`: `building_hp`, `stat_cap_by_station_level`, `bow_cap_by_bench_level`, `bow_upgrade_curve` and the
+    like.
 - **New folder from a template:** `tools/new_content <kind> <new_id> [--from <id>]` copies a template or an existing
   thing.
 - **Balancing many entries:** `tools/content_table <kind>` prints every entry's numbers in one table, so 30 enemies can
@@ -434,7 +466,7 @@ depends on whom, so **there are exactly eight**, each with one job:
 | H10 | the Store with its real and pretend providers; offers as content folders |
 | later | the cat's and mount's own parts, mount skills as abilities, and anything not yet moved, when a step next touches them |
 
-**Where the game is today** (26 November 2026, H3 built on `feature/h3-food-bag`):
+**Where the game is today** (26 November 2026, H4 Stage 1 built on `feature/h4-building-windows`):
 - six autoloads (Events, Data, Save, Timers, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades);
   most other scripts are still in `game/scripts/`;
 - **built so far in `core/`, `parts/`, `commands/`, `ui/` and `content/`:**
@@ -443,11 +475,17 @@ depends on whom, so **there are exactly eight**, each with one job:
   - the effects list (`core/effects.gd`, H3) and the Effects holder (`parts/effects_holder.gd`, on the cat and the
     mount);
   - the commands Ride/Walk (H2) and Use potion (H3) in `commands/`;
-  - the HUD under `ui/hud/` (H2), the first windows in `ui/windows/` (the garden and the cooking pot, H3) and the first
-    kit pieces in `ui/kit/` (`drag_source.gd`, `drop_slot.gd`: drag-and-drop, H3);
-  - content folders: `content/settings/` (H2), `content/crops/` (5) and `content/recipes/` (5) (H3), listed by hand in
-    `content/index.json`; the general rules stay in `balance.json`;
-- a few very big files: `stations.gd` 2,672 lines, `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
+  - the HUD under `ui/hud/` (H2), the first windows in `ui/windows/` (the garden and the cooking pot, H3; one window
+    file per building, H4 Stage 1) and the kit in `ui/kit/`: `drag_source.gd` and `drop_slot.gd` (drag-and-drop, H3),
+    `list_row.gd` (a building window's list row: picture, name and badge, up to 3 lines, price, one button; a tap on
+    the picture is its own action), `confirm_window.gd` (the confirm before a rule runs: any title, lines and price;
+    Cancel and Confirm go back to the window it came from, the X closes everything; `hud.confirm`) and
+    `card_parts.gd` (the pinned footer, a tab's icon and its "!" dot) (H4). The dialog host, its frame and its tabs
+    stay in `ui/hud/card.gd` until H4 Stage 3;
+  - content folders: `content/settings/` (H2), `content/crops/` (5) and `content/recipes/` (5) (H3), `content/bows/`
+    (6) and `content/buildings/` (11) (H4), listed by hand in `content/index.json`; the general rules stay in
+    `balance.json`;
+- a few very big files: `stations.gd` 1,784 lines (was 2,672 before H4), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
   `defences.gd` 1,334;
 - the Events board has 21 signals; the HUD listens to Events (H2); many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy

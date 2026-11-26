@@ -97,7 +97,7 @@ func _bname(bid: String) -> String:
 func _tiles() -> Array:
 	var out: Array = []
 	var names: Array = []
-	for bid in Data.b["bows"]:
+	for bid in Data.bow_ids():
 		names.append(_bname(String(bid)))
 	for r in _st()._card_bench()["rows"]:
 		if String(r.get("kind", "")) == "item" and names.has(String(r.get("title", ""))):
@@ -115,7 +115,7 @@ func _tile(bid: String) -> Dictionary:
 ## The Bow Shop's own upgrade tile ("Bow Shop level N").
 func _shop_upgrade() -> Dictionary:
 	for r in _st()._card_bench()["rows"]:
-		if String(r.get("kind", "")) == "item" and String(r.get("title", "")).begins_with(String(Data.b["stations"]["bench"]["name"]) + " level"):
+		if String(r.get("kind", "")) == "item" and String(r.get("title", "")).begins_with(String(Data.building("bench")["name"]) + " level"):
 			return r
 	return {}
 
@@ -141,23 +141,23 @@ func _restore_wave(keep: Dictionary) -> void:
 func _card() -> void:
 	var st = _st()
 	var card: Dictionary = st._card_bench()
-	_x("the card's title is the Bow Shop", String(card["title"]) == "Bow Shop" and String(Data.b["stations"]["bench"]["name"]) == "Bow Shop",
+	_x("the card's title is the Bow Shop", String(card["title"]) == "Bow Shop" and String(Data.building("bench")["name"]) == "Bow Shop",
 		{"title": card["title"]})
-	var keys: Array = (Data.b["bows"] as Dictionary).keys()
+	var keys: Array = Data.bow_ids()
 	_x("balance.json: the Frost Bow comes right after Ember; Thorn Volley and Foxfire are kept, marked hidden",
 		keys.find("frost") == keys.find("ember") + 1 and HIDDEN.all(func(b): return keys.has(b) and Data.bow_hidden(b))
 		and not ORDER.any(func(b): return Data.bow_hidden(b)), {"bows": keys})
 	var no_mats := true
 	for bid in keys:
-		var prices: Array = (Data.b["bows"][bid].get("mastery", []) as Array).duplicate()
-		prices.append(Data.b["bows"][bid].get("craft", {}))
+		var prices: Array = (Data.bow_info(bid).get("mastery", []) as Array).duplicate()
+		prices.append(Data.craft_cost(bid))
 		for c in prices:
 			if c is Dictionary:
 				for m in ["amber", "glowstone", "heartwood"]:
 					no_mats = no_mats and not (c as Dictionary).has(m)
 	_x("H1: every bow's mastery and craft price is leaves (and timber) only; Foxfire crafts for 5,120 leaves", no_mats
-		and Data.craft_cost("foxfire") == {"leaves": 5120} and Data.bow_cost("twig", (Data.b["bows"]["twig"]["cost"] as Array).size()).keys() == ["leaves"]
-		and int(Data.bow_cost("twig", (Data.b["bows"]["twig"]["cost"] as Array).size())["leaves"]) == 1200, {"foxfire": Data.craft_cost("foxfire")})
+		and Data.craft_cost("foxfire") == {"leaves": 5120} and Data.bow_cost("twig", (Data.bow_info("twig")["cost"] as Array).size()).keys() == ["leaves"]
+		and int(Data.bow_cost("twig", (Data.bow_info("twig")["cost"] as Array).size())["leaves"]) == 1200, {"foxfire": Data.craft_cost("foxfire")})
 	var tiles := _tiles()
 	var titles: Array = tiles.map(func(r): return r["title"])
 	_x("four bow tiles in order twig, sunwood, ember, frost (Volley and Foxfire hidden)", titles == ORDER.map(func(b): return _bname(b)), {"tiles": titles})
@@ -168,7 +168,7 @@ func _card() -> void:
 	var info := {}
 	for bid in ["sunwood", "ember", "frost"]:
 		var tl := _tile(bid)
-		var need := int(Data.bow_info(bid)["bench_level"])
+		var need := Data.bow_shop_level(bid)
 		var shop_ok: bool = int(Save.stations["bench"]) >= need
 		var good := String(tl.get("label", "")) == "Buy"
 		if shop_ok:
@@ -180,9 +180,9 @@ func _card() -> void:
 		info[bid] = "%s/%s/%s" % [tl.get("label", ""), tl.get("badge", ""), tl.get("text", "")]
 	_x("the other bows: Buy, Locked below their Shop level with 'Needs Bow Shop level N'", locked_ok, info)
 	# the Shop's own upgrade names the bows it will sell, never a hidden one
-	Save.stations["bench"] = int(Data.bow_info("ember")["bench_level"]) - 1
+	Save.stations["bench"] = Data.bow_shop_level("ember") - 1
 	var up3 := String(_shop_upgrade().get("text", ""))
-	Save.stations["bench"] = int(Data.bow_info("frost")["bench_level"]) - 1
+	Save.stations["bench"] = Data.bow_shop_level("frost") - 1
 	var up5 := String(_shop_upgrade().get("text", ""))
 	Save.stations["bench"] = 3
 	var up4 := String(_shop_upgrade().get("text", ""))
@@ -190,7 +190,7 @@ func _card() -> void:
 		up3.contains(_bname("ember")) and up5.contains(_bname("frost")) and not up4.contains(_bname("volley")) and not up4.contains(_bname("foxfire")),
 		{"to_ember": up3, "to_frost": up5, "to_4": up4})
 	# at the Shop's level each bow's own note shows (leaves are still missing, so Buy is off but the badge is New)
-	Save.stations["bench"] = int(Data.bow_info("frost")["bench_level"])
+	Save.stations["bench"] = Data.bow_shop_level("frost")
 	var notes_ok := true
 	var seen := {}
 	for bid in ["sunwood", "ember", "frost"]:
@@ -233,7 +233,7 @@ func _card() -> void:
 func _buy() -> void:
 	var st = _st()
 	var need := _need("ember")
-	Save.stations["bench"] = int(Data.bow_info("ember")["bench_level"])
+	Save.stations["bench"] = Data.bow_shop_level("ember")
 	Save.leaves = int(need["leaves"]) + 77
 	Save.timber = int(need["timber"]) - 1
 	var tl := _tile("ember")
@@ -281,7 +281,7 @@ func _equip() -> void:
 	_x("with a wave on: Equip is off, says 'Between waves', and _equip does nothing", String(tl.get("label", "")) == "Equip" and not bool(tl.get("enabled", true))
 		and String(tl.get("text", "")) == "Between waves" and Save.bow == "twig", {"tile": tl.get("text", ""), "bow": Save.bow})
 	var need := _need("frost")
-	Save.stations["bench"] = int(Data.bow_info("frost")["bench_level"])
+	Save.stations["bench"] = Data.bow_shop_level("frost")
 	Save.leaves = int(need["leaves"])
 	Save.timber = int(need["timber"])
 	st._craft("frost")
@@ -309,7 +309,7 @@ func _balance_steps() -> void:
 			dmg_ok = dmg_ok and float(Data.bow_info(bid)["damage"]) > float(Data.bow_info(prev)["damage"])
 	_x("the four shop bows cost more (leaves and timber) and hit harder, one after the other", price_ok and dmg_ok, {"leaves": prices})
 	var cap_top := (Data.b["bow_cap_by_bench_level"] as Array).size() - 1
-	var frost_need := int(Data.bow_info("frost")["bench_level"])
+	var frost_need := Data.bow_shop_level("frost")
 	var keep_bench := int(Save.stations["bench"])
 	var keep_leaves := Save.leaves
 	var keep_timber := Save.timber
@@ -351,11 +351,11 @@ func _balance_steps() -> void:
 	Save.bow = keep_bow
 	_x("Ember's range is 0.8 m shorter than Twig's, Sunwood's 1.5 m longer", absf((r_twig - r_ember) - 0.8) < 0.001 and absf((r_sun - r_twig) - 1.5) < 0.001,
 		{"twig": r_twig, "ember": r_ember, "sunwood": r_sun})
-	var keep_rb = Data.b["bows"]["ember"]["range_bonus"]
-	Data.b["bows"]["ember"]["range_bonus"] = -100.0
+	var keep_rb = Data.bow_info("ember")["range_bonus"]
+	Data.bow_info("ember")["range_bonus"] = -100.0
 	Save.bow = "ember"
 	var floor_r := Data.cat_range()
-	Data.b["bows"]["ember"]["range_bonus"] = keep_rb
+	Data.bow_info("ember")["range_bonus"] = keep_rb
 	Save.bow = keep_bow
 	_x("a huge negative range bonus stops at the floor (cat.min_range_m)", absf(floor_r - float(Data.b["cat"]["min_range_m"])) < 0.001, {"range": floor_r})
 
@@ -454,7 +454,7 @@ func _late_upgrades() -> void:
 		_st()._upgrade_bow()
 	_x("a saved 1480-leaf budget buys all four Ember upgrades from 5 to 9", int(Save.bows["ember"]) == 9 and Save.leaves == 0)
 	var guaranteed := _guaranteed_mission_leaves(12) + _guaranteed_mission_leaves(13)
-	var shop_cost: int = (Data.b["stations"]["bench"]["levels"][3] as Dictionary)["leaves"]
+	var shop_cost: int = int(Data.level_price("bench", 4)["leaves"])
 	var owned_package: int = shop_cost + int(affordable["ember"])
 	var new_package := shop_cost + int(Data.craft_cost("ember")["leaves"])
 	for level in range(1, 9):
@@ -697,7 +697,7 @@ func _trails() -> void:
 	pl.global_position = base
 	var ok := true
 	var info := {}
-	for bid in Data.b["bows"]:
+	for bid in Data.bow_ids():
 		var a := _shoot(String(bid), base + Vector3(-3.0, 0.6, 0), 1.0)
 		var n: int = (a._trail as Array).size()
 		var want := 1 + (1 if String(Data.bow_fx(bid).get("trail", "")) == "glint" else (2 if String(Data.bow_fx(bid).get("trail", "")) in ["flame", "frost"] else 0))
@@ -750,7 +750,7 @@ func _fallback() -> void:
 	var pl = main.player
 	var bm := pl.model.find_child("SK_CatBow", true, false) as MeshInstance3D
 	main.closeup = Vector3(2.8, 1.9, -1.2)                  # beside the cat, a little ahead: the bow side
-	for bid in Data.b["bows"]:
+	for bid in Data.bow_ids():
 		Save.bows[bid] = maxi(int(Save.bows.get(bid, 1)), 1)
 		Save.bow = bid
 		pl.apply_bow()

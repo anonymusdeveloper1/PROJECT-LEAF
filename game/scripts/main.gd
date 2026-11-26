@@ -746,7 +746,7 @@ var _home_ready := -1                             # Phase F: the next home level
 ## when the price is affordable too).
 func _check_home_ready() -> void:
 	var nxt: int = Save.camp_level + 1
-	var met: bool = nxt <= (Data.b["stations"]["camp"]["levels"] as Array).size() and (Data.progress() >= 1 or Save.camp_level > 1) \
+	var met: bool = nxt <= Data.building_levels("home").size() and (Data.progress() >= 1 or Save.camp_level > 1) \
 		and Data.home_goals_met(nxt)
 	if met and _home_ready == 0:
 		hud.toast("Every goal met: %s can grow to level %d!" % [Data.camp_name(), nxt])
@@ -827,7 +827,7 @@ func on_camp_grown() -> void:
 	var opened: Array = []
 	for sid in ["stall", "cottage"]:
 		if int(Save.stations.get(sid, 0)) == 0 and Data.station_needs_home(sid) == Save.camp_level and Data.station_open(sid):
-			opened.append(String(Data.b["stations"][sid]["name"]))
+			opened.append(String(Data.building(sid)["name"]))
 	if not opened.is_empty() and not Save.flag("told_market"):
 		Save.set_flag("told_market")
 		hud.tip_after_delay(3.0, "New at %s: build the %s." % [Data.camp_name(), " and the ".join(opened)], stations.rings["shop"])
@@ -860,6 +860,6 @@ func loss_hint() -> String:
 	var bl := int(Save.bows[Save.bow])
 	if bl < Data.bow_cap() and bl < Data.bow_top(Save.bow) and Data.can_afford(Data.bow_cost(Save.bow, bl)):
 		return "Level up your bow at the Bow Shop."
-	if Save.camp_level < (Data.b["stations"]["camp"]["levels"] as Array).size() and not Data.home_goals_met(Save.camp_level + 1):
+	if Save.camp_level < Data.building_levels("home").size() and not Data.home_goals_met(Save.camp_level + 1):
 		return "Spend your leaves on the goals at %s, then try again." % Data.camp_name()
 	return "You kept your leaves. Upgrade and try again!"

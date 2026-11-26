@@ -123,8 +123,8 @@ func _hearthtree_card() -> void:
 # ---------------------------------------------------------------- (b) the pet and the Market at Hearthtree 2
 func _unlocks() -> void:
 	var st = _st()
-	var market := String(Data.b["stations"]["stall"]["name"])
-	var cottage := String(Data.b["stations"]["cottage"]["name"])
+	var market := String(Data.building("stall")["name"])
+	var cottage := String(Data.building("cottage")["name"])
 	Save.leaves = 99999
 	Save.timber = 9999
 	Save.camp_level = 1
@@ -384,14 +384,14 @@ func _tiles() -> void:
 	_x("the Training Target's card is made of item tiles", only_t and _items(tr).size() >= 4 and not dmg.is_empty()
 		and String(dmg.get("badge", "")) == "Level %d/%d" % [int(Save.stats["damage"]), Data.stat_cap("damage")] and (dmg.get("stats", []) as Array).size() == 1,
 		{"rows": _titles(tr), "damage": dmg.get("badge", "")})
-	var up: Dictionary = _tile_named(tr, "%s level 2" % String(Data.b["stations"]["target"]["name"]))
+	var up: Dictionary = _tile_named(tr, "%s level 2" % String(Data.building("target")["name"]))
 	_x("the Target's own upgrade is a tile", not up.is_empty() and String(up["label"]) == "Upgrade", {"rows": _titles(tr)})
 	var br: Array = st._card_bench()["rows"]
 	var only_b := br.all(func(r): return _kind(r) in ["item", "section"])
 	var twig: Dictionary = _tile_named(br, String(Data.bow_info(Save.bow)["name"]))
 	_x("the Bow Shop's card is made of item tiles, the bow in the paw 'Equipped'", only_b and _items(br).size() >= 3
 		and String(twig.get("badge", "")) == "Equipped" and String(twig.get("label", "")) == "Upgrade", {"rows": _titles(br)})
-	var bench_name := String(Data.b["stations"]["bench"]["name"])
+	var bench_name := String(Data.building("bench")["name"])
 	# the Bench's own upgrade tile shares the bow icon: leave it out
 	var others: Array = _items(br).filter(func(r): return String(r.get("icon", "")) == "bow" and r != twig and not String(r.get("title", "")).begins_with(bench_name))
 	_x("every other bow is a Buy or Equip tile", not others.is_empty() and others.all(func(r): return String(r["label"]) in ["Equip", "Buy"]),
@@ -421,8 +421,8 @@ func _old_save() -> void:
 		and int(Save.stations["cottage"]) == 2 and Save.camp_level == 1, {"stations": Save.stations})
 	_x("... and Thistle and Sprig", main.mount != null and main.pet != null and Data.mount_level() == 2 and Data.pet_level() == 2)
 	var rows: Array = st._card_shop()["rows"]
-	var market := String(Data.b["stations"]["stall"]["name"])
-	var cottage := String(Data.b["stations"]["cottage"]["name"])
+	var market := String(Data.building("stall")["name"])
+	var cottage := String(Data.building("cottage")["name"])
 	_x("the Hearthtree's card does not sell them again", _tile_named(rows, market).is_empty() and _tile_named(rows, cottage).is_empty())
 	var ride: Array = st._card_stall()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")
 	_x("the Market works at Hearthtree 1 (Ride is on)", ride.size() == 1 and bool(ride[0]["enabled"]))
@@ -433,16 +433,16 @@ func _old_save() -> void:
 func _spent(id: String) -> Dictionary:
 	var out := {"leaves": 0.0, "timber": 0.0}
 	if id == "home":
-		var levels: Array = Data.b["stations"]["camp"]["levels"]
+		var levels: Array = Data.building_levels("home")
 		out["leaves"] = 100.0
 		for k in range(1, mini(Save.camp_level, levels.size())):
 			out["leaves"] += float(levels[k].get("leaves", 0))
 			out["timber"] += float(levels[k].get("timber", 0))
 		return out
-	var s: Dictionary = Data.b["stations"][id]
-	out["leaves"] = float(s.get("build", {}).get("leaves", 0))
-	out["timber"] = float(s.get("build", {}).get("timber", 0))
-	var lv2: Array = s.get("levels", [])
+	var price := Data.build_price(id)
+	out["leaves"] = float(price.get("leaves", 0))
+	out["timber"] = float(price.get("timber", 0))
+	var lv2 := Data.building_levels(id)
 	for k in range(1, mini(int(Save.stations.get(id, 1)), lv2.size())):
 		out["leaves"] += float(lv2[k].get("leaves", 0))
 		out["timber"] += float(lv2[k].get("timber", 0))

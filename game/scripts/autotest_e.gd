@@ -1057,8 +1057,8 @@ func _topup() -> void:
 	# Phase F: the Training Target and the Bow Shop have 5 levels each, capping stats and bows at 4/6/8/9/10
 	# (stat_cap_by_station_level, bow_cap_by_bench_level); only at level 5 (10) do the Burrows add mastery (11-12). This
 	# test was written when level 3 allowed 10, so both are at their top level here.
-	Save.stations["bench"] = (Data.b["stations"]["bench"]["levels"] as Array).size()
-	Save.stations["target"] = (Data.b["stations"]["target"]["levels"] as Array).size()
+	Save.stations["bench"] = Data.building_levels("bench").size()
+	Save.stations["target"] = Data.building_levels("target").size()
 	Save.def_levels = {"barricade": 4, "tower": 4, "spikes": 4}
 	main.stations.free_guardian()
 	Save.stations["stone"] = 3

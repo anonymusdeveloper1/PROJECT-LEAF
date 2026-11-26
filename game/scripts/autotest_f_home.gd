@@ -37,8 +37,8 @@ func _x(what: String, ok: bool, extra := {}) -> bool:
 
 ## Every station goal must be reachable before the Hearthtree grows to the level that asks for it.
 func _station_goal_gates() -> void:
-	var stations: Dictionary = Data.b["stations"]
-	var levels: Array = stations["camp"]["levels"]
+	var menu := Data.menu_buildings()
+	var levels: Array = Data.building_levels("home")
 	var wins: int = 0
 	for previous_home: int in levels.size():
 		# Raid Missions open in order, so a locked mission also blocks those after it.
@@ -50,19 +50,19 @@ func _station_goal_gates() -> void:
 				continue
 			var id: String = String(goal.get("id", ""))
 			var need: int = int(goal.get("level", 1))
-			var station: Dictionary = stations.get(id, {})
-			var upgrades: Array = station.get("levels", [])
+			var station: Dictionary = Data.building(id)
+			var upgrades := Data.building_levels(id)
 			var gift: int = Data.gift_mission(id)
 			# The Buildings shelf is open by the first win. The Guardian Stone is found in the Gloomwood.
-			var can_build: bool = Data.SHOP_BUILT.has(id) and Data.station_needs_home(id) <= previous_home \
-				and wins >= maxi(1, int(station.get("needs_missions", 0)))
+			var can_build: bool = menu.has(station) and Data.station_needs_home(id) <= previous_home \
+				and wins >= maxi(1, int((station.get("unlock", {}) as Dictionary).get("missions_won", 0)))
 			var can_get: bool = can_build or (gift >= 0 and gift < wins) or (id == "stone" and burrows_open)
 			var can_level: bool = need >= 1 and need <= mini(previous_home, upgrades.size())
 			for upgrade: int in range(1, mini(need, upgrades.size())):
 				if bool((upgrades[upgrade] as Dictionary).get("needs_burrows", false)) and not burrows_open:
 					can_level = false
 			_x("Hearthtree %d station goal %s level %d is reachable at Hearthtree %d" % [previous_home + 1, id, need, previous_home],
-				stations.has(id) and can_get and can_level)
+				not station.is_empty() and can_get and can_level)
 
 
 func _caps_of(key: String, lv: int) -> int:
@@ -101,7 +101,7 @@ func _win_upto(n: int) -> void:
 
 ## The save set so every goal on home `level`'s list is met (never lowering anything).
 func _meet(level: int) -> void:
-	var levels: Array = Data.b["stations"]["camp"]["levels"]
+	var levels: Array = Data.building_levels("home")
 	for g in (levels[level - 1] as Dictionary).get("goals", []):
 		var lv := int(g.get("level", 1))
 		var id := String(g.get("id", ""))
@@ -148,7 +148,7 @@ func _texts(rows: Array) -> String:
 # ---------------------------------------------------------------- (a) a fresh save
 func _fresh_save() -> void:
 	var g2 := Data.home_goals(2)
-	var want: Array = Data.b["stations"]["camp"]["levels"][1].get("goals", [])
+	var want: Array = Data.building_levels("home")[1].get("goals", [])
 	var shaped := true
 	for g in g2:
 		if String(g["text"]) == "" or String(g["progress"]) == "" or not g.has("station") or not g.has("have") or not g.has("need") or not g.has("done"):
@@ -168,7 +168,7 @@ func _fresh_save() -> void:
 	# 22 Nov 2026: Thorn Volley is hidden from the Bow Shop, and the Frost Bow needs Bow Shop 5, so Hearthtree 6 asks for it; no goal needs a hidden bow
 	var bow5: Array = Data.home_goals(6).filter(func(g): return String(g["type"]) == "bow_owned")
 	var hidden_goals: Array = []
-	for lvd in Data.b["stations"]["camp"]["levels"]:
+	for lvd in Data.building_levels("home"):
 		for g in (lvd as Dictionary).get("goals", []):
 			if String(g.get("type", "")) in ["bow", "bow_owned"] and Data.bow_hidden(String(g.get("id", ""))):
 				hidden_goals.append(g)
@@ -177,13 +177,13 @@ func _fresh_save() -> void:
 		and frost_ok and hidden_goals.is_empty(), {"bow6": bow5.map(func(g): return g["text"]), "hidden": hidden_goals})
 	# no goal asks for a bow (or a Bow Shop level) the Hearthtree level before it cannot give (the Shop is capped by station_max_level)
 	var reach_bad: Array = []
-	var levels_all: Array = Data.b["stations"]["camp"]["levels"]
+	var levels_all: Array = Data.building_levels("home")
 	var prices_up := true
 	for lv in range(2, levels_all.size() + 1):
 		var prev_cap_home := lv - 1
-		var shop_max := mini((Data.b["stations"]["bench"]["levels"] as Array).size(), prev_cap_home)
+		var shop_max := mini(Data.building_levels("bench").size(), prev_cap_home)
 		for g in (levels_all[lv - 1] as Dictionary).get("goals", []):
-			if String(g.get("type", "")) == "bow_owned" and int(Data.bow_info(String(g["id"]))["bench_level"]) > shop_max:
+			if String(g.get("type", "")) == "bow_owned" and Data.bow_shop_level(String(g["id"])) > shop_max:
 				reach_bad.append("%s at home %d" % [g["id"], lv])
 		if lv > 2:
 			prices_up = prices_up and int((levels_all[lv - 1] as Dictionary).get("leaves", 0)) > int((levels_all[lv - 2] as Dictionary).get("leaves", 0)) \

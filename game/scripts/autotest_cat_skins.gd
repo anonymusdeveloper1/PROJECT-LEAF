@@ -133,9 +133,9 @@ func _clear() -> void:
 # ---------------------------------------------------------------- (a) the building
 func _building() -> void:
 	var st = _st()
-	var name := String(Data.b["stations"]["tailor"]["name"])
-	var nh := int(Data.b["stations"]["tailor"].get("needs_home", 1))
-	var build: Dictionary = Data.b["stations"]["tailor"]["build"]
+	var name := String(Data.building("tailor")["name"])
+	var nh := Data.station_needs_home("tailor")
+	var build: Dictionary = Data.build_price("tailor")
 	var need_txt := "Needs %s at level %d" % [Data.camp_name(), nh]
 	var tl := _item(st._card_shop(), name)
 	_x("at Hearthtree 2 the Hearthtree shows a Locked %s tile ('%s')" % [name, need_txt], nh == 3 and String(tl.get("badge", "")) == "Locked"
@@ -157,7 +157,7 @@ func _building() -> void:
 		{"leaves": Save.leaves, "timber": Save.timber})
 	var node: Node3D = st.nodes.get("tailor")
 	var own := Props.has("tailors_nook")
-	var want := "tailors_nook" if own else String(Data.b["stations"]["tailor"]["stand_in"]["model"])
+	var want := "tailors_nook" if own else String(Data.building("tailor")["stand_in"]["model"])
 	_x("its model stands at its spot: %s" % ("the owner's tailors_nook" if own else "the stand-in %s, tinted" % want), node != null
 		and String(node.get_meta("model", "")) == want and node.global_position.distance_to(main.world.station_pos("tailor")) < 0.01,
 		{"model": node.get_meta("model", "") if node else "", "at": node.global_position if node else Vector3.ZERO})
@@ -360,7 +360,7 @@ func _after_swap() -> void:
 	info["model"] = _keep_other
 	# a bow with its own model in the paw, if one exists (else the cat's own bow, tinted)
 	var bid := "twig"
-	for b in Data.b["bows"]:
+	for b in Data.bow_ids():
 		if ResourceLoader.exists(pl.bow_path(String(b))) and not Data.bow_hidden(String(b)):
 			bid = String(b)
 			break

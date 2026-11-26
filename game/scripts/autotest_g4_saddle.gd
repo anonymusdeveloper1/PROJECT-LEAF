@@ -134,14 +134,14 @@ func _building() -> void:
 	var tl := _item(st._card_shop(), "Saddlery")
 	_x("before raid 8: the Hearthtree shows a Locked Saddlery tile ('Win 8 raids first')", String(tl.get("badge", "")) == "Locked"
 		and String(tl.get("text", "")).contains("Finish 8 Raid Missions first") and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
-	var build: Dictionary = Data.b["stations"]["saddlery"]["build"]
+	var build: Dictionary = Data.build_price("saddlery")
 	Save.leaves = 100000
 	Save.timber = 1000
 	st._build_station("saddlery")
 	_x("before raid 8 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
 	_start_fresh(8)
 	# 21 Nov 2026: it needs the Hearthtree at level 2 too (stations.saddlery.needs_home)
-	var nh := int(Data.b["stations"]["saddlery"].get("needs_home", 1))
+	var nh := Data.station_needs_home("saddlery")
 	Save.camp_level = 1
 	Save.leaves = 100000
 	Save.timber = 1000

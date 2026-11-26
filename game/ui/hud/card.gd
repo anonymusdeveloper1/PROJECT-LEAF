@@ -5,15 +5,31 @@ extends RefCounted
 ## to close it"): DIALOG_W of the screen's width, at most DIALOG_H of the height between the phone's bars, in the
 ## middle, over a soft see-through dim of the game. The game runs on underneath; the dim takes every touch, so a drag
 ## there never moves the cat. The banner and the toast stay on top (what a button did shows there).
+## H4 (the window kit; the rest of the kit is in ui/kit/): a card may also have
+##   "footer"   pinned under the rows, so it never scrolls away: {"text" (bold, one line), "note" (up to 2 lines),
+##              "cost" (a price line), "buttons": [{"label", "enabled", "action", "tone"}] (0-2, on the right; the last is
+##              the main one; "tone" a name of shop_tiles.BTN), "pulse" (read by the windows' pulse(), not here)};
+##              an empty footer (or none: the wave blank, the ruin card, the signpost) hides it;
+##   "tabs"     each tab may carry "id" (the tests read it), "icon" (drawn left of its text, or alone when the text is
+##              "") and "dot" (the small "!" on a tab that has something you can buy: the owner's yes, 26 Nov 2026);
+##   "tabs_at"  "top" (the default) or "bottom" (under the footer);
+##   rows {"kind": "list"} (ui/kit/list_row.gd), each its own row of the list.
+## The footer's contents, a tab's icon and its dot are drawn by ui/kit/card_parts.gd; the card keeps the footer's box.
+## And it tells a window when its visit starts and ends: the object behind a card's builder hears card_opened() when
+## the card opens and card_closed() when it closes or another card replaces it (_builder_object; the Bag has no builder).
 
 const HudStyle := preload("res://ui/hud/hud_style.gd")
+const ListRow := preload("res://ui/kit/list_row.gd")
+const CardParts := preload("res://ui/kit/card_parts.gd")   # H4: the footer, a tab's icon and its "!" dot
 const DIALOG_H := 0.8
 const DIM_A := 0.42
 const CLOSE := 68.0                     # the round X, HUD pixels (about 7 mm on the phone)
 const PARCHMENT := Color(0.99, 0.95, 0.84)
 const WOOD := Color(0.56, 0.35, 0.17)
+const LIST_GAP := 8                     # H4: between two list rows (no rule between them)
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
+var foot: MarginContainer               # H4: the open card's footer (pinned under the scroll); null when no card is open
 
 
 func _init(h) -> void:
@@ -26,6 +42,7 @@ func show_card(ring) -> void:
 	var was_open: bool = hud._card != null
 	hide_card()
 	hud._card_ring = ring
+	_visit_hook(ring, "card_opened")                    # H4: the window behind the card hears its visit start
 	hud._dim = ColorRect.new()
 	hud._dim.color = Color(0.03, 0.025, 0.02, DIM_A if was_open else 0.0)
 	hud._dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -63,6 +80,8 @@ func show_card(ring) -> void:
 
 
 func hide_card() -> void:
+	if hud._card_ring != null:
+		_visit_hook(hud._card_ring, "card_closed")       # H4: the window behind the card hears its visit end
 	_close_window()                                     # H3: the window's visit ends (the X, a tap outside, another card)
 	hud._card_window = null
 	if hud._card != null:
@@ -85,6 +104,7 @@ func hide_card() -> void:
 		tw2.tween_property(dm, "color:a", 0.0, 0.12)
 		tw2.tween_callback(dm.queue_free)
 	hud._card_ring = null
+	foot = null                                         # H4: freed with the dialog
 	hud._close_btn = null
 	hud._card_head = null
 	hud._card_scroll = null
@@ -96,6 +116,25 @@ func hide_card() -> void:
 	hud._card_nav = null
 	hud._card_view_id = ""
 	hud._card_render_signature = ""
+
+
+## H4: the object behind a card's builder (a building window: a marker's builder is window.spec; the confirm and the
+## Settings window are their own builders), or null. The Bag has no `builder` (Object.get gives null), so it is safe.
+func _builder_object(ring) -> Object:
+	if ring == null or not is_instance_valid(ring):
+		return null
+	var b: Variant = ring.get("builder")
+	if b is Callable and (b as Callable).is_valid():
+		return (b as Callable).get_object()
+	return null
+
+
+## H4: tells the window behind a card that its visit starts ("card_opened") or ends ("card_closed"), when it listens.
+## It must not open or close a card itself.
+func _visit_hook(ring, method: String) -> void:
+	var o := _builder_object(ring)
+	if o != null and o.has_method(method):
+		o.call(method)
 
 
 ## H3: the window whose visit is open hears that it ends (closed() once), and the card forgets it.
@@ -157,7 +196,7 @@ func card_title() -> String:
 
 ## Phase F: scrolls the open dialog to the first row or shop tile (not a goal line) whose words hold `needle`, and
 ## makes it glow a moment: a goal on the home's card that is sold further down the same card. Waits for the rows to be
-## laid out.
+## laid out. H4: a list row counts too.
 func scroll_card_to(needle: String) -> void:
 	if needle == "":
 		return
@@ -173,6 +212,11 @@ func scroll_card_to(needle: String) -> void:
 				if _holds_text(tile, needle):
 					_glow_at(tile as Control, (h as Control).position.y + (tile as Control).position.y)
 					return
+			continue
+		if h.has_meta("list_row"):                      # H4: a list row (ui/kit/list_row.gd)
+			if _holds_text(h, needle):
+				_glow_at(h as Control, (h as Control).position.y)
+				return
 			continue
 		if h is HBoxContainer and _holds_text(h, needle):
 			_glow_at(h as Control, (h as Control).position.y)
@@ -238,6 +282,19 @@ func close_button() -> Button:
 	return hud._close_btn
 
 
+## H4: the open footer's button with that label, or null (the tests press it: the Bow Shop has an Upgrade in a row too).
+func footer_button(label: String) -> Button:
+	if hud._card == null or foot == null or not is_instance_valid(foot):
+		return null
+	for c in foot.get_children():
+		if c.is_queued_for_deletion():
+			continue                                    # an old footer, going
+		for b in c.find_children("*", "Button", true, false):
+			if String(b.get_meta("label", "")) == label:
+				return b as Button
+	return null
+
+
 func _collect_buttons(n: Node, out: Array) -> void:
 	if n is Button:
 		out.append(n)
@@ -245,7 +302,8 @@ func _collect_buttons(n: Node, out: Array) -> void:
 		_collect_buttons(c, out)
 
 
-## The dialog's frame, made once when it opens: the header strip (the name, its line, the X) and the body that scrolls.
+## The dialog's frame, made once when it opens: the header strip (the name, its line, the X), the tabs, the body that
+## scrolls and (H4) the footer pinned under it. Bottom tabs move under the footer (_place_nav).
 func _card_frame() -> void:
 	for c in hud._card.get_children():
 		c.queue_free()
@@ -320,6 +378,14 @@ func _card_frame() -> void:
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hud._card_scroll.add_child(list)
 	hud._card_list = list
+	foot = MarginContainer.new()                    # H4: the footer, the frame's 4th child (under the body)
+	foot.add_theme_constant_override("margin_left", 16)
+	foot.add_theme_constant_override("margin_right", 16)
+	foot.add_theme_constant_override("margin_top", 6)
+	foot.add_theme_constant_override("margin_bottom", 12)
+	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	foot.visible = false
+	v.add_child(foot)
 
 
 ## The dialog's contents: its name and line in the header, then the rows, in the body that scrolls inside the dialog
@@ -328,6 +394,8 @@ func _card_frame() -> void:
 ## H3: a row {"kind": "window", "window": w} is a whole window (the garden's, the pot's): w.content() is added and
 ## hud._card_window = w, so the HUD ticks it (_window_row has the visit hooks). A card with a window gives a stable
 ## view_id, so a leaf pickup or a save (Save.changed) does not rebuild it under a drag.
+## H4: a row {"kind": "list"} is one list row (ui/kit/list_row.gd), each its own child of the list, LIST_GAP apart with
+## no rule between them; "footer" fills the pinned footer (_fill_footer) and "tabs_at" puts the tabs on top or under it.
 func _fill_card(spec: Dictionary) -> void:
 	var scroll: int = hud._card_scroll.scroll_vertical if hud._card_scroll != null else 0
 	hud._card_anchor = spec.get("anchor", Vector3.ZERO)
@@ -343,22 +411,30 @@ func _fill_card(spec: Dictionary) -> void:
 	if hud._card_list == null or not is_instance_valid(hud._card_list):
 		_card_frame()
 	var spacious := bool(spec.get("spacious", false))
+	var has_list := false                           # H4: list rows sit LIST_GAP apart (other cards keep 6)
+	for r in rows:
+		if r is Dictionary and String((r as Dictionary).get("kind", "")) == "list":
+			has_list = true
+			break
+	var bottom_tabs := String(spec.get("tabs_at", "top")) == "bottom"
 	hud._card_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER if spacious else ScrollContainer.SCROLL_MODE_AUTO
-	hud._card_list.add_theme_constant_override("separation", 16 if spacious else 6)
+	hud._card_list.add_theme_constant_override("separation", 16 if spacious else (LIST_GAP if has_list else 6))
 	for side in ["left", "right"]:
 		hud._card_body.add_theme_constant_override("margin_" + side, 18 if spacious else 16)
-		hud._card_nav.add_theme_constant_override("margin_" + side, 18 if spacious else 0)
+		hud._card_nav.add_theme_constant_override("margin_" + side, 18 if spacious else 16)   # H4: was 0 (no card had tabs)
 	hud._card_body.add_theme_constant_override("margin_top", 0 if spacious else 4)
 	hud._card_body.add_theme_constant_override("margin_bottom", 18 if spacious else 12)
-	hud._card_nav.add_theme_constant_override("margin_top", 18 if spacious else 0)
-	hud._card_nav.add_theme_constant_override("margin_bottom", 18 if spacious else 0)
+	hud._card_nav.add_theme_constant_override("margin_top", 18 if spacious else 6)
+	hud._card_nav.add_theme_constant_override("margin_bottom", 18 if spacious else (10 if bottom_tabs else 0))
 	hud._card_tabs.add_theme_constant_override("separation", 14 if spacious else 8)
+	_place_nav(bottom_tabs)
 	# a refresh (leaves spent, a wave starting) keeps the frame, the X and the scroll; only the words and rows change
 	hud._card_title.text = String(spec.get("title", ""))
 	hud._card_sub.text = String(spec.get("sub", ""))
 	hud._card_sub.visible = hud._card_sub.text != ""
 	_fill_card_tabs(spec.get("tabs", []))
 	hud._card_body.visible = not rows.is_empty()
+	_fill_footer(_dict(spec.get("footer", {})), not rows.is_empty())
 	for c in hud._card_list.get_children():
 		(c as Control).visible = false              # gone from the layout now (a pressed button finishes its press first)
 		c.queue_free()
@@ -375,6 +451,11 @@ func _fill_card(spec: Dictionary) -> void:
 		if kind == "window":
 			_window_row(list, row.get("window"))
 			prev = "window"
+			i += 1
+			continue
+		if kind == "list":                              # H4: one list row, its own child (the reveal staggers them)
+			list.add_child(ListRow.make(hud, row))
+			prev = "list"
 			i += 1
 			continue
 		if kind == "item":
@@ -422,6 +503,18 @@ func _fill_card(spec: Dictionary) -> void:
 				index += 1
 		for button in hud._card_tabs.get_children():
 			hud.p_sign._reveal_signpost_control(button as Control, 0.0)
+		if foot != null and foot.visible:
+			hud.p_sign._reveal_signpost_control(foot, 0.1)
+
+
+## H4: the tabs on top (between the header and the body, as before) or at the bottom (under the footer).
+func _place_nav(bottom: bool) -> void:
+	var frame := hud._card_nav.get_parent() as VBoxContainer
+	if frame == null:
+		return
+	var want := frame.get_child_count() - 1 if bottom else 1
+	if hud._card_nav.get_index() != want:
+		frame.move_child(hud._card_nav, want)
 
 
 func _fill_card_tabs(tabs: Array) -> void:
@@ -436,13 +529,42 @@ func _fill_card_tabs(tabs: Array) -> void:
 		var color := Color(0.72, 0.43, 0.17) if selected else Color(0.29, 0.48, 0.58)
 		if not enabled and not selected:
 			color = Color(0.5, 0.49, 0.45)
-		var button: Button = hud.p_actions._big_button(String(tab["text"]), color, tab.get("action", Callable()), enabled)
+		var text := String(tab.get("text", ""))
+		var button: Button = hud.p_actions._big_button(text, color, tab.get("action", Callable()), enabled)
 		button.custom_minimum_size = Vector2(0, 64)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 26)
 		button.set_meta("card_tab", true)
+		if String(tab.get("id", "")) != "":
+			button.set_meta("tab_id", String(tab["id"]))   # H4: the tests find a tab by its id
+		var icon: Variant = tab.get("icon", "")            # an icon id or a texture
+		if icon is Texture2D or String(icon) != "":
+			CardParts.tab_icon(hud, button, icon, text)
+		if bool(tab.get("dot", false)):
+			button.add_child(CardParts.tab_dot())
 		hud._card_tabs.add_child(button)
 		hud.p_sign._signpost_button_motion(button)
+
+
+## H4: the pinned footer (see the top of this file; its contents are drawn by ui/kit/card_parts.gd). The old one goes
+## first: its buttons go off at once (no tap and no test press reaches a footer that is being replaced). `rule`: a thin
+## line over it, when rows show above it. An empty footer hides the box.
+func _fill_footer(f: Dictionary, rule: bool) -> void:
+	if foot == null or not is_instance_valid(foot):
+		return
+	for c in foot.get_children():
+		for b in c.find_children("*", "BaseButton", true, false):
+			(b as BaseButton).disabled = true
+		(c as Control).visible = false
+		c.queue_free()
+	var col: Control = CardParts.footer(hud, f, rule)
+	foot.visible = col != null
+	if col != null:
+		foot.add_child(col)
+
+
+func _dict(v: Variant) -> Dictionary:
+	return v if v is Dictionary else {}
 
 
 ## A plain row (the card rows from before Phase G2): its words and note, and a button with its price. "done" (with
@@ -603,6 +725,8 @@ func _place_card() -> void:
 		var room: float = max_h - hud._card_head.get_combined_minimum_size().y - 12.0 - 16.0
 		if hud._card_nav != null and hud._card_nav.visible:
 			room -= hud._card_nav.get_combined_minimum_size().y
+		if foot != null and is_instance_valid(foot) and foot.visible:
+			room -= foot.get_combined_minimum_size().y     # H4: the pinned footer takes its room from the scroll
 		room -= hud._card_body.get_theme_constant("margin_top") + hud._card_body.get_theme_constant("margin_bottom") - 16.0
 		hud._card_scroll.custom_minimum_size.y = clampf(hud._card_list.get_combined_minimum_size().y, 0.0, maxf(room, 120.0))
 	var cs: Vector2 = hud._card.get_combined_minimum_size()

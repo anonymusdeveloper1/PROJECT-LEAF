@@ -1,0 +1,32 @@
+{
+  "id": "volley",
+  "name": "Thorn Volley",
+  "desc": "3 arrows in a fan",
+  "icon": "bow",
+  "price": {"leaves": 1200, "timber": 40},
+  "unlock": {"building": ["bench", 4]},
+  "hidden": true,
+  "damage": 0.65,
+  "arrows": 3,
+  "spread_deg": 13,
+  "pierce": 0,
+  "range_bonus": 0.0,
+  "tint": "#8FD06A",
+  "fx": {
+    "color": "#B6E890",
+    "burst": "sparks",
+    "burst_colors": ["#E8FFD0", "#8FD06A"],
+    "burst_n": 6,
+    "trail": "tint",
+    "trail_len": 0.7,
+    "trail_w": 0.03,
+    "trail_alpha": 0.4,
+    "hit": "leaf",
+    "hit_colors": ["#8FD06A", "#5E9A3A", "#D9E8A6"],
+    "hit_n": 6
+  },
+  "per_level": 0.1,
+  "cost": [58, 84, 117, 162, 221, 225, 300, 410, 545, 730],
+  "mastery": [{"leaves": 1200}, {"leaves": 2100}],
+  "draw_mult": 1.0
+}

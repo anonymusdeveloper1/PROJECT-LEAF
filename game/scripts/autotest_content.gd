@@ -1,19 +1,21 @@
-## Content checks for autotest.gd (`-- --autotest --fresh --content`; docs/ARCHITECTURE.md part 11).
-## H3 (26 Nov 2026): the crops and recipes are content folders (game/content/<kind>/<id>/entry.json). Until
-## tools/build_content_index exists, game/content/index.json is written by hand, so this checks that it lists every
-## entry folder and nothing else. It also checks each entry's fields, its models (Props) and icons (the HUD's icon ids),
-## the unlock rules (Data.unlocked), and that the Bag knows every new thing by itself (core/bag.gd reads the kinds from
-## data). The effect types are checked in --bag (core/effects.gd comes later in H3).
-## Uses Data, Save, Bag, Props and the HUD's icons. Changes only Save.stations (put back) and the Bag (put back).
+## Content checks for autotest.gd (docs/ARCHITECTURE.md part 11).
+## Checks the hand-written index, entry fields, asset paths, unlocks and the Bag's content.
+## Restores the save fields used to test unlocks, repairs and the Bag.
 extends Node
 
 const AutotestScript := preload("res://scripts/autotest.gd")
 const MainScript := preload("res://scripts/main.gd")
+const PlayerScript := preload("res://scripts/player.gd")
+const ArrowScript := preload("res://scripts/arrow.gd")
 
 const INDEX_PATH := "res://content/index.json"
-## The H3 entries, in index order (the build map, part 3.3).
+## Content in index order.
 const CROPS := ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"]
 const RECIPES := ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]
+const BOWS := ["twig", "sunwood", "ember", "frost", "volley", "foxfire"]
+const BUILDINGS := ["home", "target", "bench", "well", "cottage", "stall", "stone", "garden", "fishing", "saddlery", "tailor"]
+## The buildings with a picture rendered from their model in H4 (art/scripts/buildings/pictures.py).
+const PICTURED := ["target", "bench", "well", "cottage", "stall", "tailor"]
 ## The fields an effect may have (the effects list's shared fields, ARCHITECTURE part 5).
 const EFFECT_FIELDS := ["type", "target", "share", "stat", "mult", "seconds"]
 const TARGETS := ["cat", "mount"]
@@ -29,6 +31,8 @@ func run() -> bool:
 	var ok := _check_index()
 	ok = _check_crops() and ok
 	ok = _check_recipes() and ok
+	ok = _check_bows() and ok
+	ok = _check_buildings() and ok
 	ok = _check_unlocked() and ok
 	ok = _check_icons() and ok
 	ok = _check_bag_kinds() and ok
@@ -44,6 +48,10 @@ func _check_index() -> bool:
 	var kinds: Dictionary = (index as Dictionary)["kinds"]
 	var ok := t._expect("the index lists the 5 crops in order", kinds.get("crops", []) == CROPS, {"crops": kinds.get("crops")})
 	ok = t._expect("the index lists the 5 recipes in order", kinds.get("recipes", []) == RECIPES, {"recipes": kinds.get("recipes")}) and ok
+	ok = t._expect("the index lists the bows and buildings in order",
+		kinds.get("bows", []) == BOWS and kinds.get("buildings", []) == BUILDINGS,
+		{"bows": kinds.get("bows"), "buildings": kinds.get("buildings")}) and ok
+	ok = t._expect("bow and building entries live in content", not Data.b.has("bows") and not Data.b.has("stations")) and ok
 	# written by hand until tools/build_content_index exists: every folder with an entry is listed, and nothing else
 	var folders_kinds: Array = []
 	for kind: String in DirAccess.get_directories_at("res://content"):
@@ -166,36 +174,194 @@ func _check_recipes() -> bool:
 	return ok
 
 
+# ---------------------------------------------------------------- bows and buildings
+func _check_bows() -> bool:
+	var bad: Dictionary = {}
+	var ids: Array = []
+	for bow: Dictionary in Data.bows():
+		var id := String(bow.get("id", ""))
+		ids.append(id)
+		var why := _shared_fields(bow)
+		why.append_array(_price_problems(bow.get("price"), id == "twig"))
+		var cost: Variant = bow.get("cost")
+		var mastery: Variant = bow.get("mastery")
+		if not _is_num(bow.get("damage")) or float(bow["damage"]) <= 0.0:
+			why.append("damage")
+		if not _is_num(bow.get("arrows")) or int(bow["arrows"]) < 1:
+			why.append("arrows")
+		if not cost is Array or cost.size() != 10:
+			why.append("cost")
+		else:
+			for amount: Variant in cost:
+				if not _is_num(amount) or float(amount) < 0.0:
+					why.append("upgrade price")
+		if not mastery is Array or mastery.size() != 2:
+			why.append("mastery")
+		else:
+			for price: Variant in mastery:
+				why.append_array(_price_problems(price))
+		if not ResourceLoader.exists(PlayerScript.bow_path(id)):
+			why.append("bow model")
+		if not ResourceLoader.exists(ArrowScript.arrow_path(id)):
+			why.append("arrow model")
+		if Data.bow_picture(id) == "" or not ResourceLoader.exists(Data.bow_picture(id)):
+			why.append("picture")
+		if not is_same(Data.bow_info(id), Data.item("bows", id)) or not is_same(bow, Data.bow_info(id)):
+			why.append("shared entry")
+		if not why.is_empty():
+			bad[id] = why
+	var ok := t._expect("bow entries share their data and have prices, shooting numbers and assets", bad.is_empty(), {"bad": bad})
+	return t._expect("Data.bows and Data.bow_ids give the shop order", ids == BOWS and Data.bow_ids() == BOWS, {"ids": ids}) and ok
+
+
+func _check_buildings() -> bool:
+	var bad: Dictionary = {}
+	var gifts: Array = []
+	for mission: Dictionary in Data.b["missions"]:
+		var gift := String(mission.get("gift", ""))
+		if not gift.is_empty():
+			gifts.append(gift)
+	var gift_buildings: Array = []
+	var ids: Array = []
+	for entry: Dictionary in Data.buildings():
+		var id := String(entry.get("id", ""))
+		ids.append(id)
+		var why := _shared_fields(entry)
+		var arrives := String(entry.get("arrives", ""))
+		if not arrives in ["menu", "gift", "found", "always"]:
+			why.append("arrives")
+		why.append_array(_price_problems(entry.get("price"), arrives != "menu"))
+		if arrives == "gift":
+			gift_buildings.append(id)
+		var picture := Data.building_picture(id)
+		if picture != "" and not (load(picture) is Texture2D):
+			why.append("picture")
+		if Data.building_levels(id).is_empty():
+			why.append("levels")
+		if not why.is_empty():
+			bad[id] = why
+	var ok := t._expect("Data.buildings gives the indexed entries with shared fields, prices, levels and optional pictures",
+		ids == BUILDINGS and bad.is_empty(), {"ids": ids, "bad": bad})
+	gifts.sort()
+	gift_buildings.sort()
+	ok = t._expect("every gift building comes from a mission and every mission gift is a gift building",
+		gifts == gift_buildings, {"missions": gifts, "buildings": gift_buildings}) and ok
+	# H4: the pictures rendered from the owner's models (assets/ui/buildings); the Saddlery has no model, so its icon shows
+	var no_picture: Array = PICTURED.filter(func(id: String) -> bool: return Data.building_picture(id) == "")
+	ok = t._expect("the buildings with a model have their picture, the Saddlery none (Data.building_picture)",
+		no_picture.is_empty() and Data.building_picture("saddlery") == "", {"missing": no_picture}) and ok
+	var levels := Data.building_levels("home")
+	ok = t._expect("the Hearthtree has one name for every level", levels.size() == (Data.b["home_names"] as Array).size()) and ok
+	return _check_building_refs(levels) and ok
+
+
+func _check_building_refs(home_levels: Array) -> bool:
+	var stats: Dictionary = Data.b["stats"]
+	var defences: Dictionary = Data.b["defences"]
+	var bad: Array = []
+	for id: String in stats:
+		if Data.building(String(Data.stat_info(id).get("station", ""))).is_empty():
+			bad.append("stat: " + id)
+	for level: Dictionary in home_levels:
+		for goal: Dictionary in level.get("goals", []):
+			var id := String(goal.get("id", ""))
+			match String(goal.get("type", "")):
+				"station":
+					if Data.building(id).is_empty():
+						bad.append(goal)
+				"bow", "bow_owned":
+					if not Data.has_bow(id):
+						bad.append(goal)
+				"stat":
+					if not stats.has(id):
+						bad.append(goal)
+				"defence":
+					if not defences.has(id):
+						bad.append(goal)
+				"towers":
+					if not defences.has("tower"):
+						bad.append(goal)
+	return t._expect("stats and home goals refer to existing buildings, bows, stats and defences", bad.is_empty(), {"bad": bad})
+
+
 # ---------------------------------------------------------------- unlock rules
 func _check_unlocked() -> bool:
 	var bad: Array = []
-	for kind: String in ["crops", "recipes"]:
-		for e: Variant in Data.catalog(kind):
-			var rule: Variant = (e as Dictionary).get("unlock")
+	for kind: String in ["crops", "recipes", "bows", "buildings"]:
+		for e: Dictionary in Data.catalog(kind):
+			var rule: Variant = e.get("unlock")
 			if not rule is Dictionary or not _unlock_form_known(rule):
-				bad.append("%s/%s" % [kind, (e as Dictionary).get("id", "?")])
-	var ok := t._expect("every unlock rule is a form Data.unlocked knows and points to a building that exists", bad.is_empty(), {"bad": bad})
-	var was := int(Save.stations.get("fishing", 0))
+				bad.append("%s/%s" % [kind, e.get("id", "?")])
+	var ok := t._expect("every unlock rule names known requirements and existing building levels", bad.is_empty(), {"bad": bad})
+	var kept_stations := Save.stations
+	var kept_flags := Save.flags
+	var kept_missions := Save.missions_done
+	var kept_home := Save.camp_level
+	Save.stations = kept_stations.duplicate()
+	Save.flags = kept_flags.duplicate()
+	Save.missions_done = []
+	Save.camp_level = 1
 	Save.stations["fishing"] = 0
-	var shut := not Data.unlocked({"building": ["fishing", 1]})
+	var flag := "content_test_unlock"
+	Save.flags.erase(flag)
+	var fish_rule := {"building": ["fishing", 1]}
+	var flag_rule := {"flag": flag}
+	var both := {"building": ["fishing", 1], "flag": flag}
+	var mission_rule := {"missions_won": 1}
+	var starts_shut := not Data.unlocked(fish_rule) and not Data.unlocked(flag_rule) and not Data.unlocked(both)
+	var missions_shut := not Data.unlocked(mission_rule)
 	Save.stations["fishing"] = 1
-	var open := Data.unlocked({"building": ["fishing", 1]}) and not Data.unlocked({"building": ["fishing", 2]})
-	Save.stations["fishing"] = was
-	ok = t._expect("Data.unlocked: {} is open; a building rule opens at its level; the home counts as a building",
-		Data.unlocked({}) and shut and open and Data.unlocked({"building": ["home", 1]}), {"shut": shut, "open": open}) and ok
-	ok = t._expect("Data.unlocked: a rule of another form stays shut", not Data.unlocked({"flag": "no_such_flag"})
-		and not Data.unlocked({"building": "fishing"}) and not Data.unlocked({"building": ["fishing", 1], "flag": "x"})) and ok
-	return ok
+	var fish_only := Data.unlocked(fish_rule) and not Data.unlocked(both) and not Data.unlocked({"building": ["fishing", 2]})
+	var missing_flag := Data.unlock_missing(both) == [{"type": "flag", "id": flag}]
+	Save.flags[flag] = true
+	var both_open := Data.unlocked(flag_rule) and Data.unlocked(both)
+	Save.stations["fishing"] = 0
+	var flag_only := not Data.unlocked(both) and Data.unlock_missing(both) == [{"type": "building", "id": "fishing", "level": 1}]
+	Save.missions_done.append(String(Data.mission(0)["id"]))
+	var missions_open := Data.unlocked(mission_rule) and Data.unlock_missing({"missions_won": 2}) == [{"type": "missions_won", "n": 2}]
+	ok = t._expect("unlock rules require their building, flag and mission conditions",
+		Data.unlocked({}) and Data.unlocked({"building": ["home", 1]}) and starts_shut and fish_only
+		and missing_flag and both_open and flag_only and missions_shut and missions_open) and ok
+	ok = t._expect("an unknown key or a malformed requirement keeps an unlock rule closed",
+		not Data.unlocked({"flag": flag, "unknown": true}) and not Data.unlocked({"building": "fishing"})) and ok
+
+	Save.flags["shop_open"] = true
+	var market_shut := not Data.station_open("stall")
+	Save.camp_level = 2
+	var market_open := Data.station_open("stall")
+	Save.missions_done.clear()
+	Save.stations["stall"] = 1
+	var repair: Dictionary = main.stations.repair_cost("stall")
+	Save.stations = kept_stations
+	Save.flags = kept_flags
+	Save.missions_done = kept_missions
+	Save.camp_level = kept_home
+	ok = t._expect("the Market opens at Hearthtree 2 and the Well needs Hearthtree 3",
+		market_shut and market_open and Data.station_needs_home("well") == 3) and ok
+	return t._expect("the Market's repair price includes timber before raids open",
+		int(repair.get("timber", 0)) > 0, {"repair": repair}) and ok
 
 
 func _unlock_form_known(rule: Dictionary) -> bool:
-	if rule.is_empty():
-		return true
-	var bld: Variant = rule.get("building")
-	if rule.size() != 1 or not bld is Array or (bld as Array).size() != 2:
-		return false
-	var id := String(bld[0])
-	return (id == "home" or (Data.b["stations"] as Dictionary).has(id)) and _is_num(bld[1]) and int(bld[1]) >= 1
+	for key: Variant in rule:
+		var value: Variant = rule[key]
+		match key:
+			"building":
+				if not value is Array or value.size() != 2 or not value[0] is String or not _is_num(value[1]):
+					return false
+				var id := String(value[0])
+				var level := int(value[1])
+				if Data.building(id).is_empty() or level < 1 or level > Data.building_levels(id).size() or level != value[1]:
+					return false
+			"flag":
+				if not value is String or String(value).is_empty():
+					return false
+			"missions_won":
+				if not _is_num(value) or float(value) < 0.0 or float(value) != floorf(float(value)):
+					return false
+			_:
+				return false
+	return true
 
 
 # ---------------------------------------------------------------- icons
@@ -203,7 +369,7 @@ func _check_icons() -> bool:
 	var hud: Variant = main.hud
 	var unknown: Array = []
 	var pending: Array = []
-	for kind: String in ["crops", "recipes"]:
+	for kind: String in ["crops", "recipes", "bows", "buildings"]:
 		for e: Variant in Data.catalog(kind):
 			var icon := String((e as Dictionary).get("icon", ""))
 			if hud._icon_known(icon):
@@ -214,7 +380,7 @@ func _check_icons() -> bool:
 				unknown.append(icon)
 	if not pending.is_empty():
 		print("NOTE icons not drawn yet (the owner's Q6; they show as plain discs): %s" % ", ".join(pending))
-	return t._expect("every crop and recipe icon is a HUD icon id (or one still waiting for Q6)", unknown.is_empty(), {"unknown": unknown})
+	return t._expect("every crop, recipe, bow and building icon is a HUD icon id", unknown.is_empty(), {"unknown": unknown})
 
 
 # ---------------------------------------------------------------- the Bag knows the new things by itself
@@ -326,8 +492,8 @@ func _shared_fields(e: Dictionary) -> Array:
 	return why
 
 
-func _price_problems(price: Variant) -> Array:
-	if not price is Dictionary or (price as Dictionary).is_empty():
+func _price_problems(price: Variant, allow_empty: bool = false) -> Array:
+	if not price is Dictionary or (price.is_empty() and not allow_empty):
 		return ["price"]
 	var why: Array = []
 	for k: Variant in price:

@@ -149,7 +149,7 @@ func mission_unlocked(i: int) -> bool:
 	return i == next_mission() and mission_needs_home(i) <= Save.camp_level
 
 
-## The goals to reach home `level` (balance.json stations.camp.levels[level - 1].goals; its _note lists the types),
+## The goals to reach home `level` (the home entry's levels[level - 1].goals; its _note lists the types),
 ## worked out from the save now, in the list's order. Each is
 ##   {text: "Damage 4", progress: "Damage 3/4", have, need, done, station}
 ## `text` names the goal, `progress` is what the card shows while it is not met. `station` is the station whose card
@@ -158,7 +158,7 @@ func mission_unlocked(i: int) -> bool:
 ## building a mission gives),
 ## "hollow" (a Gloomwood level), or the station's own id (its level). [] for level 1 or a level past the top.
 func home_goals(level: int) -> Array:
-	var levels: Array = b["stations"]["camp"]["levels"]
+	var levels := building_levels("home")
 	if level < 2 or level > levels.size():
 		return []
 	var out: Array = []
@@ -171,7 +171,7 @@ func home_goals(level: int) -> Array:
 ## Every goal for home `level` is met, and the older gates on levels 6-8 too (needs_burrows, needs_depth; needs_missions
 ## when a level still has one). The price is not part of it (home_can_grow checks both).
 func home_goals_met(level: int) -> bool:
-	var levels: Array = b["stations"]["camp"]["levels"]
+	var levels := building_levels("home")
 	if level <= 1:
 		return true
 	if level > levels.size():
@@ -191,20 +191,13 @@ func home_goals_met(level: int) -> bool:
 
 ## What growing the home to `level` costs (every currency its level names; {} past the top).
 func home_price(level: int) -> Dictionary:
-	var levels: Array = b["stations"]["camp"]["levels"]
-	var c := {}
-	if level < 2 or level > levels.size():
-		return c
-	for k in CURRENCIES:
-		if int(levels[level - 1].get(k, 0)) > 0:
-			c[k] = int(levels[level - 1][k])
-	return c
+	return level_price("home", level)
 
 
 ## The home can grow now: a next level exists, its goals are met and its price is affordable.
 func home_can_grow() -> bool:
 	var nxt := Save.camp_level + 1
-	return nxt <= (b["stations"]["camp"]["levels"] as Array).size() and home_goals_met(nxt) and can_afford(home_price(nxt))
+	return nxt <= building_levels("home").size() and home_goals_met(nxt) and can_afford(home_price(nxt))
 
 
 ## Phase G2: the camp's heart, the tree home and the campfire under one name (balance.json camp_name, "the
@@ -216,20 +209,93 @@ func camp_name(cap := false) -> String:
 	return n
 
 
-## Phase G2: the Hearthtree level station id needs before it can be built (balance.json stations[id].needs_home; 1 when
-## there is none). The Mushroom Cottage and the Market need level 2.
+## H4: a building's content entry (content/buildings/<id>/entry.json: name, desc, icon, price, unlock, arrives, levels),
+## by the save's building id; "camp" and "shop" are the Hearthtree's older ids and mean "home". {} for an unknown id.
+func building(id: String) -> Dictionary:
+	return item("buildings", "home" if id == "camp" or id == "shop" else id)
+
+
+## H4: every building entry, in content/index.json's order.
+func buildings() -> Array:
+	return catalog("buildings")
+
+
+## H4: the buildings bought in the build menu (their "arrives" is "menu"), in index order.
+func menu_buildings() -> Array:
+	var out: Array = []
+	for entry: Dictionary in buildings():
+		if from_menu(String(entry["id"])):
+			out.append(entry)
+	return out
+
+
+## H4: building id is bought in the build menu ("arrives": "menu"; it replaces the old SHOP_BUILT list). The garden
+## and the fishing spot come as mission gifts ("gift"), the Guardian Stone is found ("found"), the home is always there.
+func from_menu(id: String) -> bool:
+	return building(id).get("arrives", "") == "menu"
+
+
+## H4: a building's levels as its entry has them (levels[0] is {}; levels[n - 1] is what reaching level n costs, and
+## the home's also hold its goals).
+func building_levels(id: String) -> Array:
+	return building(id).get("levels", [])
+
+
+## H4: what building it costs (its entry's "price"), its real currencies only, never 0s; {} when it is free.
+func build_price(id: String) -> Dictionary:
+	return _currency_price(building(id).get("price", {}))
+
+
+## H4: what reaching `level` costs (the currencies of levels[level - 1]); level 1 is the build price (build_price), so
+## {} outside 2..the number of levels.
+func level_price(id: String, level: int) -> Dictionary:
+	var levels := building_levels(id)
+	if level < 2 or level > levels.size():
+		return {}
+	return _currency_price(levels[level - 1])
+
+
+## H4: a building's short line (its entry's "desc"), with {pet_look} and {mount_look} (the looks' names), {pet}
+## (Data.pet_name()) and {mount} (Data.mount_name(), the short name) filled in, so it reads as the old card's line.
+func building_desc(id: String) -> String:
+	var desc := String(building(id).get("desc", ""))
+	if "{pet_look}" in desc:
+		desc = desc.replace("{pet_look}", String(look("pet", Save.pet_look)["name"]))
+	if "{mount_look}" in desc:
+		desc = desc.replace("{mount_look}", String(look("mount", Save.mount_look)["name"]))
+	if "{pet}" in desc:
+		desc = desc.replace("{pet}", pet_name())
+	if "{mount}" in desc:
+		desc = desc.replace("{mount}", mount_name())
+	return desc
+
+
+## H4: a building's picture for the windows, "res://assets/ui/buildings/<id>.png" when that file exists, else "" (the
+## window then shows the building's icon).
+func building_picture(id: String) -> String:
+	var path := "res://assets/ui/buildings/%s.png" % id
+	return path if ResourceLoader.exists(path) else ""
+
+
+## Phase G2: the Hearthtree level station id needs before it can be built: the level of the ["home", n] part of its
+## entry's unlock rule, 1 when the rule has none (the Mushroom Cottage and the Market need level 2).
 func station_needs_home(id: String) -> int:
-	return int((b["stations"].get(id, {}) as Dictionary).get("needs_home", 1))
+	return _required_building_level(building(id).get("unlock", {}), "home")
 
 
-## Station id can be built now: enough missions won (needs_missions) and the Hearthtree big enough (needs_home).
+## Station id can be built now: its entry's unlock rule holds (unlocked), every part of it, so a flag in it counts too
+## (H4; real play is the same, because a Build tile only shows once its flag is set, but a test that builds with the
+## flags unset is refused now). An unknown id is shut.
 func station_open(id: String) -> bool:
-	var st: Dictionary = b["stations"].get(id, {})
-	return progress() >= int(st.get("needs_missions", 0)) and Save.camp_level >= int(st.get("needs_home", 1))
+	var entry := building(id)
+	return not entry.is_empty() and unlocked(entry.get("unlock", {}))
 
 
-## The stations bought on the Hearthtree's card (a goal for one not built yet points there).
-const SHOP_BUILT := ["target", "bench", "well", "cottage", "stall", "saddlery", "tailor"]
+## H4: a window word or short line from balance.json "windows" (the buttons' words, tab names, the confirm's lines),
+## or the key itself when it is missing, so a missing word shows as its key and never breaks a window.
+func word(key: String) -> String:
+	var words: Dictionary = b.get("windows", {})
+	return String(words.get(key, key))
 
 
 ## The mission (index) whose win gives building id ("garden": mission 1's index), -1 when none gives it.
@@ -248,7 +314,7 @@ func def_kind_name(type: String) -> String:
 	return String(_DEF_NAMES.get(type, type))
 
 
-## One goal from balance.json worked out from the save (see home_goals). An unknown type counts as met, so a typo in
+## One goal from the home entry worked out from the save (see home_goals). An unknown type counts as met, so a typo in
 ## the data never locks the home.
 func _goal(g: Dictionary) -> Dictionary:
 	var type := String(g.get("type", ""))
@@ -273,7 +339,7 @@ func _goal(g: Dictionary) -> Dictionary:
 			station = "sign"
 		"station":
 			var id := String(g.get("id", ""))
-			var nm := String(b["stations"].get(id, {}).get("name", id))
+			var nm := String(building(id).get("name", id))
 			have = int(Save.stations.get(id, 0))
 			need = lv
 			text = ("%s built" % nm) if lv <= 1 else ("%s lv %d" % [nm, lv])
@@ -286,7 +352,7 @@ func _goal(g: Dictionary) -> Dictionary:
 				station = "sign"
 			else:
 				prog = ("Build the %s" % nm) if lv <= 1 else ("Build the %s, then lv %d" % [nm, lv])
-				station = "home" if SHOP_BUILT.has(id) else id     # bought on the Hearthtree's card
+				station = "home" if from_menu(id) else id     # bought on the Hearthtree's card
 		"stat":
 			var sid := String(g.get("id", ""))
 			var si := stat_info(sid)
@@ -304,7 +370,7 @@ func _goal(g: Dictionary) -> Dictionary:
 			prog = ("%s lv %d/%d" % [bn, have, lv]) if have > 0 else ("Buy the %s, then lv %d" % [bn, lv])
 			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
 		"bow_any":
-			for k: String in b["bows"]:
+			for k: String in bow_ids():
 				have = maxi(have, int(Save.bows.get(k, 0)))
 			need = lv
 			text = "A bow at lv %d" % lv
@@ -368,7 +434,7 @@ func _goal(g: Dictionary) -> Dictionary:
 			push_warning("balance.json: unknown home goal type %s" % type)
 			have = need
 	done = have >= need
-	# type / id / level: the goal as balance.json has it (all_stats: id is the lowest stat), for the cards
+	# type / id / level: the goal as the home entry has it (all_stats: id is the lowest stat), for the cards
 	return {"text": text, "progress": prog if prog != "" else text, "have": have, "need": need, "done": done, "station": station,
 		"type": type, "id": gid, "level": lv}
 
@@ -447,8 +513,46 @@ func stat_info(id: String) -> Dictionary:
 	return b["stats"][id]
 
 
+## H4: a bow's content entry (content/bows/<id>/entry.json: name, desc, price, unlock and its shooting numbers), {}
+## for an unknown id. It is the shared entry, not a copy: the bow tests can change a number and put it back.
 func bow_info(id: String) -> Dictionary:
-	return b["bows"][id]
+	return item("bows", id)
+
+
+## H4: every bow entry, in content/index.json's order (the Bow Shop's order).
+func bows() -> Array:
+	return catalog("bows")
+
+
+## H4: every bow id, in index order.
+func bow_ids() -> Array:
+	var entries: Dictionary = _catalogues.get("bows", {})
+	return entries.keys()
+
+
+## H4: a bow entry with this id exists (a save whose bow in the paw is unknown goes back to the twig bow, save.gd).
+func has_bow(id: String) -> bool:
+	return not bow_info(id).is_empty()
+
+
+## H4: the Bow Shop level a bow needs before it is sold: the level of the ["bench", n] part of its unlock rule, 1 when
+## the rule has none.
+func bow_shop_level(bid: String) -> int:
+	return _required_building_level(bow_info(bid).get("unlock", {}), "bench")
+
+
+## H4: the bow waits for a place the cat has not reached yet: its unlock rule has a flag part that is not set (the
+## Foxfire Bow's "hollow_open" before the Gloomwood).
+func bow_waits(bid: String) -> bool:
+	var rule: Dictionary = bow_info(bid).get("unlock", {})
+	return rule.has("flag") and not Save.flag(String(rule["flag"]))
+
+
+## H4: a bow's picture for the Bow Shop, "res://assets/ui/bows/bow_<id>.png" when that file exists, else "" (the bow's
+## art stays in assets/ by id, like the crops').
+func bow_picture(bid: String) -> String:
+	var path := "res://assets/ui/bows/bow_%s.png" % bid
+	return path if ResourceLoader.exists(path) else ""
 
 
 ## Bow upgrades are additive shares of base damage. The stronger late levels also apply to existing purchases.
@@ -467,7 +571,7 @@ func defence_info(id: String) -> Dictionary:
 
 # ---------------------------------------------------------------- caps (what a station's level allows)
 func station_level(id: String) -> int:
-	if id == "home" or id == "camp":
+	if id == "home" or id == "camp" or id == "shop":
 		return Save.camp_level
 	return int(Save.stations.get(id, 0))
 
@@ -534,17 +638,10 @@ func bow_top(bid: String) -> int:
 	return n
 
 
-## A bow's price on the Bow Shop as a cost dictionary (balance.json "craft": a number of leaves, or a dictionary of
-## currencies such as {"leaves": 250, "timber": 10}; only real currencies are kept, never 0s).
+## A bow's price on the Bow Shop as a cost dictionary (its entry's "price", such as {"leaves": 250, "timber": 10}; only
+## real currencies are kept, never 0s; {} for the twig bow, which is free).
 func craft_cost(bid: String) -> Dictionary:
-	var c = bow_info(bid).get("craft", 0)
-	if typeof(c) != TYPE_DICTIONARY:
-		return {"leaves": int(c)} if int(c) > 0 else {}
-	var out := {}
-	for k in CURRENCIES:
-		if int((c as Dictionary).get(k, 0)) > 0:
-			out[k] = int(c[k])
-	return out
+	return _currency_price(bow_info(bid).get("price", {}))
 
 
 ## G3: a bow's Ember fire ({"seconds", "share_per_s"}: the enemy hit burns for seconds, taking share_per_s x the hit's
@@ -561,15 +658,15 @@ func bow_frost(bid: String) -> Dictionary:
 	return (f as Dictionary).duplicate() if typeof(f) == TYPE_DICTIONARY else {}
 
 
-## 22 Nov 2026: a bow kept out of the Bow Shop for now (balance.json "hidden": Thorn Volley, Foxfire). It is not sold and
+## 22 Nov 2026: a bow kept out of the Bow Shop for now (the entry's "hidden": Thorn Volley, Foxfire). It is not sold and
 ## its tile is not shown, but a save that owns it still sees it (Owned / Equipped) and can use it.
 func bow_hidden(bid: String) -> bool:
 	return bool(bow_info(bid).get("hidden", false))
 
 
-## 22 Nov 2026: a bow's shooting effects (balance.json "fx", read by fx.gd: colours, kinds and particle counts); {} if none.
+## 22 Nov 2026: a bow's shooting effects (the entry's "fx", read by fx.gd: colours, kinds and particle counts); {} if none.
 func bow_fx(bid: String) -> Dictionary:
-	if bid == "" or not (b["bows"] as Dictionary).has(bid):
+	if not has_bow(bid):
 		return {}
 	var f = bow_info(bid).get("fx", {})
 	return f if typeof(f) == TYPE_DICTIONARY else {}
@@ -578,9 +675,10 @@ func bow_fx(bid: String) -> Dictionary:
 ## The highest level a station can have now: its level list's size (Target and Bench 5, most others 3), never above the
 ## home level. The home itself: its own list (8).
 func station_max_level(id: String) -> int:
-	if id == "camp" or id == "home":
-		return b["stations"]["camp"]["levels"].size()
-	return mini(Save.camp_level, b["stations"][id]["levels"].size())
+	var top := building_levels(id).size()
+	if id == "home" or id == "camp" or id == "shop":
+		return top
+	return mini(Save.camp_level, top)
 
 
 func fire_hp() -> int:
@@ -710,16 +808,71 @@ func recipe(id: String) -> Dictionary:
 	return item("recipes", id) if id != "" else {}
 
 
-## H3: an entry's unlock rule (ARCHITECTURE part 5). {} is always open; {"building": [id, level]} is open once that
-## building (Save.stations, or the home) has reached level. Any other form warns and stays shut.
+## H3, H4: an entry's unlock rule (ARCHITECTURE part 5) holds. It knows four forms, and a rule may have several keys,
+## which must all hold:
+##   {}                          always open
+##   {"building": [id, level]}   that building (Save.stations, or the home) has reached level
+##   {"flag": id}                that Save flag is set (for example "shop_open", "hollow_open")
+##   {"missions_won": n}         at least n missions won (Data.progress() >= n)
+## An unknown key or a malformed part warns and stays shut.
 func unlocked(rule: Dictionary) -> bool:
-	if rule.is_empty():
-		return true
-	var bld: Variant = rule.get("building")
-	if rule.size() == 1 and bld is Array and (bld as Array).size() == 2 and (bld as Array)[0] is String:
-		return station_level(String(bld[0])) >= int(bld[1])
-	push_warning("Data.unlocked: an unlock rule of a form it does not know: %s" % JSON.stringify(rule))
-	return false
+	return unlock_missing(rule).is_empty()
+
+
+## H4: the parts of an unlock rule that are not met yet (see unlocked), in the rule's order; [] when it holds. Each is
+## one of:
+##   {"type": "building", "id": String, "level": int}   that building is not built or not at that level yet
+##   {"type": "flag", "id": String}                      that flag is not set
+##   {"type": "missions_won", "n": int}                  fewer missions won than n
+##   {"type": "unknown", "id": <the key>}                an unknown key or a malformed part (it also warns): nothing
+##                                                        the player can do, so a window's "needs" words skip it
+func unlock_missing(rule: Dictionary) -> Array:
+	var missing: Array = []
+	for key: Variant in rule:
+		var value: Variant = rule[key]
+		match key:
+			"building":
+				var part := _unlock_building(value)
+				if not part.is_empty():
+					var id := String(part[0])
+					var level := int(part[1])
+					if building(id).is_empty() or station_level(id) < level:
+						missing.append({"type": "building", "id": id, "level": level})
+					continue
+			"flag":
+				if value is String and not String(value).is_empty():
+					var id := String(value)
+					if not Save.flag(id):
+						missing.append({"type": "flag", "id": id})
+					continue
+			"missions_won":
+				if _unlock_count(value, 0):
+					var n := int(value)
+					if progress() < n:
+						missing.append({"type": "missions_won", "n": n})
+					continue
+		push_warning("Data.unlocked: an unlock rule of a form it does not know: %s" % JSON.stringify(rule))
+		missing.append({"type": "unknown", "id": str(key)})
+	return missing
+
+
+## The level a rule's "building" part asks of building id, 1 when the part names another building or there is none.
+func _required_building_level(rule: Dictionary, id: String) -> int:
+	var part := _unlock_building(rule.get("building"))
+	return int(part[1]) if not part.is_empty() and String(part[0]) == id else 1
+
+
+## A well-formed "building" part, [id, level] (an id and a whole level of at least 1), else [].
+func _unlock_building(value: Variant) -> Array:
+	if value is Array and value.size() == 2 and value[0] is String and _unlock_count(value[1], 1):
+		return value
+	return []
+
+
+## The value is a whole, finite number of at least minimum (JSON numbers come as floats).
+func _unlock_count(value: Variant, minimum: int) -> bool:
+	return (value is int or value is float) and is_finite(float(value)) and float(value) >= minimum \
+		and float(value) == floorf(float(value))
 
 
 func catch_info(id: String) -> Dictionary:
@@ -782,6 +935,17 @@ func add_items(d: Dictionary) -> Dictionary:
 ## into leaves: core/save_upgrades.gd).
 const CURRENCIES := ["leaves", "timber", "shards", "amber"]
 const MATS := ["amber"]                  # the expedition materials (balance.json burrows.materials), held in Save.mats
+
+
+## H4: only the real currencies of a price (CURRENCIES), never 0s: a level's other keys (goals, needs_burrows, ...) are
+## not money.
+func _currency_price(price: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for key: String in CURRENCIES:
+		var amount := int(price.get(key, 0))
+		if amount > 0:
+			out[key] = amount
+	return out
 
 
 func have(k: String) -> int:

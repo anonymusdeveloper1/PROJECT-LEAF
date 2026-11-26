@@ -28,7 +28,7 @@ const TILE_BTN_H := 52.0                # the one button: a thumb tall (touch ta
 const PILL := {"wood": Color(0.56, 0.35, 0.17), "green": Color(0.33, 0.6, 0.2), "blue": Color(0.24, 0.5, 0.72),
 	"orange": Color(0.92, 0.45, 0.2), "gold": Color(0.84, 0.6, 0.1), "red": Color(0.78, 0.22, 0.17)}
 const BTN := {"green": Color(0.36, 0.66, 0.24), "blue": Color(0.31, 0.55, 0.83), "orange": Color(0.9, 0.55, 0.2),
-	"off": Color(0.72, 0.69, 0.64)}
+	"off": Color(0.72, 0.69, 0.64), "grey": Color(0.5, 0.48, 0.45)}   # H4: "grey", a live stone grey (Cancel), darker than "off"
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
 var _ui_styles := {}                    # the tiles' styles, made once and shared by every tile

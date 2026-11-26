@@ -34,7 +34,8 @@ signal raid_started(spec: Dictionary)
 signal raid_ended(won: bool, perfect: bool)
 ## A Raid Mission was won, a first win or a replay (fight.gd _win). n: the mission's index (0 = the first).
 signal mission_won(n: int)
-## A building went up a level. (Not sent yet: it comes with the building windows.)
+## A building went up a level (H4): sent by stations.gd whenever a building's level goes up: built, upgraded, given by a
+## mission, found, or the Hearthtree grown. id: the save's building id ("home" for the Hearthtree); level: its new level.
 signal building_upgraded(id: String, level: int)
 ## A Timers job ended (core/timers.gd check(): once per job, after the job is marked told). job_id: "crop:0", "cook:pot".
 signal timer_finished(job_id: String)

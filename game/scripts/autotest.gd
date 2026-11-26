@@ -2903,6 +2903,8 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_cook.gd"
 	elif a.has("--feed"):                              # H3: the potions and the mount (the old --feed checks)
 		file = "res://scripts/autotest_potions.gd"
+	elif a.has("--buildmenu"):                         # H4: the build menu, its icon, the camera and the rise
+		file = "res://scripts/autotest_build_menu.gd"
 	if file == "":
 		return false
 	if not ResourceLoader.exists(file):

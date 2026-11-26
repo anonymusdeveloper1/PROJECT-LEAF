@@ -1,3 +1,5 @@
 {"kinds": {"settings": ["graphics", "sound"],
            "crops": ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"],
-           "recipes": ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]}}
+           "recipes": ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"],
+           "bows": ["twig", "sunwood", "ember", "frost", "volley", "foxfire"],
+           "buildings": ["home", "target", "bench", "well", "cottage", "stall", "stone", "garden", "fishing", "saddlery", "tailor"]}}

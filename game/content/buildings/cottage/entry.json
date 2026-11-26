@@ -1,0 +1,15 @@
+{
+  "id": "cottage",
+  "name": "Mushroom Cottage",
+  "desc": "{pet_look} moves in and fights beside you",
+  "icon": "pet",
+  "price": {"leaves": 160},
+  "unlock": {"flag": "shop_open", "building": ["home", 2]},
+  "arrives": "menu",
+  "levels": [
+    {},
+    {"leaves": 350},
+    {"leaves": 900, "timber": 30}
+  ],
+  "_note": "Phase G2: Sprig's home, buildable at Hearthtree level 2"
+}

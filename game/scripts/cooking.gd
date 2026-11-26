@@ -1,133 +1,280 @@
 extends Node
-## Cooking at the campfire (Phase C): the pot on the fire's north-east rim comes with the garden. The cat cooks one
-## dish from the pantry (Save.pantry); it waits in the pot (Save.meal_ready) and is eaten when the next chapter starts
-## (main.on_wave_start), then lasts that chapter (Save.meal_on, its boost cached in Data.set_meal). A held chapter or a
-## won mission uses it up; if the camp falls it goes back into the pot, so the chapter's retry gets it again. Closing
-## the game mid-chapter turns an eaten dish back into a waiting one (save.gd). No timers, no per-frame code.
+## The cooking pot (H3, 26 Nov 2026; docs/ARCHITECTURE.md part 4 Type Object, part 9 "Long job"): the pot on the fire's
+## north-east rim comes with the garden. The player puts ingredients in the pot's slots (the window,
+## ui/windows/cooking_window.gd); Cook takes them from the Bag and starts the Timers job "cook:pot", which runs in real
+## time, also while the game is closed. The result waits in the pot until Collect puts it in the Bag.
+## Used by: the pot's window (every rule it shows is asked here), stations._card_pot (wants_pulse), the tests.
+## Uses: Timers (the job), Bag (the ingredients and the result), Data (content/recipes: needs, cook_s, limit, unlock;
+## balance.json ingredients and fishing.catches for the pieces that hop into the pot), Events (timer_finished), and
+## main: raids (the Gloom bump), stations (the pot, its ring, the fire), hud (toasts), world.
+## Rules:
+##   - The recipes are content entries (content/recipes/<id>/entry.json): a recipe is its result's type, and its id is
+##     the Bag item's id. known() is every entry whose unlock passes (Data.unlocked) and that is not hidden.
+##   - The saved state is the job alone: "cook:pot" with data {"recipe": id}. There is no other save key. The pot is
+##     busy from Cook until Collect; a job whose recipe is not a known entry (content taken out) is kept but ignored:
+##     the pot shows empty and the next Cook replaces it (ARCHITECTURE part 10: unknown ids are kept but ignored).
+##   - Nothing leaves the Bag until Cook (Q14). Cook is refused when the result would not fit in the Bag now (Q16); if
+##     the Bag fills while it cooks, Collect says "Bag full" and the result waits in the pot.
+##   - The Gloom meter gets +3 ("dish") on the Cook tap only, never when the timer ends (risk 13).
+##   - The fire out (the Last Stand, the ashes; Q13): the job keeps running and the pot's ring hides, as before; Cook
+##     and Collect wait for the fire. In a wave nothing is cooked or collected (the card is blank then, Q12).
+##   - The handler hears Events.timer_finished for "cook:pot" only (other "cook:" ids are the tests'): a toast and a
+##     stations refresh, so the ring pulses (it changes only on a refresh). It changes nothing in the game. A missed
+##     event loses nothing: the state is in Timers, and wants_pulse reads it on every stations refresh (stations.build
+##     ends with one).
+
+const JOB := "cook:pot"
 
 var main
 
 
 func setup(m) -> void:
 	main = m
+	if not Events.timer_finished.is_connected(_on_timer_finished):
+		Events.timer_finished.connect(_on_timer_finished)
 
 
-## The recipes whose unlock is met: garden | fishing | fishing+stone | goldfish (one was ever caught).
+# ---------------------------------------------------------------- the recipes
+## The recipe entries whose unlock passes, in index order (Cooked Fish once the Fishing Spot is built).
 func known() -> Array:
 	var out: Array = []
-	for r in Data.b["cooking"]["recipes"]:
-		if _unlocked(String(r.get("unlock", "garden"))):
-			out.append(r)
+	for e: Variant in Data.catalog("recipes"):
+		if e is Dictionary and _is_known(e as Dictionary):
+			out.append(e)
 	return out
 
 
-func _unlocked(u: String) -> bool:
-	match u:
-		"garden": return Data.garden_level() > 0
-		"fishing": return int(Save.stations.get("fishing", 0)) > 0
-		"fishing+stone": return int(Save.stations.get("fishing", 0)) > 0 and Data.guardian_level() > 0
-		"goldfish": return int(Save.fish_log.get("carp", 0)) > 0
-	return false
+## Every ingredient a known recipe needs, in balance.json ingredients order (the window's tiles).
+func needed_ingredients() -> Array[String]:
+	var want := {}
+	var extra: Array[String] = []
+	for r: Variant in known():
+		var needs: Variant = (r as Dictionary).get("needs", {})
+		if not needs is Dictionary:
+			continue
+		for k: Variant in needs:
+			want[String(k)] = true
+	var out: Array[String] = []
+	for id: Variant in Data.b.get("ingredients", {}):
+		if want.has(String(id)):
+			out.append(String(id))
+			want.erase(String(id))
+	for id: Variant in want:                        # a need that is not an ingredient (the content test forbids it)
+		extra.append(String(id))
+	out.append_array(extra)
+	return out
 
 
-func _fire_out() -> bool:
-	return Save.fire_ruined or (main != null and main.stations != null and main.stations._out)
+## The known recipe whose needs are exactly these pieces (one id per filled slot, any order), or {}.
+func match_recipe(pieces: Array[String]) -> Dictionary:
+	var have := {}
+	for p in pieces:
+		if p != "":
+			have[p] = int(have.get(p, 0)) + 1
+	if have.is_empty():
+		return {}
+	for r: Variant in known():
+		if _same_counts((r as Dictionary).get("needs", {}), have):
+			return r as Dictionary
+	return {}
 
 
-func can_cook(r: Dictionary) -> bool:
-	return not _fire_out() and Data.has_items(r.get("needs", {}))
-
-
-## Why a dish cannot be cooked now ("The fire is out", "Needs 1 more Sunberry").
-func why_not(r: Dictionary) -> String:
+# ---------------------------------------------------------------- cooking
+## Why recipe r cannot be cooked now ("" when it can): "Not known yet", "A wave is on", "The fire is out", "Cooking
+## already", "Collect first", "Need 2 Fernmint", "No room in the Bag".
+func can_cook(r: Dictionary) -> String:
+	var id := String(r.get("id", ""))
+	var e := Data.recipe(id)
+	if e.is_empty() or not _is_known(e):
+		return "Not known yet"
+	if _in_wave():
+		return "A wave is on"
 	if _fire_out():
 		return "The fire is out"
-	var needs: Dictionary = r.get("needs", {})
-	for k in needs:
-		var short := int(needs[k]) - int(Save.pantry.get(k, 0))
-		if short > 0:
-			return "Needs %d more %s" % [short, Data.item_name(String(k), short)]
+	if cooking_id() != "":
+		return "Collect first" if is_ready() else "Cooking already"
+	var short := _missing(e)
+	if short != "":
+		return short
+	if Bag.room_for(id) <= 0:
+		return "No room in the Bag"
 	return ""
 
 
-## "3 Sunberries (have 5), 1 honey (have 0)".
-func needs_text(r: Dictionary) -> String:
-	var bits: Array = []
+## Cooks recipe id: its ingredients leave the Bag, the job "cook:pot" starts (cook_s seconds of real time), the
+## pieces hop into the pot with steam, and the Gloom meter gets its "dish" bump. "" when it started, else why not.
+func cook(id: String) -> String:
+	var r := Data.recipe(id)
+	var why := can_cook(r)
+	if why != "":
+		return why
 	var needs: Dictionary = r.get("needs", {})
-	for k in needs:
-		var n := int(needs[k])
-		bits.append("%s · Have %d, Need %d" % [Data.item_name(String(k), 2).capitalize(), int(Save.pantry.get(k, 0)), n])
-	return ", ".join(bits)
+	if not Bag.take_all(needs):
+		return _missing(r)
+	if not Timers.start(JOB, float(r.get("cook_s", 0.0)), {"recipe": id}):
+		Bag.add_all(needs, true)                     # balance.json timers.jobs has no "cook": give them back
+		push_warning("cooking.cook: the job %s could not start" % JOB)
+		return "The pot cannot cook"
+	var spent := {}
+	for k: Variant in needs:
+		spent[k] = -int(needs[k])
+	_cook_look(r)
+	if main.raids != null:
+		main.raids.add_gloom("dish")                 # on the tap, never when the timer ends
+	Save.save_game()
+	main.on_purchase()
+	if main.hud != null:
+		main.hud.toast(Data.food_receipt(spent))
+	return ""
 
 
-## The ingredients without the have-counts ("2 fish, 1 Fernmint"), for the "More recipes" line.
-func needs_short(r: Dictionary) -> String:
-	var bits: Array = []
-	var needs: Dictionary = r.get("needs", {})
-	for k in needs:
-		var n := int(needs[k])
-		bits.append("%d %s" % [n, Data.item_name(String(k), n)])
-	return ", ".join(bits)
+## The recipe cooking or waiting in the pot ("" when the pot is empty).
+func cooking_id() -> String:
+	if not Timers.has(JOB):
+		return ""
+	var id := String(Timers.job_data(JOB).get("recipe", ""))
+	return id if not Data.recipe(id).is_empty() else ""
 
 
-## The pantry as the pot card says it: "5 Sunberries · 2 Fernmint · 1 honey · 3 fish".
-func pantry_text() -> String:
-	var bits: Array = []
-	for k in ["berries", "herbs", "honey", "fish", "goldfish"]:
-		var n := int(Save.pantry.get(k, 0))
-		if n > 0 or (k != "goldfish" and (k != "fish" or int(Save.stations.get("fishing", 0)) > 0)):
-			bits.append("%d %s" % [n, Data.item_name(k, n)])
-	return " · ".join(bits)
+## Seconds until it is done (0 when done or the pot is empty).
+func left_s() -> float:
+	return Timers.left(JOB) if cooking_id() != "" else 0.0
 
 
-func pantry_empty() -> bool:
-	for k in Save.pantry:
-		if int(Save.pantry[k]) > 0:
+## The result is done and waits for Collect.
+func is_ready() -> bool:
+	return cooking_id() != "" and Timers.done(JOB)
+
+
+## Puts the finished result in the Bag and empties the pot. "" when it went in; "Bag full" (it waits in the pot),
+## "Not ready yet", "The pot is empty", "A wave is on" or "The fire is out".
+func collect() -> String:
+	var id := cooking_id()
+	if id == "":
+		return "The pot is empty"
+	if not Timers.done(JOB):
+		return "Not ready yet"
+	if _in_wave():
+		return "A wave is on"
+	if _fire_out():
+		return "The fire is out"
+	if Bag.add(id, 1) < 1:
+		return "Bag full"
+	Timers.remove(JOB)
+	var at := _steam_pos()
+	Fx.sparkle(main, at)
+	Sfx.play("pop", -2.0)
+	Save.save_game()
+	if main.stations != null:
+		main.stations.refresh()                      # the ring stops pulsing at once
+	if main.hud != null:
+		main.hud.toast(Data.food_receipt({id: 1}))
+	return ""
+
+
+## The pot's ring should pulse: a result waits, or the pot is empty and a known recipe can be made from the Bag.
+func wants_pulse() -> bool:
+	if is_ready():
+		return true
+	if cooking_id() != "":
+		return false
+	for r: Variant in known():
+		var e := r as Dictionary
+		if _missing(e) == "" and Bag.room_for(String(e.get("id", ""))) > 0:
+			return true
+	return false
+
+
+# ---------------------------------------------------------------- the end of the job (Timers)
+func _on_timer_finished(id: String) -> void:
+	if id != JOB or main == null:
+		return
+	var rid := cooking_id()
+	if rid != "" and main.hud != null:
+		main.hud.toast("%s is ready at the pot" % Data.item_name(rid, 1))
+	if main.stations != null:
+		main.stations.refresh()                      # the ring pulses
+
+
+# ---------------------------------------------------------------- inside
+func _is_known(e: Dictionary) -> bool:
+	if e.get("hidden", false) == true:
+		return false
+	var rule: Variant = e.get("unlock", {})
+	return rule is Dictionary and Data.unlocked(rule as Dictionary)
+
+
+## The first need the Bag is short of, as "Need 2 Fernmint" ("" when the Bag has them all).
+func _missing(e: Dictionary) -> String:
+	var needs: Variant = e.get("needs", {})
+	if not needs is Dictionary:
+		return "Not known yet"
+	for k: Variant in needs:
+		var n := int((needs as Dictionary)[k])
+		if Bag.count(String(k)) < n:
+			return "Need %d %s" % [n, Data.item_name(String(k), n)]
+	return ""
+
+
+## needs (a recipe's) holds exactly the counts in have.
+static func _same_counts(needs: Variant, have: Dictionary) -> bool:
+	if not needs is Dictionary:
+		return false
+	var want := {}
+	for k: Variant in needs:
+		var n := int((needs as Dictionary)[k])
+		if n > 0:
+			want[String(k)] = n
+	if want.size() != have.size():
+		return false
+	for k: Variant in want:
+		if int(have.get(k, 0)) != int(want[k]):
 			return false
 	return true
 
 
-## Cooks a dish: the ingredients go into the pot, and the dish waits there for the next chapter. One dish at a time:
-## a new one replaces the one waiting (its ingredients are not given back).
-func cook(id: String) -> bool:
-	var r := Data.recipe(id)
-	if r.is_empty() or not can_cook(r):
-		return false
-	Data.take_items(r["needs"])
-	var spent := {}
-	for item in r["needs"]:
-		spent[item] = -int(r["needs"][item])
-	Save.meal_ready = id
-	var pot: Node3D = main.stations.nodes.get("pot")
-	var at: Vector3 = main.world.station_pos("pot")
-	var steam := at + Vector3(0, 0.55, 0)
-	if pot:
+func _in_wave() -> bool:
+	return main != null and main.fight != null and bool(main.fight.active) and bool(main.fight.in_wave)
+
+
+func _fire_out() -> bool:
+	return Save.fire_ruined or (main != null and main.stations != null and bool(main.stations._out))
+
+
+## Where the steam rises: the pot's steam marker, else just over its spot.
+func _steam_pos() -> Vector3:
+	var at: Vector3 = main.world.station_pos("pot") + Vector3(0, 0.55, 0)
+	var pot: Node3D = main.stations.nodes.get("pot") if main.stations != null else null
+	if pot != null:
 		var mk := Props.find_part(pot, "marker_steam")
-		if mk:
-			steam = mk.global_position
+		if mk != null:
+			at = mk.global_position
+	return at
+
+
+## Cook's look and sound, as before: the pot bounces, the pieces hop in, steam in the recipe's colour, the sizzle.
+func _cook_look(r: Dictionary) -> void:
+	var steam := _steam_pos()
+	var pot: Node3D = main.stations.nodes.get("pot") if main.stations != null else null
+	if pot != null:
 		Fx.boing(pot, 0.3)
 	_fly_in(r, steam)
 	Fx.puff(main, steam, Color.html(String(r.get("color", "#ffffff"))), 8)
 	Sfx.play("sizzle", -4.0)
-	main.hud.banner("%s is ready" % String(r["name"]), Color.html(String(r.get("color", "#ffffff"))).lightened(0.25),
-		"Eaten when the next chapter starts: %s" % String(r.get("says", "")))
-	if main.raids:
-		main.raids.add_gloom("dish")
-	Save.save_game()
-	main.on_purchase()
-	main.hud.toast(Data.food_receipt(spent))
-	return true
 
 
 ## The ingredients hop from the cat into the pot (three small ones, 0.3 s).
 func _fly_in(r: Dictionary, to: Vector3) -> void:
-	var meshes := {"berries": "sunberry_ripe", "herbs": "fernmint_ripe", "honey": "honeybell_ripe", "fish": "fish_perch", "goldfish": "fish_carp"}
-	var kinds: Array = (r.get("needs", {}) as Dictionary).keys()
+	var kinds: Array = (r.get("needs", {}) as Dictionary).keys() if r.get("needs") is Dictionary else []
+	if kinds.is_empty() or main.player == null:
+		return
 	var from: Vector3 = main.player.global_position + Vector3(0, 0.9, 0)
-	for k in mini(3, maxi(kinds.size(), 1) * 2):
-		var kind := String(kinds[k % kinds.size()]) if not kinds.is_empty() else "berries"
+	for k in mini(3, kinds.size() * 2):
+		var mesh_id := _piece_mesh(String(kinds[k % kinds.size()]))
+		if mesh_id == "" or not Props.has(mesh_id):
+			continue
 		var mi := MeshInstance3D.new()
-		mi.mesh = Props.mesh(String(meshes.get(kind, "sunberry_ripe")))
+		mi.mesh = Props.mesh(mesh_id)
 		mi.material_override = Props.vc()
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		main.add_child(mi)
@@ -139,67 +286,16 @@ func _fly_in(r: Dictionary, to: Vector3) -> void:
 		tw.tween_callback(mi.queue_free)
 
 
-## A chapter starts (wave 1, a resumed chapter, or "Go" after a chapter break): the dish in the pot is eaten. Phase E:
-## scope "run" when it goes down into the Burrows with the cat (it lasts the run, used up when the run ends).
-func eat(scope := "chapter") -> void:
-	if Save.meal_ready == "" or Data.recipe(Save.meal_ready).is_empty():
-		Save.meal_ready = ""
-		return
-	if Save.meal_on != "":
-		finish(true)
-	var r := Data.recipe(Save.meal_ready)
-	Save.meal_on = Save.meal_ready
-	Save.meal_ready = ""
-	Data.set_meal(Save.meal_on)
-	var b: Dictionary = r.get("boost", {})
-	var p = main.player
-	if b.has("hp"):
-		p.hp = mini(p.hp + int(b["hp"]), Data.cat_max_hp())
-	if b.has("fire") and main.fight.active:
-		var f = main.fight
-		var gain := float(f.gate_max) * float(b["fire"])
-		f.gate_max += gain
-		f.gate_hp += gain
-	if main.guardian:
-		main.guardian.refresh_stats()
-	Fx.sparkle(main, p.global_position + Vector3(0, 1.0, 0))
-	main.hud.banner_later(3.4, "The cat eats the %s" % String(r["name"]), Color.html(String(r.get("color", "#ffffff"))).lightened(0.25),
-		"%s this %s" % [_first_up(String(r.get("says", ""))), "run" if scope == "run" else "chapter"])
-	main.hud.refresh()
-
-
-func _first_up(s: String) -> String:
-	return s.substr(0, 1).to_upper() + s.substr(1) if s != "" else s
-
-
-## The chapter is over. held: it was held (or the mission won): the dish is used up. Not held (the camp fell): the
-## dish goes back into the pot, unless another one waits there.
-func finish(held: bool) -> void:
-	if Save.meal_on == "":
-		return
-	var id := Save.meal_on
-	Save.meal_on = ""
-	if not held and Save.meal_ready == "":
-		Save.meal_ready = id
-	Data.set_meal("")
-	var f = main.fight
-	f.gate_max = float(Data.fire_hp())
-	f.gate_hp = minf(f.gate_hp, f.gate_max)
-	main.player.hp = mini(main.player.hp, Data.cat_max_hp())
-	if main.guardian:
-		main.guardian.refresh_stats()
-	main.hud.refresh()
-
-
-func eating() -> bool:
-	return Save.meal_on != ""
-
-
-## The HUD chip: "Eating: Berry Tart · shoots 15% faster", or "In the pot: Berry Tart (next chapter)".
-func chip_text() -> String:
-	if Save.meal_on != "":
-		var r := Data.recipe(Save.meal_on)
-		return "Eating: %s · %s" % [String(r.get("name", "")), String(r.get("says", ""))]
-	if Save.meal_ready != "":
-		return "In the pot: %s (next chapter)" % String(Data.recipe(Save.meal_ready).get("name", ""))
+## The 3D piece for an ingredient, from data (no name list): the ripe plant of the crop that gives it
+## (content/crops "gives" -> "<model>_ripe"), else the first fishing catch that gives it (balance.json
+## fishing.catches "mesh"); "" when nothing gives it.
+func _piece_mesh(ingredient: String) -> String:
+	for c: Variant in Data.catalog("crops"):
+		if c is Dictionary and String((c as Dictionary).get("gives", "")) == ingredient:
+			return String((c as Dictionary).get("model", "")) + "_ripe"
+	var catches: Variant = (Data.b.get("fishing", {}) as Dictionary).get("catches", [])
+	if catches is Array:
+		for c: Variant in catches:
+			if c is Dictionary and (c as Dictionary).get("gives") is Dictionary and ((c as Dictionary)["gives"] as Dictionary).has(ingredient):
+				return String((c as Dictionary).get("mesh", ""))
 	return ""

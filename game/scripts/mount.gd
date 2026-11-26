@@ -20,8 +20,16 @@ extends Node3D
 ## bramblewool), made in the saddle bone's frame and hung on a BoneAttachment3D on that bone with no offset, coloured
 ## with Props.apply_vc_glow (refresh_gear: on load, on a look change, on a purchase). No file: nothing shown. The
 ## Fire-spitter's firing unit pivots at fire_aim while its harness stays fixed. Shots start at marker_nozzle along +Z.
+## H3 (26 Nov 2026): the Mount Health Potion replaces Feed (the owner, Q1). Knocked out in a mission or a run, it stays
+## out until a Mount Health Potion brings it back (revive, at the potion's share of its health: full) or the next
+## chapter break; outside them it rests and gets up by itself, as before. Raw fish, the Golden Carp (heal) and Cooked
+## Fish (heal over time, its Effects holder: parts/effects_holder.gd, the child "Effects") mend it while it stands,
+## ridden or not, also with the stall in ruins (Effects, commands/use_potion.gd). No dish boosts any more.
+
+const EffectsHolder := preload("res://parts/effects_holder.gd")
 
 var main
+var effects: EffectsHolder                        # H3: its running effects (Cooked Fish), the child "Effects"
 var model: Node3D
 var anim: AnimationPlayer
 var meta: Dictionary = {}
@@ -72,6 +80,12 @@ func setup(m, at: Vector3) -> void:
 	_load_model()
 	hp = max_hp()
 	Fx.blob(self, 0.62)
+	effects = EffectsHolder.new()                     # H3: Cooked Fish mends it over time here
+	effects.name = "Effects"
+	effects.main = m
+	effects.max_hp = max_hp
+	effects.heal = heal
+	add_child(effects)
 
 
 func _load_model() -> void:
@@ -165,7 +179,8 @@ func _find(n: Node, type: String) -> Node:
 ## A different look for the same mount (the Stable at the Market): only the model changes.
 func set_look() -> void:
 	for c in get_children():
-		c.queue_free()
+		if c != effects:                              # H3: its running effects stay with it
+			c.queue_free()
 	model = null
 	anim = null
 	meta = {}
@@ -414,8 +429,9 @@ func max_hp() -> int:
 	return roundi(Data.pick("mount", "hp_by_level", Data.mount_level()) * (1.0 + float(Data.run_mods.get("mount_hp", 0.0))) * Data.mount_hp_mult())
 
 
-## A hit meant for the rider. Out of health: it throws the cat off. In a mission it stays out until the cat feeds it
-## (the HUD's Feed button) or the next chapter break; outside one it rests and gets up by itself.
+## A hit meant for the rider. Out of health: it throws the cat off and its running effects end. In a mission or a run it
+## stays out until a Mount Health Potion brings it back (the HUD's potion button in row 2) or the next chapter break;
+## outside them it rests and gets up by itself.
 func hurt(amount: int, _from: Vector3) -> void:
 	if hp <= 0:
 		return
@@ -426,25 +442,56 @@ func hurt(amount: int, _from: Vector3) -> void:
 	main.shake(0.1)
 	if hp <= 0:
 		resting = float(Data.b["mount"]["rest_s"])
+		effects.clear()
 		main.set_riding(false)
 		Fx.dust(main, global_position, 8, 1.2)
 		if main.fight.active or main.get("area") != null:
-			main.hud.toast("%s is knocked out! Feed it to bring it back" % Data.mount_name())
+			var potion := Data.item_name(Effects.hud_potion("mount"), 1)
+			main.hud.toast("%s is knocked out! A %s brings it back" % [Data.mount_name(), potion])
 			if not Save.flag("told_feed"):
 				Save.set_flag("told_feed")
-				main.hud.tip("%s is out. Tap Feed (%s from your garden) to bring it back, or it gets up at the next chapter break." % [
-					Data.mount_name(), main.feed_text()], null)
+				main.hud.tip("%s is out. A %s (cooked at the pot) brings it back, or it gets up at the next chapter break." % [
+					Data.mount_name(), potion], null)
 		else:
 			main.hud.toast("%s is hurt and runs home to rest" % Data.mount_name())
 		Events.mount_down_changed.emit(true)
 
 
-## Knocked out: it cannot be ridden until it is fed, a chapter break comes, or (outside missions) it has rested.
+## H3: health back while it stands (raw fish, the Golden Carp: Effects "heal"; Cooked Fish over time, its Effects
+## holder): never past its max health, never while it is knocked out. A "+N" floats up.
+func heal(points: int) -> void:
+	if points <= 0 or resting > 0.0 or hp <= 0:
+		return
+	var before := hp
+	hp = mini(hp + points, max_hp())
+	if hp > before:
+		Fx.text(main, global_position + Vector3(0, 1.3, 0), "+%d" % (hp - before), Color(0.5, 1.0, 0.5))
+
+
+## H3: a Mount Health Potion (Effects "revive"): a knocked-out mount gets up with `share` of its health (at least 1; the
+## share comes from the potion's entry), then as Feed did before it: it bounds over and the cat hops on, or with the
+## stall in ruins it comes to the cat.
+func revive(share: float) -> void:
+	if resting <= 0.0 and hp > 0:
+		return
+	resting = 0.0
+	_regen_t = 0.0
+	var top := maxi(1, max_hp())
+	hp = clampi(roundi(float(top) * share), 1, top)
+	Events.mount_down_changed.emit(false)
+	if not Save.ruined.has("stall"):
+		main.set_riding(true, false)                   # it bounds over (come_to) and the cat hops on
+	else:
+		come_to(main.player.global_position)
+
+
+## Knocked out: it cannot be ridden until a Mount Health Potion brings it back, a chapter break comes, or (outside
+## missions and runs) it has rested.
 func out() -> bool:
 	return resting > 0.0
 
 
-## Back to full (chapter breaks, the end of a mission, a meal).
+## Back to full (chapter breaks, the end of a mission, resting in the camp).
 func refill() -> void:
 	var was_out := resting > 0.0
 	resting = 0.0
@@ -476,7 +523,7 @@ func _process(delta: float) -> void:
 		if global_position.distance_to(home) > 8.0:
 			global_position = home
 	if resting > 0.0:
-		if not main.fight.active and not below:       # in a mission or a run it stays out until fed (or a chapter break)
+		if not main.fight.active and not below:       # in a mission or a run it stays out until a potion (or a chapter break)
 			resting -= dt
 			if resting <= 0.0:
 				resting = 0.01
@@ -632,11 +679,6 @@ func _fwd() -> Vector3:
 	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 
 
-## Companions hit harder after a Honey Cake (the meal's "friends" boost), as the Thump did.
-func _friends() -> float:
-	return 1.0 + Data.meal_boost("friends")
-
-
 ## The move's clip: its own ("Stomp", "Ram", "Pounce", "Bellow") when the model has it, else "Thump", else a squash.
 func _play(info: Dictionary) -> void:
 	var clip := String(info.get("clip", "Thump"))
@@ -671,7 +713,7 @@ func _stomp(lv: int) -> bool:
 	if not near:
 		return false
 	var r := float(info.get("radius_m", 2.0))
-	var dmg := Data.skill_damage("stomp", lv) * _friends() * (1.0 + float(Data.run_mods.get("thump_mult", 0.0)))
+	var dmg := Data.skill_damage("stomp", lv) * (1.0 + float(Data.run_mods.get("thump_mult", 0.0)))
 	_went("stomp", info)
 	_play(info)
 	Fx.shockwave(main, global_position, r + 0.4, Color(1.0, 0.9, 0.6))
@@ -704,7 +746,7 @@ func _ram(lv: int) -> bool:
 		return false
 	var secs := float(info.get("dash_s", 0.35))
 	_begin_move("ram", fwd * float(info.get("dash_m", 3.0)), secs, lv)
-	_move_dmg = Data.skill_damage("ram", lv) * _friends()
+	_move_dmg = Data.skill_damage("ram", lv)
 	_went("ram", info, secs)
 	_play(info)
 	_shout(info, Color(1.0, 0.85, 0.5))
@@ -782,7 +824,7 @@ func _pounce(lv: int) -> bool:
 func _pounce_land(lv: int) -> void:
 	var info := Data.saddle_info("skills", "pounce")
 	var r := float(info.get("blast_m", 2.5))
-	var dmg := Data.skill_damage("pounce", lv) * _friends()
+	var dmg := Data.skill_damage("pounce", lv)
 	var stun := Data.skill_stun("pounce", lv)
 	var boss_stun := minf(stun, float(info.get("boss_stun_s", 0.5)))
 	Fx.shockwave(main, global_position, r + 0.3, Color(1.0, 0.8, 0.5))
@@ -847,7 +889,7 @@ func _spit_fire(lv: int, instant := true) -> bool:
 	ball.set_script(Fireball)
 	main.add_child(ball)
 	var aim := _fire_aim_at()
-	ball.launch(main, from[0], aim, info, Data.fire_damage(lv) * _friends(), Data.fire_burn_per_s(lv) * _friends())
+	ball.launch(main, from[0], aim, info, Data.fire_damage(lv), Data.fire_burn_per_s(lv))
 	return true
 
 

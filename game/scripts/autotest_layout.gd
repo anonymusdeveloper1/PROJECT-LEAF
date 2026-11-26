@@ -18,7 +18,9 @@ extends Node
 ##                     warning; building; a mission with a boss bar; the Gloomwood's cards, pips and arena; nothing of
 ##                     the HUD in the middle third of the screen and (H2) no two HUD controls overlapping (the group
 ##                     "hud_edge"); real taps on Ride / Walk, the Settings gear (a graphics row, the X), the Bag and the
-##                     build icon. Also run it at 540x960 (a 16:9 phone).
+##                     build icon; H3: the Mount Health Potion in Ride's place (no Feed) and the Health Potion in row 1,
+##                     both hidden while placing, and the running potions line under the currencies (the garden and
+##                     pot cards are their windows). Also run it at 540x960 (a 16:9 phone).
 ##   --taps            taps and markers: nothing opens by walking; a drag that ends on a marker or a long press opens
 ##                     nothing; a tap on empty ground does nothing; a tap in reach opens at once, a far one walks the cat
 ##                     there first, a drag stops that walk; a tap on the thing itself works; a drag on the dim moves
@@ -635,8 +637,8 @@ func _hudcheck() -> void:
 	t._reset_fight()
 	t._clear_raid_state()
 	main.hud.refresh()
-	# 4. building: row 2 full (towers and spikes in the Bag beside Ride, then beside Feed; barricades never stay in the
-	# Bag: defences.gd refunds them, so two is the most row 2 shows), then placing
+	# 4. building: row 2 full (towers and spikes in the Bag beside Ride, then beside the Mount Health Potion; barricades
+	# never stay in the Bag: defences.gd refunds them, so two is the most row 2 shows), then placing
 	main.player.global_position = Vector3(5.0, 0, -6.0)
 	if main.player.riding:
 		main.set_riding(false, false)
@@ -657,13 +659,60 @@ func _hudcheck() -> void:
 	t._expect("three defence buttons would still end before Ride", three - 10.0 < acts.ride_button.get_global_rect().position.x,
 		{"end": three - 10.0, "ride": acts.ride_button.get_global_rect().position.x})
 	_middle_free("two defences and Ride")
-	main.mount.resting = 30.0                            # knocked out: Feed takes Ride's place (its words are longer)
+	# H3 (the owner's Q1): the Mount Health Potion takes Ride's place while the mount is knocked out (Feed is gone); the
+	# Health Potion shows in row 1 at the right while the cat is hurt; both with one in the Bag, neither while placing
+	var hp_id := Effects.hud_potion("cat")
+	var mp_id := Effects.hud_potion("mount")
+	var bag0 := {hp_id: Bag.count(hp_id), mp_id: Bag.count(mp_id)}
+	Bag.add(hp_id, 1, true)
+	Bag.add(mp_id, 1, true)
+	main.mount.resting = 30.0                            # knocked out (as mount.hurt leaves it)
+	main.player.hp = 1                                   # hurt (the camp's rest gives back 1 every 0.8 s: still hurt below)
 	main.hud.refresh_build()
 	await t._wait(0.4)
-	t._expect("row 2: the defences and Feed (three would still end before it)", acts.feed_button.is_visible_in_tree() and not acts.ride_button.is_visible_in_tree()
-		and three - 10.0 < acts.feed_button.get_global_rect().position.x, {"end": three - 10.0, "feed": acts.feed_button.get_global_rect()})
-	_middle_free("two defences and Feed")
+	var pot: Button = acts.potion_button
+	var mpot: Button = acts.mount_potion_button
+	t._expect("row 2: the defences and the Mount Health Potion (three would still end before it), no Feed", mpot.is_visible_in_tree()
+		and not acts.ride_button.is_visible_in_tree() and three - 10.0 < mpot.get_global_rect().position.x and not ("feed_button" in acts)
+		and mpot.get_global_rect().size.x <= 170.5, {"end": three - 10.0, "potion": mpot.get_global_rect()})
+	t._expect("row 1, right: the Health Potion while the cat is hurt, under the mount's (thumb-sized, at most 170 wide)", pot.is_visible_in_tree()
+		and pot.get_global_rect().position.x > _view().x * 0.6 and pot.get_global_rect().position.y > mpot.get_global_rect().end.y
+		and pot.get_global_rect().size.x <= 170.5 and String(pot.get_meta("label", "")).ends_with("×%d" % Bag.count(hp_id)),
+		{"potion": pot.get_global_rect(), "label": pot.get_meta("label", "")})
+	await t._shot("hud_potions")
+	_middle_free("two defences and both potion buttons")
+	main.defences.start_placing("tower")
+	await t._wait(0.6)
+	t._expect("placing hides both potion buttons (Done reaches into row 1's right slot)", not pot.is_visible_in_tree() and not mpot.is_visible_in_tree()
+		and not hud.build_buttons().has(pot) and not hud.build_buttons().has(mpot))
+	main.defences.stop_placing()
+	await t._wait(0.3)
+	# H3 (the owner's Q22): the running Damage and Speed Potions under the currencies, clear of the gear and mid-screen
 	main.mount.refill()
+	main.player.hp = Data.cat_max_hp()
+	var stat_potions := 0                                # every recipe with a stat_mult effect (the Damage and Speed Potions) at once
+	var want_bits: Array = []
+	for r: Variant in Data.catalog("recipes"):
+		for e: Variant in Bag.effects(String((r as Dictionary).get("id", ""))):
+			if e is Dictionary and String((e as Dictionary).get("type", "")) == "stat_mult":
+				main.player.effects.add(e as Dictionary, String((r as Dictionary)["id"]))
+				want_bits.append("%+d%%" % roundi(float((e as Dictionary).get("mult", 0.0)) * 100.0))
+				stat_potions += 1
+	await t._wait(0.4)
+	var line: String = hud._meal_l.text
+	var line_ok: bool = stat_potions >= 2 and hud._meal_l.is_visible_in_tree() and want_bits.all(func(s): return line.contains(s)) \
+		and line.count("·") >= stat_potions
+	t._expect("the running potions line shows each one under the currencies, clear of the gear", line_ok
+		and hud._meal_l.get_global_rect().end.x < hud._gear.get_global_rect().position.x, {"text": line, "rect": hud._meal_l.get_global_rect()})
+	await t._shot("hud_potion_line")
+	_middle_free("the running potions line")
+	main.player.effects.clear()
+	await t._wait(0.2)
+	t._expect("the potions line hides when none runs", not hud._meal_l.visible)
+	for id: String in bag0:
+		var extra := Bag.count(id) - int(bag0[id])
+		if extra > 0:
+			Bag.take(id, extra)
 	main.hud.refresh_build()
 	await t._wait(0.4)
 	main.defences.start_placing("tower")

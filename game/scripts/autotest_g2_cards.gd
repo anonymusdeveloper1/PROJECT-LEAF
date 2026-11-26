@@ -24,7 +24,9 @@ var _ring                 # the test card's stand-in marker (kept while its card
 const UiIcons := preload("res://scripts/ui_icons.gd")
 const ICON_IDS := ["bow", "target", "damage", "draw", "range", "heart", "speed", "magnet", "timber", "leaves", "berries",
 	"herbs", "honey", "fish", "goldfish", "shard", "amber", "tower", "barricade", "spikes", "well",
-	"home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair", "settings"]
+	"home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair", "settings",
+	# H3 (the owner's Q6 a): the stand-ins for the new ingredients and the recipes (a bottle per potion in its colour)
+	"peppers", "roots", "health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]
 
 
 ## A stand-in for a marker: all the dialog needs from one is its card builder.

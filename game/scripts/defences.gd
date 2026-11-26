@@ -6,11 +6,14 @@ extends Node3D
 ##              Each piece has its own health and is hit on its own: whole, cracked below crack_at (darker, leaning),
 ##              broken at 0 (it falls flat by a little rubble pile, and enemies walk through the gap it leaves). Tap a
 ##              row to repair it: repair_share of the row's cost for each broken piece, half that for each cracked one.
-##   tower      an acorn tower, bought in the shop and placed with the build button anywhere you like; how many you can
-##              have is set by the home level. Enemies go for towers right after barricades. Knocked down, it tips over
-##              and shows a repair marker: the leaves "Mend the defences" would ask for that tower stand it up again
-##              (mend_price, since 21 Nov 2026).
+##   tower      an acorn tower, bought in the shop into the Bag (H3) and placed from the Bag (its Place button, or the
+##              row-2 defence button) anywhere the ghost is green; how many you can have is set by the home level.
+##              Enemies go for towers right after barricades. Knocked down, it tips over and shows a repair marker: the
+##              leaves "Mend the defences" would ask for that tower stand it up again (mend_price, since 21 Nov 2026).
 ##   spikes     a thorn trap, bought and placed the same way, that hurts and slows whatever walks over it.
+## H3 (26 Nov 2026): the counts of towers and spikes not placed yet go through the Bag (core/bag.gd; they stay in
+## Save.items). A placed piece drops in with a bounce and a puff of dust. The ghost and the start-up check share one
+## rule for the ground kept clear (off_limits).
 ## Broken in a mission, barricades and towers are mended for free when the mission is won; when the camp falls, or
 ## after a Gloom Raid, the damage is kept ("wrecked") until mended (a row's or a tower's card, the shop, the Watch's
 ## "Mend all"). The Wishing Well mends what is not broken (well_mend). The markers show in the camp (not below ground);
@@ -22,6 +25,8 @@ const TowerScript := preload("res://scripts/tower.gd")
 const RowScript := preload("res://scripts/barricade_row.gd")
 const MarkerScript := preload("res://scripts/marker.gd")
 const AHEAD := 1.6
+const DROP_H := 0.6                 # H3: a placed piece drops in from this high (m) ...
+const DROP_S := 0.18                # ... in this long (s), then bounces with a puff of dust (_drop_in)
 const TYPES := ["barricade", "tower", "spikes"]
 const PIECE_R := 0.3                # a barricade piece's collision half-thickness (it stops enemies only)
 const MARK_SIDE := 1.15             # a road spot's marker stands this far from its row: where the cat stands to use it
@@ -203,18 +208,17 @@ func _absorb_bag(at_load := false) -> int:
 
 
 ## Phase C (and E: round a Burrow's hollow; and the camp's buildings round the fire since 18 Nov 2026): towers and
-## spikes on the ground kept for the stone, the garden, the fishing spot or a building and its ring go back to the bag
-## (older saves could place them anywhere off the roads).
+## spikes on the ground kept for the stone, the garden, the fishing spot or a building and its ring go back to the Bag
+## (older saves could place them anywhere off the roads). H3: through Bag.add with force (a piece already paid for
+## always goes back, even into a full Bag). The rule is off_limits(), the one the placing ghost uses too.
 func _move_blocked() -> void:
 	var moved := 0
 	var keep2: Array = []
 	for sp in Save.placed:
 		var t := String(sp.get("type", ""))
 		var at := Vector3(float(sp.get("x", 0.0)), 0, float(sp.get("z", 0.0)))
-		if (t == "tower" or t == "spikes") and sp.has("x") and sp.has("z") \
-				and (main.world.in_reserved(at, 0.6) or main.world.in_hollow_clear(at) or main.world.near_hollow(at, _hollow_keep())
-				or main.world.in_village(at, 0.6) or main.world.near_home(at, 0.6) or main.world.lake_dist(at) < 0.6):
-			Save.items[t] = int(Save.items.get(t, 0)) + 1
+		if (t == "tower" or t == "spikes") and sp.has("x") and sp.has("z") and off_limits(at):
+			Bag.add(t, 1, true)
 			moved += 1
 			continue
 		keep2.append(sp)
@@ -288,8 +292,9 @@ func unlocked(type: String) -> bool:
 	return Data.progress() >= int(Data.defence_info(type).get("unlock_missions", 0))
 
 
+## How many of a kind the camp has: in the Bag (H3: Bag.count) and placed.
 func _count(type: String) -> int:
-	var n := int(Save.items.get(type, 0))
+	var n := Bag.count(type)
 	for p in pieces:
 		if p["type"] == type:
 			n += 1
@@ -1082,9 +1087,12 @@ func _card_tower(id: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------- placing (towers and spikes)
+## H3 (26 Nov 2026): placing takes the pieces from the Bag (the Bag's Place button, or the row-2 defence buttons). Only
+## a Bag "build" thing is placed (balance.json defences.<id>.from_bag; barricades are built in rows at the road spots,
+## their markers), only with one in the Bag, and never below ground.
 func start_placing(type: String) -> void:
-	if type == "barricade" or int(Save.items.get(type, 0)) <= 0:
-		return                                      # barricades are built in rows at the road spots (their markers)
+	if Bag.kind_of(type) != "build" or Bag.count(type) <= 0 or main.area != null:
+		return
 	stop_placing()
 	placing = type
 	ghost = Props.instance(model(type, level(type)))
@@ -1130,14 +1138,15 @@ func _process(delta: float) -> void:
 	Props.set_param(ghost, "flash", 0.15 + 0.15 * t)
 
 
+## The ghost is green here: inside the camp, off the ground kept clear (off_limits: the same rule as the start-up
+## check, so a piece placed here is never sent back to the Bag), off the props and other pieces, and off the roads
+## (spikes may go on a road).
 func _valid(pos: Vector3) -> bool:
 	var r := Vector2(pos.x, pos.z).length()
 	if r < 1.5 or r > main.world.MOVE_R - 0.3:
 		return false
-	if main.world.in_reserved(pos, 0.6) or main.world.in_village(pos, 0.6):
-		return false                                   # the ground kept for the camp's stations, built or not
-	if main.world.in_hollow_clear(pos) or main.world.near_hollow(pos, _hollow_keep()):
-		return false                                   # Phase E: the Burrows' hollows and their paths stay clear
+	if off_limits(pos):
+		return false
 	var q := Vector2(pos.x, pos.z)
 	for c in main.world.circles:
 		if String(c[2]).begins_with("piece_"):
@@ -1150,24 +1159,55 @@ func _valid(pos: Vector3) -> bool:
 	return main.world.path_strength(pos) < 0.5 or placing == "spikes"
 
 
+## The ground towers and spikes keep off: the ground kept for the camp's stations and buildings (built or not) and the
+## village, a Burrow's hollow and its path (Phase E), the home, and the lake's shore. One rule for the placing ghost
+## (_valid) and the start-up check (_move_blocked), so a piece the ghost lets you place is never sent back to the Bag
+## (H3, the owner's yes to Q25, 26 Nov 2026: the ghost used to miss the home and the lake).
+func off_limits(pos: Vector3) -> bool:
+	var w = main.world
+	return w.in_reserved(pos, 0.6) or w.in_village(pos, 0.6) or w.in_hollow_clear(pos) or w.near_hollow(pos, _hollow_keep()) \
+		or w.near_home(pos, 0.6) or w.lake_dist(pos) < 0.6
+
+
+## Places the piece where the ghost is green, taking one from the Bag. H3: it drops in from DROP_H up in DROP_S
+## seconds, then bounces with a puff of dust and the "buy" sound (_landed). The piece's ground spot (p["pos"], its
+## collision, Save.placed) is set at once; only its node falls.
 func place_here() -> void:
-	if placing == "" or not ghost_ok or int(Save.items.get(placing, 0)) <= 0:
+	if placing == "" or not ghost_ok or Bag.count(placing) <= 0:
 		return
-	Save.items[placing] = int(Save.items[placing]) - 1
+	if not Bag.take(placing, 1):
+		return
 	var sp := {"type": placing, "x": _ghost_pos.x, "z": _ghost_pos.z, "rot": _ghost_rot}
 	Save.placed.append(sp)
 	var p := _spawn(placing, _ghost_pos, _ghost_rot)
 	p["src"] = sp
 	Save.save_game()
-	Fx.boing(p["node"], 0.35)
-	Fx.flower_ring(main, _ghost_pos, 1.0)
-	Sfx.play("buy", -6.0)
-	if int(Save.items[placing]) <= 0:
+	_drop_in(p["node"], _ghost_pos)
+	if Bag.count(placing) <= 0:
 		stop_placing()
 	else:
 		var keep := placing
 		stop_placing()
 		start_placing(keep)
+
+
+## The drop-in: the node starts DROP_H up and falls to its spot.
+func _drop_in(node: Node3D, at: Vector3) -> void:
+	if node == null:
+		return
+	var ground := node.position
+	node.position = ground + Vector3(0, DROP_H, 0)
+	var tw := node.create_tween()
+	tw.tween_property(node, "position", ground, DROP_S).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(_landed.bind(node, at))
+
+
+func _landed(node: Node3D, at: Vector3) -> void:
+	if not is_instance_valid(node) or not node.is_inside_tree():
+		return
+	Fx.boing(node, 0.35)
+	Fx.dust(main, at, 8, 0.9)
+	Sfx.play("buy", -6.0)
 
 
 # ---------------------------------------------------------------- what enemies ask

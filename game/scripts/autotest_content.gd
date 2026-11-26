@@ -17,8 +17,9 @@ const RECIPES := ["health_potion", "mount_potion", "cooked_fish", "damage_potion
 ## The fields an effect may have (the effects list's shared fields, ARCHITECTURE part 5).
 const EFFECT_FIELDS := ["type", "target", "share", "stat", "mult", "seconds"]
 const TARGETS := ["cat", "mount"]
-## Icons not drawn yet (the owner's question Q6): printed as a note until they are, never a failure.
-const ICONS_PENDING_Q6 := ["peppers", "roots", "health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]
+## Icons not drawn yet: printed as a note, never a failure. Empty since H3 Stage 2 (the owner's Q6 (a)), so a
+## missing crop or recipe icon is now a real failure.
+const ICONS_PENDING_Q6 := []    # H3 Stage 2: the owner chose (a), stand-ins drawn in ui_icons.gd, so none wait now
 
 var t: AutotestScript
 var main: MainScript

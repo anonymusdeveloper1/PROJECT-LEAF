@@ -1,12 +1,19 @@
 extends RefCounted
-## The bottom buttons (H2, the owner's sketch): row 1 the Bag and the build icon at the left and the potion slot at the
-## right (the snack below ground; H3's potions take it), row 2 the defences to place at the left (smaller buttons, the
-## owner's answer 3) and Ride / Walk at the right (Feed in its place while the mount is knocked out); Place and Done in
-## the middle while placing (the Bag, the build icon and the defences slide out). Every button is made once and kept:
+## The bottom buttons (H2, the owner's sketch): row 1 the Bag and the build icon at the left and the Health Potion button
+## at the right, row 2 the defences to place at the left (smaller buttons, the owner's answer 3) and Ride / Walk at the
+## right (the Mount Health Potion button in its place while the mount is knocked out); Place and Done in the middle while
+## placing (the Bag, the build icon, the defences and the potion buttons slide out). Every button is made once and kept:
 ## refresh_build() slides each in or out (slide.gd) and updates its words; hud_layout.gd places them. A part of the
 ## HUD (hud.gd).
+## H3 (26 Nov 2026, the owner's Q1 and Q2): Feed and the food snack are gone. The two potion buttons use the potions
+## balance.json potions.hud names (Effects.hud_potion): potion_button ("cat") shows while the cat is hurt and the Bag
+## holds one; mount_potion_button ("mount") while the mount is knocked out and the Bag holds one; neither while placing
+## (Done overlaps row 1's right slot). Each shows the potion's picture and "×N", is greyed when the Use-potion command
+## would refuse, and a tap sends that command (a refusal shows as a toast). tick_potions() runs every frame (hud.gd) and
+## slides a button only when its wanted state flips.
 
 const RideCommand := preload("res://commands/ride.gd")
+const UsePotion := preload("res://commands/use_potion.gd")
 const Slide := preload("res://ui/hud/slide.gd")
 const DEFENCES := ["barricade", "tower", "spikes"]     # the pieces placed from the HUD (until H3 places them from the Bag)
 const DEF_NAMES := {"barricade": "Barricade", "tower": "Tower", "spikes": "Spikes"}
@@ -21,8 +28,13 @@ const ROW2_FROM := Vector2(0, 12)       # row 2 slides only as far as the gap to
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
 var ride_button: Button                 # row 2, right: Ride / Walk
-var feed_button: Button                 # ... the same place while the mount is knocked out: Feed <mount> / No food
+var mount_potion_button: Button         # H3: ... the same place while the mount is knocked out: the Mount Health Potion
+var potion_button: Button               # H3: row 1, right: the Health Potion while the cat is hurt
 var def_buttons := {}                   # row 2, left: "barricade", "tower", "spikes" -> its button
+var _cat_id := ""                       # H3: the potion each potion button uses (balance.json potions.hud)
+var _mount_id := ""
+var _cat_cmd                            # ... and its Use-potion command (made once; it keeps only the id)
+var _mount_cmd
 var place_button: Button
 var done_button: Button
 
@@ -34,15 +46,18 @@ func _init(h) -> void:
 func build() -> void:
 	# the holders (plain Controls the layout places; they take no touches themselves)
 	hud._defence_bar = _holder()
-	hud._build_bar = _holder()                           # the right-hand column: Ride / Feed over the potion slot
+	hud._build_bar = _holder()                           # the right-hand column: Ride / the mount's potion over the cat's
 	hud._place_bar = _holder()
 	ride_button = _big_button("Ride", BLUE, _ride_toggle)
 	hud._build_bar.add_child(ride_button)
-	feed_button = _big_button("Feed", PINK, _feed)
-	hud._build_bar.add_child(feed_button)
-	hud._snack_button = _big_button("", GREEN, _quick_snack)
-	hud._snack_button.add_theme_font_size_override("font_size", 25)
-	hud._build_bar.add_child(hud._snack_button)
+	_cat_id = Effects.hud_potion("cat")
+	_mount_id = Effects.hud_potion("mount")
+	_cat_cmd = UsePotion.new(_cat_id)
+	_mount_cmd = UsePotion.new(_mount_id)
+	mount_potion_button = _potion_button(_mount_id, PINK)
+	hud._build_bar.add_child(mount_potion_button)
+	potion_button = _potion_button(_cat_id, GREEN)
+	hud._build_bar.add_child(potion_button)
 	for type in DEFENCES:
 		var b := _big_button(String(DEF_NAMES[type]), AMBER, _place.bind(type))
 		b.custom_minimum_size = Vector2(124, 84)         # hud_layout.gd's DEF (a literal: hud_layout preloads this file)
@@ -76,9 +91,24 @@ func _holder() -> Control:
 	return c
 
 
+## H3: a potion button: the potion's picture and its count ("×2", font 25), never wider than the 170 px slot; a tap
+## sends the Use-potion command.
+func _potion_button(id: String, col: Color) -> Button:
+	var b := _big_button("", col, _use_potion.bind(id))
+	b.add_theme_font_size_override("font_size", 25)
+	b.set_meta("label", Data.item_name(id, 1) if id != "" else "Potion")
+	if id != "":
+		b.icon = hud.icon(Bag.icon(id))
+	b.expand_icon = true
+	b.add_theme_constant_override("icon_max_width", 52)
+	b.add_theme_constant_override("h_separation", 6)
+	b.set_meta("potion_key", -1)
+	return b
+
+
 ## Every bottom button (shown or not).
 func _all() -> Array:
-	var out: Array = [ride_button, feed_button, hud._snack_button]
+	var out: Array = [ride_button, mount_potion_button, potion_button]
 	for type in DEFENCES:
 		out.append(def_buttons[type])
 	out.append_array([place_button, done_button, hud.bag_button, hud._build_icon])
@@ -91,24 +121,15 @@ func refresh_build() -> void:
 	var m = hud.main.mount
 	var placing: bool = d != null and d.placing != ""
 	var below: bool = hud.main.get("area") != null
-	var out: bool = m != null and m.resting > 0.0          # knocked out: the Ride button becomes Feed
+	var out: bool = m != null and m.resting > 0.0          # knocked out: the Mount Health Potion takes Ride's place
 	var ride: bool = d != null and not placing and m != null and not out and not Save.ruined.has("stall")
-	var feed: bool = d != null and not placing and out
-	hud._feed_ok = hud.main.can_feed()
 	if ride:
 		var on: bool = hud.main.player.riding
 		_relabel(ride_button, "Walk" if on else "Ride", "Walk" if on else "Ride", STONE if on else BLUE)
 	Slide.show(ride_button, ride, ROW2_FROM)
-	if feed:
-		var ok: bool = hud._feed_ok
-		var txt: String = ("Feed %s\n%s" % [Data.mount_name(), hud.main.feed_text()]) if ok else ("No food\n%s" % hud.main.feed_text())
-		_relabel(feed_button, txt, txt, PINK if ok else GREY)
-		feed_button.disabled = not ok
-	Slide.show(feed_button, feed, ROW2_FROM)
-	Slide.show(hud._snack_button, d != null and below and not placing)   # below ground: a snack from the pantry that heals
-	_refresh_snack()
+	tick_potions()
 	for type in DEFENCES:
-		var n := int(Save.items.get(type, 0))
+		var n := Bag.count(type)
 		var shown: bool = d != null and not below and not placing and n > 0
 		if shown:
 			_relabel(def_buttons[type], "%s\n×%d" % [DEF_NAMES[type], n], "%s ×%d" % [DEF_NAMES[type], n], AMBER)
@@ -133,9 +154,14 @@ func _ride_toggle() -> void:
 		hud.main.stations.refresh()
 
 
-func _feed() -> void:
-	if hud._feed_ok:
-		hud.main.feed_mount()
+## H3: a potion button's tap: the Use-potion command; a refusal shows as a toast.
+func _use_potion(id: String) -> void:
+	var cmd = UsePotion.new(id)
+	if not cmd.run(hud.main):
+		var why: String = cmd.can_run(hud.main)
+		if why != "":
+			hud.toast(why)
+	tick_potions()
 
 
 func _place(type: String) -> void:
@@ -153,39 +179,40 @@ func _stop_placing() -> void:
 		hud.main.defences.stop_placing()
 
 
-func refresh_feed() -> void:
-	if hud.main.mount != null and hud.main.mount.resting > 0.0 and hud.main.can_feed() != hud._feed_ok:
-		refresh_build()
-
-
+## The Bag changed (Events.bag_changed): the potions' counts and the defences' counts follow at once.
 func _on_bag_changed() -> void:
-	refresh_feed()
-	_refresh_snack()
+	refresh_build()
 
 
-func _refresh_snack() -> void:
-	if hud._snack_button == null or not is_instance_valid(hud._snack_button) or not Slide.is_on(hud._snack_button):
+## H3: the two potion buttons (header): which show, their counts, and whether a tap would work now. Every frame from
+## hud.gd, and from refresh_build. Cheap: a button is relabelled only when its count or state changed, and it slides
+## only when its wanted state flips.
+func tick_potions() -> void:
+	if potion_button == null:
 		return
-	var sn: Dictionary = hud.main.snack_pick()
-	var text := ""
-	if sn.is_empty():
-		var name := "No food" if Save.snack_choice == "auto" else "%s ×0" % Data.item_name(Save.snack_choice, 2).capitalize()
-		text = "%s\nChoose food" % name
-		hud._snack_button.disabled = hud.main.frozen or hud.main.player.hp <= 0
-	else:
-		var item := String(sn["item"])
-		var reason: String = hud.main.snack_reason()
-		text = "%s ×%d\n%s" % [Data.item_name(item, 2).capitalize(), int(Save.pantry.get(item, 0)), "Heal %d" % int(sn["heal"]) if reason == "" else reason]
-		hud._snack_button.disabled = reason != ""
-	if hud._snack_button.text != text:
-		hud._snack_button.text = text
+	var main = hud.main
+	var d = main.defences
+	var placing: bool = d != null and d.placing != ""
+	var p = main.player
+	var m = main.mount
+	var cat_n := Bag.count(_cat_id) if _cat_id != "" else 0
+	var mount_n := Bag.count(_mount_id) if _mount_id != "" else 0
+	var cat_want: bool = not placing and cat_n > 0 and p.hp > 0 and p.hp < Data.cat_max_hp()
+	var mount_want: bool = not placing and mount_n > 0 and m != null and m.resting > 0.0
+	_potion_state(potion_button, _cat_cmd, _cat_id, cat_n, cat_want, GREEN, Slide.FROM)
+	_potion_state(mount_potion_button, _mount_cmd, _mount_id, mount_n, mount_want, PINK, ROW2_FROM)
 
 
-func _quick_snack() -> void:
-	if hud.main.snack_pick().is_empty():
-		open_inventory()
-	else:
-		hud.main.eat_snack()
+func _potion_state(b: Button, cmd, id: String, n: int, want: bool, col: Color, from: Vector2) -> void:
+	if want:
+		var ok: bool = cmd.can_run(hud.main) == ""
+		var key := n * 2 + (1 if ok else 0)
+		if int(b.get_meta("potion_key", -1)) != key:
+			b.set_meta("potion_key", key)
+			_relabel(b, "×%d" % n, "%s ×%d" % [Data.item_name(id, 1), n], col if ok else GREY)
+			b.disabled = not ok
+	if want != Slide.is_on(b):
+		Slide.show(b, want, from)
 
 
 func open_inventory() -> void:

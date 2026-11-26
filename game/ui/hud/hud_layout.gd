@@ -3,14 +3,15 @@ extends RefCounted
 ## and the proofs that nothing always-on enters the middle third and nothing overlaps). HUD pixels: the canvas is 720
 ## wide (a 540x960 window shows it at 0.75); t is the phone's top inset, b the bottom of the clear screen (above the
 ## gesture bar). A part of the HUD (hud.gd).
-##   top-left    the three currencies (t+10), the dish / endgame line under them (t+46)
+##   top-left    the three currencies (t+10), the endgame label and the running potions line under them (t+46; H3:
+##               it ends before the gear's column)
 ##   top-right   the Settings gear (64 x 64)
 ##   top-centre  the raid bar (460 x 24, t+76), the campfire's thin bar (t+104, in a fight), the words line (t+114);
 ##               then the boss bar and the messages (banner, toast, status line), which never pass H/3 - 4 (a toast that
 ##               does not fit waits, messages.gd)
-##   row 2       the defences to place at the left, Ride / Walk or Feed at the right (b-196)
-##   row 1       the Bag and the build icon at the left, the potion slot (the snack) at the right (b-100); Place and
-##               Done centred while placing
+##   row 2       the defences to place at the left, Ride / Walk or the Mount Health Potion at the right (b-196)
+##   row 1       the Bag and the build icon at the left, the Health Potion at the right (b-100); Place and Done centred
+##               while placing (the potion buttons hide then: Done reaches 7 px into row 1's right slot)
 ##   the tip and the hint just above row 2
 ## The buttons slide in and out (slide.gd): the layout gives each its place every frame and the slide adds its offset.
 
@@ -40,7 +41,7 @@ const GUARD := 4.0                      # the stack ends this far above the midd
 const SIDE := 20.0                      # the bottom's side margins
 const ROW1 := 100.0                     # row 1's top, up from b
 const ROW2 := 196.0                     # row 2's top, up from b
-const BTN := Vector2(170, 84)           # Ride / Walk, Feed, the potion slot
+const BTN := Vector2(170, 84)           # Ride / Walk, the two potion buttons
 const BAG := Vector2(116, 84)
 const ICON := Vector2(84, 84)           # the build icon
 const DEF := Vector2(124, 84)           # the defence buttons (a little smaller)
@@ -99,8 +100,11 @@ func _place_all() -> void:
 	hud._res.size = Vector2(0, RES_H)
 	hud._line2.position = Vector2(EDGE, t + LINE2_Y)
 	hud._line2.size = Vector2(0, LINE2_H)
-	if hud._meal_l.visible:
-		hud._meal_l.custom_minimum_size = Vector2(minf(HudStyle.text_w(hud._meal_l), w * 0.4), 0)
+	if hud._meal_l.visible:                              # H3: the running potions line, kept clear of the gear's column
+		var room := w - EDGE * 2.0 - GEAR - 12.0
+		if hud._eg_l.visible:
+			room -= HudStyle.text_w(hud._eg_l) + 12.0
+		hud._meal_l.custom_minimum_size = Vector2(clampf(HudStyle.text_w(hud._meal_l), 0.0, maxf(0.0, room)), 0)
 	# the top-right: the gear
 	hud._gear.position = Vector2(w - EDGE - GEAR, t + GEAR_Y)
 	hud._gear.size = Vector2(GEAR, GEAR)
@@ -171,17 +175,17 @@ func _place_bottom(size: Vector2) -> void:
 	hud.bag_button.disabled = hud.main.frozen or hud.main.player.hp <= 0 or (hud.main.fishing != null and hud.main.fishing.busy())
 	hud._build_icon.size = ICON
 	Slide.at(hud._build_icon, Vector2(SIDE + BAG.x + GAP, r1))
-	# the right-hand column (_build_bar): Ride / Walk or Feed in row 2, the potion slot in row 1
+	# the right-hand column (_build_bar): Ride / Walk or the Mount Health Potion in row 2, the Health Potion in row 1
 	hud._build_bar.position = Vector2(w - SIDE - BTN.x, r2)
 	hud._build_bar.size = Vector2(BTN.x, ROW2 - ROW1 + BTN.y)
-	for c in [a.ride_button, a.feed_button]:
+	for c in [a.ride_button, a.mount_potion_button]:
 		_right(c as Button, 0.0)
-	_right(hud._snack_button, ROW2 - ROW1)
+	_right(a.potion_button, ROW2 - ROW1)
 	# row 2, left: the defences, packed from the left
 	hud._defence_bar.position = Vector2(SIDE, r2)
 	hud._defence_bar.size = Vector2(maxf(0.0, w - SIDE * 2.0 - BTN.x - GAP), DEF.y)
 	var x := 0.0
-	var row2: bool = (a.ride_button as Button).visible or (a.feed_button as Button).visible
+	var row2: bool = (a.ride_button as Button).visible or (a.mount_potion_button as Button).visible
 	for type in ActionButtons.DEFENCES:
 		var d: Button = a.def_buttons[type]
 		if not d.visible:

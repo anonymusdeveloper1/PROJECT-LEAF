@@ -1,8 +1,10 @@
 extends RefCounted
 ## The top of the screen's sides (H2, the owner's sketch): top-left the three currencies, small and always all three
 ## (leaves, timber, shards, counting up; below ground the satchel after them) with no dark strip behind them, and under
-## them one small line (the endgame label; the dish line, hidden since H3); top-right the Settings gear. A part of the
-## HUD (hud.gd).
+## them one small line (the endgame label; the potions line); top-right the Settings gear. A part of the HUD (hud.gd).
+## H3 (26 Nov 2026, the owner's Q22): the old dish line (hud._meal_l) shows the cat's running Damage and Speed Potions
+## from her Effects holder (main.player.effects.active()), "Damage +25% · 24 s" (both when both run; the stat's name
+## from balance.json stats), and hides when none runs. hud_layout.gd keeps it clear of the gear.
 
 const HudStyle := preload("res://ui/hud/hud_style.gd")
 const ICON := 28.0                      # the currencies' icons, HUD pixels
@@ -102,7 +104,7 @@ func _build_gear() -> void:
 func refresh(_below: bool) -> void:
 	_refresh_timber(Save.timber)
 	hud._shard_box.visible = true                          # H2: all three always (also below ground)
-	# H3: no dishes any more, so the dish line (hud._meal_l) stays hidden; it is kept for a later use (Q22)
+	_tick_potions_line()                                   # H3: the running potions (Q22; also every frame in tick)
 
 
 func _on_currency_changed(id: String, total: int) -> void:
@@ -136,6 +138,32 @@ func tick(delta: float) -> void:
 		var sd: int = want - hud._shown_shards
 		hud._shown_shards += signi(sd) * maxi(1, absi(sd) / 6)
 		hud._shard_l.text = str(hud._shown_shards)
+	_tick_potions_line()
+
+
+## H3 (Q22): the running Damage and Speed Potions under the currencies, "Damage +25% · 24 s"; hidden when none runs.
+## The words change only when a whole second (or what runs) changes.
+func _tick_potions_line() -> void:
+	var p = hud.main.player if hud.main != null else null
+	var fx = p.get("effects") if p != null else null
+	var bits: Array = []
+	if fx != null:
+		var stats: Dictionary = Data.b.get("stats", {})
+		for v: Variant in fx.active():
+			if not v is Dictionary:
+				continue
+			var a: Dictionary = v
+			if String(a.get("type", "")) != "stat_mult":
+				continue
+			var stat := String(a.get("stat", ""))
+			var info: Variant = stats.get(stat)
+			var shown := String((info as Dictionary).get("name", stat.capitalize())) if info is Dictionary else stat.capitalize()
+			bits.append("%s %+d%% · %d s" % [shown, roundi(float(a.get("mult", 0.0)) * 100.0), ceili(float(a.get("left", 0.0)))])
+	var text := ", ".join(bits)
+	if hud._meal_l.text != text:
+		hud._meal_l.text = text
+	if hud._meal_l.visible != (text != ""):
+		hud._meal_l.visible = text != ""
 
 
 func _icon_row(tex: Texture2D) -> Array:

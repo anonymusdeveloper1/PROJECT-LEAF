@@ -2,15 +2,16 @@ extends CanvasLayer
 ## Everything drawn on top of the game. There are no menus. The screen (H2, 26 Nov 2026: the owner's sketch and answers;
 ## docs/PHASE_H_PLAN.md H2; ui/hud/hud_layout.gd has every place):
 ##   the top      top-left the three currencies, small, no strip behind them (the satchel after them below ground), the
-##                endgame-save label under them (the dish line is hidden since H3); top-right the Settings gear;
+##                endgame-save label under them and (H3, Q22) the running Damage and Speed Potions ("Damage +25% · 24 s",
+##                the old dish line); top-right the Settings gear;
 ##                top-centre the raid bar (no words, no numbers), the campfire's thin bar under it in a fight, and the
 ##                words line (the next wave's
 ##                roads, the wave, the Gloom, the Gloomwood's level). Under them the boss bar, then the banners (a
 ##                compact strip), the toast and the status or hiding line, never into the middle third.
-##   the bottom   row 1: the Bag and the build icon (the Hearthtree's buildings) at the left, the potion slot (the
-##                snack below ground) at the right; row 2: the defences to place at the left, Ride / Walk (or Feed) at
-##                the right; Place and Done while placing. The buttons slide and fade in and out (slide.gd). The tip
-##                and the hint just above them.
+##   the bottom   row 1: the Bag and the build icon (the Hearthtree's buildings) at the left, the Health Potion (while
+##                the cat is hurt and the Bag holds one) at the right; row 2: the defences to place at the left, Ride /
+##                Walk (or, while the mount is knocked out, the Mount Health Potion) at the right; Place and Done while
+##                placing. The buttons slide and fade in and out (slide.gd). The tip and the hint just above them.
 ##   the middle   nothing but the health bars over the cat (lifebar.gd) and the pointer arrow: the cat stands there.
 ##   a card       (19 Nov 2026, the user's call) the card of a thing the player tapped (marker.gd, interact.gd) opens as
 ##                a dialog in the middle of the screen over a soft dim of the game: a header with its name and a round
@@ -56,10 +57,10 @@ var _shard_box: HBoxContainer
 var _shown_shards := 0
 var shards_held := 0                    # shards banked but still flying to the cat (the shower): not counted up yet
 var _held_t := 0.0
-var _meal_l: Label                     # the old dish line (Phase C); hidden since H3, kept for a later use (Q22)
+var _meal_l: Label                     # the old dish line (Phase C); H3 (Q22): the running potions, hidden when none
 var _eg_l: Label                       # "Endgame test save" (the debug endgame start)
 var _res: HBoxContainer                # the top bar's left: leaves, timber, shards, the satchel below ground
-var _line2: HBoxContainer              # ... its second line: the endgame label, the dish
+var _line2: HBoxContainer              # ... its second line: the endgame label, the running potions
 var _top: Panel                        # H2: no strip behind the top bar any more (null; the name stays for the tests)
 var _gear: Button                      # H2: the Settings gear at the top-right
 var _fire_bar: Control                 # H2: the campfire's thin bar under the raid bar (in a fight)
@@ -100,7 +101,7 @@ var _tip_ring = null
 var _tip_time := 0.0
 var _shown_leaves := 0
 var _gate_flash := 0.0
-var _build_bar: Control                # the bottom-right column: Ride / Walk or Feed over the potion slot (the snack)
+var _build_bar: Control                # the bottom-right column: Ride / Walk or the mount's potion over the cat's
 var _defence_bar: Control              # H2: the defences to place, bottom-left above the Bag
 var _build_icon: Button                # H2: the build icon next to the Bag (the Hearthtree's buildings)
 var _bottom_h := 100.0                 # how tall the bottom rows that show are, up from the gesture bar (the edge arrows)
@@ -111,7 +112,6 @@ var cooking_window                     # H3: the cooking pot's window (ui/window
 var _card_window = null                # H3: the window in the open card's rows (its tick runs every frame); null when none
 var _card_window_open = null           # H3: the window whose opened() ran in this card's visit (card.gd); null when none
 var bag_button: Button
-var _snack_button: Button
 var _hide_l: Label
 var _place_bar: Control                # Place and Done while placing
 var status := ""                        # a line under the top bar (rebuilding the campfire...)
@@ -120,7 +120,6 @@ var _point_t := 0.0
 var _raid_attacking := false
 var _progress_wave := -1                # the fight's wave number at the last fight_progress (a new number = a new attack)
 var _bar_key := ""                      # what the raid bar last drew (it redraws only when this changes)
-var _feed_ok := false                   # the Feed button was built enabled
 var _fade: ColorRect                    # Phase E: the full-screen fade between the camp and the Burrows (its own layer)
 var _satchel_box: HBoxContainer         # Phase E: the satchel below ground, in the top bar after the leaves
 var _safe := Vector2.ZERO               # the phone's safe insets in HUD pixels: top, bottom
@@ -173,8 +172,6 @@ func build(m) -> void:
 	p_msgs.build_fade()
 	get_viewport().size_changed.connect(p_layout._layout)
 	Save.changed.connect(_on_save_changed)
-	# Legacy pantry writes still notify through Save.changed.
-	Save.changed.connect(p_actions.refresh_feed)
 	Events.currency_changed.connect(p_top._on_currency_changed)
 	Events.save_loaded.connect(_on_save_loaded)
 	Events.bag_changed.connect(p_actions._on_bag_changed)
@@ -287,7 +284,7 @@ func _process(delta: float) -> void:
 	inventory.tick(delta)
 	if _card_window != null:
 		_card_window.tick(delta)                    # H3: the open card's window (the garden's times, the pot's bar)
-	p_actions._refresh_snack()
+	p_actions.tick_potions()                        # H3: the potion buttons follow the cat's health and the Bag
 	if _card_ring == inventory and main.player.hp <= 0:
 		hide_card()
 	p_top.tick(delta)

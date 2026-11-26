@@ -22,8 +22,8 @@ func can_run(main: Node3D) -> String:
 	if main.mount == null or Save.ruined.has("stall"):
 		return MOUNT_UNAVAILABLE
 	if main.mount.resting > 0.0:
-		if main.fight.active or main.area != null:
-			return "%s is knocked out: feed it (%s)" % [Data.mount_name(), main.feed_text()]
+		if main.fight.active or main.area != null:            # H3: the Mount Health Potion replaces Feed
+			return "%s is knocked out: use a %s" % [Data.mount_name(), Data.item_name(Effects.hud_potion("mount"), 1)]
 		return "%s is resting: %d s" % [Data.mount_name(), int(ceil(main.mount.resting))]
 	return ""
 

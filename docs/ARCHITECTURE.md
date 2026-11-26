@@ -116,13 +116,19 @@ depends on whom, so **there are exactly eight**, each with one job:
 | Thornling, Brute, Beetle Knight… | Health (+ Armour for tanks), Mover, Attack, Status, Loot, Health bar, enemy Brain |
 | Bosses | the same, plus a boss Brain with phases |
 | The cat | Health, Mover, Shooter, Status, Effects holder |
-| Mount | Health, Mover, Skills (the 3 chosen), Attachment slot |
+| Mount | Health, Mover, Skills (the 3 chosen), Attachment slot, Effects holder |
 | Golem, the friend, Sprig | Health, Mover, Attack or Heal, Brain with a fighting style (tank, healer, shooter) |
 | Towers, spikes, barricade rows | Health, Level, plus Attack (towers) or a slow (spikes) |
 | Training dummy | Health only |
 
 - The entry lists the parts and their numbers. **A new enemy is usually just a new entry.** A new part (for example
   "teleports") is code once, then any entry can use it.
+- **Built so far (H3):** the Effects holder, `parts/effects_holder.gd` (no class_name; preload it), a child named
+  "Effects" of the cat (`player.effects`) and of the mount (`mount.effects`). It runs `heal_over_time` and `stat_mult`
+  effects on frame time (paused while `main.frozen`, not saved, cleared when its owner is knocked out), and on every
+  start and end of a `stat_mult` hands its owner the full map of every running stat (the cat: `Data.set_effect_mults`,
+  read by `Data.effect_mult`). Its API: `add(e, source)`, `has_source`, `left`, `mult`, `active()`, `clear()`,
+  `step(dt)` and the signal `changed`.
 
 ### State: the Brain is a set of small state scripts
 - Each state is one short file with `enter()`, `exit()` and `update(delta)`, which returns the next state's name or
@@ -143,6 +149,10 @@ depends on whom, so **there are exactly eight**, each with one job:
 ### Command: actions are objects that anyone can issue
 - **The cat:** Move, Shoot, Ride/Walk, Use skill, Use potion. The joystick, the buttons, auto-aim and the tests all send
   the same commands. Companion and mount brains send them to their own parts.
+- **Built so far:** Ride/Walk (H2, `commands/ride.gd`) and Use potion (H3, `commands/use_potion.gd`:
+  `UsePotion.new(id)`, `can_run(main)` gives "" or the reason, `run(main)` takes one from the Bag and does its effects
+  through `core/effects.gd`). The HUD's two potion buttons, the Bag's Use button and the tests send it. A command never
+  calls the HUD and never saves; the caller shows a refusal.
 - **Camp building:** Place, Move, Upgrade and Remove a defence, with **Undo** for placing from the Bag.
 - **Buying:** one **Buy** command used by every shop window. It checks the price and unlock rule, shows the confirm
   window, pays, marks the save, and announces `item_gained`. There is one way to buy anything.
@@ -214,6 +224,8 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ### Dirty Flag: recompute only when something changed
 - **The cat's final stats** (bow, levels, outfit, potions, boons): worked out when one of those changes, not every frame.
+  (H3: the cat's Effects holder hands Data the full map of running potion stats only when a Damage or Speed Potion
+  starts or ends.)
 - **The HUD and windows** redraw only what changed.
 - **The raid power score** (H9).
 - **Saving:** changes call `Save.mark_dirty()`, and the file is written once at a safe moment: the end of a wave or
@@ -285,7 +297,10 @@ depends on whom, so **there are exactly eight**, each with one job:
 - **The effects list** lives in `core/effects.gd`, one small function per type: `stat_mult`, `stat_add`, `heal`,
   `heal_over_time`, `revive` (H3: brings a knocked-out mount back with `share` of its health), `slow`, `burn`, `chill`,
   `daze`, `shield`, `knockback` (the first list). A new type is code once; every potion, upgrade, attachment and boon
-  can then use it.
+  can then use it. **Built in H3:** `heal`, `heal_over_time`, `stat_mult` and `revive`, through `Effects.known(type)`,
+  `Effects.reason(e, main, source)` ("" when it can act now) and `Effects.apply(e, main, source)`; the source is the
+  item id, and one effect per source runs at a time ("Already active"). `Effects.hud_potion("cat" | "mount")` names the
+  potion each HUD button uses (`balance.json potions.hud`).
 - **An effect's fields:** `type`; `target` (who it acts on: `"cat"` or `"mount"`; H3); `share` (of the target's max
   health: heal, heal_over_time, revive; H3); `stat` and `mult` (the stat becomes × (1 + mult)); `seconds`. For example
   the Health Potion's `{"type": "heal_over_time", "target": "cat", "share": 0.4, "seconds": 5}`.

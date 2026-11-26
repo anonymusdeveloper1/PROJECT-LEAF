@@ -400,9 +400,10 @@ depends on whom, so **there are exactly eight**, each with one job:
 **Where the game is today** (25 November 2026):
 - five autoloads (Events, Data, Save, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades) and
   `game/content/index.json` (empty for now); the rest is in `game/scripts/`; every number in one `balance.json`;
-- a few very big files: `stations.gd` 2,760 lines, `hud.gd` 2,362, `enemy.gd` 2,352, `fight.gd` 2,184,
+- a few very big files: `stations.gd` 2,760 lines, `enemy.gd` 2,352, `fight.gd` 2,184,
   `burrow_run.gd` 1,897;
-- the Events board has 14 signals; about 730 direct calls through `main` remain until H2;
+- the Events board has 14 signals; since H2 (26 Nov 2026) the HUD is split under `game/ui/hud/` and listens to Events;
+  many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy
   each physics step;
 - states as words with `match` blocks;

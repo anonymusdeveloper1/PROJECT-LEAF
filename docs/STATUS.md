@@ -27,7 +27,16 @@
   - PC speed: camp 2.2 to 1.88 ms, fight 4.02 to 2.94 ms.
 - **Phone (26 Nov 2026):** the H1 APK is on the owner's phone; its save went from version 2 to 3 (38 amber, 7 glowstone,
   5 heartwood and 3 keys became 2,500 leaves). Phone speed numbers are still to be measured.
-- **Next:** H2 (the HUD listens to Events, commands for the cat's buttons, `hud.gd` split), on `feature/h2-hud`.
+- **Next:** H2, below.
+
+**H2** (the new HUD and Settings) is built on `feature/h2-hud` in three commits (`c030041`, `1d0377c`, `042d78c`; 26 Nov
+2026). It waits for the owner's phone review before it merges into `development`.
+- The screen follows the owner's sketch: the currencies top-left, the Settings gear top-right, the raid bar top-centre
+  (no words, no numbers), a campfire bar in fights, the Bag and a build icon at the bottom, defences above the Bag,
+  Ride/Walk at the right. Start wave stays on the signpost's card.
+- Settings: Graphics Auto/Low/Medium/High and Sound on/off, in their own file apart from the save.
+- `hud.gd` is split into `game/ui/hud/`; new test `--settings` (40 checks), `--hudcheck` 121, `--inventory` 56.
+- **Next:** the owner's phone review of H2, then H3 as `docs/PHASE_H_PLAN.md` sets out.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin

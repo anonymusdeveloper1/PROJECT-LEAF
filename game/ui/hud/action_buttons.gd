@@ -1,6 +1,7 @@
 extends RefCounted
 ## The bottom buttons: the Bag, Ride / Feed / Snack, the defences to place, Place and Done. A part of the HUD (hud.gd).
 
+const RideCommand := preload("res://commands/ride.gd")
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
 
@@ -57,7 +58,7 @@ func refresh_build() -> void:
 		hud._build_bar.add_child(_big_button(txt, Color(0.9, 0.5, 0.55) if ok else Color(0.62, 0.6, 0.55), hud.main.feed_mount, ok))
 	elif hud.main.mount != null and not Save.ruined.has("stall"):
 		var on: bool = hud.main.player.riding
-		hud._build_bar.add_child(_big_button("Walk" if on else "Ride", Color(0.42, 0.6, 0.86) if not on else Color(0.55, 0.5, 0.45), hud.main.toggle_ride))
+		hud._build_bar.add_child(_big_button("Walk" if on else "Ride", Color(0.42, 0.6, 0.86) if not on else Color(0.55, 0.5, 0.45), _ride_toggle))
 	for type in ["barricade", "tower", "spikes"]:
 		var n := int(Save.items.get(type, 0))
 		if n <= 0:
@@ -76,10 +77,25 @@ func _area_buttons() -> void:
 		hud._build_bar.add_child(_big_button(txt, Color(0.9, 0.5, 0.55) if ok else Color(0.62, 0.6, 0.55), hud.main.feed_mount, ok))
 	elif hud.main.mount != null and not Save.ruined.has("stall"):
 		var on: bool = hud.main.player.riding
-		hud._build_bar.add_child(_big_button("Walk" if on else "Ride", Color(0.42, 0.6, 0.86) if not on else Color(0.55, 0.5, 0.45), hud.main.toggle_ride))
+		hud._build_bar.add_child(_big_button("Walk" if on else "Ride", Color(0.42, 0.6, 0.86) if not on else Color(0.55, 0.5, 0.45), _ride_toggle))
 	hud._snack_button = _big_button("", Color(0.55, 0.75, 0.35), _quick_snack)
 	hud._snack_button.add_theme_font_size_override("font_size", 25)
 	hud._build_bar.add_child(hud._snack_button)
+	_refresh_snack()
+
+
+func _ride_toggle() -> void:
+	if RideCommand.new().run(hud.main):
+		hud.main.stations.refresh()
+
+
+func refresh_feed() -> void:
+	if hud.main.mount != null and hud.main.mount.resting > 0.0 and hud.main.can_feed() != hud._feed_ok:
+		refresh_build()
+
+
+func _on_bag_changed() -> void:
+	refresh_feed()
 	_refresh_snack()
 
 

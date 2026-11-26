@@ -4,6 +4,11 @@ extends RefCounted
 const HudStyle := preload("res://ui/hud/hud_style.gd")
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
+var progress_done := 0
+var progress_total := 0
+var _fire_hp := -1.0
+var _fire_max := -1.0
+var _fire_flashing := false
 
 
 func _init(h) -> void:
@@ -73,7 +78,14 @@ func tick_bar() -> void:
 		if hud.main.get("area") != null:
 			hud._gate_bar.queue_redraw()
 		elif hud.main.fight.active and not (hud.main.fight.mode == "raid" and hud.main.fight.warning):
-			hud._gate_bar.queue_redraw()
+			var hp: float = hud.main.fight.gate_hp
+			var max_hp: float = hud.main.fight.gate_max
+			var flashing: bool = hud._gate_flash > 0.0
+			if hp != _fire_hp or max_hp != _fire_max or flashing != _fire_flashing or hud.main.fight.last_stand:
+				_fire_hp = hp
+				_fire_max = max_hp
+				_fire_flashing = flashing
+				hud._gate_bar.queue_redraw()
 		else:
 			# the raid bar: only when what it shows changes (half a meter point, a second), or every frame while it pulses
 			var key: String = rd.bar_key() if rd != null else ""
@@ -87,6 +99,7 @@ func tick_bar() -> void:
 
 func gate_hit() -> void:
 	hud._gate_flash = 0.25
+	hud._gate_bar.queue_redraw()
 
 
 func _draw_gate() -> void:

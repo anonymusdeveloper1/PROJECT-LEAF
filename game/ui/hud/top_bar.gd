@@ -5,6 +5,8 @@ const HudStyle := preload("res://ui/hud/hud_style.gd")
 const STRIP := Color(0.06, 0.045, 0.03, 0.46)
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
+var _leaves_target := 0
+var _shards_target := 0
 
 
 func _init(h) -> void:
@@ -55,38 +57,54 @@ func build() -> void:
 	hud._meal_l.add_theme_color_override("font_color", Color(1.0, 0.93, 0.75))
 	hud._meal_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	hud._line2.add_child(hud._meal_l)
+	_leaves_target = Save.leaves
+	_shards_target = Save.shards
+	hud._shown_leaves = _leaves_target
+	hud._shown_shards = _shards_target
+	hud._leaves_l.text = str(_leaves_target)
+	hud._shard_l.text = str(_shards_target)
 
 
 func refresh(below: bool) -> void:
-	hud._timber_box.visible = (Save.timber > 0 or Save.camp_level > 1 or Save.claimed.size() > 0) and not below
-	hud._timber_l.text = str(Save.timber)
+	_refresh_timber(Save.timber, below)
 	hud._shard_box.visible = (Save.shards > 0 or Data.raids_open() or hud._shown_shards > 0) and not below
 	var chip: String = hud.main.cooking.chip_text() if hud.main.cooking else ""
 	hud._meal_l.text = chip
 	hud._meal_l.visible = chip != ""
 
 
+func _on_currency_changed(id: String, total: int) -> void:
+	match id:
+		"leaves":
+			_leaves_target = total
+		"timber":
+			_refresh_timber(total, hud.main.get("area") != null)
+		"shards":
+			_shards_target = total
+
+
+func _refresh_timber(total: int, below: bool) -> void:
+	hud._timber_l.text = str(total)
+	hud._timber_box.visible = (total > 0 or Save.camp_level > 1 or Save.claimed.size() > 0) and not below
+
+
 func tick(delta: float) -> void:
 	# count leaves up, so a pickup feels like something
-	if hud._shown_leaves != Save.leaves:
-		var diff: int = Save.leaves - hud._shown_leaves
+	if hud._shown_leaves != _leaves_target:
+		var diff: int = _leaves_target - hud._shown_leaves
 		hud._shown_leaves += signi(diff) * maxi(1, absi(diff) / 6)
 		hud._leaves_l.text = str(hud._shown_leaves)
-	else:
-		hud._leaves_l.text = str(Save.leaves)
 	# shards count up as the shower lands (shards_held are banked but still on their way)
 	if hud.shards_held > 0:
 		hud._held_t += delta
 		if hud._held_t > 3.0:
 			hud.shards_held = 0
-	var want: int = Save.shards - hud.shards_held
+	var want: int = _shards_target - hud.shards_held
 	if hud._shown_shards != want:
 		var sd: int = want - hud._shown_shards
 		hud._shown_shards += signi(sd) * maxi(1, absi(sd) / 6)
 		hud._shard_l.text = str(hud._shown_shards)
 		hud._shard_box.visible = hud.main.get("area") == null
-	elif hud._shard_l.text != str(want):
-		hud._shard_l.text = str(want)
 
 
 func _icon_row(tex: Texture2D) -> Array:

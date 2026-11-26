@@ -1089,16 +1089,17 @@ func start_placing(type: String) -> void:
 	placing = type
 	ghost = Props.instance(model(type, level(type)))
 	add_child(ghost)
-	main.hud.refresh_build()
+	Events.placing_changed.emit(placing)
 
 
 func stop_placing() -> void:
+	var was_placing := placing != ""
 	if ghost:
 		ghost.queue_free()
 	ghost = null
 	placing = ""
-	if main != null and main.hud:
-		main.hud.refresh_build()
+	if was_placing:
+		Events.placing_changed.emit(placing)
 
 
 func _process(delta: float) -> void:

@@ -27,6 +27,7 @@ const RaidsScript := preload("res://scripts/raids.gd")
 const BurrowScript := preload("res://scripts/burrow.gd")
 const MarkerScript := preload("res://scripts/marker.gd")
 const InteractScript := preload("res://scripts/interact.gd")
+const RideCommand := preload("res://commands/ride.gd")
 
 const CAM_PITCH := 0.8727                         # 50 degrees down, as in the prototype
 const CAM_FOV := 20.0                             # narrow lens across the short side of the screen
@@ -657,8 +658,6 @@ func on_wave_start(n: int, elite := false, last := false) -> void:
 	if fishing:
 		fishing.stop("")
 	stations.refresh()
-	hud.refresh()
-	hud.refresh_card()
 	if fight.mode == "raid":
 		raids.on_wave_begins(n, last)                       # the raid's own banners ("They're here!", "Final push!")
 		return
@@ -679,8 +678,6 @@ func on_wave_cleared() -> void:
 	if guardian:
 		guardian.refill()                                   # the Moss Warden is back up and whole
 	stations.refresh()
-	hud.refresh()
-	hud.refresh_card()
 	Save.save_game()
 	if fight.wave == 1 and not Save.flag("told_horn"):
 		Save.set_flag("told_horn")
@@ -691,7 +688,6 @@ func on_wave_cleared() -> void:
 func on_wave_held() -> void:
 	if garden:
 		garden.grow_wave()
-	hud.refresh()
 
 
 ## A chapter is held: the camp rests until the player goes on from the signpost (fight.gd saved the run).
@@ -722,7 +718,6 @@ func on_stage_end(_won: bool) -> void:
 		mount.refill()
 	stations.refresh()
 	Save.save_game()
-	hud.refresh()
 	if not raid:
 		burrows.check_open()                            # the last mission's first win: the Old Hollow opens after the banners
 	if _won and not raid and Data.progress() == 1 and not Save.flag("told_barricade"):
@@ -742,9 +737,7 @@ func on_stage_end(_won: bool) -> void:
 func on_raid_start(_spec: Dictionary) -> void:
 	player.hp = Data.cat_max_hp()
 	hud.refresh_hp()
-	hud.refresh()
 	stations.refresh()
-	hud.refresh_card()
 
 
 func on_purchase() -> void:
@@ -807,34 +800,13 @@ func stall_spot() -> Vector3:
 
 ## Up on Thistle, or back on the cat's own paws.
 func set_riding(on: bool, show := true) -> void:
-	if mount == null or Save.ruined.has("stall"):
-		on = false
-	if on and mount.resting > 0.0:
-		if show:
-			if fight.active or area != null:
-				hud.toast("%s is knocked out: feed it (%s)" % [Data.mount_name(), feed_text()])
-			else:
-				hud.toast("%s is resting: %d s" % [Data.mount_name(), int(ceil(mount.resting))])
-		on = false
-	if on == player.riding:
-		return
-	player.riding = on
-	Save.riding = on
-	Save.save_game()
-	if on:
-		mount.come_to(player.global_position)
-		if show and not Save.flag("told_ride"):
-			Save.set_flag("told_ride")
-			hud.tip("Riding %s: faster, and it takes the hits for you. Drag to steer. The cat shoots around you; turn for enemies directly behind." % Data.mount_name(), null)
-	else:
-		Fx.dust(self, player.global_position, 6, 1.0)
-	hud.refresh_build()
-	stations.refresh()
-	hud.refresh_card()
+	if RideCommand.new(int(on), not show).run(self):
+		stations.refresh()
 
 
 func toggle_ride() -> void:
-	set_riding(not player.riding)
+	if RideCommand.new().run(self):
+		stations.refresh()
 
 
 ## What a knocked-out mount eats to get up again (balance.json mount.revive_food), as text: "2 Sunberries".
@@ -869,13 +841,11 @@ func feed_mount() -> void:
 		set_riding(true, false)                             # it bounds over (mount.come_to) and the cat hops on
 	else:
 		mount.come_to(player.global_position)
-	hud.refresh_build()
 
 
 ## Back from the Burrows (burrow_run.gd _leave): the camp's cards and HUD, and a little Gloom on the meter (Phase D).
 func on_area_left(_result: String) -> void:
-	hud.refresh()
-	hud.refresh_build()
+	Events.area_changed.emit(false)
 	stations.refresh()
 	if raids != null:
 		raids.add_gloom("burrow_run")

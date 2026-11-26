@@ -41,4 +41,19 @@ signal quality_changed(level: int)
 ## A save was loaded or upgraded (save.gd).
 signal save_loaded()
 
+## Progress in the current Raid Mission wave or the whole Random Raid attack changed (fight.gd).
+signal fight_progress(done: int, total: int)
+## The cat mounted or dismounted (commands/ride.gd).
+signal riding_changed(on: bool)
+## The mount was knocked out or got back up (mount.gd).
+signal mount_down_changed(down: bool)
+## Defence placement started or ended (defences.gd); kind is empty when done.
+signal placing_changed(kind: String)
+## The cat entered or left an expedition (burrow_run.gd and main.gd).
+signal area_changed(inside: bool)
+## A boss appeared or its encounter ended (fight.gd, raids.gd, burrow_run.gd); null clears the bar.
+signal boss_changed(boss: Node)
+## The campfire took damage (fight.gd damage_fire).
+signal campfire_hit()
+
 @warning_ignore_restore("unused_signal")

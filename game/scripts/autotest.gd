@@ -3092,6 +3092,8 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_pools.gd"
 	elif a.has("--saves"):                              # H1: the sample saves load, upgrade and save (autotest_saves.gd)
 		file = "res://scripts/autotest_saves.gd"
+	elif a.has("--settings"):                          # H2: the Settings window
+		file = "res://scripts/autotest_settings.gd"
 	if file == "":
 		return false
 	if not ResourceLoader.exists(file):

@@ -20,6 +20,7 @@ extends CanvasLayer
 const LifebarScript := preload("res://ui/hud/lifebar.gd")
 const ArrowsScript := preload("res://ui/hud/threat_arrows.gd")
 const InventoryScript := preload("res://scripts/inventory.gd")
+const SettingsWindowScript := preload("res://ui/hud/settings_window.gd")
 const ROW_H := 48.0                     # the top bar's first line: riches on the left, the fight's bar on the right
 const DIALOG_W := 0.9
 const TILE_INK := Color(0.25, 0.16, 0.08)
@@ -90,6 +91,7 @@ var _shown_leaves := 0
 var _gate_flash := 0.0
 var _build_bar: HBoxContainer
 var inventory
+var settings                           # H2: the Settings window (the gear), opened through the card
 var bag_button: Button
 var _snack_button: Button
 var _hide_l: Label
@@ -97,6 +99,8 @@ var _place_bar: HBoxContainer
 var status := ""                        # a line under the top bar (rebuilding the campfire...)
 var _point_pos := Vector3.ZERO          # point_at: an arrow to a spot in the world (a raid's trail), for _point_t s
 var _point_t := 0.0
+var _raid_attacking := false
+var _progress_wave := -1                # the fight's wave number at the last fight_progress (a new number = a new attack)
 var _bar_key := ""                      # what the raid bar last drew (it redraws only when this changes)
 var _feed_ok := false                   # the Feed button was built enabled
 var _fade: ColorRect                    # Phase E: the full-screen fade between the camp and the Burrows (its own layer)
@@ -128,6 +132,7 @@ func build(m) -> void:
 	p_icons = HudIconsScript.new(self)
 	main = m
 	inventory = InventoryScript.new(self)
+	settings = SettingsWindowScript.new(self)
 	_leaf_tex = p_icons._make_leaf()
 	_log_tex = p_icons._make_log()
 	_shard_tex = p_icons._make_shard()
@@ -148,8 +153,23 @@ func build(m) -> void:
 	p_msgs.build_fade()
 	get_viewport().size_changed.connect(p_layout._layout)
 	Save.changed.connect(_on_save_changed)
-	_shown_leaves = Save.leaves
-	_shown_shards = Save.shards
+	# Legacy pantry writes still notify through Save.changed.
+	Save.changed.connect(p_actions.refresh_feed)
+	Events.currency_changed.connect(p_top._on_currency_changed)
+	Events.save_loaded.connect(_on_save_loaded)
+	Events.bag_changed.connect(p_actions._on_bag_changed)
+	Events.wave_started.connect(_on_wave_started)
+	Events.wave_ended.connect(_on_wave_ended, CONNECT_DEFERRED)
+	Events.raid_started.connect(_on_raid_started)
+	Events.raid_ended.connect(_on_raid_ended, CONNECT_DEFERRED)
+	Events.mission_won.connect(refresh.unbind(1))
+	Events.riding_changed.connect(_on_riding_changed)
+	Events.mount_down_changed.connect(refresh_build.unbind(1))
+	Events.placing_changed.connect(refresh_build.unbind(1))
+	Events.area_changed.connect(_on_area_changed)
+	Events.boss_changed.connect(_on_boss_changed)
+	Events.campfire_hit.connect(gate_hit)
+	Events.fight_progress.connect(_on_fight_progress)
 	p_layout._layout()
 	refresh()
 
@@ -171,13 +191,75 @@ func refresh_hp() -> void:
 
 func _on_save_changed() -> void:
 	refresh()
-	if main.mount != null and main.mount.resting > 0.0 and main.can_feed() != _feed_ok:
-		refresh_build()                              # the Feed button lights up (or greys out) with the pantry
 	if _card != null and _card_ring != null:
 		if _card_ring == inventory:
 			inventory.refresh()
 		else:
 			p_card._fill_card(_spec(_card_ring))              # through _spec: a card stays blank while a wave is on
+
+
+func _on_save_loaded() -> void:
+	_on_save_changed()
+	refresh_build()
+
+
+func _on_wave_started(_n: int) -> void:
+	refresh()
+	refresh_card()
+
+
+func _on_wave_ended(_n: int, held: bool) -> void:
+	# The next wave's roads are planned after wave_ended is sent.
+	if held and not main.fight.in_wave:
+		p_fight.progress_done = p_fight.progress_total
+	refresh()
+	refresh_card()
+
+
+func _on_raid_started(_spec: Dictionary) -> void:
+	_raid_attacking = false
+	_progress_wave = -1
+	p_fight.progress_done = 0
+	p_fight.progress_total = 0
+	refresh()
+	refresh_card()
+
+
+func _on_raid_ended(_won: bool, _perfect: bool) -> void:
+	# The raid announces its result before the fight returns to camp.
+	_raid_attacking = false
+	_progress_wave = -1
+	p_fight.progress_done = 0
+	p_fight.progress_total = 0
+	refresh()
+	refresh_card()
+
+
+func _on_riding_changed(_on: bool) -> void:
+	refresh_build()
+	refresh_card()
+
+
+func _on_area_changed(_inside: bool) -> void:
+	refresh()
+	refresh_build()
+
+
+func _on_boss_changed(new_boss: Node) -> void:
+	boss = new_boss
+
+
+func _on_fight_progress(done: int, total: int) -> void:
+	p_fight.progress_done = done
+	p_fight.progress_total = total
+	if main.fight.wave != _progress_wave:
+		_progress_wave = main.fight.wave
+		_raid_attacking = false                 # a new attack: the first message refreshes the bar again
+	# Random Raids start the attack without sending wave_started.
+	if main.fight.mode == "raid" and not _raid_attacking:
+		_raid_attacking = true
+		refresh()
+		refresh_card()
 
 
 func _process(delta: float) -> void:
@@ -264,6 +346,10 @@ func point_at(world_pos: Vector3, secs: float) -> void:
 
 func refresh_build() -> void:
 	p_actions.refresh_build()
+
+
+func open_settings() -> void:
+	settings.toggle()
 
 
 func open_inventory() -> void:

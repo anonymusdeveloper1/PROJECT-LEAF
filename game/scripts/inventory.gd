@@ -2,6 +2,8 @@ extends RefCounted
 ## One supplies grid in the shared live dialog, with the current cat and mount beside the selected item.
 
 const PreviewScript := preload("res://scripts/inventory_preview.gd")
+const HealthBar := preload("res://ui/hud/health_bars.gd")
+const MountScript := preload("res://scripts/mount.gd")
 const COLUMNS := 6
 const GAP := 8
 
@@ -14,6 +16,7 @@ var slots := {}
 var _entries := {}
 var _labels := {}
 var _buttons := {}
+var _bars := {}
 var _state := ""
 var _refresh_t := 0.0
 
@@ -77,6 +80,7 @@ func content() -> Control:
 	_entries.clear()
 	_labels.clear()
 	_buttons.clear()
+	_bars.clear()
 	slots.clear()
 	for entry in _items():
 		_entries[String(entry["id"])] = entry
@@ -84,20 +88,29 @@ func content() -> Control:
 		selected = String(_entries.keys()[0])
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)
+	# The health bars (the cat's, and the mount's while riding) with the three currencies packed right under them
+	var top := VBoxContainer.new()
+	top.add_theme_constant_override("separation", 2)
+	box.add_child(top)
+	_bars["cat"] = HealthBar.new()
+	_bars["cat"].custom_minimum_size = Vector2(0, 22)
+	top.add_child(_bars["cat"])
+	_bars["mount"] = HealthBar.new()
+	_bars["mount"].set_colour(HealthBar.MOUNT)
+	_bars["mount"].custom_minimum_size = Vector2(0, 14)
+	top.add_child(_bars["mount"])
 	var wallet := HBoxContainer.new()
-	wallet.add_theme_constant_override("separation", 20)
-	box.add_child(wallet)
+	wallet.add_theme_constant_override("separation", 14)
+	top.add_child(wallet)
 	for id in ["leaves", "timber", "shards"]:
 		var pair := HBoxContainer.new()
 		pair.add_theme_constant_override("separation", 6)
-		pair.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		wallet.add_child(pair)
 		var picture: TextureRect = hud._btn_icon(hud.icon(id))
 		picture.custom_minimum_size = Vector2(30, 30)
 		pair.add_child(picture)
 		_labels["wallet_" + id] = _text("", 25)
 		_labels["wallet_" + id].autowrap_mode = TextServer.AUTOWRAP_OFF
-		_labels["wallet_" + id].size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		pair.add_child(_labels["wallet_" + id])
 	var upper := HBoxContainer.new()
 	upper.add_theme_constant_override("separation", 14)
@@ -114,7 +127,7 @@ func content() -> Control:
 	details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	details.add_theme_constant_override("separation", 6)
 	upper.add_child(details)
-	for id in ["name", "amount", "health", "description"]:
+	for id in ["name", "amount", "description"]:
 		_labels[id] = _text("", 24 if id == "name" else 19)
 		details.add_child(_labels[id])
 	if _entries[selected]["kind"] == "food":
@@ -263,7 +276,12 @@ func _update_live() -> void:
 	var kind := String(entry["kind"])
 	_labels["name"].text = String(entry["name"])
 	_labels["amount"].text = "Owned %d" % _count(entry)
-	_labels["health"].text = "Health %d/%d" % [main.player.hp, Data.cat_max_hp()]
+	_bars["cat"].set_share(float(main.player.hp) / float(maxi(1, Data.cat_max_hp())))
+	var mount: MountScript = main.mount
+	var riding: bool = main.player.riding and mount != null and mount.max_hp() > 0
+	_bars["mount"].visible = riding
+	if riding:
+		_bars["mount"].set_share(float(mount.hp) / float(mount.max_hp()))
 	var choice := "Auto" if Save.snack_choice == "auto" else Data.item_name(Save.snack_choice, 2).capitalize()
 	_labels["quick"].text = "Quick heal · %s" % choice
 	var description := ""

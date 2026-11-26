@@ -172,6 +172,8 @@ func _glow_at(row: Control, y: float) -> void:
 
 ## A marker's card. While a wave is on only the signpost and the barricade rows' markers (repair) work: the shops and stations open between waves.
 func _spec(ring) -> Dictionary:
+	if ring == hud.settings:
+		return ring.spec()                                   # the Settings window opens during waves too
 	if ring == hud.inventory:
 		return hud.inventory.spec()
 	var spec: Dictionary = ring.builder.call()

@@ -160,6 +160,13 @@ depends on whom, so **there are exactly eight**, each with one job:
 | `wave_started(n)`, `wave_ended(n, held)` | Raid Missions |
 | `raid_started(spec)`, `raid_ended(won, perfect)` | Random Raids (moved from `raids.gd`'s signals) |
 | `mission_won(n)` | a Raid Mission is won |
+| `fight_progress(done, total)` | progress changes in the current Raid Mission wave or the whole Random Raid attack |
+| `riding_changed(on)` | the Ride command mounts or dismounts the cat |
+| `mount_down_changed(down)` | the mount is knocked out or gets back up |
+| `placing_changed(kind)` | defence placement starts or ends (empty kind) |
+| `area_changed(inside)` | the cat enters or leaves an expedition |
+| `boss_changed(boss)` | a boss appears or its encounter ends (null) |
+| `campfire_hit()` | the campfire takes damage |
 | `building_upgraded(id, level)` | any building levels up |
 | `timer_finished(job_id)` | a Timers job ends |
 | `quality_changed(level)` | the graphics level changes (moved from Quality) |

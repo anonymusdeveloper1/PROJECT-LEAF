@@ -18,6 +18,7 @@ const MEDIUM := 1
 const HIGH := 2
 const NAMES := ["Low", "Medium", "High"]
 const PATH := "user://settings.json"
+const SettingsFile := preload("res://core/settings_file.gd")   # H2: the settings file, shared with the sound switch
 const WIDTH_3D := [540.0, 810.0, 100000.0]      # pixels across the short side the 3D is drawn at, per level
 
 var level := HIGH
@@ -98,7 +99,30 @@ func apply_viewport() -> void:
 		Engine.max_fps = 30 if fps30 else 60
 
 
-## The player picked one on the Shop card: Auto, Low, Medium, High, then round again.
+## The player picked a level on the Settings window: that level, no longer the game's own pick.
+func set_level(new_level: int) -> void:
+	auto = false
+	level = clampi(new_level, LOW, HIGH)
+	fps30 = false
+	_changed()
+
+
+## The player picked Auto on the Settings window: the game picks again (and may step down by itself).
+func set_auto() -> void:
+	auto = true
+	level = detect()
+	fps30 = false
+	_changed()
+
+
+func _changed() -> void:
+	_save()
+	apply_viewport()
+	changed.emit()
+	Events.quality_changed.emit(level)               # H1: the same news on the event board
+
+
+## The player picked one on the Hearthtree card: Auto, Low, Medium, High, then round again.
 func cycle() -> void:
 	if auto:
 		auto = false
@@ -207,11 +231,10 @@ func _process(delta: float) -> void:
 
 
 # ---------------------------------------------------------------- settings file
+## Read and written through core/settings_file.gd, which keeps the other keys (such as "sound").
 func _load() -> bool:
-	if not FileAccess.file_exists(PATH):
-		return false
-	var j = JSON.parse_string(FileAccess.get_file_as_string(PATH))
-	if typeof(j) != TYPE_DICTIONARY or not j.has("quality"):
+	var j := SettingsFile.read()
+	if not j.has("quality"):
 		return false
 	level = clampi(int(j["quality"]), LOW, HIGH)
 	auto = bool(j.get("auto", true))
@@ -222,6 +245,4 @@ func _load() -> bool:
 func _save() -> void:
 	if _test:
 		return
-	var f := FileAccess.open(PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({"quality": level, "auto": auto, "fps30": fps30}))
+	SettingsFile.write_many({"quality": level, "auto": auto, "fps30": fps30})

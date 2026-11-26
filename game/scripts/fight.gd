@@ -99,6 +99,8 @@ var _burst_left := 0             # enemies still to come in this burst
 var _burst_n := 0                # the size of this burst
 var _prev_hp := 0.0              # the planned health of the wave before (no easy waves; 0 = none)
 var _wave_n := 0                 # enemies in this wave (the quick clear)
+var _wave_summons := 0           # boss summons that came into this mission wave (they join the bar's total)
+var _planned := false            # true while a queued enemy is being spawned (not a summon)
 var _ruined_snap: Array = []     # buildings already in ruins when the wave started (the intact bonus)
 var _down_snap: Dictionary = {}  # defence pieces already down when the wave started: {piece id: true}
 var _fire_out_wave := false      # the campfire went out during this wave
@@ -351,6 +353,7 @@ func _start_wave(w: int) -> void:
 	if mode != "raid":
 		_wave_news(elite, last)
 		Events.wave_started.emit(w)
+	_emit_fight_progress()
 
 
 ## One seeded raid roster. Groups use different shuffled trails; they overlap in time, without round breaks.
@@ -395,6 +398,7 @@ func _raid_queue(_w: int, _last: bool) -> void:
 			member += 1
 		group += 1
 	_wave_n = _queue.size()
+	_wave_summons = 0
 	var summons: Array = Save.raids.get("run", {}).get("summons", [])
 	for i in summons.size():
 		var id := total + i
@@ -412,6 +416,7 @@ func _mission_queue(w: int, elite: bool, last: bool) -> void:
 	_queue = q["kinds"]
 	_qinfo = q["info"]
 	_wave_n = _queue.size()
+	_wave_summons = 0
 	_burst_left = 0
 	_say = []
 	_say_t = -1.0
@@ -1442,7 +1447,9 @@ func _spawn_next(k := 0) -> void:
 		var rs: Array = plan.get("roads", info()["lanes"])
 		ln = int(rs.pick_random()) if not rs.is_empty() else 0
 	lane = ln
+	_planned = true
 	var foe = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln)
+	_planned = false
 	if q.size() > 2 and String(q[2]) == "boss" and foe != null and is_instance_valid(foe):
 		foe.set_meta("wave_boss", true)             # the wave's boss: it never counts as a tank, and holds the others back
 	if float(q[1]) != 1.0 and foe != null and is_instance_valid(foe) and foe.get("speed") != null:
@@ -1530,7 +1537,9 @@ func _spawn_squad(k: int) -> void:
 ## did not come).
 func _spawn_member(row: Array, at: Vector3, ln: int, rot: float, leader, off: Vector3):
 	var q: Array = row[1]
+	_planned = true
 	var foe = spawn(String(row[0]), at, ln)
+	_planned = false
 	if foe == null or not is_instance_valid(foe):
 		return null
 	foe.rotation.y = rot
@@ -1581,11 +1590,14 @@ func spawn_totem(ln: int):
 	if not (Data.b["enemies"] as Dictionary).has(kind) or ln < 0 or ln >= main.world.trails.size():
 		return null
 	var at: Vector3 = main.world.trail_point(ln, float(main.world.trail_length(ln)) * float(tt.get("s", 0.35)))
+	_planned = true
 	var e = spawn(kind, at, ln)
+	_planned = false
 	if e == null or not is_instance_valid(e):
 		return null
 	_quiet_t = 0.0
 	_wave_n += 1
+	_emit_fight_progress()
 	if not Save.flag("told_totem"):
 		Save.set_flag("told_totem")
 		main.hud.banner("A Gloom Totem!", Color(0.8, 0.55, 1.0), "Break it: it makes them stronger")
@@ -1597,6 +1609,7 @@ func spawn_totem(ln: int):
 func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 	if main.area != null and main.area.owns(at):
 		return main.area.spawn(kind, at, {"summon": true})   # Phase E: a summon below ground (the room's strength, the cap)
+	var summoned := false
 	if mode == "raid" and active and raid_member < 0:
 		# Boss summons share the same total and live limits; they cannot create an endless extra wave.
 		if raid_total() >= int(raid["assault"]["max_enemies"]) or _wave_foe_count() >= _max_alive():
@@ -1606,6 +1619,7 @@ func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 		raid_member = int(raid["enemy_count"]) + summons.size()
 		summons.append({"kind": kind, "lane": p})
 		run["summons"] = summons
+		summoned = true
 	var e := Node3D.new()
 	e.set_script(EnemyScript)
 	e.main = main
@@ -1623,13 +1637,21 @@ func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 		main.raids.on_leader(e)                     # its own banner and the boss bar
 	elif bool(Data.enemy(kind).get("boss", false)):
 		main.hud.banner("%s is coming!" % Data.enemy(kind)["name"], Color(0.85, 0.55, 1.0))
-		main.hud.boss = e
+		Events.boss_changed.emit(e)
+	if active and in_wave and mode != "raid" and not _planned and not bool(Data.enemy(kind).get("bonus", false)):
+		_wave_summons += 1
+		summoned = true
+	if summoned:
+		_emit_fight_progress()
 	return e
 
 
 func on_enemy_died(e: Node3D) -> void:
 	_quiet_t = 0.0
-	_record_raid_member(e)
+	if mode == "raid":
+		_record_raid_member(e)
+	else:
+		_emit_fight_progress()
 
 
 func _record_raid_member(enemy) -> void:
@@ -1642,6 +1664,7 @@ func _record_raid_member(enemy) -> void:
 		defeated.append(member)
 	run["assault_format"] = 1
 	run["defeated"] = defeated
+	_emit_fight_progress()
 
 
 ## Something is happening in the wave (an enemy hit a building, a defence, the campfire or the cat): no fleeing yet.
@@ -1684,16 +1707,36 @@ func _stragglers_flee() -> void:
 		Fx.petals(main, e.global_position + Vector3(0, 0.5, 0))
 		e.queue_free()
 	main.hud.toast("The last %d fled into the woods" % left.size())
+	_emit_fight_progress()
 
 
 func on_escaped(e) -> void:
-	_record_raid_member(e)
+	if mode == "raid":
+		_record_raid_member(e)
+	else:
+		e.remove_from_group("foes")                # it is freed at the end of the frame: stop counting it now, as a death does
+		_emit_fight_progress()
 	main.hud.toast("A Bandit got away with leaves!")
 
 
 ## Enemies of this wave still to beat (on the field and still to come; never a bonus runner).
 func left_in_wave() -> int:
 	return _queue.size() + _wave_foe_count()
+
+
+## The total roster of the current Raid Mission wave, including any Gloom Totem.
+func wave_total() -> int:
+	return _wave_n + _wave_summons
+
+
+func _emit_fight_progress() -> void:
+	if not active or not in_wave:
+		return
+	if mode == "raid":
+		var defeated: Array = Save.raids["run"].get("defeated", [])
+		Events.fight_progress.emit(defeated.size(), raid_total())
+	else:
+		Events.fight_progress.emit(maxi(0, wave_total() - left_in_wave()), wave_total())
 
 
 func raid_total() -> int:
@@ -1904,7 +1947,7 @@ func damage_fire(amount: int, from: Vector3) -> void:
 	var fire = main.stations.nodes.get("campfire")
 	if fire:
 		Fx.boing(fire, 0.1)
-	main.hud.gate_hit()
+	Events.campfire_hit.emit()
 	if gate_hp <= 0.0:
 		if rebuilt:
 			camp_falls()                                # the second time in a chapter: the camp falls
@@ -2087,7 +2130,7 @@ func _end(won: bool) -> void:
 		main.world.set_fire_out(false)
 		main.stations.set_fire_out(false)
 	last_stand = false
-	main.hud.boss = null
+	Events.boss_changed.emit(null)
 	main.on_stage_end(won)
 	if mode == "mission":
 		Save.flush()

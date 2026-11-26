@@ -1,5 +1,5 @@
 extends RefCounted
-## H4: one row of a building window's list (the window kit). The card (ui/hud/card.gd) draws every {"kind": "list"} row
+## H4: one row of a building window's list (the window kit). The card (ui/kit/card.gd) draws every {"kind": "list"} row
 ## with make(): a long parchment strip as wide as the dialog's list, with the thing's picture on the left, its name and
 ## badge, up to four short lines and its price in the middle, and one thumb-sized button on the right. Each row is its
 ## own child of the card's list, so the reveal staggers them; the rows sit 8 px apart with no rule between them.

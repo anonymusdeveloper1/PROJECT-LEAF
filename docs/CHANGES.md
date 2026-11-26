@@ -2,6 +2,42 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 26 Nov 2026 · H4: building windows, part 1 (on `feature/h4-building-windows`, waiting for the owner's phone test)
+
+Built in three stages: `e3fd019` (stage 1: the window kit, bows and buildings as content folders, one window file per
+building; nothing visible changed), `63059eb` (stage 2: the new windows and the build menu) and stage 3 (the old tests
+moved to the new windows, the stations forwarders deleted, `card.gd` moved to `ui/kit/`, these docs). The branch starts
+from `feature/h3-food-bag`, so it merges after H3. Not pushed yet. Backup: `D:\DevCache\backup\pre_h4_2026-11-26`.
+
+- **The Hearthtree window:** tabs at the top (Hearthtree, Cat, Defences); a tab shows once it has something, there is
+  no tab bar with one tab, and the window opens on the Hearthtree tab. A tab gets a "!" when something on it can be
+  bought (the owner's yes). Mend all, Patch it up and "Nothing for sale yet" stay at the top and Graphics at the
+  bottom. Goals have Go or Show buttons.
+- **The pinned Upgrade (the owner's Q1 (c) and Q2 (a)):** the Hearthtree, the Training Target, the Bow Shop, the Well,
+  the Guardian Stone (awake), the garden, the Market, the Mushroom Cottage and the Saddlery end in an Upgrade that never
+  scrolls away. It always opens a confirm window listing what the next level gives; the price is red and Confirm grey
+  when you can't pay. Cancel and Confirm go back to the building's window. Buy, Equip and Build stay one tap.
+- **The Bow Shop (Q10 (a), Q11):** one row per bow. The bow in the paw shows Upgrade with its price, then a grey
+  Equipped when it can't level now; other owned bows show Equip; the rest Buy, or Locked with what they need. A tap on
+  a bow's picture opens its inspect view: the bow turning in 3D with its arrow, its numbers and "Each arrow hits for
+  N", the real damage with the cat's Damage upgrades and any running potion.
+- **The build menu (Q12-Q16):** the build icon next to the Bag opens a grid of building pictures with a Build button
+  on each open one, a detail view, and pictures that fade in one after another. Locked ones are greyed with their
+  needs. A built building leaves the menu. Nothing can be built while the Hearthtree is in ruins. A dot on the build
+  icon replaces the Hearthtree marker's "!" for buildings.
+- **Building:** the camera glides to the new building for about 2 s while it rises out of the ground with dust and the
+  flower ring. The joystick, a wave or going below ground ends the shot at once.
+- **Tips (Q17 (a)):** both building tips say "tap the build icon next to the Bag", with no arrow.
+- **Code:** `ui/windows/` (one file per building, the base `building_window.gd`), `ui/kit/` (`card.gd`, `list_row.gd`,
+  `confirm_window.gd`, `card_parts.gd`, `icon_grid.gd`, `model_view.gd`), `content/bows/` (6) and
+  `content/buildings/` (11). `stations.gd` went from 2,672 to 1,723 lines. List rows show up to 4 lines.
+- **Tests:** new `--buildmenu`; `--homegoals`, `--bowshop` (now also `autotest_g3_bow_windows.gd`) and `--cards` (now
+  also `autotest_g2_cards_kit.gd`) rewritten; every older mode that read the old cards moved to the new windows. All
+  pass on the PC (numbers in `docs/STATUS.md`). `--hudcheck`'s lost-tap flake came from the PC's own mouse moving
+  between a test tap's down and up; the test now ignores the PC's mouse, and it passed 6 runs of 6. `--guardian` had
+  failed since before H4 because the mission gate refused its mission; the test now opens the gate the way
+  `--laststand` does.
+
 ## 26 Nov 2026 · H3: food, potions and the Bag (on `feature/h3-food-bag`, waiting for the owner's phone test)
 
 Built in three stages: `f0f181a` (stage 1: timers, the Bag model, crops and recipes, save v4), `09dc171` (stage 2:

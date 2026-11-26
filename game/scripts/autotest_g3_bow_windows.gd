@@ -36,7 +36,6 @@ var g                     # autotest_g3_bow.gd: the helpers both halves use (_x,
 var _lay                  # autotest_layout.gd, for its _card_fits (the dialog fits the phone and its safe area)
 
 const Bow := preload("res://scripts/autotest_g3_bow.gd")        # its ORDER (the G3 checks use it too)
-const BowInspect := preload("res://ui/windows/bow_inspect.gd")   # its words (ARROW_HIT, ARROW_HIT_POTION)
 const ORDER: Array = Bow.ORDER
 const HIDDEN := ["volley", "foxfire"]
 const T_STATS := ["damage", "draw", "range"]          # (t) what the Training Target trains, in its order
@@ -592,9 +591,9 @@ func _inspect_view() -> void:
 	# one in the paw (Data.arrow_damage()) and one not owned (Data.arrow_damage("sunwood"), at level 1)
 	var stat_now := "+%d%%" % roundi(float(Data.stat_info("damage")["per_level"]) * 3.0 * 100.0)
 	var hit: String = win._inspect.arrow_hit("twig")
-	var want_hit := BowInspect.ARROW_HIT % [_st()._short_num(Data.arrow_damage()), stat_now]
+	var want_hit := _w("arrow_hit") % [_st()._short_num(Data.arrow_damage()), stat_now]
 	var sun_hit: String = win._inspect.arrow_hit("sunwood")
-	var want_sun := BowInspect.ARROW_HIT % [_st()._short_num(Data.arrow_damage("sunwood")), stat_now]
+	var want_sun := _w("arrow_hit") % [_st()._short_num(Data.arrow_damage("sunwood")), stat_now]
 	_x("Q11 b: each arrow's real damage, Data.arrow_damage() (%s), with the cat's Damage %s; a bow not owned shows its own (%s)" % [_st()._short_num(Data.arrow_damage()), stat_now, _st()._short_num(Data.arrow_damage("sunwood"))],
 		hit == want_hit and texts.has(hit) and sun_hit == want_sun and Data.arrow_damage("sunwood") > Data.arrow_damage() and Data.arrow_damage(Save.bow) == Data.arrow_damage(),
 		{"line": hit, "want": want_hit, "sunwood": sun_hit, "want_sun": want_sun})
@@ -603,7 +602,7 @@ func _inspect_view() -> void:
 	hud.refresh_card()
 	await t._wait(0.2)
 	var hit_p: String = win._inspect.arrow_hit("twig")
-	var want_p := BowInspect.ARROW_HIT_POTION % [_st()._short_num(Data.arrow_damage()), stat_now, "+25%"]
+	var want_p := _w("arrow_hit_potion") % [_st()._short_num(Data.arrow_damage()), stat_now, "+25%"]
 	_x("... and with a Damage Potion running the line grows with it (x1.25) and says so",
 		absf(Data.arrow_damage() - base * 1.25) < 0.001 and hit_p == want_p and _texts(hud._card_list).has(hit_p), {"line": hit_p, "want": want_p})
 	main.player.effects.clear()
@@ -648,7 +647,7 @@ func _inspect_view() -> void:
 	var fl: Array = win._inspect.lines("frost")
 	var labels: Array = hud.card_buttons().filter(func(b): return (b as Control).is_visible_in_tree() and not _going(b)).map(func(b): return String(b.get_meta("label", "")))
 	var frost_pct := roundi(float(Data.bow_info("frost")["damage"]) * Data.bow_level_mult("frost", 1) * 100.0)
-	var frost_hit := BowInspect.ARROW_HIT % [_st()._short_num(Data.arrow_damage("frost")), stat_now]
+	var frost_hit := _w("arrow_hit") % [_st()._short_num(Data.arrow_damage("frost")), stat_now]
 	_x("a locked bow can be looked at: its damage at level 1 (%d%%), its line and its arrow's hit, no level; its row Locked with no button, then Back" % frost_pct,
 		win.inspect == "frost" and hud.card_title() == _bname("frost") and fl == [_w("bow_damage") % frost_pct, BOW_NOTES["frost"], frost_hit]
 		and _model_view() != null and labels == [_w("back")]

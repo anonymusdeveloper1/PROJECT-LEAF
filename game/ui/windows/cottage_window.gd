@@ -3,8 +3,7 @@ extends "res://ui/windows/building_window.gd"
 ## (_card_cottage and the Cottage's part of the upgrade line) in H4 Stage 1. It shows Patch it up when raids wore it,
 ## the pet's line and the Nest (its looks, colours, Gloomlit colours, attachments). Stage 2 (P2c) pins Upgrade in the
 ## footer. Knocked down: only the ruin card. H5 removes the Cottage (its pet upgrades move to the Market).
-## Used by: ui/windows/window_list.gd (hud.windows["cottage"]), stations.gd (the marker's builder; _card_cottage in
-##          Stage 1).
+## Used by: ui/windows/window_list.gd (hud.windows["cottage"]), stations.gd (the marker's builder), the tests.
 ## Uses: Data (the pet), the base's tiles and looks rows.
 
 

@@ -20,18 +20,27 @@ extends Node
 ##                     "hud_edge"); real taps on Ride / Walk, the Settings gear (a graphics row, the X), the Bag and the
 ##                     build icon; H3: the Mount Health Potion in Ride's place (no Feed) and the Health Potion in row 1,
 ##                     both hidden while placing, and the running potions line under the currencies (the garden and
-##                     pot cards are their windows). Also run it at 540x960 (a 16:9 phone).
+##                     pot cards are their windows). H4: the build icon opens the build menu; every dialog's fit
+##                     includes its pinned footer (inside the dialog and the safe area, under the rows that scroll, its
+##                     buttons a thumb big); a real tap on the Training Target's Upgrade opens the confirm window, which
+##                     fits too. Also run it at 540x960 (a 16:9 phone).
 ##   --taps            taps and markers: nothing opens by walking; a drag that ends on a marker or a long press opens
 ##                     nothing; a tap on empty ground does nothing; a tap in reach opens at once, a far one walks the cat
 ##                     there first, a drag stops that walk; a tap on the thing itself works; a drag on the dim moves
 ##                     nothing; the X, a tap outside, back and Escape close a dialog; the markers far, near, in reach and
-##                     over the cat
+##                     over the cat; the Bow Shop's "!" (H4: from its footer's Upgrade or a bow's row)
 ##   --arrows          a mission wave with foes off the screen on two trails: arrows at the screen's edge toward them
 ##                     (a shot), and none once they are gone
+## While this node is in the tree the PC's own mouse is kept out of the game (see _input): in its own modes, in every
+## mode autotest.gd tries after it (_layout_hud leaves it in the tree: the file tests, --smoke, the default run), and
+## while --cards, --bowshop and --buildmenu keep one for its _card_fits.
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _veteran, _go_to, _press, _log, _tap...)
 var main
+var desk_mouse := 0       # the PC's own mouse events kept out so far (_input)
+var _desk_frame := -100   # the frame of the last one (a burst is logged once)
 const MarkerScript := preload("res://scripts/marker.gd")
+const BuildingWindow := preload("res://ui/windows/building_window.gd")   # H4: its _lights, the rule of a marker's "!"
 
 const CLEAR_ZONE := Rect2(-1.5, 0.8, 3.0, 5.2)     # the ground just south of the campfire: nothing taller than the cat
 const FIRE_CLEAR := 1.9                            # open ground round the campfire: no footprint nearer than this
@@ -59,6 +68,32 @@ func run() -> bool:
 			await _layoutsave(int(arg.substr(13)))
 			return true
 	return false
+
+
+## H4 Stage 3, the --hudcheck flake (a real tap lost about 1 run in 4 in H2 and H4 Stage 1: on Ride, on Walk, on a
+## Settings row and on its X, each a Button; never a tap on a marker or on the dim). The tests tap with a finger through
+## Input (autotest.gd _tap_at, _drag and _press_long here): a touch, plus the left button Godot makes from it (device
+## DEVICE_ID_EMULATION). A Button takes the tap only if the press is still inside it when the finger lifts, and any
+## mouse motion that reaches it between the finger's down and up moves the press to where that mouse is: the PC's own
+## mouse moving over the test window loses the tap. Its moves wait in Windows' queue while a frame runs, so a tap right
+## after a screenshot (which stalls its frame while the picture is saved) is the likeliest to lose one, as Walk and the
+## Settings row did. A marker (interact.gd) and the dim read only the touch or the button, so they never lost one. So
+## while this node is in the tree the PC's own mouse is kept out of the game and the HUD: its moves and buttons (any
+## device but the emulation's), and the touches Godot makes from them (the emulation's). A burst is logged once.
+func _input(event: InputEvent) -> void:
+	var from_desk := false
+	if event is InputEventMouse:
+		from_desk = event.device != InputEvent.DEVICE_ID_EMULATION     # not the button made from the test's finger
+	elif event is InputEventScreenTouch or event is InputEventScreenDrag:
+		from_desk = event.device == InputEvent.DEVICE_ID_EMULATION     # a touch made from the PC's mouse
+	if not from_desk:
+		return
+	get_viewport().set_input_as_handled()
+	desk_mouse += 1
+	var f := Engine.get_process_frames()
+	if f - _desk_frame > 30 and t != null:
+		t._log("ignored the PC's own mouse", {"n": desk_mouse, "event": event.as_text()})
+	_desk_frame = f
 
 
 # ---------------------------------------------------------------- --layout
@@ -600,6 +635,8 @@ func _hudcheck() -> void:
 	await _hud_taps()
 	for id in ["shop", "target", "bench", "well", "cottage", "stall", "sign", "stone", "garden", "pot", "fishing"]:
 		await _card_at(main.stations.rings[id], id)
+		if id == "target":
+			await _confirm_at("target")                  # H4: its pinned Upgrade opens the confirm window
 		if id == "stall" or id == "cottage":
 			_expect_rows("the %s card has its colours" % id, ["Colours"])
 			var att := false
@@ -823,7 +860,7 @@ func _edge_name(c: Control) -> String:
 
 ## H2: real taps on the HUD's own buttons: Ride, then Walk (the mount comes and goes); the gear opens the Settings
 ## window, a tap on a graphics row's button sets that level (put back after), the X closes it; the Bag opens by its
-## button (a shot), and the build icon opens the Hearthtree's card from where the cat stands.
+## button (a shot), and the build icon opens (H4) the build menu from where the cat stands, which fits.
 func _hud_taps() -> void:
 	var hud = main.hud
 	hud.hide_card()
@@ -878,13 +915,14 @@ func _hud_taps() -> void:
 	await t._shot("hud_bag")
 	hud.hide_card()
 	await t._wait(0.3)
-	# the build icon: the Hearthtree's card from here
+	# the build icon: H4, the build menu (hud.windows["build"]) from here
 	var bi: Button = hud._build_icon
 	t._expect("the build icon shows next to the Bag", bi != null and bi.is_visible_in_tree() and bi.get_global_rect().position.x >= hud.bag_button.get_global_rect().end.x)
 	await t._tap_at(bi.get_global_rect().get_center())
 	await t._wait(0.6)
-	t._expect("a real tap on the build icon opens the Hearthtree's card", hud.card_ring() == main.stations.rings["shop"], {"title": hud.card_title()})
+	t._expect("a real tap on the build icon opens the build menu", hud.card_ring() == hud.windows["build"], {"title": hud.card_title()})
 	await t._shot("hud_build_icon")
+	_card_fits("build")
 	hud.hide_card()
 	await t._wait(0.3)
 
@@ -916,6 +954,21 @@ func _card_at(ring, id: String) -> void:
 	await t._shot("hud_card_%s" % id)
 	_card_fits(id)
 	_open_id = id
+
+
+## H4: a real tap on the open window's pinned Upgrade (the Training Target's) opens the confirm window; a shot and the
+## checks. The next _card_at closes it by its X or a tap outside (the owner's Q3 (a): both close everything).
+func _confirm_at(what: String) -> void:
+	var hud = main.hud
+	var up: Button = hud.p_card.footer_button(Data.word("upgrade"))
+	if not t._expect("the %s's footer holds its Upgrade, on" % what, up != null and not up.disabled):
+		return
+	await t._tap_at(up.get_global_rect().get_center())
+	await t._wait(0.6)
+	t._expect("a real tap on the %s's Upgrade opens the confirm window" % what, hud.card_ring() == hud.confirm, {"title": hud.card_title()})
+	await t._shot("hud_card_confirm")
+	_card_fits("confirm")
+	_open_id = "confirm"
 
 
 func _card_fits(id: String) -> void:
@@ -970,7 +1023,22 @@ func _card_fits(id: String) -> void:
 				bad.append("%s sticks out sideways" % nm)
 			elif not in_scroll and (r.position.y < cr.position.y - 0.5 or r.end.y > cr.end.y + 0.5):
 				bad.append("%s sticks out" % nm)
-	t._expect("the %s dialog fits" % id, bad.is_empty(), {"bad": bad.slice(0, 6), "card": cr, "scrolls": scrolls})
+	# H4: the pinned footer is part of the fit: inside the dialog and the safe area, under the rows that scroll (never in
+	# them or over them), its buttons a thumb big
+	var ft = hud.p_card.foot
+	var has_foot: bool = ft != null and is_instance_valid(ft) and (ft as Control).visible
+	if has_foot:
+		var fr: Rect2 = (ft as Control).get_global_rect()
+		if not cr.grow(0.5).encloses(fr) or fr.position.y < top - 0.5 or fr.end.y > bottom + 0.5:
+			bad.append("the footer is outside the dialog or the safe area %s" % fr)
+		var sc: ScrollContainer = hud._card_scroll
+		if sc != null and (sc.is_ancestor_of(ft) or (sc.is_visible_in_tree() and fr.position.y < sc.get_global_rect().end.y - 0.5)):
+			bad.append("the footer is in or over the rows that scroll %s" % fr)
+		for b in (ft as Node).find_children("*", "Button", true, false):
+			var bs: Vector2 = (b as Control).get_global_rect().size
+			if (b as Control).is_visible_in_tree() and (bs.x < 60.0 or bs.y < 60.0):
+				bad.append("the footer's %s is small %s" % [String(b.get_meta("label", "button")), bs])
+	t._expect("the %s dialog fits" % id, bad.is_empty(), {"bad": bad.slice(0, 6), "card": cr, "scrolls": scrolls, "footer": has_foot})
 
 
 func _expect_rows(what: String, want: Array) -> void:
@@ -1182,8 +1250,16 @@ func _taps() -> void:
 	t._expect("a badge that would cover the cat fades", stall._over_cat > 0.9 and stall._bm.albedo_color.a < 0.45,
 		{"over": stall._over_cat, "a": stall._bm.albedo_color.a})
 	await t._shot("taps_05_badge_fades_over_cat")
-	# 10. the "!" dot: something affordable at the bench
-	t._expect("the bench shows its \"!\" (an upgrade it can afford)", bench.pulse and bench._dot.visible)
+	# 10. the "!" dot: something affordable at the bench (H4: the Bow Shop window's footer Upgrade or one of its bow rows,
+	# by the windows' own rule, building_window.gd _lights)
+	var bs: Dictionary = hud.windows["bench"].spec()
+	var foot_on := bool((bs.get("footer", {}) as Dictionary).get("pulse", false))
+	var row_on := false
+	for r in bs.get("rows", []):
+		if r is Dictionary and Data.bow_ids().has(String((r as Dictionary).get("id", ""))) and BuildingWindow._lights(r):
+			row_on = true
+	t._expect("the bench shows its \"!\" (an upgrade it can afford: its footer's Upgrade or a bow's row)",
+		bench.pulse and bench._dot.visible and (foot_on or row_on), {"footer": foot_on, "row": row_on})
 	t._expect("no tap had to fall back", t.tap_misses == 0, {"misses": t.tap_misses})
 
 

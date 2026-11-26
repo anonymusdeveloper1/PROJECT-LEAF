@@ -19,9 +19,8 @@ extends "res://ui/windows/building_window.gd"
 ## at. Knocked down: only the ruin card. Buy, Equip and a bow's Upgrade are one tap, no confirm (Q4 a).
 ## Moved from stations.gd (_card_bench, _bow_tile, _bow_note and their helpers, and the shop's part of the upgrade line)
 ## in H4 Stage 1; list rows, the pinned Upgrade and the inspect view since Stage 2 (P2b).
-## Used by: ui/windows/window_list.gd (hud.windows["bench"]), stations.gd (the marker's builder and its "!"; the old
-##          tests' _card_bench until Stage 3), ui/windows/bow_inspect.gd (inspect, bow_row, _bow_note, shown_cap, back),
-##          the tests.
+## Used by: ui/windows/window_list.gd (hud.windows["bench"]), stations.gd (the marker's builder and its "!"),
+##          ui/windows/bow_inspect.gd (inspect, bow_row, _bow_note, shown_cap, back), the tests.
 ## Uses: Data (bows, bow_info, bow_shop_level, bow_waits, bow_hidden, bow_cap, bow_top, bow_cost, craft_cost,
 ##       bow_level_mult, bow_picture, bow_burn, bow_frost, bow_draw_mult, mats_line, word), Save.bows / Save.bow, the
 ##       rules in stations.gd (_upgrade_bow, _craft, _equip, _locked, _name), the card's scroll (hud._card_scroll) and

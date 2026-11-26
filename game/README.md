@@ -200,6 +200,11 @@ Other modes (add after `--autotest --fresh`):
   the window closes), and `--saves --startup=1` (with `--fresh`) then `--saves --startup=2` (without `--fresh`): a real
   first launch with a v3 save on disk.
 
+**H4 (26 Nov 2026):** `--buildmenu` (`scripts/autotest_build_menu.gd`, new): the build menu, its Build buttons, the
+build icon's dot, the camera shot and the rise. `--bowshop`'s window checks are in `scripts/autotest_g3_bow_windows.gd`
+and `--cards`' window-kit checks in `scripts/autotest_g2_cards_kit.gd` (each loaded by its main test file). Tests reach
+a building's window through `main.hud.windows[<id>]`, never through `stations`.
+
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
 bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Current PC result: 77 pass,

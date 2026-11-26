@@ -192,6 +192,7 @@
     "level_of": "Level %d of %d", "max": "Max level", "max_for_now": "Max level for now",
     "needs_home": "Needs %s at level %d", "needs_missions": "Finish %d Raid Missions first",
     "goals_met": "%d of %d goals met",
+    "arrow_hit": "Each arrow hits for %s (the cat's Damage %s)", "arrow_hit_potion": "Each arrow hits for %s (the cat's Damage %s and a potion %s)",
     "tab_cat": "Cat", "tab_defences": "Defences",
     "stat_next": "Next: %s · now %s", "stat_next_first": "Next: %s", "bow_next": "Next: +%s%% damage",
     "bow_damage": "Damage %d%%", "bow_level": "Level %d of %d",

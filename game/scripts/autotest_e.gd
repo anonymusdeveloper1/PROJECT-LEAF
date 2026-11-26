@@ -1044,6 +1044,14 @@ func _row_texts(card: Dictionary) -> String:
 		return " · ".join(bits)))
 
 
+## Every word on every tab of the Hearthtree's window (H4: the old single shop card is Hearthtree, Cat and Defences tabs).
+func _tabs_texts(w) -> String:
+	var bits: Array = []
+	for tid in w.tab_ids():
+		bits.append(_row_texts(w.tab_spec(String(tid))))
+	return " || ".join(bits)
+
+
 func _topup() -> void:
 	main.player.invincible = true
 	t._veteran(15)
@@ -1066,10 +1074,14 @@ func _topup() -> void:
 	Save.timber = 500
 	await t._wait(0.5)
 	var st = main.stations
+	var hw = main.hud.windows["shop"]                 # H4: the Hearthtree (tabs), the Bow Shop, the Target, the stone and the Market are windows
+	var bw = main.hud.windows["bench"]
 	_x("before the Burrows: stats capped at 10", Data.stat_cap("damage") == 10 and Data.stat_cap("health") == 10)
-	_x("before the Burrows: no level-5 row, no Foxfire Bow", not _row_texts(st._card_shop()).contains("Amber") and not _row_texts(st._card_bench()).contains("Foxfire"),
-		{"shop": _row_texts(st._card_shop())})
-	_x("before the Burrows: the stone's level 4 shows max", _row_texts(st._card_stone()).contains("max level"), {"stone": _row_texts(st._card_stone())})
+	_x("before the Burrows: no level-5 row on any Hearthtree tab, no Foxfire Bow", not _tabs_texts(hw).contains("Amber") and not _row_texts(bw.spec()).contains("Foxfire"),
+		{"shop": _tabs_texts(hw)})
+	var stone_foot: Dictionary = main.hud.windows["stone"].spec().get("footer", {})
+	_x("before the Burrows: the stone's level 4 shows max (its footer's note, no button)", String(stone_foot.get("note", "")) == String(Data.word("max_for_now"))
+		and (stone_foot.get("buttons", []) as Array).is_empty(), {"stone": stone_foot})
 	st._upgrade_defence("tower")
 	_x("level 5 refused before the Burrows open", main.defences.level("tower") == 4)
 	main.burrows.open_hollow(false)
@@ -1091,19 +1103,20 @@ func _topup() -> void:
 			mastery += int(c["leaves"])
 	_x("H1: mastery paid in leaves only, no amber taken", int(Save.mats["amber"]) == int(m0["amber"]) and lm0 - Save.leaves == mastery,
 		{"mats": Save.mats, "paid": lm0 - Save.leaves, "want": mastery})
-	_x("the Training Target card shows mastery done", _row_texts(st._card_target()).contains("Damage · Max"), {"rows": _row_texts(st._card_target())})
+	var target_texts := _row_texts(main.hud.windows["target"].spec())
+	_x("the Training Target window shows mastery done (Damage, badge Max)", target_texts.contains("Damage · Max"), {"rows": target_texts})
 	st._upgrade_bow()
 	st._upgrade_bow()
 	_x("the bow to 12", int(Save.bows["sunwood"]) == 12, {"bows": Save.bows})
 	st._craft("foxfire")
 	_x("the Foxfire Bow is hidden from the Bow Shop for now (22 Nov 2026): not on the card, not sold", not Save.bows.has("foxfire") and Save.bow == "sunwood"
-		and not _row_texts(st._card_bench()).contains("Foxfire"))
+		and not _row_texts(bw.spec()).contains("Foxfire"))
 	Save.camp_level = 4
 	st._upgrade_defence("tower")
 	_x("tower level 5 refused at home level 4", main.defences.level("tower") == 4)
 	Save.camp_level = 5
-	var shop := _row_texts(st._card_shop())
-	_x("the shop offers the Amber Tower", shop.contains("Towers: Amber"), {"shop": shop})
+	var shop := _row_texts(hw.tab_spec("defences"))
+	_x("the Hearthtree's Defences tab offers the Amber Tower", (hw.tab_ids() as Array).has("defences") and shop.contains("Towers: Amber"), {"shop": shop, "tabs": hw.tab_ids()})
 	st._upgrade_defence("tower")
 	st._upgrade_defence("barricade")
 	_x("tower and barricade at level 5 with their models", main.defences.level("tower") == 5 and main.defences.model("tower", 5) == "acorn_tower_5"
@@ -1134,7 +1147,7 @@ func _topup() -> void:
 	main.player.global_position = Vector3(0.0, 0, 2.6)
 	await t._wait(1.2)
 	await t._shot("topup_home8")
-	var stall := _row_texts(st._card_stall())
+	var stall := _row_texts(main.hud.windows["stall"].spec())
 	_x("the Stable sells attachments (G4: the Thunder Shoes; the saddle and bags moved to the Saddlery)", stall.contains("Thunder Shoes") and not stall.contains("Saddle"), {"rows": stall})
 	st._buy_attach("mount_shoes")
 	st._buy_attach("pet_bell")

@@ -108,7 +108,9 @@ game/
     rule 3) until a building entry names its window.
   - Also known: in H4 the dialog host (its frame, the pinned footer, the tabs on top or at the bottom, each with an
     optional icon and a small "!" dot, and the visit hooks `card_opened`/`card_closed` on the window behind a card's
-    builder) is still `ui/hud/card.gd`. Stage 3 of H4 moves it to `ui/kit/card.gd` as a pure file move.
+    builder) moved to `ui/kit/card.gd` in H4 Stage 3, as a pure file move. The stations forwarders (`_card_shop` and
+    the rest) are gone: tests reach a window only through `main.hud.windows[<id>]`, `hud.windows["build"]` and
+    `hud.confirm`.
 - **Moving a script:** move it together with its `.uid` file, update every `preload("res://…")` path, then run the
   smoke test. A move commit changes nothing else.
 
@@ -515,11 +517,11 @@ depends on whom, so **there are exactly eight**, each with one job:
     and H5's Market can) and `model_view.gd` (a small turning 3D picture inside a window: its own little world, lit
     like the Bag's picture of the cat, the camera fitted to what it shows; it draws only while it shows, about 10
     times a second on Low; the Bow Shop's inspect view uses it, and H5's attachments and the Tailor's Nook can) (H4).
-    The dialog host, its frame and its tabs stay in `ui/hud/card.gd` until H4 Stage 3;
+    The dialog host, its frame and its tabs are `ui/kit/card.gd` (moved there in H4 Stage 3);
   - content folders: `content/settings/` (H2), `content/crops/` (5) and `content/recipes/` (5) (H3), `content/bows/`
     (6) and `content/buildings/` (11) (H4), listed by hand in `content/index.json`; the general rules stay in
     `balance.json`;
-- a few very big files: `stations.gd` 1,798 lines (was 2,672 before H4), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
+- a few very big files: `stations.gd` 1,723 lines (was 2,672 before H4), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
   `defences.gd` 1,334;
 - the Events board has 21 signals; the HUD listens to Events (H2); many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy

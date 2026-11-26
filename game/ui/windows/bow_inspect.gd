@@ -28,9 +28,6 @@ const PlayerScript := preload("res://scripts/player.gd")   # its static bow_path
 const ArrowScript := preload("res://scripts/arrow.gd")     # its static make and has_vc
 const VIEW_PX := Vector2i(360, 300)     # the turning picture, HUD pixels
 const ARROW_GAP := 0.12                 # between the bow and the arrow beside it, in the models' metres
-# H4 words (P3 moves them into balance.json "windows" in Stage 3)
-const ARROW_HIT := "Each arrow hits for %s (the cat's Damage %s)"
-const ARROW_HIT_POTION := "Each arrow hits for %s (the cat's Damage %s and a potion %s)"
 
 var hud                                 # the HUD node (untyped on purpose, as in the HUD's parts)
 var main
@@ -111,8 +108,8 @@ func arrow_hit(bid: String) -> String:
 	var dmg: String = main.stations._short_num(Data.arrow_damage(bid))   # "13.4", "12"
 	var potion := Data.effect_mult("damage")
 	if potion > 0.0:
-		return ARROW_HIT_POTION % [dmg, StatList.now_text("damage"), "+%d%%" % roundi(potion * 100.0)]
-	return ARROW_HIT % [dmg, StatList.now_text("damage")]
+		return String(Data.word("arrow_hit_potion")) % [dmg, StatList.now_text("damage"), "+%d%%" % roundi(potion * 100.0)]
+	return String(Data.word("arrow_hit")) % [dmg, StatList.now_text("damage")]
 
 
 # ---------------------------------------------------------------- the turning bow

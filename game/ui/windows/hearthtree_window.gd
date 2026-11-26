@@ -17,9 +17,7 @@ extends "res://ui/windows/building_window.gd"
 ## "Show" (the Cat or Defences tab opens and scrolls to its row); a goal for a building not built yet (or for the bows
 ## and the Training Target's stats before their building) has "Show", which opens the build menu at that building.
 ## While the Hearthtree is in ruins the whole window is its ruin card (no tabs, no footer).
-## Used by: ui/windows/window_list.gd (hud.windows["shop"]), stations.gd (the marker's builder and "!"; its old names
-##          _card_shop, _grow_rows, _goal_find and _defence_tiles hand on spec, _grow_rows, _goal_find and the
-##          Defences rows until H4 Stage 3), the tests.
+## Used by: ui/windows/window_list.gd (hud.windows["shop"]), stations.gd (the marker's builder and "!"), the tests.
 ## Uses: Data (home_goals, home_goals_met, home_price, home_can_grow, building, buildings, menu_buildings,
 ##       building_levels, station_needs_home, unlock_missing, word, stat_info, defence_info), Save, stat_list.gd and
 ##       defences_tab.gd (their tabs' rows), the confirm window (hud.confirm), the build menu (hud.windows["build"]),

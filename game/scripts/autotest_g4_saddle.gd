@@ -3,7 +3,7 @@ extends Node
 ## Each check logs "EXPECT PASS <what>" or "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: every
 ## number comes from balance.json; a fight being on is faked by hand (fight.active, in_wave and on_break, so no wave
 ## runs); the foes stand still; the cat's own _process is stopped while the moves are tried (no arrows muddy the hits).
-##   (a) the building: Locked ("Win 8 missions first") before mission 8; after it, Locked at Hearthtree 1 ("Needs the
+##   (a) the building: Locked ("Finish 8 Raid Missions first") before raid 8; after it, Locked at Hearthtree 1 ("Needs the
 ##       Hearthtree at level 2", since 21 Nov 2026); then Build pays its price; its card
 ##   (b) Buy Stomp, Upgrade, the Saddlery's level as the cap, level 4 only after the Raid Missions (H1: its price is leaves and timber), Max
 ##   (c) no built-in move: riding with nothing learned does nothing in a fight
@@ -109,7 +109,14 @@ func _item(card: Dictionary, title: String) -> Dictionary:
 
 
 func _tile(part: String, id: String) -> Dictionary:
-	return _item(_st()._card_saddlery(), String(Data.saddle_info(part, id)["name"]))
+	return _item(main.hud.windows["saddlery"].spec(), String(Data.saddle_info(part, id)["name"]))
+
+
+func _build_entry(id: String) -> Dictionary:
+	for e: Dictionary in main.hud.windows["build"].entries():
+		if String(e["id"]) == id:
+			return e
+	return {}
 
 
 func _sections(card: Dictionary) -> Array:
@@ -131,9 +138,9 @@ func _fight(on: bool) -> void:
 # ---------------------------------------------------------------- (a) the building
 func _building() -> void:
 	var st = _st()
-	var tl := _item(st._card_shop(), "Saddlery")
-	_x("before raid 8: the Hearthtree shows a Locked Saddlery tile ('Win 8 raids first')", String(tl.get("badge", "")) == "Locked"
-		and String(tl.get("text", "")).contains("Finish 8 Raid Missions first") and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
+	var entry := _build_entry("saddlery")
+	_x("before raid 8: the Saddlery is locked in the build menu ('Finish 8 Raid Missions first')",
+		String(entry.get("state", "")) == "locked" and String(entry.get("needs", "")) == "Finish 8 Raid Missions first", {"entry": entry})
 	var build: Dictionary = Data.build_price("saddlery")
 	Save.leaves = 100000
 	Save.timber = 1000
@@ -145,25 +152,28 @@ func _building() -> void:
 	Save.camp_level = 1
 	Save.leaves = 100000
 	Save.timber = 1000
-	tl = _item(st._card_shop(), "Saddlery")
+	entry = _build_entry("saddlery")
 	var need_txt := "Needs %s at level %d" % [Data.camp_name(), nh]
-	_x("8 raids won at Hearthtree 1: the tile is Locked ('%s')" % need_txt, nh == 2 and String(tl.get("badge", "")) == "Locked"
-		and String(tl.get("text", "")) == need_txt and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
+	_x("8 raids won at Hearthtree 1: the Saddlery is locked ('%s')" % need_txt,
+		nh == 2 and String(entry.get("state", "")) == "locked" and String(entry.get("needs", "")) == need_txt, {"entry": entry})
 	st._build_station("saddlery")
 	_x("at Hearthtree 1 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
 	Save.camp_level = 5
 	Save.leaves = int(build["leaves"]) + 123
 	Save.timber = int(build["timber"]) + 7
-	tl = _item(st._card_shop(), "Saddlery")
-	_x("after 8 raids the tile is a Build button", String(tl.get("label", "")) == "Build" and String(tl.get("badge", "")) == "New" and bool(tl.get("enabled", false)),
-		{"badge": tl.get("badge", ""), "label": tl.get("label", "")})
+	entry = _build_entry("saddlery")
+	_x("after 8 raids the Saddlery is open in the build menu with its price",
+		String(entry.get("state", "")) == "open" and entry.get("price", {}) == build, {"entry": entry})
 	st._build_station("saddlery")
 	_x("Build pays its price and the Saddlery is level 1", int(Save.stations["saddlery"]) == 1 and Save.leaves == 123 and Save.timber == 7,
 		{"leaves": Save.leaves, "timber": Save.timber})
 	_x("its ring is in the camp", st.rings.has("saddlery") and st.rings["saddlery"] != null)
-	var card: Dictionary = st._card_saddlery()
-	_x("the card: title Saddlery, sections Skills, Attachments, Upgrade", String(card["title"]) == "Saddlery" and _sections(card) == ["Skills", "Attachments", "Upgrade"],
-		{"title": card["title"], "sections": _sections(card)})
+	var card: Dictionary = main.hud.windows["saddlery"].spec()
+	var buttons: Array = (card.get("footer", {}) as Dictionary).get("buttons", [])
+	var upgrade := not buttons.is_empty() and String(buttons[0].get("label", "")) == "Upgrade"
+	_x("the card: title Saddlery, sections Skills and Attachments, Upgrade in the footer",
+		String(card["title"]) == "Saddlery" and _sections(card) == ["Skills", "Attachments"] and upgrade,
+		{"title": card["title"], "sections": _sections(card), "upgrade": upgrade})
 	var titles: Array = []
 	for r in card["rows"]:
 		if String(r.get("kind", "")) == "item":
@@ -173,8 +183,8 @@ func _building() -> void:
 		want.append(String(Data.saddle_info("skills", id)["name"]))
 	for id in GEAR:
 		want.append(String(Data.saddle_info("attach", id)["name"]))
-	_x("seven tiles in order: Stomp, Ram, Pounce, Bellow, Fire-spitter, Mossweave Saddle, Saddlebags (then the upgrade)",
-		titles.size() == 8 and titles.slice(0, 7) == want and want == ["Stomp", "Ram", "Pounce", "Bellow", "Fire-spitter", "Mossweave Saddle", "Saddlebags"], {"titles": titles})
+	_x("seven tiles in order: Stomp, Ram, Pounce, Bellow, Fire-spitter, Mossweave Saddle, Saddlebags",
+		titles.size() == 7 and titles == want and want == ["Stomp", "Ram", "Pounce", "Bellow", "Fire-spitter", "Mossweave Saddle", "Saddlebags"], {"titles": titles})
 	var ok := true
 	var seen := {}
 	for id in SKILLS:

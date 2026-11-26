@@ -18,8 +18,7 @@ extends "res://ui/windows/building_window.gd"
 ##                       "Owned"
 ##   not owned           "Buy"; badge "New". Bought when nothing is worn, it is worn at once.
 ## Knocked down: only the ruin card.
-## Used by: ui/windows/window_list.gd (hud.windows["saddlery"]), stations.gd (the marker's builder; _card_saddlery for
-##          the tests in Stage 1).
+## Used by: ui/windows/window_list.gd (hud.windows["saddlery"]), stations.gd (the marker's builder), the tests.
 ## Uses: Data (saddle_items, saddle_info, saddle_level, saddle_top, saddle_block, saddle_price, worn_attach), the rules
 ##       in stations.gd (_saddle_buy, _saddle_wear, _saddle_note, _locked), the base's tiles.
 

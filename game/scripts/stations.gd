@@ -34,7 +34,6 @@ extends Node3D
 
 const RingScript := preload("res://scripts/marker.gd")      # a tap on its badge or the building opens its card
 const FLAME := preload("res://shaders/flame.gdshader")
-const DefencesTab := preload("res://ui/windows/defences_tab.gd")   # H4: the Defences shelf (for _defence_tiles)
 
 var main
 var nodes := {}          # "home", "campfire", "target", "bench", "well", "cottage", "stall", "saddlery", "tailor" -> prop node
@@ -59,7 +58,7 @@ func build(m) -> void:
 		add_child(ring)
 		var col := Color(1.0, 0.82, 0.3) if id != "sign" and id != "fire" else Color(1.0, 0.55, 0.35)
 		# H4: a building's card is its window, plugged in by use_windows once the HUD has made them; until then (the
-		# first refresh runs before the HUD) the marker shows the old name's card or an empty one
+		# first refresh runs before the HUD) the marker shows its own card (pot, campfire, signpost) or an empty one
 		var card: Callable = Callable(self, "_card_" + id) if has_method("_card_" + id) else _no_card
 		ring.setup(id, Vector3.ZERO, 0.75, card, col)
 		rings[id] = ring
@@ -1044,84 +1043,10 @@ func _cost_row(text: String, note: String, cost: Dictionary, label: String, ok: 
 	return {"text": text, "note": note, "cost": cost, "label": label, "enabled": ok and Data.can_afford(cost), "action": action}
 
 
-# ---------------------------------------------------------------- H4 Stage 1: the old card names (for the tests)
-# The building cards moved into their windows (ui/windows/, hud.windows: use_windows). These old names hand the tests
-# the window's card or rows until Stage 3 (P3) rewrites the tests and deletes them; _no_card stays. Before the HUD has
-# made the windows (the first refresh runs before it), each gives {}, [] or "".
-
-func _card_shop() -> Dictionary:
-	return _window_spec("shop")
-
-
-func _card_target() -> Dictionary:
-	return _window_spec("target")
-
-
-func _card_bench() -> Dictionary:
-	return _window_spec("bench")
-
-
-func _card_well() -> Dictionary:
-	return _window_spec("well")
-
-
-func _card_stone() -> Dictionary:
-	return _window_spec("stone")
-
-
-func _card_stall() -> Dictionary:
-	return _window_spec("stall")
-
-
-func _card_cottage() -> Dictionary:
-	return _window_spec("cottage")
-
-
-func _card_saddlery() -> Dictionary:
-	return _window_spec("saddlery")
-
-
-func _card_tailor() -> Dictionary:
-	return _window_spec("tailor")
-
-
-func _card_garden() -> Dictionary:
-	return _window_spec("garden")
-
-
-func _grow_rows() -> Array:
-	return windows["shop"]._grow_rows() if windows.has("shop") else []
-
-
-func _goal_find(g: Dictionary) -> String:
-	return windows["shop"]._goal_find(g) if windows.has("shop") else ""
-
-
-func _defence_tiles() -> Array:
-	return DefencesTab.rows(windows["shop"]) if windows.has("shop") else []
-
-
-## A building's own upgrade tile (its window's upgrade_tile; "home" and "camp" are the Hearthtree's marker, "shop").
-func _station_upgrade_row(id: String) -> Dictionary:
-	var rid := "shop" if id == "home" or id == "camp" else id
-	return windows[rid].upgrade_tile() if windows.has(rid) else {}
-
-
-func _pct(x: float) -> String:
-	return windows["well"]._pct(x) if windows.has("well") else ""
-
-
-func _market_sells() -> Array:
-	return windows["stall"]._market_sells() if windows.has("stall") else []
-
-
-func _market_buys() -> Array:
-	return windows["stall"]._market_buys() if windows.has("stall") else []
-
-
-## The card of the window on marker `rid` ({} before the HUD has made the windows).
-func _window_spec(rid: String) -> Dictionary:
-	return windows[rid].spec() if windows.has(rid) else {}
+# ---------------------------------------------------------------- H4: no old card names
+# A building's card is its window (hud.windows[<marker id>].spec()); code and tests reach it there. Only the cards of
+# things that are not buildings stay in this file (_card_pot, _card_fire, _card_sign); _no_card covers a marker before
+# the HUD has made its window.
 
 
 func _mend_raid() -> void:

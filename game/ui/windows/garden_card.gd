@@ -5,8 +5,7 @@ extends "res://ui/windows/building_window.gd"
 ## Neither holds rules: planting, watering and picking are garden.gd's, and the crops grow in real time (Timers). The
 ## stable view_id keeps a leaf pickup or a save from rebuilding the window under a drag; the marker's "!" comes through
 ## the window row's "pulse" (garden.wants_pulse) or the footer. A wave blanks it, as every station card (card.gd _spec).
-## Used by: ui/windows/window_list.gd (hud.windows["garden"]), stations.gd (the marker's builder; _card_garden for the
-##          tests in Stage 1).
+## Used by: ui/windows/window_list.gd (hud.windows["garden"]), stations.gd (the marker's builder), the tests.
 ## Uses: hud.garden_window, main.garden (wants_pulse), Data (garden_level, garden_plots, the garden table).
 
 

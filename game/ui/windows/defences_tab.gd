@@ -10,7 +10,7 @@ extends RefCounted
 ## Moved from stations.gd (_defence_tiles and its helpers) in H4 Stage 1; list rows and its own tab in Stage 2. H6 lifts
 ## it into the Defence Workshop's window.
 ## Used by: ui/windows/hearthtree_window.gd (the tab, whether it shows, its goals' row titles, the confirm's defences
-##          line), stations._defence_tiles (the old name the tests call until H4 Stage 3).
+##          line), the tests (rows).
 ## Uses: Data (defence_info, def_kind_name, raids_open, burrows_open, camp_name, mats_line), Save.camp_level, Bag.
 
 ## The kinds the tab sells and levels, in its order (the old shelf's list; the fence is not sold here).

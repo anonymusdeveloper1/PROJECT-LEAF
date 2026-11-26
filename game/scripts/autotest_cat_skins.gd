@@ -102,7 +102,14 @@ func _sections(card: Dictionary) -> Array:
 
 
 func _tile(id: String) -> Dictionary:
-	return _item(_st()._card_tailor(), Data.cat_skin_name(id))
+	return _item(main.hud.windows["tailor"].spec(), Data.cat_skin_name(id))
+
+
+func _build_entry(id: String) -> Dictionary:
+	for e: Dictionary in main.hud.windows["build"].entries():
+		if String(e["id"]) == id:
+			return e
+	return {}
 
 
 func _fight(on: bool) -> void:
@@ -137,9 +144,9 @@ func _building() -> void:
 	var nh := Data.station_needs_home("tailor")
 	var build: Dictionary = Data.build_price("tailor")
 	var need_txt := "Needs %s at level %d" % [Data.camp_name(), nh]
-	var tl := _item(st._card_shop(), name)
-	_x("at Hearthtree 2 the Hearthtree shows a Locked %s tile ('%s')" % [name, need_txt], nh == 3 and String(tl.get("badge", "")) == "Locked"
-		and String(tl.get("text", "")) == need_txt and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
+	var entry := _build_entry("tailor")
+	_x("at Hearthtree 2 the build menu shows %s locked ('%s')" % [name, need_txt],
+		nh == 3 and String(entry.get("state", "")) == "locked" and String(entry.get("needs", "")) == need_txt, {"entry": entry})
 	Save.leaves = 100000
 	Save.timber = 1000
 	st._build_station("tailor")
@@ -147,11 +154,9 @@ func _building() -> void:
 	Save.camp_level = nh
 	Save.leaves = int(build["leaves"]) + 123
 	Save.timber = int(build["timber"]) + 7
-	tl = _item(st._card_shop(), name)
-	_x("at Hearthtree 3 the tile is a Build button with its price (%d leaves, %d timber)" % [int(build["leaves"]), int(build["timber"])],
-		String(tl.get("label", "")) == "Build" and String(tl.get("badge", "")) == "New" and bool(tl.get("enabled", false))
-		and int((tl.get("cost", {}) as Dictionary).get("leaves", 0)) == int(build["leaves"]) and int((tl.get("cost", {}) as Dictionary).get("timber", 0)) == int(build["timber"]),
-		{"badge": tl.get("badge", ""), "label": tl.get("label", ""), "cost": tl.get("cost", {})})
+	entry = _build_entry("tailor")
+	_x("at Hearthtree 3 the Nook is open in the build menu with its price (%d leaves, %d timber)" % [int(build["leaves"]), int(build["timber"])],
+		String(entry.get("state", "")) == "open" and entry.get("price", {}) == build, {"entry": entry})
 	st._build_station("tailor")
 	_x("Build pays exactly its price and the Nook is level 1", int(Save.stations["tailor"]) == 1 and Save.leaves == 123 and Save.timber == 7,
 		{"leaves": Save.leaves, "timber": Save.timber})
@@ -175,7 +180,7 @@ func _building() -> void:
 	await t._shot("tailor_nook")
 	# ruined and repaired like the others
 	st.hurt_building("tailor", hp_want + 1.0)
-	var rc: Dictionary = st._card_tailor()
+	var rc: Dictionary = main.hud.windows["tailor"].spec()
 	_x("knocked down it is a ruin: its card shows only In ruins and Repair", Save.ruined.has("tailor") and String((rc["rows"] as Array)[0].get("text", "")) == "In ruins"
 		and _item(rc, "Repair").get("label", "") == "Repair", {"rows": (rc["rows"] as Array).size()})
 	var cost: Dictionary = st.repair_cost("tailor")
@@ -188,7 +193,7 @@ func _building() -> void:
 
 # ---------------------------------------------------------------- (b) the card
 func _card() -> void:
-	var card: Dictionary = _st()._card_tailor()
+	var card: Dictionary = main.hud.windows["tailor"].spec()
 	var titles: Array = _items(card).map(func(r): return String(r["title"]))
 	var want: Array = IDS.map(func(id): return Data.cat_skin_name(id))
 	_x("the card: title Tailor's Nook, one Outfits shelf, three tiles in order: %s" % ", ".join(want), String(card["title"]) == "Tailor's Nook"

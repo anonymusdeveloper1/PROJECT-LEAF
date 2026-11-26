@@ -12,8 +12,7 @@ extends "res://ui/windows/building_window.gd"
 ##                          waits for Wear.
 ## A tile shows res://assets/ui/cat_skins/<id>.png (row key "picture") when that picture exists, else the outfit icon.
 ## One level: no upgrade shelf. Knocked down: only the ruin card.
-## Used by: ui/windows/window_list.gd (hud.windows["tailor"]), stations.gd (the marker's builder; _card_tailor for the
-##          tests in Stage 1).
+## Used by: ui/windows/window_list.gd (hud.windows["tailor"]), stations.gd (the marker's builder), the tests.
 ## Uses: Data (cat_skin_ids, cat_skin, cat_skin_name, cat_skin_owned, cat_skin_cost, cat_skin_buyable,
 ##       cat_skin_picture), the rules in stations.gd (_buy_skin, _wear_skin, _locked), the base's tiles.
 

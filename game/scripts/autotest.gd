@@ -94,6 +94,28 @@ func _press(label: String, index := 0) -> bool:
 	return false
 
 
+## H4: building goes through the build menu now (the Hearthtree's card has no Build tiles). Opens the menu at `id`'s
+## detail view (the first building that is open and affordable when `id` is ""), the way a goal's Show does, and
+## presses the detail view's Build. Returns the id it built ("" when nothing was on offer or Build did not press).
+func _build_from_menu(id := "") -> String:
+	var menu = main.hud.windows["build"]
+	var pick := id
+	if pick == "":
+		for e: Dictionary in menu.entries():
+			if String(e["state"]) == "open" and Data.can_afford(e["price"] as Dictionary):
+				pick = String(e["id"])
+				break
+	if pick == "":
+		_log("build menu: nothing open and affordable")
+		return ""
+	menu.open_at(pick)
+	await _wait(0.3)
+	var ok: bool = _press("Build")
+	await _wait(0.3)
+	_log("built from the menu", {"id": pick, "ok": ok, "level": Data.station_level(pick)})
+	return pick if ok and Data.station_level(pick) > 0 else ""
+
+
 # ---------------------------------------------------------------- taps (19 Nov 2026: cards open by a tap, as dialogs)
 var tap_misses := 0                       # taps that had to fall back (the marker hidden, or another one in the way)
 
@@ -395,7 +417,7 @@ func _run() -> void:
 				await _use(main.stations.rings["shop"])
 				await _wait(0.8)
 				await _shot("05a_shop_card")
-				_press("Build")
+				await _build_from_menu()
 				await _wait(0.6)
 			if main.fight.active and not main.fight.in_wave:
 				await _use(main.stations.rings["sign"], 0.25, 10.0)
@@ -448,6 +470,9 @@ func _shop_round() -> void:
 			continue
 		await _use(r, 0.3, 10.0)
 		await _wait(0.5)
+		if id == "shop":
+			_press("Cat")                        # H4: the Hearthtree's stats are on its Cat tab (it opens on the Hearthtree tab)
+			await _wait(0.2)
 		for k in 8:
 			if not _press("Buy"):
 				break
@@ -693,8 +718,9 @@ func _village() -> void:
 	await _wait(0.8)
 	await _shot("village_00_shop")
 	for k in 5:
-		_press("Build")
+		await _build_from_menu()
 		await _wait(0.4)
+	await _wait(1.2)                                         # the camera's shot at the last new building ends first
 	_log("village built", {"stations": Save.stations, "pet": main.pet != null, "mount": main.mount != null})
 	main.player.global_position = Vector3(0.3, 0, 2.2)
 	await _wait(1.5)
@@ -991,6 +1017,8 @@ func _laststand() -> void:
 	await _wait(0.8)
 	await _use(main.stations.rings["shop"], 0.25, 15.0)
 	await _wait(0.8)
+	_press("Defences")                       # H4: "Mend the defences" is on the Hearthtree's Defences tab
+	await _wait(0.3)
 	_press("Mend")
 	await _wait(0.5)
 	_log("restored", {"ruined": Save.ruined, "fire_ruined": Save.fire_ruined, "fire_out": main.world.fire_out, "wrecked": main.defences.wrecked_count(), "leaves": Save.leaves, "timber": Save.timber})
@@ -1418,8 +1446,11 @@ func _guardian() -> void:
 	await _wait(0.4)
 	await _shot("warden_stone_card_awake")
 	main.hud.hide_card()
-	# its post in a mission (Mossback Wakes: one lane, so it stands at the inner mouth of that trail)
+	# its post in a mission (Mossback Wakes: one lane, so it stands at the inner mouth of that trail). After 4 wins the
+	# next mission is Bandit Night, so the Phase F gate would refuse Mossback Wakes: the test opens it (as --laststand does)
+	main.fight.skip_gate = true
 	main.start_stage(5)
+	main.fight.skip_gate = false
 	await _wait(0.5)
 	main.fight.set_physics_process(false)
 	for f in get_tree().get_nodes_in_group("foes"):
@@ -2729,13 +2760,15 @@ func _shard_goods() -> void:
 		Save.def_levels[t] = 3
 		d.relevel(t)
 	d._spawn("spikes", Vector3(2.6, 0, -6.2), 0.0)
-	var texts := func() -> Array: return (st._card_shop()["rows"] as Array).map(func(rw): return String(rw.get("title", "")) + " " + String(rw.get("text", "")))
+	var w = main.hud.windows["shop"]                         # H4: the Defences shelf is the Hearthtree's Defences tab
+	_expect("the Hearthtree has its Defences tab", (w.tab_ids() as Array).has("defences"), {"tabs": w.tab_ids()})
+	var texts := func() -> Array: return (w.tab_spec("defences")["rows"] as Array).map(func(rw): return String(rw.get("title", "")) + " " + String(rw.get("text", "")))
 	_expect("level 4 is hidden before every raid is won", not " ".join(texts.call()).contains("Shardstone"), {"rows": texts.call()})
 	Save.missions_done.append(String(Data.mission(Data.mission_count() - 1)["id"]))
 	main.raids.refresh_open()
 	main.world.swap_sign()
 	var row4: Dictionary = {}
-	for rw in st._card_shop()["rows"]:
+	for rw in w.tab_spec("defences")["rows"]:
 		if String(rw.get("title", "")) == "Barricades: Shardstone":
 			row4 = rw
 	_expect("level 4 shows once raids are open, blocked below Hearthtree level 4", not row4.is_empty() and not bool(row4["enabled"]) and String(row4.get("text", "")).contains("Hearthtree at level 4")

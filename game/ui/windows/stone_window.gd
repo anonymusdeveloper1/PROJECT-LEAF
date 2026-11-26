@@ -5,8 +5,7 @@ extends "res://ui/windows/building_window.gd"
 ##   asleep               "The Moss Warden is asleep" and Wake (stations._wake_warden)
 ##   awake                its numbers, how it fights, its post (Change: stations._next_post), its looks and Upgrade
 ## Stage 2 (P2c) pins Upgrade in the footer. Never ruined or worn. H8 gives it tabs.
-## Used by: ui/windows/window_list.gd (hud.windows["stone"]), stations.gd (the marker's builder; _card_stone for the
-##          tests in Stage 1).
+## Used by: ui/windows/window_list.gd (hud.windows["stone"]), stations.gd (the marker's builder), the tests.
 ## Uses: Data (the guardian's numbers), main.guardian, the rules in stations.gd (_wake_warden, _next_post, _post_lanes),
 ##       the base's tiles and looks rows.
 

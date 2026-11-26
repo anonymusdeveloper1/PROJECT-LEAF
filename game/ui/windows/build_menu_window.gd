@@ -91,17 +91,25 @@ func entries() -> Array:
 		var home_bits: Array = []
 		var mission_bits: Array = []
 		var flag_missing := false
+		var unknown_rule := false
 		for part: Dictionary in Data.unlock_missing(e.get("unlock", {}) as Dictionary):
 			match String(part.get("type", "")):
 				"flag":
 					flag_missing = true
 				"building":
-					home_bits.append(String(Data.word("needs_home")) % [Data.camp_name(), int(part.get("level", 1))])
+					# the part names its own building: the Hearthtree by its camp name, any other as "the <name>"
+					var need_id := String(part.get("id", "home"))
+					var need_name := Data.camp_name()
+					if need_id != "home" and need_id != "camp" and need_id != "shop":
+						need_name = "the " + String(Data.building(need_id).get("name", need_id))
+					home_bits.append(String(Data.word("needs_home")) % [need_name, int(part.get("level", 1))])
 				"missions_won":
 					mission_bits.append(String(Data.word("needs_missions")) % int(part.get("n", 0)))
+				_:
+					unknown_rule = true                # a malformed rule: locked, with no needs line
 		if flag_missing:
 			continue
-		var missing := not home_bits.is_empty() or not mission_bits.is_empty()
+		var missing := unknown_rule or not home_bits.is_empty() or not mission_bits.is_empty()
 		if missing and Data.progress() < from_won:
 			continue
 		out.append({"id": id, "name": String(e.get("name", id)), "state": "locked" if missing else "open",

@@ -4,7 +4,7 @@ extends RefCounted
 ## moves something in the camp or plays an effect stays in stations.gd (main.stations, `st` here) under its old name,
 ## and a window calls it as st.<name> (for example st._upgrade_station.bind(id)). A window may read Save and Data.
 ## How it plugs in: ui/windows/window_list.gd makes one window per building (hud.windows, keyed by its marker's id);
-## stations.use_windows sets each marker's builder to its window's spec(), so the card (ui/hud/card.gd) draws spec(),
+## stations.use_windows sets each marker's builder to its window's spec(), so the card (ui/kit/card.gd) draws spec(),
 ## and the marker's "!" comes from pulse(). The card also tells a window when a visit starts and ends (card_opened,
 ## card_closed: the builder's object hears them).
 ## H4 Stage 1: every window still returns today's rows (shop tiles under shelf headings), so every card looks exactly
@@ -13,7 +13,7 @@ extends RefCounted
 ## Used by: every window in ui/windows/ (they extend this file), defences_tab.gd and stat_list.gd (their rows),
 ##          stations.gd (spec, pulse, and the old card names the tests still call in Stage 1), the tests.
 ## Uses: Data (the building entries and the words, Data.word), Save, the card's row kinds (plain rows, "item" tiles,
-##       "section" headings; "list" rows and the footer from H4: ui/hud/card.gd, ui/kit/list_row.gd), the confirm window
+##       "section" headings; "list" rows and the footer from H4: ui/kit/card.gd, ui/kit/list_row.gd), the confirm window
 ##       (hud.confirm, ui/kit/confirm_window.gd), and the rules in stations.gd.
 
 var hud                         # the HUD node (untyped on purpose, as in the HUD's parts)
@@ -104,7 +104,7 @@ func upgrade_tile() -> Dictionary:
 
 
 ## H4 (docs/PHASE_H_PLAN.md: "Buildings with levels have an Upgrade button fixed at the bottom"): the pinned Upgrade,
-## a card's "footer" (ui/hud/card.gd). "Level 2 of 5" and the next level's price. The owner's answer (26 Nov 2026, Q2
+## a card's "footer" (ui/kit/card.gd). "Level 2 of 5" and the next level's price. The owner's answer (26 Nov 2026, Q2
 ## (a)): Upgrade always opens the confirm window, even when the price can't be paid yet (the price shows red there and
 ## Confirm stays grey); only the Hearthtree's level turns it off. The marker's "!" (pulse) shows only when it can be
 ## paid. At the top: "Max level" (or "Max level for now" while the next level waits for the Gloomwood), no button.
@@ -173,7 +173,7 @@ func ring():
 	return st.rings.get(ring_id) if st != null else null
 
 
-## The card's visit hooks (ui/hud/card.gd): a visit starts (the card opens on this window) and ends (it closes or
+## The card's visit hooks (ui/kit/card.gd): a visit starts (the card opens on this window) and ends (it closes or
 ## another card replaces it). Nothing by default.
 func card_opened() -> void:
 	pass

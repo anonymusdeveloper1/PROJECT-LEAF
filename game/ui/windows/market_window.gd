@@ -5,8 +5,8 @@ extends "res://ui/windows/building_window.gd"
 ## Stable (mount looks, colours, attachments). Stage 2 (P2c) pins Upgrade in the footer. Knocked down: only the ruin
 ## card. The trades are rules and stay in stations.gd (_trade, _market_buy, _market_sell, with _market_open,
 ## _stock and _market_pay, which this window reads too).
-## Used by: ui/windows/window_list.gd (hud.windows["stall"]), stations.gd (the marker's builder; _card_stall,
-##          _market_sells and _market_buys for the tests in Stage 1).
+## Used by: ui/windows/window_list.gd (hud.windows["stall"]), stations.gd (the marker's builder), the tests
+##          (spec, _market_sells, _market_buys).
 ## Uses: Data (trade, market, shard_trade, the mount), Bag, main.player and main.toggle_ride, main.raids.trade_shards,
 ##       the base's tiles and looks rows.
 

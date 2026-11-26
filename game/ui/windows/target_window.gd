@@ -9,8 +9,7 @@ extends "res://ui/windows/building_window.gd"
 ## Knocked down: only the ruin card (Repair). The owner's answer (26 Nov 2026, Q9): Patch it up and the ruin view stay.
 ## Moved from stations.gd (_card_target and the Target's part of the upgrade line) in H4 Stage 1; list rows and the
 ## pinned Upgrade since Stage 2 (P2b).
-## Used by: ui/windows/window_list.gd (hud.windows["target"]), stations.gd (the marker's builder and its "!"; the old
-##          tests' _card_target and _station_upgrade_row("target") until Stage 3), the tests.
+## Used by: ui/windows/window_list.gd (hud.windows["target"]), stations.gd (the marker's builder and its "!"), the tests.
 ## Uses: stat_list.gd, the base (as_list, _wear_row, _ruin_card, upgrade_footer, upgrade_tile), Data
 ##       (stat_cap_by_station_level, balance.json stats, station_level).
 

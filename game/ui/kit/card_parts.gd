@@ -1,5 +1,5 @@
 extends RefCounted
-## H4: the parts the window kit added to the card's frame (the window kit; the frame itself is ui/hud/card.gd): a tab's
+## H4: the parts the window kit added to the card's frame (the window kit; the frame itself is ui/kit/card.gd): a tab's
 ## icon, the small "!" dot on a tab, and the pinned footer with its words, price and buttons. The card keeps the
 ## footer's box (card.gd `foot`), clears the old footer and calls these when it fills a card; they only draw.
 ##   tab_icon(hud, button, icon, text)   the icon left of a tab's words (or alone, in the middle, when it has none)

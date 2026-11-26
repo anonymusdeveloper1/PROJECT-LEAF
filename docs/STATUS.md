@@ -39,8 +39,8 @@
 - **Next:** the owner's phone review of H2. H3 is built (below).
 
 **H3** (food, potions and the Bag) is built on `feature/h3-food-bag` in three stages (`f0f181a`, `09dc171` and the
-stage 3 clean-up; 26 Nov 2026). The branch starts from `feature/h2-hud`, so it merges after H2. **Not pushed yet**; it
-waits for the owner's phone test. Backup: `D:\DevCache\backup\pre_h3_2026-11-26`.
+stage 3 clean-up; 26 Nov 2026). The branch starts from `feature/h2-hud`, so it merges after H2. Pushed to GitHub, not
+merged; it waits for the owner's phone test. Backup: `D:\DevCache\backup\pre_h3_2026-11-26`.
 - **Only timers keep running while the game is closed** (rule change 1 is now built): crops grow and the pot cooks by
   the phone's clock (`core/timers.gd`). If the clock is set back, the jobs wait.
 - The garden's window (drag a seed onto a plot; Water for 5/6/7 min at garden level 1/2/3; tap to pick), two new crops
@@ -64,6 +64,32 @@ waits for the owner's phone test. Backup: `D:\DevCache\backup\pre_h3_2026-11-26`
 - **Next:** the owner's phone test of H3 (drag and drop with a finger, closing the game while crops grow, the potion
   buttons in a fight, the old save's food and crops). Then H4 as `docs/PHASE_H_PLAN.md` sets out: building windows,
   part 1 (the shared window, the Hearthtree, the Target, the Bow Shop, the build menu).
+
+**H4** (building windows, part 1) is built on `feature/h4-building-windows` in three stages (`e3fd019`, `63059eb` and
+the stage 3 clean-up; 26 Nov 2026). The branch starts from `feature/h3-food-bag`, so it merges after H3. Local only,
+not pushed. Backup: `D:\DevCache\backup\pre_h4_2026-11-26`.
+- **The Hearthtree window** has tabs at the top: Hearthtree (Mend all, Patch it up, the goals, Graphics), Cat (the
+  cat's upgrades) and Defences. A tab shows once it has something and gets a "!" when something on it can be bought.
+  Each goal has Go (walks the cat there) or Show (opens the right tab, or the build menu at a building not built yet).
+- **The pinned Upgrade:** the nine buildings with levels end in an Upgrade that never scrolls away. It always opens a
+  confirm window with what the next level gives; the price is red and Confirm grey when you can't pay. The Tailor's
+  Nook and the Fishing Spot have one level and no Upgrade.
+- **The Bow Shop:** one row per bow (Upgrade, then a grey Equipped for the bow in the paw; Equip; Buy; Locked). A tap
+  on a bow's picture shows it turning in 3D with its arrow and the arrow's real damage.
+- **The build menu:** the build icon next to the Bag opens a grid of building pictures; each open one has its own
+  Build. A dot on the icon shows when a building can be built and paid for. After Build the camera glides to the new
+  building for about 2 s while it rises out of the ground.
+- Code: one window file per building in `game/ui/windows/`, the window kit in `game/ui/kit/` (now with `card.gd`),
+  bows and buildings as content folders, and the old stations forwarders are gone (`stations.gd` 2,672 → 1,723
+  lines).
+- Tests (all pass on the PC): `--cards` 140, `--homegoals` 89, `--bowshop` 122, `--buildmenu` 47, `--campg` 66,
+  `--layout` 132, `--hudcheck` 132 (also at 480x1040 with the safe bars; the old tap flake did not come back in 6
+  runs), `--saddlery` 111, `--tailor` 63, `--bag` 110, `--garden` 63, `--guardian` 31, `--content` 44, `--taps` 22,
+  `--topup` 23, `--shards` 21, plus the default run, `--village` and `--laststand`.
+- **Known points:** `docs/GAME_GUIDE.md` still describes the windows as they were in H3 (it gets the H4 windows at the
+  merge). `--dungeoncareful` still loses at the boss in about 2 runs of 3 (from H3; retuned in H8/H11). Phone speed
+  numbers are still to be measured.
+- **Next:** the owner's phone test of H4, then the merges (H2, then H3, then H4) on the owner's yes.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin

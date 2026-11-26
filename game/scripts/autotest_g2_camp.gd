@@ -2,14 +2,17 @@ extends Node
 ## Phase G2: the camp (`-- --autotest --fresh --campg`), run from autotest.gd. Each check logs "EXPECT PASS <what>" or
 ## "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: the numbers come from balance.json, no fight is
 ## played (the Well's mending is stepped by hand, with a breather or a wave faked for those few lines only).
-##   (a) the Hearthtree's card: its title is the Hearthtree (no "Shop"), its rows hold sections and item tiles, the
-##       Grow tile "Hearthtree level 2" last after the goals
-##   (b) at Hearthtree 1 the Market and the Mushroom Cottage are not offered; at 2 they are; a goal for one not built
-##       points to the Hearthtree's card; building the Market brings Thistle, who can be ridden
+##   (a) the Hearthtree's window (H4): its title is the Hearthtree (no "Shop"), the Hearthtree tab holds the goals and the
+##       Settings section, the Cat tab holds Health as a list row, and the pinned footer holds "Level 1 of N" and Upgrade,
+##       which asks in the confirm window (there is no Grow tile any more)
+##   (b) at Hearthtree 1 the Market and the Mushroom Cottage are locked in the build menu; at 2 they are open; a goal for
+##       one not built has the station "build" and its Show opens the build menu at it; building the Market brings
+##       Thistle, who can be ridden
 ##   (c) the Market: buying timber and a food item changes the right stocks; (H1) after the missions Bramble buys amber
 ##       for leaves and a Gloom shard, and sells none
-##   (d) the Well opens at Hearthtree 3, has one Upgrade row, and mends standing structures to full at both rates
-##   (e) the Training Target and Bow Bench cards are made of item tiles (and section headings)
+##   (d) the Well opens at Hearthtree 3, has no rows and an Upgrade footer, and mends standing structures to full at both
+##       rates
+##   (e) the Training Target and Bow Shop windows are made of list rows, each with its Upgrade in the footer (H4)
 ##   (f) an old save with the stall and cottage (gifts of missions 2 and 3) keeps them, with Thistle and Sprig
 ##   (g) (21 Nov 2026) a ruined Hearthtree during the missions costs the after-the-missions price (gloom_raids.repair
 ##       ruin_share, ruin_min, ruin_cap: at most 900 leaves and 30 timber); another building keeps raid.repair_share
@@ -70,11 +73,30 @@ func _items(rows: Array) -> Array:
 	return rows.filter(func(r): return _kind(r) == "item")
 
 
-func _tile_named(rows: Array, title: String) -> Dictionary:
+func _lists(rows: Array) -> Array:
+	return rows.filter(func(r): return _kind(r) == "list")
+
+
+## The list row (a window's {"kind": "list"} row) with this title, {} when there is none.
+func _row_named(rows: Array, title: String) -> Dictionary:
 	for r in rows:
-		if _kind(r) == "item" and String(r.get("title", "")) == title:
+		if _kind(r) == "list" and String(r.get("title", "")) == title:
 			return r
 	return {}
+
+
+## The build menu's entry for building `id` ({} when it is not in the menu: built, or not shown yet).
+func _entry(id: String) -> Dictionary:
+	for e in (main.hud.windows["build"].entries() as Array):
+		if String(e["id"]) == id:
+			return e
+	return {}
+
+
+## The label of a spec's footer's first button ("" when it has none).
+func _foot_label(spec: Dictionary) -> String:
+	var bs: Array = (spec.get("footer", {}) as Dictionary).get("buttons", [])
+	return "" if bs.is_empty() else String((bs[0] as Dictionary).get("label", ""))
 
 
 ## Every word on a card's rows (titles, lines, notes, buttons), for "is it there at all" checks.
@@ -90,32 +112,61 @@ func _titles(rows: Array) -> Array:
 	return rows.map(func(r): return "%s:%s" % [_kind(r), String(r.get("title", r.get("text", "")))])
 
 
-# ---------------------------------------------------------------- (a) the Hearthtree's card
+# ---------------------------------------------------------------- (a) the Hearthtree's window
 func _hearthtree_card() -> void:
-	var st = _st()
-	var spec: Dictionary = st._card_shop()
+	var w = main.hud.windows["shop"]
+	var spec: Dictionary = w.tab_spec("hearthtree")
 	var rows: Array = spec["rows"]
 	var ht := Data.camp_name(true)
 	_x("camp_name: 'the Hearthtree' / 'The Hearthtree'", Data.camp_name() == String(Data.b.get("camp_name", "the Hearthtree"))
 		and Data.camp_name(true).begins_with("The "), {"name": Data.camp_name(), "cap": Data.camp_name(true)})
-	_x("the Hearthtree's card is called the Hearthtree", String(spec["title"]) == ht, {"title": spec["title"]})
-	_x("its rows hold item tiles and section headings", _items(rows).size() >= 3 and rows.any(func(r): return _kind(r) == "section"),
-		{"rows": _titles(rows)})
-	_x("no 'Shop' (other than the Bow Shop) on the card, and no 'your home'", not _words(rows).replace("Bow Shop", "").contains("Shop") and not _words(rows).to_lower().contains("your home")
+	_x("the Hearthtree's window is called the Hearthtree", String(spec["title"]) == ht, {"title": spec["title"]})
+	var goals: Array = Data.home_goals(2)
+	var goal_rows: Array = rows.filter(func(r): return r.has("goal"))
+	_x("its Hearthtree tab holds level 2's goals and the Settings section, and no tile (the buildings are in the build menu)",
+		not goals.is_empty() and goal_rows.size() == goals.size() and rows.any(func(r): return _kind(r) == "section" and String(r.get("text", "")) == "Settings")
+		and _items(rows).is_empty(), {"rows": _titles(rows)})
+	_x("no 'Shop' (other than the Bow Shop) in the window, and no 'your home'", not _words(rows).replace("Bow Shop", "").contains("Shop") and not _words(rows).to_lower().contains("your home")
 		and not String(spec["sub"]).to_lower().contains("home"), {"sub": spec["sub"]})
+	# the Grow tile is gone: growing is the footer's Upgrade
 	var want := "%s level 2" % ht.trim_prefix("The ")
-	var grow: Array = rows.filter(func(r): return String(r.get("title", "")) == want)
-	_x("the Grow tile: '%s' with Grow, the last of the goals' shelf" % want, grow.size() == 1 and String(grow[0]["label"]) == "Grow"
-		and String((st._grow_rows().back() as Dictionary).get("title", "")) == want and (grow[0].get("stats", []) as Array).size() == 1,
+	var foot: Dictionary = spec.get("footer", {})
+	var n: int = Data.building_levels("home").size()
+	var goals_left: String = String(Data.word("goals_met")) % [goals.filter(func(g): return bool(g["done"])).size(), goals.size()]
+	_x("no Grow tile: the goals' last row is a goal, and no row is titled '%s'" % want, (w._grow_rows() as Array).size() == goals.size()
+		and not (w._grow_rows() as Array).any(func(r): return String(r.get("title", "")) == want) and not rows.any(func(r): return String(r.get("title", "")) == want),
 		{"rows": _titles(rows)})
-	var cat: Dictionary = _tile_named(rows, String(Data.stat_info("health")["name"]))
-	_x("the cat's Health is a tile with a level badge and a bar", not cat.is_empty() and String(cat.get("badge", "")).begins_with("Level")
-		and (cat.get("stats", []) as Array).size() == 1 and String(cat["label"]) == "Buy", {"tile": cat})
-	await t._at_ring(st.rings["shop"])
+	_x("the pinned footer: 'Level 1 of %d', Upgrade (off while the goals are open) and what is missing" % n,
+		String(foot.get("text", "")) == String(Data.word("level_of")) % [1, n] and _foot_label(spec) == "Upgrade"
+		and not bool((foot["buttons"][0] as Dictionary).get("enabled", true)) and String(foot.get("note", "")) == goals_left, {"footer": foot})
+	var tabs: Array = spec.get("tabs", [])
+	_x("two tabs (Hearthtree, Cat) once the cat's upgrades are sold; the footer is only on the Hearthtree tab",
+		(w.tab_ids() as Array).slice(0, 2) == ["hearthtree", "cat"], {"tabs": w.tab_ids()})
+	_x("the tab bar lists them, the Hearthtree tab selected, and the Cat tab has no footer", tabs.size() == (w.tab_ids() as Array).size()
+		and bool((tabs[0] as Dictionary)["selected"]) and not (w.tab_spec("cat") as Dictionary).has("footer"), {"tabs": tabs.map(func(x): return x["id"])})
+	var cat: Dictionary = _row_named(w.tab_spec("cat")["rows"], String(Data.stat_info("health")["name"]))
+	_x("the cat's Health is a list row on the Cat tab, with a level badge and Buy", not cat.is_empty() and String(cat["id"]) == "health"
+		and String(cat.get("badge", "")).begins_with("Level") and String(cat["label"]) == "Buy", {"row": cat})
+	await t._at_ring(w.ring())
 	await t._wait(0.5)
-	_x("the card opens with the Hearthtree's name", main.hud.card_ring() == st.rings["shop"] and main.hud.card_title() == ht,
+	_x("the window opens with the Hearthtree's name", main.hud.card_ring() == w.ring() and main.hud.card_title() == ht,
 		{"title": main.hud.card_title()})
+	var up: Button = main.hud.p_card.footer_button("Upgrade")
+	_x("the pinned Upgrade is on screen under the rows and is off (the goals are not met)", up != null and up.disabled
+		and not main.hud._card_scroll.is_ancestor_of(up))
 	await t._shot("campg_hearthtree_card")
+	# Upgrade asks first: the confirm lists what the level gives, and Confirm stays grey while the goals are open
+	w.ask_upgrade()
+	await t._wait(0.4)
+	var ok_btn: Button = main.hud.p_card.footer_button("Confirm")
+	var cancel: Button = main.hud.p_card.footer_button("Cancel")
+	_x("Upgrade opens the confirm window (hud.confirm) with Confirm grey while the goals are open",
+		main.hud.card_ring() == main.hud.confirm and ok_btn != null and ok_btn.disabled and cancel != null and Save.camp_level == 1,
+		{"title": main.hud.card_title()})
+	if cancel != null:
+		cancel.pressed.emit()
+	await t._wait(0.4)
+	_x("Cancel comes back to the Hearthtree's window and nothing grew", main.hud.card_ring() == w.ring() and Save.camp_level == 1)
 	main.hud.hide_card()
 	await t._wait(0.2)
 
@@ -123,51 +174,70 @@ func _hearthtree_card() -> void:
 # ---------------------------------------------------------------- (b) the pet and the Market at Hearthtree 2
 func _unlocks() -> void:
 	var st = _st()
+	var w = main.hud.windows["shop"]
 	var market := String(Data.building("stall")["name"])
 	var cottage := String(Data.building("cottage")["name"])
 	Save.leaves = 99999
 	Save.timber = 9999
 	Save.camp_level = 1
 	st.refresh()
-	var rows: Array = st._card_shop()["rows"]
-	var m1: Dictionary = _tile_named(rows, market)
-	var c1: Dictionary = _tile_named(rows, cottage)
+	var m1: Dictionary = _entry("stall")
+	var c1: Dictionary = _entry("cottage")
+	var needs2: String = String(Data.word("needs_home")) % [Data.camp_name(), 2]
 	_x("Hearthtree 1: the Market and the Cottage are not open (needs_home 2)", not Data.station_open("stall") and not Data.station_open("cottage")
 		and Data.station_needs_home("stall") == 2 and Data.station_needs_home("cottage") == 2)
-	_x("Hearthtree 1: neither is offered (at most a locked tile, no Build)", not bool(m1.get("enabled", false)) and not bool(c1.get("enabled", false))
-		and (m1.is_empty() or String(m1.get("badge", "")) == "Locked"), {"market": m1.get("text", ""), "cottage": c1.get("text", "")})
+	_x("Hearthtree 1: neither is offered (the build menu shows both locked, with what they need and no way to build)",
+		String(m1.get("state", "")) == "locked" and String(c1.get("state", "")) == "locked" and String(m1["needs"]).contains(needs2)
+		and String(c1["needs"]).contains(needs2), {"market": m1.get("needs", ""), "cottage": c1.get("needs", "")})
+	_x("Hearthtree 1: the Hearthtree's window sells no building (no tile for either)", not (w.tab_spec("hearthtree")["rows"] as Array).any(
+		func(r): return String(r.get("title", "")) in [market, cottage]))
 	st._build_station("stall")
 	st._build_station("cottage")
 	_x("Hearthtree 1: building them is refused", int(Save.stations["stall"]) == 0 and int(Save.stations["cottage"]) == 0 and Save.leaves == 99999)
 	_x("no raid gives them any more", Data.gift_mission("stall") < 0 and Data.gift_mission("cottage") < 0)
 	Save.camp_level = 2
 	st.refresh()
-	rows = st._card_shop()["rows"]
-	var m2: Dictionary = _tile_named(rows, market)
-	var c2: Dictionary = _tile_named(rows, cottage)
-	_x("Hearthtree 2: the Market and the Cottage are Build tiles", bool(m2.get("enabled", false)) and String(m2.get("label", "")) == "Build"
-		and bool(c2.get("enabled", false)) and String(c2.get("label", "")) == "Build", {"market": m2, "cottage": c2})
-	# a goal for one not built yet points to the Hearthtree's card (where it is bought now)
+	var m2: Dictionary = _entry("stall")
+	var c2: Dictionary = _entry("cottage")
+	_x("Hearthtree 2: the Market and the Cottage are open in the build menu, each with its price",
+		String(m2.get("state", "")) == "open" and String(c2.get("state", "")) == "open" and String(m2["needs"]) == "" and String(c2["needs"]) == ""
+		and not (m2["price"] as Dictionary).is_empty() and not (c2["price"] as Dictionary).is_empty(),
+		{"market": m2, "cottage": c2})
+	# a goal for one not built yet has the station "build" (the build menu is where it is bought now); its Show opens the menu there
 	var g3: Array = Data.home_goals(3).filter(func(g): return String(g["type"]) == "station" and String(g["id"]) in ["stall", "cottage"])
-	var to_home := not g3.is_empty()
+	var goal_rows: Array = w._grow_rows()
+	var to_menu := not g3.is_empty()
 	for g in g3:
-		to_home = to_home and String(g["station"]) == "home" and st.goal_ring(String(g["station"])) == st.rings["shop"] \
-			and not _tile_named(rows, st._goal_find(g)).is_empty()
-	_x("Hearthtree 3's goals for the Cottage and the Market point to the Hearthtree's card", to_home,
+		var gr: Array = goal_rows.filter(func(r): return r.has("goal") and String(r["goal"].get("id", "")) == String(g["id"]) and String(r["goal"].get("type", "")) == "station")
+		to_menu = to_menu and String(g["station"]) == "build" and st.goal_ring(String(g["station"])) == null and gr.size() == 1 \
+			and String(gr[0]["label"]) == "Show" and bool(gr[0]["enabled"]) and w._goal_find(g) == String(Data.building(String(g["id"]))["name"]) \
+			and not _entry(String(g["id"])).is_empty()
+	_x("Hearthtree 3's goals for the Cottage and the Market have the station 'build' and a Show", to_menu,
 		{"goals": g3.map(func(g): return "%s [%s]" % [g["progress"], g["station"]])})
+	if not g3.is_empty():
+		var gid := String(g3[0]["id"])
+		var show: Array = goal_rows.filter(func(r): return r.has("goal") and String(r["goal"].get("id", "")) == gid and String(r["goal"].get("type", "")) == "station")
+		if not show.is_empty():
+			(show[0]["action"] as Callable).call()
+		await t._wait(0.4)
+		_x("Show opens the build menu at that building's detail", main.hud.card_ring() == main.hud.windows["build"] and main.hud.windows["build"]._detail == gid,
+			{"card": main.hud.card_title(), "detail": main.hud.windows["build"]._detail})
+		main.hud.hide_card()
+		await t._wait(0.2)
 	st._build_station("stall")
 	await t._wait(0.3)
 	_x("the Market is built and Thistle comes with it", int(Save.stations["stall"]) == 1 and Data.mount_level() == 1 and main.mount != null,
 		{"stall": Save.stations["stall"], "mount": main.mount != null})
-	var ride: Dictionary = st._card_stall()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")[0] if main.mount != null else {}
-	_x("the Market's card has an enabled Ride row", bool(ride.get("enabled", false)), {"ride": ride.get("text", "")})
+	var mw = main.hud.windows["stall"]
+	var ride: Dictionary = mw.spec()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")[0] if main.mount != null else {}
+	_x("the Market window has an enabled Ride row", bool(ride.get("enabled", false)), {"ride": ride.get("text", "")})
 	main.set_riding(true, false)
 	_x("Thistle can be ridden", main.player.riding)
 	main.set_riding(false, false)
 	st._build_station("cottage")
 	await t._wait(0.3)
 	_x("the Cottage is built and Sprig moves in", int(Save.stations["cottage"]) == 1 and main.pet != null)
-	await t._at_ring(st.rings["stall"])
+	await t._at_ring(mw.ring())
 	await t._wait(0.5)
 	_x("the Market's card opens as 'Market'", main.hud.card_title() == market, {"title": main.hud.card_title()})
 	await t._shot("campg_market_card")
@@ -186,6 +256,7 @@ func _index_of(list_key: String, id: String) -> int:
 
 func _market() -> void:
 	var st = _st()
+	var mw = main.hud.windows["stall"]
 	var tb: Dictionary = Data.b["trade"]["buy"]
 	Save.leaves = 1000
 	Save.timber = 0
@@ -203,7 +274,7 @@ func _market() -> void:
 	# a full Bag: berries fill every stack and slot the rest of the Bag leaves free
 	Bag.add("berries", Bag.room_for("berries"))
 	var held := Bag.count("berries")
-	var full: Dictionary = st._market_sells().filter(func(r): return String(r.get("icon", "")) == "berries")[0]
+	var full: Dictionary = mw._market_sells().filter(func(r): return String(r.get("icon", "")) == "berries")[0]
 	l0 = Save.leaves
 	st._market_buy(bi)
 	_x("a full Bag: the berries tile is off with Bag full and nothing is bought", Bag.room_for("berries") == 0 and not bool(full["enabled"])
@@ -212,7 +283,7 @@ func _market() -> void:
 	if Bag.count("berries") > 2:
 		Bag.take("berries", Bag.count("berries") - 2)   # back to a few, as before
 	# H1: Bramble sells no amber; he buys it (after the missions) for leaves and a Gloom shard
-	var shown_sells: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
+	var shown_sells: bool = mw._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
 	_x("H1: Bramble sells no amber, glowstone or heartwood", _index_of("sells", "amber") < 0 and _index_of("sells", "glowstone") < 0
 		and _index_of("sells", "heartwood") < 0 and not shown_sells)
 	_x("H1: he buys only amber of the materials", _index_of("buys", "glowstone") < 0 and _index_of("buys", "heartwood") < 0)
@@ -224,7 +295,7 @@ func _market() -> void:
 	var a0 := int(Save.mats.get("amber", 0))
 	l0 = Save.leaves
 	var sh0 := Save.shards
-	var buys_before: bool = st._market_buys().any(func(r): return String(r.get("icon", "")) == "amber")
+	var buys_before: bool = mw._market_buys().any(func(r): return String(r.get("icon", "")) == "amber")
 	st._market_sell(si)
 	_x("before the raids are won: amber is not bought", not buys_before and int(Save.mats["amber"]) == a0 and Save.leaves == l0 and Save.shards == sh0)
 	var keep: Array = Save.missions_done.duplicate()
@@ -232,7 +303,7 @@ func _market() -> void:
 	for i in Data.mission_count():
 		Save.missions_done.append(String(Data.mission(i)["id"]))
 	var amber_note := "Bramble pays 1,000 leaves and 1 Gloom shard · you have %d" % a0
-	var sell_tile: Array = st._market_buys().filter(func(r): return String(r.get("icon", "")) == "amber")
+	var sell_tile: Array = mw._market_buys().filter(func(r): return String(r.get("icon", "")) == "amber")
 	_x("after the raids: the amber tile says what Bramble pays", sell_tile.size() == 1 and String(sell_tile[0].get("text", "")) == amber_note
 		and bool(sell_tile[0].get("enabled", false)), {"tiles": sell_tile})
 	st._market_sell(si)
@@ -242,10 +313,11 @@ func _market() -> void:
 	l0 = Save.leaves
 	st._market_sell(si)
 	_x("with no amber nothing is sold", int(Save.mats["amber"]) == 0 and Save.leaves == l0)
-	var rows: Array = st._card_stall()["rows"]
-	var heads: Array = rows.filter(func(r): return _kind(r) == "section").map(func(r): return String(r["text"]))
-	_x("the Market's card: Bramble sells, Bramble buys, the Stable and the upgrade", heads.has("Bramble sells") and heads.has("Bramble buys")
-		and heads.has("Stable") and heads.has("Upgrade"), {"sections": heads})
+	var mspec: Dictionary = mw.spec()
+	var heads: Array = (mspec["rows"] as Array).filter(func(r): return _kind(r) == "section").map(func(r): return String(r["text"]))
+	_x("the Market's window: Bramble sells, Bramble buys and the Stable; its Upgrade is the pinned footer, not a section",
+		heads.has("Bramble sells") and heads.has("Bramble buys") and heads.has("Stable") and not heads.has("Upgrade") and _foot_label(mspec) == "Upgrade",
+		{"sections": heads, "footer": mspec.get("footer", {})})
 	Save.missions_done = keep
 
 
@@ -268,12 +340,14 @@ func _well() -> void:
 	Save.leaves = 0
 	Save.wear["well"] = float(Data.gr()["repair"]["wear_step"])
 	st.refresh()
-	var card: Dictionary = st._card_well()
+	var ww = main.hud.windows["well"]
+	var card: Dictionary = ww.spec()
 	var wr: Array = card["rows"]
 	_x("an existing Well below its build gate still works", st.shown("well") and st.well_level() == 1)
-	_x("the Well has only its Upgrade row even when worn", wr.size() == 1 and String(wr[0]["label"]) == "Upgrade", {"rows": _words(wr)})
+	_x("the Well has no rows even when worn: its Upgrade is the pinned footer (the first button)", wr.is_empty() and _foot_label(card) == "Upgrade"
+		and String((card["footer"] as Dictionary).get("text", "")) == String(Data.word("level_of")) % [1, Data.building_levels("well").size()], {"rows": _words(wr), "footer": card.get("footer", {})})
 	Save.wear.erase("well")
-	_x("the Well's marker shows no '!' for wishing", not st.rings["well"].pulse)
+	_x("the Well's marker shows no '!' for wishing (no leaves: its footer does not pulse either)", not ww.ring().pulse and not bool((card["footer"] as Dictionary).get("pulse", true)))
 	var bet1: float = st.well_between(1)
 	var reg1: float = st.well_regen(1)
 	_x("Well numbers: between waves 3/6/10% a second, in waves 1/1.5/2.5%", absf(bet1 - 0.03) < 1e-6 and absf(st.well_between(2) - 0.06) < 1e-6
@@ -304,7 +378,7 @@ func _well() -> void:
 		st.well_tick(0.1)
 	var g3s: float = f.gate_hp / f.gate_max
 	var h3s: float = float(st.hp["home"]) / full
-	_x("between waves: a hurt campfire and building mend by %s a second (3 s)" % st._pct(bet1), absf(g3s - (0.2 + bet1 * 3.0)) < 0.002 and absf(h3s - (0.2 + bet1 * 3.0)) < 0.002,
+	_x("between waves: a hurt campfire and building mend by %s a second (3 s)" % ww._pct(bet1), absf(g3s - (0.2 + bet1 * 3.0)) < 0.002 and absf(h3s - (0.2 + bet1 * 3.0)) < 0.002,
 		{"fire": snappedf(g3s, 0.001), "home": snappedf(h3s, 0.001)})
 	_x("between waves: the standing Warden mends at the same rate", is_equal_approx(warden.hp / warden_max, 0.2 + bet1 * 3.0))
 	for k in 600:
@@ -332,7 +406,7 @@ func _well() -> void:
 		st.well_tick(0.1)
 	var gain: float = f.gate_hp / f.gate_max - 0.3
 	var hgain: float = float(st.hp["home"]) / full - 0.3
-	_x("in a wave: +%s a second" % st._pct(reg1), gain > 0.0 and absf(gain - reg1) < 0.0005 and absf(hgain - reg1) < 0.0005 and gain < bet1,
+	_x("in a wave: +%s a second" % ww._pct(reg1), gain > 0.0 and absf(gain - reg1) < 0.0005 and absf(hgain - reg1) < 0.0005 and gain < bet1,
 		{"gain": snappedf(gain, 0.0001), "home": snappedf(hgain, 0.0001), "regen": reg1})
 	_x("in a wave: the standing Warden mends at the same rate", is_equal_approx(warden.hp / warden_max, 0.3 + reg1))
 	f.gate_hp = 600.0 * 0.999
@@ -371,32 +445,34 @@ func _well() -> void:
 	st.refresh()
 
 
-# ---------------------------------------------------------------- (e) the Training Target and the Bow Bench as tiles
+# ---------------------------------------------------------------- (e) the Training Target and the Bow Shop as list rows
 func _tiles() -> void:
 	var st = _st()
 	Save.stations["target"] = 1
 	Save.stations["bench"] = 1
 	Save.leaves = 5000
 	st.refresh()
-	var tr: Array = st._card_target()["rows"]
-	var only_t := tr.all(func(r): return _kind(r) in ["item", "section"])
-	var dmg: Dictionary = _tile_named(tr, String(Data.stat_info("damage")["name"]))
-	_x("the Training Target's card is made of item tiles", only_t and _items(tr).size() >= 4 and not dmg.is_empty()
-		and String(dmg.get("badge", "")) == "Level %d/%d" % [int(Save.stats["damage"]), Data.stat_cap("damage")] and (dmg.get("stats", []) as Array).size() == 1,
+	var tw = main.hud.windows["target"]
+	var tspec: Dictionary = tw.spec()
+	var tr: Array = tspec["rows"]
+	var dmg: Dictionary = _row_named(tr, String(Data.stat_info("damage")["name"]))
+	_x("the Training Target's window is made of list rows (a stat each)", tr.all(func(r): return _kind(r) == "list") and _lists(tr).size() >= 3 and not dmg.is_empty()
+		and String(dmg.get("badge", "")) == "Level %d/%d" % [int(Save.stats["damage"]), Data.stat_cap("damage")] and String(dmg["id"]) == "damage",
 		{"rows": _titles(tr), "damage": dmg.get("badge", "")})
-	var up: Dictionary = _tile_named(tr, "%s level 2" % String(Data.building("target")["name"]))
-	_x("the Target's own upgrade is a tile", not up.is_empty() and String(up["label"]) == "Upgrade", {"rows": _titles(tr)})
-	var br: Array = st._card_bench()["rows"]
-	var only_b := br.all(func(r): return _kind(r) in ["item", "section"])
-	var twig: Dictionary = _tile_named(br, String(Data.bow_info(Save.bow)["name"]))
-	_x("the Bow Shop's card is made of item tiles, the bow in the paw 'Equipped'", only_b and _items(br).size() >= 3
-		and String(twig.get("badge", "")) == "Equipped" and String(twig.get("label", "")) == "Upgrade", {"rows": _titles(br)})
-	var bench_name := String(Data.building("bench")["name"])
-	# the Bench's own upgrade tile shares the bow icon: leave it out
-	var others: Array = _items(br).filter(func(r): return String(r.get("icon", "")) == "bow" and r != twig and not String(r.get("title", "")).begins_with(bench_name))
-	_x("every other bow is a Buy or Equip tile", not others.is_empty() and others.all(func(r): return String(r["label"]) in ["Equip", "Buy"]),
-		{"bows": others.map(func(r): return "%s %s" % [r["title"], r["label"]])})
-	await t._at_ring(st.rings["target"])
+	_x("the Target's own upgrade is its pinned footer, not a row", _foot_label(tspec) == "Upgrade"
+		and not tr.any(func(r): return String(r.get("title", "")) == "%s level 2" % String(Data.building("target")["name"])), {"footer": tspec.get("footer", {})})
+	var bw = main.hud.windows["bench"]
+	var bspec: Dictionary = bw.spec()
+	var br: Array = bspec["rows"]
+	var twig: Dictionary = _row_named(br, String(Data.bow_info(Save.bow)["name"]))
+	_x("the Bow Shop's window is made of list rows, the bow in the paw 'Equipped' with Upgrade; its own Upgrade is the footer",
+		br.all(func(r): return _kind(r) == "list") and _lists(br).size() >= 3 and String(twig.get("badge", "")) == "Equipped"
+		and String(twig.get("label", "")) == "Upgrade" and _foot_label(bspec) == "Upgrade", {"rows": _titles(br)})
+	var others: Array = _lists(br).filter(func(r): return String(r.get("icon", "")) == "bow" and r != twig)
+	_x("every other bow is an Equip or Buy row (a Locked one has no button)", not others.is_empty() and others.all(func(r):
+		return String(r["label"]) == "" if String(r.get("badge", "")) == "Locked" else String(r["label"]) in ["Equip", "Buy"]),
+		{"bows": others.map(func(r): return "%s %s %s" % [r["title"], r.get("badge", ""), r["label"]])})
+	await t._at_ring(tw.ring())
 	await t._wait(0.5)
 	await t._shot("campg_target_card")
 	main.hud.hide_card()
@@ -420,11 +496,12 @@ func _old_save() -> void:
 	_x("an old save keeps its Market and Cottage (gifts of raids 2 and 3) at their levels", int(Save.stations["stall"]) == 2
 		and int(Save.stations["cottage"]) == 2 and Save.camp_level == 1, {"stations": Save.stations})
 	_x("... and Thistle and Sprig", main.mount != null and main.pet != null and Data.mount_level() == 2 and Data.pet_level() == 2)
-	var rows: Array = st._card_shop()["rows"]
+	var rows: Array = main.hud.windows["shop"].tab_spec("hearthtree")["rows"]
 	var market := String(Data.building("stall")["name"])
 	var cottage := String(Data.building("cottage")["name"])
-	_x("the Hearthtree's card does not sell them again", _tile_named(rows, market).is_empty() and _tile_named(rows, cottage).is_empty())
-	var ride: Array = st._card_stall()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")
+	_x("neither the Hearthtree's window nor the build menu sells them again", _row_named(rows, market).is_empty() and _row_named(rows, cottage).is_empty()
+		and _entry("stall").is_empty() and _entry("cottage").is_empty())
+	var ride: Array = main.hud.windows["stall"].spec()["rows"].filter(func(r): return String(r.get("label", "")) == "Ride")
 	_x("the Market works at Hearthtree 1 (Ride is on)", ride.size() == 1 and bool(ride[0]["enabled"]))
 
 

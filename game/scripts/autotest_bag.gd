@@ -10,7 +10,8 @@ extends Node
 
 const POTIONS_TEST := "res://scripts/autotest_potions.gd"
 const USE_POTION := "res://commands/use_potion.gd"
-const COLUMNS := 6                                    # the Bag window's columns (inventory.gd)
+const DefencesTab := preload("res://ui/windows/defences_tab.gd")   # H4: the Defences shelf's rows (the Hearthtree's tab)
+const COLUMNS := 6                                   # the Bag window's columns (inventory.gd)
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _tap_at, _tap_outside, _at_ring ...)
 var main
@@ -269,7 +270,7 @@ func _full_bag() -> void:
 
 ## The Hearthtree's Buy tile for towers ({} when there is none).
 func _tower_tile() -> Dictionary:
-	for tile in main.stations._defence_tiles():
+	for tile in DefencesTab.rows(main.hud.windows["shop"]):
 		if String(tile.get("icon", "")) == "tower" and String(tile.get("label", "")) == "Buy":
 			return tile
 	return {}
@@ -482,7 +483,7 @@ func _market_carp() -> void:
 	_set_bag({"goldfish": 1}, 0, 0, 0)
 	var pay := int((buys[i] as Dictionary).get("leaves", 0))
 	var leaves0 := Save.leaves
-	var tiles: Array = main.stations._market_buys()
+	var tiles: Array = main.hud.windows["stall"]._market_buys()
 	var sell := {}
 	for tile in tiles:
 		if String(tile.get("icon", "")) == "goldfish":

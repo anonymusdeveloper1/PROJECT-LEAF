@@ -1,16 +1,12 @@
 extends Node
 ## Phase G3: the Bow Shop and its bows (`-- --autotest --fresh --bowshop`), run from autotest.gd. Each check logs
 ## "EXPECT PASS <what>" or "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: every number comes from
-## balance.json, no wave is played (a wave being on is faked by hand for the few lines that need it, with no frame
-## passing while it is on); the foes are stood still where a check needs them still.
-##   (a) the card: title, the four tiles in order (Twig, Sunwood, Ember, Frost; since 22 Nov 2026 Thorn Volley and
-##       Foxfire are hidden unless owned, then they show Owned / Equipped), labels, badges and notes; a hidden bow is
-##       not sold and not named on the Shop's upgrade
-##   (b) Buy: Ember at Shop level 3 takes exactly its leaves and its timber, owns it at level 1, puts it in the paw;
-##       without the timber nothing is bought
-##   (c) Upgrade: raises only the bow in the paw, stops at the Shop's cap
-##   (d) Equip: back to Twig between waves; with a wave on Equip is off ("Between waves") and does nothing; the Frost
-##       Bow bought mid-wave (exactly its price) is owned but not equipped, and equipped after the wave
+## data (balance.json, content/bows, content/buildings), no wave is played (a wave being on is faked by hand for the
+## few lines that need it, with no frame passing while it is on); the foes are stood still where a check needs them
+## still. First the H4 window checks (a) to (t) of the Bow Shop and the Training Target, in their own file
+## (autotest_g3_bow_windows.gd, which calls the helpers here: _x, _st, _win, _w, _start_fresh, _bname, _rows, _row and
+## ORDER), then the G3 checks of this file:
+##   the late upgrades: damage at levels 6 to 12 reaches real arrows; the reduced prices; the leaf budgets
 ##   (e) pierce: Sunwood's arrow goes through the first foe, Twig's stops at it
 ##   (f) fan: Thorn Volley (for a save that owns it) shoots 3 arrows at once, each at its share of the damage
 ##   (g) burn: an Ember hit sets the foe burning for seconds x share_per_s x the hit's damage, then it stops; a frozen
@@ -20,31 +16,33 @@ extends Node
 ##       boss_freeze_s; hits while frozen do not count; nothing runs down while the game is frozen; each bow's arrow
 ##       carries its trail and its length from its model; screenshots of the trails and the ice
 ##   (h) fallback: with no bow files the cat's own bow stays (tinted); close-ups of the bows that have files
+## Screenshots: late_bow_price_damage, the trails, the bows (the windows' own: see autotest_g3_bow_windows.gd).
 
-var t                     # autotest.gd (its helpers: _wait, _expect, _until, _log)
+var t                     # autotest.gd (its helpers: _wait, _expect, _until, _log, _shot, _press, _tap_at, _tap_close)
 var main
+var _lay                  # autotest_layout.gd, for its _card_fits (the dialog fits the phone and its safe area)
 
 const ArrowScript := preload("res://scripts/arrow.gd")
-const ORDER := ["twig", "sunwood", "ember", "frost"]
-const HIDDEN := ["volley", "foxfire"]
-const BOW_NOTES := {
-	"twig": "Fastest draw",
-	"sunwood": "Goes through the first enemy, +1.5 m range · draws 10% slower",
-	"ember": "Fire arrows: the hit enemy burns for 3 s · 0.8 m shorter range",
-	"frost": "Ice arrows: slow, and the 3rd hit freezes · slowest draw",
-	"volley": "3 arrows in a fan",
-	"foxfire": "Goes through two enemies, +1 m range",
-}
+const ORDER := ["twig", "sunwood", "ember", "frost"]   # the four shop bows (the window checks use it too)
 
 
 func run() -> bool:
 	main.player.invincible = true
+	_lay = load("res://scripts/autotest_layout.gd").new()
+	_lay.t = t
+	_lay.main = main
+	add_child(_lay)
 	_start_fresh()
 	await t._wait(0.3)
-	_card()
-	_buy()
-	_upgrade()
-	_equip()
+	var windows = load("res://scripts/autotest_g3_bow_windows.gd").new()   # (a) to (t): the H4 window checks
+	windows.t = t
+	windows.main = main
+	windows.g = self
+	windows._lay = _lay
+	add_child(windows)
+	await windows.run()
+	windows.queue_free()
+	_start_fresh()
 	await _late_upgrades()
 	await _pierce()
 	await _fan()
@@ -55,6 +53,7 @@ func run() -> bool:
 	_clear()
 	main.hud.hide_card()
 	_start_fresh()
+	_lay.queue_free()
 	t._log("bowshop done")
 	return true
 
@@ -67,8 +66,21 @@ func _st():
 	return main.stations
 
 
-## A camp with mission 1 won, the Bow Shop at level 1 and only the Twig Bow, no leaves, no Burrows.
+## The Bow Shop's window (ui/windows/bow_shop_window.gd).
+func _win():
+	return main.hud.windows["bench"]
+
+
+## A word of balance.json "windows".
+func _w(key: String) -> String:
+	return Data.word(key)
+
+
+## A camp with mission 1 won, the Bow Shop at level 1 and only the Twig Bow, no leaves, no Burrows; no window open,
+## the Bow Shop on its list.
 func _start_fresh() -> void:
+	main.hud.hide_card()
+	_win().inspect = ""
 	Save.missions_done = [String(Data.mission(0)["id"])]
 	Save.mission_run = {}
 	Save.camp_level = 5
@@ -93,205 +105,24 @@ func _bname(bid: String) -> String:
 	return String(Data.bow_info(bid)["name"])
 
 
-## The bow tiles of the Bow Shop's card (not its own upgrade tile), in card order (any bow, hidden ones too).
-func _tiles() -> Array:
+## The bow rows of the Bow Shop's list (list rows named like a bow; not Patch it up), in window order (any bow, hidden
+## ones too).
+func _rows() -> Array:
 	var out: Array = []
 	var names: Array = []
 	for bid in Data.bow_ids():
 		names.append(_bname(String(bid)))
-	for r in _st()._card_bench()["rows"]:
-		if String(r.get("kind", "")) == "item" and names.has(String(r.get("title", ""))):
+	for r in _win().spec()["rows"]:
+		if String(r.get("kind", "")) == "list" and names.has(String(r.get("title", ""))):
 			out.append(r)
 	return out
 
 
-func _tile(bid: String) -> Dictionary:
-	for r in _tiles():
-		if String(r["title"]) == _bname(bid):
+func _row(bid: String) -> Dictionary:
+	for r in _rows():
+		if String(r.get("id", "")) == bid:
 			return r
 	return {}
-
-
-## The Bow Shop's own upgrade tile ("Bow Shop level N").
-func _shop_upgrade() -> Dictionary:
-	for r in _st()._card_bench()["rows"]:
-		if String(r.get("kind", "")) == "item" and String(r.get("title", "")).begins_with(String(Data.building("bench")["name"]) + " level"):
-			return r
-	return {}
-
-
-func _need(bid: String) -> Dictionary:
-	return Data.craft_cost(bid)
-
-
-func _set_wave(on: bool) -> Dictionary:
-	var f = main.fight
-	var keep := {"active": f.active, "in_wave": f.in_wave}
-	f.active = on
-	f.in_wave = on
-	return keep
-
-
-func _restore_wave(keep: Dictionary) -> void:
-	main.fight.active = keep["active"]
-	main.fight.in_wave = keep["in_wave"]
-
-
-# ---------------------------------------------------------------- (a) the card
-func _card() -> void:
-	var st = _st()
-	var card: Dictionary = st._card_bench()
-	_x("the card's title is the Bow Shop", String(card["title"]) == "Bow Shop" and String(Data.building("bench")["name"]) == "Bow Shop",
-		{"title": card["title"]})
-	var keys: Array = Data.bow_ids()
-	_x("balance.json: the Frost Bow comes right after Ember; Thorn Volley and Foxfire are kept, marked hidden",
-		keys.find("frost") == keys.find("ember") + 1 and HIDDEN.all(func(b): return keys.has(b) and Data.bow_hidden(b))
-		and not ORDER.any(func(b): return Data.bow_hidden(b)), {"bows": keys})
-	var no_mats := true
-	for bid in keys:
-		var prices: Array = (Data.bow_info(bid).get("mastery", []) as Array).duplicate()
-		prices.append(Data.craft_cost(bid))
-		for c in prices:
-			if c is Dictionary:
-				for m in ["amber", "glowstone", "heartwood"]:
-					no_mats = no_mats and not (c as Dictionary).has(m)
-	_x("H1: every bow's mastery and craft price is leaves (and timber) only; Foxfire crafts for 5,120 leaves", no_mats
-		and Data.craft_cost("foxfire") == {"leaves": 5120} and Data.bow_cost("twig", (Data.bow_info("twig")["cost"] as Array).size()).keys() == ["leaves"]
-		and int(Data.bow_cost("twig", (Data.bow_info("twig")["cost"] as Array).size())["leaves"]) == 1200, {"foxfire": Data.craft_cost("foxfire")})
-	var tiles := _tiles()
-	var titles: Array = tiles.map(func(r): return r["title"])
-	_x("four bow tiles in order twig, sunwood, ember, frost (Volley and Foxfire hidden)", titles == ORDER.map(func(b): return _bname(b)), {"tiles": titles})
-	var tw := _tile("twig")
-	_x("Twig (fresh save): Equipped, button Upgrade, note 'Fastest draw'", String(tw.get("badge", "")) == "Equipped" and String(tw.get("label", "")) == "Upgrade"
-		and String(tw.get("text", "")) == BOW_NOTES["twig"], {"tile": tw.get("text", ""), "label": tw.get("label", "")})
-	var locked_ok := true
-	var info := {}
-	for bid in ["sunwood", "ember", "frost"]:
-		var tl := _tile(bid)
-		var need := Data.bow_shop_level(bid)
-		var shop_ok: bool = int(Save.stations["bench"]) >= need
-		var good := String(tl.get("label", "")) == "Buy"
-		if shop_ok:
-			good = good and String(tl.get("badge", "")) == "New"
-		else:
-			good = good and String(tl.get("badge", "")) == "Locked" and not bool(tl.get("enabled", true)) \
-				and String(tl.get("text", "")) == "Needs Bow Shop level %d" % need
-		locked_ok = locked_ok and good
-		info[bid] = "%s/%s/%s" % [tl.get("label", ""), tl.get("badge", ""), tl.get("text", "")]
-	_x("the other bows: Buy, Locked below their Shop level with 'Needs Bow Shop level N'", locked_ok, info)
-	# the Shop's own upgrade names the bows it will sell, never a hidden one
-	Save.stations["bench"] = Data.bow_shop_level("ember") - 1
-	var up3 := String(_shop_upgrade().get("text", ""))
-	Save.stations["bench"] = Data.bow_shop_level("frost") - 1
-	var up5 := String(_shop_upgrade().get("text", ""))
-	Save.stations["bench"] = 3
-	var up4 := String(_shop_upgrade().get("text", ""))
-	_x("the Shop's upgrade to Ember's level sells the Ember Bow; to Frost's level the Frost Bow; to level 4 it names no hidden bow",
-		up3.contains(_bname("ember")) and up5.contains(_bname("frost")) and not up4.contains(_bname("volley")) and not up4.contains(_bname("foxfire")),
-		{"to_ember": up3, "to_frost": up5, "to_4": up4})
-	# at the Shop's level each bow's own note shows (leaves are still missing, so Buy is off but the badge is New)
-	Save.stations["bench"] = Data.bow_shop_level("frost")
-	var notes_ok := true
-	var seen := {}
-	for bid in ["sunwood", "ember", "frost"]:
-		var tl := _tile(bid)
-		seen[bid] = tl.get("text", "")
-		notes_ok = notes_ok and String(tl.get("badge", "")) == "New" and String(tl.get("text", "")).begins_with(String(BOW_NOTES[bid]))
-	_x("at the Frost Bow's Shop level the three bows are New and state their pro and con (Frost: '%s')" % BOW_NOTES["frost"], notes_ok, seen)
-	Save.stations["bench"] = 5
-	Save.set_flag("hollow_open")
-	var t5: Array = _tiles().map(func(r): return r["title"])
-	_x("Shop level 5 and the Burrows open: still the four tiles (no Volley, no Foxfire)", t5 == ORDER.map(func(b): return _bname(b)), {"tiles": t5})
-	# a save that owns them still sees them, after the four, and can use them
-	Save.bows["volley"] = 1
-	Save.bows["foxfire"] = 1
-	var t6: Array = _tiles().map(func(r): return r["title"])
-	var vo := _tile("volley")
-	_x("a save that owns Volley and Foxfire sees them after the four, Owned with Equip", t6 == (ORDER + HIDDEN).map(func(b): return _bname(b))
-		and String(vo.get("badge", "")) == "Owned" and String(vo.get("label", "")) == "Equip" and bool(vo.get("enabled", false))
-		and String(_tile("foxfire").get("badge", "")) == "Owned", {"tiles": t6, "volley": "%s/%s" % [vo.get("badge", ""), vo.get("label", "")]})
-	Save.bow = "volley"
-	vo = _tile("volley")
-	_x("an owned hidden bow in the paw shows Equipped with Upgrade", String(vo.get("badge", "")) == "Equipped" and String(vo.get("label", "")) == "Upgrade",
-		{"volley": "%s/%s" % [vo.get("badge", ""), vo.get("label", "")]})
-	Save.bow = "twig"
-	Save.bows.erase("volley")
-	Save.bows.erase("foxfire")
-	Save.leaves = 100000
-	Save.timber = 1000
-	st._craft("volley")
-	st._craft("foxfire")
-	_x("a hidden bow cannot be bought", not Save.bows.has("volley") and not Save.bows.has("foxfire") and Save.leaves == 100000 and Save.timber == 1000,
-		{"bows": Save.bows})
-	Save.leaves = 0
-	Save.timber = 0
-	Save.flags.erase("hollow_open")
-	Save.stations["bench"] = 1
-
-
-# ---------------------------------------------------------------- (b) Buy
-func _buy() -> void:
-	var st = _st()
-	var need := _need("ember")
-	Save.stations["bench"] = Data.bow_shop_level("ember")
-	Save.leaves = int(need["leaves"]) + 77
-	Save.timber = int(need["timber"]) - 1
-	var tl := _tile("ember")
-	st._craft("ember")
-	_x("Buy without the timber: nothing is bought, nothing taken (button off)", not Save.bows.has("ember") and Save.leaves == int(need["leaves"]) + 77
-		and Save.timber == int(need["timber"]) - 1 and not bool(tl.get("enabled", true)), {"enabled": tl.get("enabled")})
-	Save.timber = int(need["timber"])
-	tl = _tile("ember")
-	var can: bool = bool(tl.get("enabled", false))
-	st._craft("ember")
-	_x("Buy Ember: owned at level 1, in the paw, exactly its leaves and timber taken", can and int(Save.bows.get("ember", 0)) == 1 and Save.bow == "ember"
-		and Save.leaves == 77 and Save.timber == 0, {"bows": Save.bows, "bow": Save.bow, "leaves": Save.leaves, "timber": Save.timber})
-	var e := _tile("ember")
-	_x("the Ember tile is now Equipped with a button Upgrade; Twig is Owned with Equip", String(e.get("badge", "")) == "Equipped" and String(e.get("label", "")) == "Upgrade"
-		and String(_tile("twig").get("badge", "")) == "Owned" and String(_tile("twig").get("label", "")) == "Equip")
-
-
-# ---------------------------------------------------------------- (c) Upgrade
-func _upgrade() -> void:
-	var st = _st()
-	Save.leaves = 1000000
-	Save.stations["bench"] = 3
-	var lv0 := int(Save.bows["ember"])
-	var twig0 := int(Save.bows["twig"])
-	st._upgrade_bow()
-	_x("Upgrade raises only the equipped bow's level", int(Save.bows["ember"]) == lv0 + 1 and int(Save.bows["twig"]) == twig0, {"bows": Save.bows})
-	Save.stations["bench"] = 1
-	var cap := Data.bow_cap()
-	for i in cap + 3:
-		st._upgrade_bow()
-	var tl := _tile("ember")
-	_x("Upgrade stops at the Shop's cap (%d), the button off with its note" % cap, int(Save.bows["ember"]) == cap and not bool(tl.get("enabled", true))
-		and String(tl.get("text", "")) == "Upgrade the Bow Shop for more" and int(Save.bows["twig"]) == twig0, {"bows": Save.bows, "text": tl.get("text", "")})
-	Save.stations["bench"] = 3
-
-
-# ---------------------------------------------------------------- (d) Equip
-func _equip() -> void:
-	var st = _st()
-	st._equip("twig")
-	_x("Equip Twig between waves puts it back in the paw; Ember keeps its level", Save.bow == "twig" and int(Save.bows["ember"]) > 1, {"bow": Save.bow})
-	var keep := _set_wave(true)
-	var tl := _tile("ember")
-	st._equip("ember")
-	_x("with a wave on: Equip is off, says 'Between waves', and _equip does nothing", String(tl.get("label", "")) == "Equip" and not bool(tl.get("enabled", true))
-		and String(tl.get("text", "")) == "Between waves" and Save.bow == "twig", {"tile": tl.get("text", ""), "bow": Save.bow})
-	var need := _need("frost")
-	Save.stations["bench"] = Data.bow_shop_level("frost")
-	Save.leaves = int(need["leaves"])
-	Save.timber = int(need["timber"])
-	st._craft("frost")
-	_x("buying the Frost Bow mid-wave takes exactly its price, owns it at level 1, leaves the paw alone", int(Save.bows.get("frost", 0)) == 1 and Save.bow == "twig"
-		and Save.leaves == 0 and Save.timber == 0 and int(need.get("leaves", 0)) > 0 and int(need.get("timber", 0)) > 0,
-		{"bows": Save.bows, "bow": Save.bow, "price": need})
-	_restore_wave(keep)
-	st._equip("frost")
-	_x("after the wave the Frost Bow can be equipped", Save.bow == "frost" and String(_tile("frost").get("badge", "")) == "Equipped")
-	st._equip("twig")
 
 
 # ---------------------------------------------------------------- 22 Nov 2026: price, damage, unlock, draw and range of the four bows
@@ -318,11 +149,11 @@ func _balance_steps() -> void:
 	Save.stations["bench"] = frost_need - 1
 	Save.leaves = 1000000
 	Save.timber = 100000
-	var locked := _tile("frost")
+	var locked := _row("frost")
 	_st()._craft("frost")
 	var not_bought := not Save.bows.has("frost")
 	Save.stations["bench"] = frost_need
-	var open := _tile("frost")
+	var open := _row("frost")
 	_x("the Frost Bow is locked until the Bow Shop's top level (%d of %d) and cannot be bought before" % [frost_need, cap_top],
 		frost_need == cap_top and String(locked.get("badge", "")) == "Locked" and not_bought and String(open.get("badge", "")) == "New"
 		and bool(open.get("enabled", false)), {"locked": locked.get("badge", ""), "open": open.get("badge", "")})
@@ -385,7 +216,7 @@ func _arrows() -> Array:
 	return main.get_children().filter(func(n): return n.get_script() == ArrowScript)
 
 
-## One arrow of bow bid, as the cat shoots it (its pierce, burn and ice from balance.json), along +Z at a foe's chest
+## One arrow of bow bid, as the cat shoots it (its pierce, burn and ice from its entry), along +Z at a foe's chest
 ## height.
 func _shoot(bid: String, from: Vector3, dmg: float) -> Node3D:
 	var bow := Data.bow_info(bid)
@@ -438,9 +269,10 @@ func _late_upgrades() -> void:
 	Save.leaves = price - 1
 	_st()._upgrade_bow()
 	_x("one leaf short refuses a late upgrade without charging or changing its level", int(Save.bows["ember"]) == 5 and Save.leaves == price - 1)
-	var tile := _tile("ember")
-	_x("the shop shows the affordable price and next damage gain", int((tile.get("cost", {}) as Dictionary).get("leaves", 0)) == price and String(tile.get("text", "")).begins_with("Next: +14.3% damage\n"), {"tile": tile.get("text", ""), "cost": tile.get("cost", {})})
-	main.hud.show_card(_st().rings["bench"])
+	var row := _row("ember")
+	_x("the shop shows the affordable price and next damage gain", int((row.get("cost", {}) as Dictionary).get("leaves", 0)) == price
+		and String(row.get("text", "")).contains(_w("bow_next") % "14.3"), {"row": row.get("text", ""), "cost": row.get("cost", {})})
+	main.hud.show_card(_win().ring())
 	await t._wait(0.4)                              # let the card's opening animation and layout settle
 	await t._shot("late_bow_price_damage")
 	main.hud.hide_card()
@@ -595,7 +427,7 @@ func _frost() -> void:
 	var need := int(cfg.get("hits_to_freeze", 0))
 	var fs := float(cfg.get("freeze_s", 0.0))
 	var bfs := float(cfg.get("boss_freeze_s", 0.0))
-	_x("balance.json: the Frost Bow slows 50% for 3 s, the 3rd hit freezes 1.5 s, bosses 0.5 s, and has no burn",
+	_x("content/bows: the Frost Bow slows 50% for 3 s, the 3rd hit freezes 1.5 s, bosses 0.5 s, and has no burn",
 		slow == 0.5 and secs == 3.0 and need == 3 and fs == 1.5 and bfs == 0.5 and Data.bow_burn("frost").is_empty(), cfg)
 	_balance_steps()
 	var base := Vector3(-1.5, 0, 12.0)
@@ -688,7 +520,7 @@ func _frost() -> void:
 
 
 # ---------------------------------------------------------------- (i) each bow's trail, and pictures of the ice
-## Every bow's arrow carries its trail (balance.json fx) and takes its length from its model; one screenshot of each shop
+## Every bow's arrow carries its trail (its entry's fx) and takes its length from its model; one screenshot of each shop
 ## bow's arrow in flight (bowshop_trail_<id>.png) and of a chilled and a frozen foe (bowshop_chilled / _frozen.png).
 func _trails() -> void:
 	_clear()

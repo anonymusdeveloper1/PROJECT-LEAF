@@ -8,7 +8,7 @@ extends CanvasLayer
 ##                words line (the next wave's
 ##                roads, the wave, the Gloom, the Gloomwood's level). Under them the boss bar, then the banners (a
 ##                compact strip), the toast and the status or hiding line, never into the middle third.
-##   the bottom   row 1: the Bag and the build icon (the Hearthtree's buildings) at the left, the Health Potion (while
+##   the bottom   row 1: the Bag and the build icon (the build menu) at the left, the Health Potion (while
 ##                the cat is hurt and the Bag holds one) at the right; row 2: the defences to place at the left, Ride /
 ##                Walk (or, while the mount is knocked out, the Mount Health Potion) at the right; Place and Done while
 ##                placing. The buttons slide and fade in and out (slide.gd). The tip and the hint just above them.
@@ -108,7 +108,7 @@ var _shown_leaves := 0
 var _gate_flash := 0.0
 var _build_bar: Control                # the bottom-right column: Ride / Walk or the mount's potion over the cat's
 var _defence_bar: Control              # H2: the defences to place, bottom-left above the Bag
-var _build_icon: Button                # H2: the build icon next to the Bag (the Hearthtree's buildings)
+var _build_icon: Button                # H2: the build icon next to the Bag (H4: the build menu)
 var _bottom_h := 100.0                 # how tall the bottom rows that show are, up from the gesture bar (the edge arrows)
 var inventory
 var settings                           # H2: the Settings window (the gear), opened through the card

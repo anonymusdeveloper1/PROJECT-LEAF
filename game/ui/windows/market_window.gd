@@ -1,9 +1,9 @@
 extends "res://ui/windows/building_window.gd"
 ## H4: the Market's window (building and marker "stall": the old Market Stall's ids). Moved from stations.gd
-## (_card_stall, _market_sells, _market_buys, _quiet and the Market's part of the upgrade line) in H4 Stage 1, looking
-## exactly as before (H5 rebuilds it). Phase G2: riding Thistle at the top, then Bramble's shop in tiles (what he sells,
-## what he buys), the Stable (mount looks, colours, attachments) and the Market's own upgrade. Knocked down: only the
-## ruin card. The trades are rules and stay in stations.gd (_trade, _market_buy, _market_sell, with _market_open,
+## (_card_stall, _market_sells, _market_buys, _quiet and the Market's part of the upgrade line) in H4 Stage 1. H5
+## rebuilds it. Phase G2: riding Thistle at the top, then Bramble's shop in tiles (what he sells, what he buys) and the
+## Stable (mount looks, colours, attachments). Stage 2 (P2c) pins Upgrade in the footer. Knocked down: only the ruin
+## card. The trades are rules and stay in stations.gd (_trade, _market_buy, _market_sell, with _market_open,
 ## _stock and _market_pay, which this window reads too).
 ## Used by: ui/windows/window_list.gd (hud.windows["stall"]), stations.gd (the marker's builder; _card_stall,
 ##          _market_sells and _market_buys for the tests in Stage 1).
@@ -53,8 +53,8 @@ func _card_stall() -> Dictionary:
 	stable.append_array(_gloomlit_row("mount"))
 	stable.append_array(_attach_rows("mount"))
 	_add_section(rows, "Stable", stable)
-	_add_section(rows, "Upgrade", [upgrade_tile()])
-	return {"title": title, "sub": "Level %d · Bramble's trades, and %s" % [lv, mn], "rows": rows, "anchor": _anchor("stall", 2.4)}
+	return {"title": title, "sub": "Level %d · Bramble's trades, and %s" % [lv, mn],
+		"rows": rows, "anchor": _anchor("stall", 2.4), "footer": upgrade_footer()}
 
 
 ## What Bramble sells: timber (balance.json trade.buy), then each market.sells entry (H3: food goes into the Bag, and

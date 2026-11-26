@@ -1,38 +1,78 @@
 extends "res://ui/windows/building_window.gd"
-## H4: the Bow Shop's window (building and marker "bench": the Bow Bench before G3, the same save keys). Moved from
-## stations.gd (_card_bench, _bow_tile, _bow_note and their helpers, and the shop's part of the upgrade line) in H4
-## Stage 1, looking exactly as before. G3: one tile per bow, in the bows' content order (Twig, Sunwood, Ember, Frost;
-## since 22 Nov 2026 Thorn Volley and Foxfire are "hidden": no tile unless the save owns one, then it shows Owned /
-## Equipped as below so it can still be used), each with one button:
-##   the bow in the cat's paw   "Upgrade" (its level, mastery past 10 once the Burrows are open; never above the
-##                              shop's cap, Data.bow_cap(): at the cap the button is off and the note says to upgrade
-##                              the Bow Shop); badge "Equipped"
-##   owned, not in the paw      "Equip" (free); off while a mission or raid wave is on, the note then "Between waves";
-##                              badge "Owned"
-##   not owned                  "Buy" (its price, Data.craft_cost); off below the shop level it needs ("Needs Bow Shop
-##                              level N", badge "Locked"), else badge "New". A bow bought between waves goes in the
-##                              paw; one bought mid-wave waits on the shelf (equip it after the wave)
-## The Foxfire Bow is left out until the Burrows open (unless the save owns it). Each bow keeps its own level. A tile
-## shows res://assets/ui/bows/bow_<id>.png (row key "picture", hud.gd) when that picture exists, else the "bow" icon.
-## Then the shop's own "Upgrade" tile. Knocked down: only the ruin card. Stage 2 (P2b) makes the bows list rows, adds
-## the bow's inspect view and pins the Upgrade at the bottom.
-## Used by: ui/windows/window_list.gd (hud.windows["bench"]), stations.gd (the marker's builder; _card_bench for the
-##          tests in Stage 1).
-## Uses: Data (bow_ids, bow_info, bow_shop_level, bow_waits, bow_hidden, bow_cap, bow_top, bow_cost, craft_cost,
-##       bow_level_mult, bow_burn, bow_frost, bow_draw_mult), Save.bows / Save.bow, the rules in stations.gd
-##       (_upgrade_bow, _craft, _equip, _locked).
+## H4: the Bow Shop's window (building and marker "bench": the Bow Bench before G3, the same save keys). The plan: "the
+## Bow Shop is the same list for the bows". One list row per bow (ui/kit/list_row.gd) in the bows' content order (Twig,
+## Sunwood, Ember, Frost; Thorn Volley and the Foxfire Bow are "hidden" since 22 Nov 2026: no row unless the save owns
+## one, and the Foxfire Bow also waits for the Gloomwood), each with its picture, its name, a badge, its lines and one
+## button (the owner's answer, 26 Nov 2026, Q10 a):
+##   the bow in the cat's paw   badge "Equipped"; "Level 4 of 8 · Next: +10% damage" (" · Mastery 1/2" past level 10)
+##                              with the bow's own line under it; Upgrade with its price while it can level (any time,
+##                              mid-wave too), else a grey "Equipped" button and "Upgrade the Bow Shop for more" (at the
+##                              shop's cap, Data.bow_cap()) or "Max level" (at the bow's top)
+##   owned, not in the paw      badge "Owned"; "Level 2 of 6 · <its line>" ("Between waves" while a wave is on); Equip
+##   not owned                  badge "New": its line and its price, Buy (a bow bought between waves goes in the paw,
+##                              one bought mid-wave waits on the shelf); badge "Locked": "Needs Bow Shop level N" and
+##                              its price, no button
+## A tap on a bow's picture opens its inspect view in this window (Q11 a and b; ui/windows/bow_inspect.gd): the bow big
+## and turning with its arrow beside it, its numbers, its one button and Back. A locked or unbought bow can be looked
+## at too. Over the list, "Patch it up" when raids wore the shop (Q9); the shop's own Upgrade is pinned at the bottom
+## (the base's upgrade_footer: it asks first in the confirm window, which lists gives()) and hides while a bow is looked
+## at. Knocked down: only the ruin card. Buy, Equip and a bow's Upgrade are one tap, no confirm (Q4 a).
+## Moved from stations.gd (_card_bench, _bow_tile, _bow_note and their helpers, and the shop's part of the upgrade line)
+## in H4 Stage 1; list rows, the pinned Upgrade and the inspect view since Stage 2 (P2b).
+## Used by: ui/windows/window_list.gd (hud.windows["bench"]), stations.gd (the marker's builder and its "!"; the old
+##          tests' _card_bench until Stage 3), ui/windows/bow_inspect.gd (inspect, bow_row, _bow_note, shown_cap, back),
+##          the tests.
+## Uses: Data (bows, bow_info, bow_shop_level, bow_waits, bow_hidden, bow_cap, bow_top, bow_cost, craft_cost,
+##       bow_level_mult, bow_picture, bow_burn, bow_frost, bow_draw_mult, mats_line, word), Save.bows / Save.bow, the
+##       rules in stations.gd (_upgrade_bow, _craft, _equip, _locked, _name), the card's scroll (hud._card_scroll) and
+##       the end of a window row's visit (hud.p_card._close_window, for Back).
+
+const BowInspect := preload("res://ui/windows/bow_inspect.gd")
+
+var inspect := ""                       # the bow whose inspect view shows ("" = the list); every visit starts on the list
+var _inspect: BowInspect                # the inspect view: the card's window row while a bow is looked at
+var _list_scroll := 0                   # how far the list was scrolled when a bow's picture was tapped (Back goes there)
 
 
 func _init(owner_hud) -> void:
 	super(owner_hud, "bench", "bench")
+	_inspect = BowInspect.new(self)
 
 
+## The card now: the ruin card, a bow's inspect view, or the list with the pinned Upgrade.
 func spec() -> Dictionary:
-	return _card_bench()
+	if Save.ruined.has(id):
+		return _ruin_card(id, st._name(id), _anchor(id, 1.6))
+	if inspect != "":
+		return {"title": String(Data.bow_info(inspect).get("name", inspect)), "sub": "",
+			"rows": [{"kind": "window", "window": _inspect, "enabled": true}], "anchor": _anchor(id, 1.6)}
+	return _list_spec()
+
+
+## The list: Patch it up (when worn), the bows' rows, and the shop's own Upgrade pinned at the bottom.
+func _list_spec() -> Dictionary:
+	var rows: Array = as_list(_wear_row(id))
+	for e: Dictionary in Data.bows():
+		var r := bow_row(String(e["id"]))
+		if not r.is_empty():
+			rows.append(r)
+	return {"title": st._name(id), "sub": "Level %d · buy, upgrade and equip bows" % Data.station_level(id), "rows": rows,
+		"footer": upgrade_footer(), "anchor": _anchor(id, 1.6)}
+
+
+## The marker's "!": the list's rows and the pinned Upgrade (the base's rule), also while a bow is looked at.
+func pulse() -> bool:
+	if inspect == "" or Save.ruined.has(id):
+		return super()
+	var s := _list_spec()
+	for row in s.get("rows", []):
+		if _lights(row):
+			return true
+	return bool((s.get("footer", {}) as Dictionary).get("pulse", false))
 
 
 ## What Bow Shop level `level` gives: the bow level cap it allows, and the bows it starts selling (never a hidden one,
-## nor one that waits for the Gloomwood): "Bows up to level 6, sells the Sunwood Longbow".
+## nor one that waits for the Gloomwood): "Bows up to level 6", "sells the Sunwood Longbow".
 func gives(level: int) -> Array:
 	var caps: Array = Data.b["bow_cap_by_bench_level"]
 	var out: Array = ["Bows up to level %d" % int(caps[clampi(level, 0, caps.size() - 1)])]
@@ -46,78 +86,101 @@ func gives(level: int) -> Array:
 	return out
 
 
-func _card_bench() -> Dictionary:
-	if Save.ruined.has("bench"):
-		return _ruin_card("bench", st._name("bench"), _anchor("bench", 1.6))
-	var rows: Array = _wear_row("bench")
-	var bows: Array = []
-	for bid in Data.bow_ids():
-		var t := _bow_tile(String(bid))
-		if not t.is_empty():
-			bows.append(t)
-	_add_section(rows, "Bows", bows)
-	_add_section(rows, "Upgrade", [upgrade_tile()])
-	return {"title": st._name("bench"), "sub": "Level %d · buy, upgrade and equip bows" % Save.stations["bench"], "rows": rows,
-		"anchor": _anchor("bench", 1.6)}
+## A visit always starts on the list (and ends there: the inspect view's closed() frees its 3D view).
+func card_opened() -> void:
+	inspect = ""
 
 
-## The path of a bow's shop picture (G3: rendered from its model); the tile uses it only when the file exists.
-static func bow_picture_path(bid: String) -> String:
-	return "res://assets/ui/bows/bow_%s.png" % bid
+func card_closed() -> void:
+	inspect = ""
 
 
-## One bow's tile on the Bow Shop (see the top of this file); {} for a bow not shown: a hidden bow the save does not own
-## (Thorn Volley and Foxfire, 22 Nov 2026), or one that waits for the Burrows.
-func _bow_tile(bid: String) -> Dictionary:
+# ---------------------------------------------------------------- the bows' rows
+## One bow's list row (see the top of this file), with its picture (Data.bow_picture) whose tap opens its inspect view;
+## {} for a bow not shown: a hidden bow the save does not own, or one that waits for the Gloomwood.
+func bow_row(bid: String) -> Dictionary:
 	var bi := Data.bow_info(bid)
-	var nm := String(bi["name"])
+	var nm := String(bi.get("name", bid))
 	var owned := Save.bows.has(bid)
-	if not owned and Data.bow_hidden(bid):
+	if not owned and (Data.bow_hidden(bid) or Data.bow_waits(bid)):
 		return {}                                           # kept out of the shop for now (owned ones still show)
-	if not owned and Data.bow_waits(bid):
-		return {}                                           # a bow that waits for the Burrows
-	var says := _bow_note(bid)
-	var cap := Data.bow_cap()
-	var t: Dictionary
+	var note := _bow_note(bid)
+	var r: Dictionary
 	if owned:
 		var lv := int(Save.bows[bid])
-		var top := Data.bow_top(bid)
-		var shown_cap := maxi(mini(cap, top), lv)
-		var bar := [["Level", float(lv) / float(maxi(shown_cap, 1)), "%d/%d" % [lv, shown_cap]]]
+		var level := _w("bow_level") % [lv, shown_cap(bid)]
 		if bid == Save.bow:
-			var curve: Dictionary = Data.b["bow_upgrade_curve"]
-			if lv + 1 >= int(curve["late_from_level"]) and lv + 1 <= int(curve["late_to_level"]) and lv < cap and lv < top:
+			var top := Data.bow_top(bid)
+			if lv < Data.bow_cap() and lv < top:
 				var gain := (Data.bow_level_mult(bid, lv + 1) / Data.bow_level_mult(bid, lv) - 1.0) * 100.0
-				says = "Next: +%s%% damage\n%s" % [_short_num(gain), says]
-			var costs: Array = bi["cost"]
-			if lv >= top:
-				t = _tile("bow", nm, "At max level · " + says, {}, "", false, Callable(), "Equipped", [["Level", 1.0, "Max"]])
-			elif lv >= cap:
-				t = _tile("bow", nm, "Upgrade the %s for more" % st._name("bench"), {}, "Upgrade", false, Callable(), "Equipped", bar)
-			elif lv >= costs.size():
-				var bc := Data.bow_cost(bid, lv)            # Phase E: bow mastery, past level 10
-				t = _tile("bow", nm, "Mastery %d/%d%s" % [lv - costs.size() + 1, top - costs.size(), Data.mats_line(bc)], bc,
-					"Upgrade", true, st._upgrade_bow, "Equipped", bar)
+				var line := level + " · " + _w("bow_next") % _short_num(gain)
+				var costs: Array = bi["cost"]
+				if lv >= costs.size():                      # Phase E: bow mastery, past level 10
+					line += " · Mastery %d/%d" % [lv - costs.size() + 1, top - costs.size()]
+				r = list_row("bow", nm, line + "\n" + note, Data.bow_cost(bid, lv), _w("upgrade"), true, st._upgrade_bow,
+					_w("equipped"), bid)
 			else:
-				t = _tile("bow", nm, says, Data.bow_cost(bid, lv), "Upgrade", true, st._upgrade_bow, "Equipped", bar)
+				var why: String = _w("max") if lv >= top else ("Upgrade the %s for more" % st._name(id))
+				r = list_row("bow", nm, level + " · " + why + "\n" + note, {}, _w("equipped"), false, Callable(),
+					_w("equipped"), bid)
 		else:
 			var mid: bool = st._locked()                    # a wave is on: bows are swapped between waves
-			t = _tile("bow", nm, "Between waves" if mid else says, {}, "Equip", not mid, st._equip.bind(bid), "Owned", bar)
+			r = list_row("bow", nm, level + " · " + ("Between waves" if mid else note), {}, "Equip", not mid,
+				st._equip.bind(bid), "Owned", bid)
 	else:
-		var need: int = Data.bow_shop_level(bid)
-		var ok := int(Save.stations["bench"]) >= need
+		var need := Data.bow_shop_level(bid)
 		var cc := Data.craft_cost(bid)
-		t = _tile("bow", nm, (says + Data.mats_line(cc)) if ok else "Needs %s level %d" % [st._name("bench"), need], cc, "Buy", ok,
-			st._craft.bind(bid), "New" if ok else "Locked")
-	var pic := bow_picture_path(bid)
-	if ResourceLoader.exists(pic):
-		t["picture"] = pic
-	return t
+		if Data.station_level(id) >= need:
+			r = list_row("bow", nm, note + Data.mats_line(cc), cc, "Buy", true, st._craft.bind(bid), "New", bid)
+		else:
+			r = list_row("bow", nm, "Needs %s level %d" % [st._name(id), need], cc, "", false, Callable(), "Locked", bid)
+	var pic := Data.bow_picture(bid)
+	if pic != "":
+		r["picture"] = pic
+	r["on_picture"] = show_bow.bind(bid)
+	return r
 
 
+## The level a bow's "Level 4 of 8" counts to: what the shop allows now (Data.bow_cap), never above the bow's top,
+## never below the level it has.
+func shown_cap(bid: String) -> int:
+	return maxi(mini(Data.bow_cap(), Data.bow_top(bid)), int(Save.bows.get(bid, 0)))
+
+
+# ---------------------------------------------------------------- the inspect view (bow_inspect.gd draws it)
+## A tap on a bow's picture: its inspect view in this window, from the top. The list's scroll is kept for Back.
+func show_bow(bid: String) -> void:
+	if inspect == "" and hud.card_ring() == ring() and hud._card_scroll != null and is_instance_valid(hud._card_scroll):
+		_list_scroll = int(hud._card_scroll.scroll_vertical)
+		hud._card_scroll.scroll_vertical = 0
+	inspect = bid
+	hud.refresh_card()
+
+
+## The inspect view's Back: first its visit ends (the card ends a window row's visit only when the card closes or
+## another window row comes, so without this the view's closed() would never run and its 3D view would never be
+## freed), then the list shows again, scrolled back to where it was.
+func back() -> void:
+	hud.p_card._close_window()
+	inspect = ""
+	hud.refresh_card()
+	_scroll_back(_list_scroll)
+
+
+## Scrolls the list back to y once its rows are laid out (two frames, as card.gd's scroll_card_to waits).
+func _scroll_back(y: int) -> void:
+	if y <= 0:
+		return
+	await hud.get_tree().process_frame
+	await hud.get_tree().process_frame
+	if inspect == "" and hud.card_ring() == ring() and hud._card_scroll != null and is_instance_valid(hud._card_scroll):
+		hud._card_scroll.scroll_vertical = y
+
+
+# ---------------------------------------------------------------- a bow's own line
 ## What a bow does, in plain words, from its numbers: "A normal bow", "Goes through the first enemy, +1.5 m range",
 ## "Fire arrows: the hit enemy burns for 3 s", "Ice arrows: slow, and the 3rd hit freezes", "3 arrows in a fan",
-## "Goes through two enemies, +1 m range".
+## "Goes through two enemies, +1 m range". (Each bow's entry "desc" holds the same words; --bowshop checks they agree.)
 func _bow_note(bid: String) -> String:
 	var bi := Data.bow_info(bid)
 	var bits: Array = []

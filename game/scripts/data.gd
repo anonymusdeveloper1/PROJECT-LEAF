@@ -153,9 +153,10 @@ func mission_unlocked(i: int) -> bool:
 ## worked out from the save now, in the list's order. Each is
 ##   {text: "Damage 4", progress: "Damage 3/4", have, need, done, station}
 ## `text` names the goal, `progress` is what the card shows while it is not met. `station` is the station whose card
-## sells it: "target" (damage, draw, range), "home" (the Hearthtree's own card: health, speed, magnet, towers, defences,
-## building the Target, the Bench, the Well, the Cottage and the Market), "bench" (bows), "sign" (a mission, or a
-## building a mission gives),
+## sells it: "target" (damage, draw, range), "home" (the Hearthtree's own window: health, speed and magnet on its Cat
+## tab, towers and defences on its Defences tab), "build" (the build menu, H4: a building not built yet, the bows
+## before the Bow Shop, the Target's stats before the Target), "bench" (bows), "sign" (a mission, or a building a
+## mission gives),
 ## "hollow" (a Gloomwood level), or the station's own id (its level). [] for level 1 or a level past the top.
 func home_goals(level: int) -> Array:
 	var levels := building_levels("home")
@@ -315,7 +316,9 @@ func def_kind_name(type: String) -> String:
 
 
 ## One goal from the home entry worked out from the save (see home_goals). An unknown type counts as met, so a typo in
-## the data never locks the home.
+## the data never locks the home. H4: a goal whose building is not built yet has station "build" (the build menu: a
+## building bought there, the bows before the Bow Shop, the Training Target's stats before the Target); the
+## Hearthtree's Show opens the menu at that building.
 func _goal(g: Dictionary) -> Dictionary:
 	var type := String(g.get("type", ""))
 	var lv := int(g.get("level", 1))
@@ -352,7 +355,7 @@ func _goal(g: Dictionary) -> Dictionary:
 				station = "sign"
 			else:
 				prog = ("Build the %s" % nm) if lv <= 1 else ("Build the %s, then lv %d" % [nm, lv])
-				station = "home" if from_menu(id) else id     # bought on the Hearthtree's card
+				station = "build" if from_menu(id) else id    # H4: bought in the build menu
 		"stat":
 			var sid := String(g.get("id", ""))
 			var si := stat_info(sid)
@@ -368,21 +371,21 @@ func _goal(g: Dictionary) -> Dictionary:
 			need = lv
 			text = "%s lv %d" % [bn, lv]
 			prog = ("%s lv %d/%d" % [bn, have, lv]) if have > 0 else ("Buy the %s, then lv %d" % [bn, lv])
-			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
+			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "build"
 		"bow_any":
 			for k: String in bow_ids():
 				have = maxi(have, int(Save.bows.get(k, 0)))
 			need = lv
 			text = "A bow at lv %d" % lv
 			prog = "Best bow lv %d/%d" % [have, lv]
-			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
+			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "build"
 		"bow_owned":
 			var oid := String(g.get("id", ""))
 			var on := String(bow_info(oid)["name"])
 			have = 1 if Save.bows.has(oid) else 0
 			text = "%s owned" % on
 			prog = "Buy the %s" % on
-			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "home"
+			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "build"
 		"towers":
 			need = int(g.get("count", 1))
 			var placed := 0
@@ -439,14 +442,14 @@ func _goal(g: Dictionary) -> Dictionary:
 		"type": type, "id": gid, "level": lv}
 
 
-## Where a stat is bought: its own station ("target", or "home" for Health, Move speed and Leaf magnet), the home's
-## card while the Training Target is not built yet.
+## Where a stat is bought: its own station ("target", or "home" for Health, Move speed and Leaf magnet: the
+## Hearthtree's Cat tab); H4: "build" (the build menu) while that station is not built yet (the Training Target).
 func _stat_station(id: String) -> String:
 	var st := String(stat_info(id)["station"])
 	if st == "camp":
 		st = "home"
 	if st != "home" and int(Save.stations.get(st, 0)) <= 0:
-		return "home"
+		return "build"
 	return st
 
 
@@ -724,12 +727,15 @@ func cat_magnet() -> float:
 	return float(b["cat"]["magnet"]) + float(stat_info("magnet")["per_level"]) * _lv("magnet")
 
 
-## H3: x (1 + the Damage Potion's share) while one runs (Data.effect_mult; arrows only).
-func arrow_damage() -> float:
-	var bow := bow_info(Save.bow)
-	var bow_lv := int(Save.bows.get(Save.bow, 1))
+## H3: x (1 + the Damage Potion's share) while one runs (Data.effect_mult; arrows only). H4: `bid` names another bow
+## (the Bow Shop's inspect view shows each bow's arrow with the same sum); "" is the bow in the cat's paw, which every
+## shot uses (player.gd _fire). A bow not owned counts at level 1.
+func arrow_damage(bid := "") -> float:
+	var id := Save.bow if bid == "" else bid
+	var bow := bow_info(id)
+	var bow_lv := int(Save.bows.get(id, 1))
 	return float(b["cat"]["damage"]) * (1.0 + float(stat_info("damage")["per_level"]) * _lv("damage")) \
-		* float(bow["damage"]) * bow_level_mult(Save.bow, bow_lv) * (1.0 + effect_mult("damage")) \
+		* float(bow["damage"]) * bow_level_mult(id, bow_lv) * (1.0 + effect_mult("damage")) \
 		* (1.0 + float(run_mods.get("damage", 0.0)))
 
 

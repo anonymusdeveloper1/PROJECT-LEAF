@@ -1,6 +1,6 @@
 extends RefCounted
 ## H3: the garden's window, shown inside the garden's card as a row {"kind": "window", "window": hud.garden_window}
-## (stations._card_garden; card.gd draws it and calls the visit hooks; hud.gd ticks it while it shows).
+## (ui/windows/garden_card.gd; card.gd draws it and calls the visit hooks; hud.gd ticks it while it shows).
 ## It looks like the garden: the 6 plots as on the bed in the camp (plot 3 2 1 over 6 5 4; the camera looks north), the
 ## seeds in a row below to drag onto an empty plot (ui/kit/drag_source.gd, drop_slot.gd), and Water. A tap on a ripe
 ## plant puts it in the Bag. It holds no game rules: every rule is in garden.gd (main.garden); this file only draws

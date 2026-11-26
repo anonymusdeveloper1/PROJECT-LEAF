@@ -200,7 +200,7 @@
     "home_stats": "The cat's upgrades up to level %d", "home_defences": "Defences up to level %d", "home_opens": "Opens: %s",
     "build_title": "Build", "build": "Build", "build_empty": "Nothing to build right now", "build_ruined": "Repair %s first",
     "tip_build_target": "%s's shop is open! Tap the build icon next to the Bag to build a Training Target.",
-    "tip_build_new": "New at %s: tap the build icon to build the %s."
+    "tip_build_new": "New at %s: tap the build icon next to the Bag to build the %s."
   },
   "build_menu": {"_note": "H4: locked buildings show in the build menu once this many Raid Missions are won", "locked_from_missions": 1},
   "home_names": [

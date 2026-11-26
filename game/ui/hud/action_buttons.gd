@@ -11,10 +11,14 @@ extends RefCounted
 ## (Done overlaps row 1's right slot). Each shows the potion's picture and "×N", is greyed when the Use-potion command
 ## would refuse, and a tap sends that command (a refusal shows as a toast). tick_potions() runs every frame (hud.gd) and
 ## slides a button only when its wanted state flips.
+## H4 (26 Nov 2026): the build icon opens the build menu (hud.windows["build"], ui/windows/build_menu_window.gd), and a
+## second tap closes it. A small "!" dot on its top right corner (the owner's Q16 (a): the cue the Hearthtree's marker
+## gave before) shows while the menu has a building you can build and pay for now (its pulse()).
 
 const RideCommand := preload("res://commands/ride.gd")
 const UsePotion := preload("res://commands/use_potion.gd")
 const Slide := preload("res://ui/hud/slide.gd")
+const CardParts := preload("res://ui/kit/card_parts.gd")   # H4: the "!" dot (the same as a window tab's and a marker's)
 const DEFENCES := ["barricade", "tower", "spikes"]     # the pieces placed from the HUD (until H3 places them from the Bag)
 const DEF_NAMES := {"barricade": "Barricade", "tower": "Tower", "spikes": "Spikes"}
 const BLUE := Color(0.42, 0.6, 0.86)
@@ -37,6 +41,7 @@ var _cat_cmd                            # ... and its Use-potion command (made o
 var _mount_cmd
 var place_button: Button
 var done_button: Button
+var build_dot: Control                  # H4: the "!" dot on the build icon (meta "build_dot"; refresh_build_dot)
 
 
 func _init(h) -> void:
@@ -78,9 +83,21 @@ func build() -> void:
 	hud.add_child(hud.bag_button)
 	hud._build_icon = _icon_button(hud.p_icons._make_build(), WOOD, open_build, "Build")
 	hud.add_child(hud._build_icon)
+	# H4: the build icon's "!" dot, in its top right corner over the picture; it slides with the icon. It follows the
+	# build menu's pulse() whenever the leaves, the timber, the save or a building's level change.
+	build_dot = CardParts.tab_dot()
+	build_dot.remove_meta("tab_dot")                   # not a tab's: the tests find this one by its name or "build_dot"
+	build_dot.name = "BuildDot"
+	build_dot.set_meta("build_dot", true)
+	build_dot.visible = false
+	hud._build_icon.add_child(build_dot)
+	Save.changed.connect(refresh_build_dot)
+	Events.currency_changed.connect(refresh_build_dot.unbind(2))
+	Events.building_upgraded.connect(refresh_build_dot.unbind(2))
 	for b in _all():
 		b.add_to_group("hud_edge")
 		Slide.show(b, b == hud.bag_button or b == hud._build_icon, Slide.FROM, true)
+	refresh_build_dot()
 
 
 ## A plain holder the layout places: it never takes a touch (the buttons in it do).
@@ -138,6 +155,19 @@ func refresh_build() -> void:
 	Slide.show(done_button, placing)
 	Slide.show(hud.bag_button, not placing)
 	Slide.show(hud._build_icon, not placing and not below and hud.main.stations != null)
+	refresh_build_dot()
+
+
+## H4 (the owner's Q16 (a)): the build icon's "!" dot shows while the build menu has a building you can build and pay
+## for now (hud.windows["build"].pulse()). From refresh_build, and on Save.changed, Events.currency_changed (leaves and
+## timber also change without a save) and Events.building_upgraded (a built building leaves the menu).
+func refresh_build_dot() -> void:
+	if build_dot == null:
+		return
+	var menu: Variant = hud.windows.get("build")         # the build menu (ui/windows/build_menu_window.gd)
+	var on: bool = menu != null and bool(menu.pulse())
+	if build_dot.visible != on:
+		build_dot.visible = on
 
 
 ## A kept button's words (`label` is what the tests look it up by) and colour, changed only when they changed.
@@ -225,20 +255,18 @@ func open_inventory() -> void:
 	hud.show_card(hud.inventory)
 
 
-## The build icon (the owner's answer 4: until H4's build menu): the Hearthtree's card from anywhere in the camp,
-## scrolled to its Buildings shelf. A second tap closes it.
+## The build icon: H4, the build menu (hud.windows["build"]) from anywhere in the camp; a second tap closes it (its
+## toggle). Not while the game is frozen, the cat is down or fishing. Opening it stops the cat's walk to a marker. In a
+## wave the card shows the wave's blank, and while the Hearthtree is in ruins the menu says so (nothing can be built).
 func open_build() -> void:
 	if hud.main.frozen or hud.main.player.hp <= 0 or (hud.main.fishing != null and hud.main.fishing.busy()):
 		return
-	var r = hud.main.stations.rings.get("shop") if hud.main.stations != null else null
-	if r == null or not is_instance_valid(r):
+	var menu: Variant = hud.windows.get("build")         # the build menu (ui/windows/build_menu_window.gd)
+	if menu == null:
 		return
-	if hud._card_ring == r:
-		hud.hide_card()
-		return
-	hud.main.interact.stop_walk()
-	hud.show_card(r)
-	await hud.p_card.scroll_to_section("Buildings")
+	if hud._card_ring != menu:
+		hud.main.interact.stop_walk()
+	menu.toggle()
 
 
 func _big_button(text: String, col: Color, action: Callable, enabled := true) -> Button:

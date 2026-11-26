@@ -73,6 +73,36 @@ game/
   H3's garden and cooking windows. A window only builds words and rows; the rules stay in `stations.gd` under their old
   names, and windows call them as `st.<name>`. The HUD makes the windows (`hud.windows`, `hud.confirm`), and
   `stations.use_windows` plugs each one into its marker.
+  - Since H4 Stage 2 the nine buildings with levels (the Hearthtree, the Training Target, the Bow Shop, the Well, the
+    Guardian Stone when awake, the garden, the Market, the Mushroom Cottage and the Saddlery) end in the pinned
+    Upgrade (`"footer": upgrade_footer()`), and their old "Upgrade" section is gone. Upgrade always opens the confirm
+    window with what the next level gives (`gives`): the price shows in red and Confirm stays grey when you can't pay.
+    The Tailor's Nook and the Fishing Spot have one level and no footer. The Market, the Cottage and the Saddlery keep
+    their tile rows until H5.
+  - `hearthtree_window.gd` has tabs at the top: **Hearthtree** (Mend all, Patch it up, "Nothing for sale yet", its
+    goals and the Graphics row, with the pinned Upgrade), **Cat** (the cat's own upgrades, `stat_list.gd`) and
+    **Defences** (`defences_tab.gd`, the whole old shelf until H6's Workshop). A tab shows once it has something, and
+    there is no tab bar with one tab. The window always opens on the Hearthtree tab, and a tab shows a "!" dot while
+    something on it can be bought. A goal's Go walks the cat to the marker that sells it; Show opens the Cat or
+    Defences tab at its row, or the build menu at a building not built yet (`Data._goal` gives such goals the station
+    `"build"`).
+  - `bow_shop_window.gd` lists the bows as list rows: the bow in the paw shows Upgrade with its price, then a grey
+    Equipped when it can't level now; other owned bows show Equip, the rest Buy or Locked. A tap on a bow's picture
+    opens its inspect view (`bow_inspect.gd`) inside the shop's window: the bow turning in 3D with its arrow, its
+    numbers, the arrow's real damage (`Data.arrow_damage(bid)`, the same number a shot uses, with the cat's Damage stat
+    and a running potion), its one button and Back.
+  - `build_menu_window.gd` is not a marker window: it lives at `hud.windows["build"]` and opens through the card as a
+    `{"kind": "window"}` row. `entries()` is the one place that says what can be built and what is locked; it reads
+    each building's `unlock` and `price` and `build_menu.locked_from_missions`, so a new building with
+    `"arrives": "menu"` appears in the grid with no code change. Each open picture has its own Build button (one tap);
+    a locked one is greyed with its needs and has none. A built building leaves the menu, and nothing can be built
+    while the Hearthtree is in ruins.
+  - The build icon next to the Bag (`ui/hud/action_buttons.gd`) opens the build menu and shows a small "!" dot while a
+    building can be built and paid for (the cue the Hearthtree's marker gave before H4). Building from the menu sends
+    the camera to the new building for about 2 s (`main.show_spot`; the joystick, a wave or going below ground ends it
+    at once, and the cat keeps control) while the building rises out of the ground with dust and the flower ring
+    (`Fx.rise`, from `stations.refresh(id, true)`). The build menu sends nothing itself; it hears
+    `Events.building_upgraded` only through `stations.refresh`.
   - Known differences: the signpost's, the campfire's and the cooking pot's cards stay in `stations.gd` for now (they
     are not buildings: no save entry, no content folder). `window_list.gd` is a known list of names in code (house
     rule 3) until a building entry names its window.
@@ -477,15 +507,19 @@ depends on whom, so **there are exactly eight**, each with one job:
   - the commands Ride/Walk (H2) and Use potion (H3) in `commands/`;
   - the HUD under `ui/hud/` (H2), the first windows in `ui/windows/` (the garden and the cooking pot, H3; one window
     file per building, H4 Stage 1) and the kit in `ui/kit/`: `drag_source.gd` and `drop_slot.gd` (drag-and-drop, H3),
-    `list_row.gd` (a building window's list row: picture, name and badge, up to 3 lines, price, one button; a tap on
+    `list_row.gd` (a building window's list row: picture, name and badge, up to 4 lines, price, one button; a tap on
     the picture is its own action), `confirm_window.gd` (the confirm before a rule runs: any title, lines and price;
-    Cancel and Confirm go back to the window it came from, the X closes everything; `hud.confirm`) and
-    `card_parts.gd` (the pinned footer, a tab's icon and its "!" dot) (H4). The dialog host, its frame and its tabs
-    stay in `ui/hud/card.gd` until H4 Stage 3;
+    Cancel and Confirm go back to the window it came from, the X closes everything; `hud.confirm`),
+    `card_parts.gd` (the pinned footer, a tab's icon and its "!" dot), `icon_grid.gd` (a grid of big picture cells,
+    each with a name, a price line or a note, an optional one-tap button and a locked look; the build menu uses it,
+    and H5's Market can) and `model_view.gd` (a small turning 3D picture inside a window: its own little world, lit
+    like the Bag's picture of the cat, the camera fitted to what it shows; it draws only while it shows, about 10
+    times a second on Low; the Bow Shop's inspect view uses it, and H5's attachments and the Tailor's Nook can) (H4).
+    The dialog host, its frame and its tabs stay in `ui/hud/card.gd` until H4 Stage 3;
   - content folders: `content/settings/` (H2), `content/crops/` (5) and `content/recipes/` (5) (H3), `content/bows/`
     (6) and `content/buildings/` (11) (H4), listed by hand in `content/index.json`; the general rules stay in
     `balance.json`;
-- a few very big files: `stations.gd` 1,784 lines (was 2,672 before H4), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
+- a few very big files: `stations.gd` 1,798 lines (was 2,672 before H4), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
   `defences.gd` 1,334;
 - the Events board has 21 signals; the HUD listens to Events (H2); many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy

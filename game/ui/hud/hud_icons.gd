@@ -176,8 +176,8 @@ func _make_gear() -> ImageTexture:
 	return ImageTexture.create_from_image(img)
 
 
-## H2: the build icon's picture (a stand-in until H4's build menu): a small house, a terracotta roof over a cream wall
-## with a door, a dark outline (64 x 64).
+## H2: the build icon's picture (it opens the build menu since H4, and keeps this drawing): a small house, a terracotta
+## roof over a cream wall with a door, a dark outline (64 x 64).
 func _make_build() -> ImageTexture:
 	var n := 64
 	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)

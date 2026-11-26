@@ -223,9 +223,9 @@ func scroll_card_to(needle: String) -> void:
 			return
 
 
-## H2: scrolls the open dialog so its shelf heading `heading` (a {"kind": "section"} row; the build icon asks for the
-## Hearthtree's "Buildings") is at the top. Nothing happens when the card has no such shelf (everything built). Waits
-## for the rows to be laid out.
+## H2: scrolls the open dialog so its shelf heading `heading` (a {"kind": "section"} row) is at the top. Nothing
+## happens when the card has no such shelf. Waits for the rows to be laid out. Before H4 the build icon asked for the
+## Hearthtree's "Buildings"; it opens the build menu now, so nothing calls this today (kept for a shelf that needs it).
 func scroll_to_section(heading: String) -> void:
 	await hud.get_tree().process_frame
 	await hud.get_tree().process_frame

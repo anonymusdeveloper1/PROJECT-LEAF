@@ -1,11 +1,11 @@
 extends RefCounted
 ## H4: one row of a building window's list (the window kit). The card (ui/hud/card.gd) draws every {"kind": "list"} row
 ## with make(): a long parchment strip as wide as the dialog's list, with the thing's picture on the left, its name and
-## badge, up to three short lines and its price in the middle, and one thumb-sized button on the right. Each row is its
+## badge, up to four short lines and its price in the middle, and one thumb-sized button on the right. Each row is its
 ## own child of the card's list, so the reveal staggers them; the rows sit 8 px apart with no rule between them.
 ## The keys are the shop tiles' (title, label, text, badge, enabled, cost), so a test that reads a tile reads a row too:
 ##   {"kind": "list", "id", "icon" (an icon id or a texture), "picture" (a res:// image, used when the file exists),
-##    "title", "badge", "text" (up to 3 lines), "cost", "label" ("" = no button), "enabled", "action",
+##    "title", "badge", "text" (up to 4 lines), "cost", "label" ("" = no button), "enabled", "action",
 ##    "on_picture" (optional: a tap on the picture), "pulse", "quiet"}
 ## The marker's "!" reads "enabled", so a window's "enabled" already includes the price (the base building_window.gd's
 ## list_row() does that); the drawn button is the tile button (shop_tiles.gd), which checks Data.can_afford again.
@@ -21,7 +21,8 @@ const PIC_ICON := 58.0                  # the picture in it
 const GAP := 12.0                       # between the picture, the words and the button
 const TITLE_FS := 24                    # the name (bold, one line, then "...")
 const TEXT_FS := 19                     # the short lines under it
-const TEXT_LINES := 3                   # at most (the bow in the paw has a line of its own under its level line)
+const TEXT_LINES := 4                   # at most: the bow in the paw has its level line and its own line under it, and
+                                        # each can take two lines ("Level 4 of 4 · Upgrade the Bow Shop for more")
 const BTN := Vector2(140, 60)           # the one button: a thumb wide and tall
 const TAP_PX := 12.0                    # a press and release closer than this on the picture is a tap, not a drag
 

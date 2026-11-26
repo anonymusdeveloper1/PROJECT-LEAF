@@ -398,6 +398,25 @@ static func boing(n: Node3D, amount := 0.25) -> void:
 	tw.tween_property(n, "scale", base, 0.25).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
 
 
+## H4: a building just built from the build menu grows up out of the ground (stations.refresh). It is flat at once,
+## waits `delay` (the camera's glide to it, main.show_spot), then grows in `secs`: TRANS_BACK takes it about 10% past
+## its height (1.1) and settles it at its own size. Only the scale moves, and only its height (stations.refresh sets
+## every building's position on every call), and it shares boing's base_scale and tween, so a boing in between (a hit
+## on the training dummy) ends it cleanly at the same size.
+static func rise(n: Node3D, delay := 0.45, secs := 0.6) -> void:
+	if n == null or not n.is_inside_tree():
+		return
+	if not n.has_meta("base_scale"):
+		n.set_meta("base_scale", n.scale)
+	var base: Vector3 = n.get_meta("base_scale")
+	_stop_tween(n, &"boing_tween")
+	n.scale = base * Vector3(1.0, 0.02, 1.0)
+	var tw := n.create_tween()
+	n.set_meta("boing_tween", tw)
+	tw.tween_interval(maxf(delay, 0.0))
+	tw.tween_property(n, "scale", base, maxf(secs, 0.01)).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 # ---------------------------------------------------------------- attacks and specials
 static var _arc_mesh: ArrayMesh
 

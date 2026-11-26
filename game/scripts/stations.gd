@@ -185,8 +185,11 @@ func ring_shown(id: String) -> bool:
 	return false
 
 
-## Rebuilds the buildings that changed (new level, newly built) and moves the rings.
-func refresh(celebrate := "") -> void:
+## Rebuilds the buildings that changed (new level, newly built) and moves the rings. `celebrate` (a building's id, or
+## "all") gives it a boing and the flower ring. H4: with `rise` (_build_station: built from the build menu) the new
+## building grows up out of the ground instead (Fx.rise), once the camera has glided there (main.show_spot), with a
+## puff of dust and the flower ring at that moment.
+func refresh(celebrate := "", rise := false) -> void:
 	var w = main.world
 	for id in ["campfire", "home", "bench", "target", "well", "cottage", "stall", "saddlery", "tailor"] + CAMP_LIFE:
 		var want := model_name(id) if shown(id) else ""
@@ -208,7 +211,18 @@ func refresh(celebrate := "") -> void:
 					Props.set_param(have, "tint", _saddlery_tint())   # G4: the stand-in Bow Bench, tinted brown
 				if id == "tailor":
 					Props.set_param(have, "tint", _tailor_tint())     # 23 Nov 2026: the stand-in stall, tinted purple
-				if celebrate == id or celebrate == "all":
+				if rise and celebrate == id:
+					# H4: the camera's glide to it takes about this long; the dust and the flowers come as it rises (a
+					# tween on the building, so nothing plays if it is gone by then)
+					var delay := 0.45
+					var at: Vector3 = w.station_pos(id)
+					Fx.rise(have, delay)
+					var puff := have.create_tween()
+					puff.tween_interval(delay)
+					puff.tween_callback(func() -> void:
+						Fx.dust(main, at, 8, 1.2)
+						Fx.flower_ring(main, at, 1.6))
+				elif celebrate == id or celebrate == "all":
 					Fx.boing(have, 0.35)
 					Fx.flower_ring(main, w.station_pos(id), 1.6)
 			elif celebrate == id and (CAMP_LIFE.has(id) or id == "target" or id == "bench" or id == "saddlery"):
@@ -1119,9 +1133,9 @@ func _mend_raid() -> void:
 	main.on_purchase()
 
 
-## Builds a station bought on the Hearthtree's card, once it is open (Data.station_open: its entry's unlock rule) and
-## its price (Data.build_price) is paid. Phase G2: the Market brings Thistle with it (the mount comes with the stall's
-## level, main.refresh_companions), as the old gift of mission 2 did.
+## Builds a station bought in the build menu (ui/windows/build_menu_window.gd), once it is open (Data.station_open: its
+## entry's unlock rule) and its price (Data.build_price) is paid. Phase G2: the Market brings Thistle with it (the
+## mount comes with the stall's level, main.refresh_companions), as the old gift of mission 2 did.
 func _build_station(sid: String) -> void:
 	if int(Save.stations[sid]) > 0 or not Data.station_open(sid) or not Data.pay(Data.build_price(sid)):
 		return
@@ -1130,7 +1144,7 @@ func _build_station(sid: String) -> void:
 		hp[sid] = full_hp(sid)
 	Save.save_game()
 	Events.building_upgraded.emit(sid, 1)
-	refresh(sid)
+	refresh(sid, true)                         # H4: it rises out of the ground (the build menu's camera shows it)
 	main.on_purchase()
 	match sid:
 		"cottage":

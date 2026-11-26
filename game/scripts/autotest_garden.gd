@@ -466,8 +466,10 @@ func _check_upgrade() -> bool:
 	main.hud.show_card(ring)
 	await t._wait(0.6)
 	var up: bool = t._press("Upgrade")
+	await t._wait(0.5)
+	up = up and t._press("Confirm")
 	await t._wait(0.8)
-	var ok := _x("the Upgrade row is there, and garden level 2 opens 5 plots", up and int(Save.stations["garden"]) == 2 and g.plots() == 5
+	var ok := _x("the Upgrade button is there, and garden level 2 opens 5 plots", up and int(Save.stations["garden"]) == 2 and g.plots() == 5
 		and _stages() == ["empty", "empty", "empty", "empty", "empty", "locked"], {"pressed": up, "stages": _stages()})
 	var slots := _rows(_nodes(DropSlot))
 	if slots.size() == 6:

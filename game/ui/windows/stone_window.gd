@@ -1,12 +1,10 @@
 extends "res://ui/windows/building_window.gd"
 ## H4: the Guardian Stone's window (building and marker "stone": the Moss Warden's stone, found in the first Burrow,
-## never bought). Moved from stations.gd (_card_stone, _post_note and the stone's part of the upgrade line) in H4 Stage
-## 1, looking exactly as before:
+## never bought). Moved from stations.gd (_card_stone, _post_note and the stone's part of the upgrade line) in H4 Stage 1.
 ##   no Warden yet        "The stone is quiet"
 ##   asleep               "The Moss Warden is asleep" and Wake (stations._wake_warden)
-##   awake                its numbers, how it fights, its post (Change: stations._next_post), its looks, and the
-##                        stone's own "Upgrade" tile
-## Never ruined or worn. Stage 2 (P2c) moves the Upgrade into the pinned footer; H8 gives it tabs.
+##   awake                its numbers, how it fights, its post (Change: stations._next_post), its looks and Upgrade
+## Stage 2 (P2c) pins Upgrade in the footer. Never ruined or worn. H8 gives it tabs.
 ## Used by: ui/windows/window_list.gd (hud.windows["stone"]), stations.gd (the marker's builder; _card_stone for the
 ##          tests in Stage 1).
 ## Uses: Data (the guardian's numbers), main.guardian, the rules in stations.gd (_wake_warden, _next_post, _post_lanes),
@@ -51,8 +49,7 @@ func _card_stone() -> Dictionary:
 		looks = _look_tiles("guardian", "guardian", "Your guardian now", "Same strength, a new look")
 	looks.append(_skin_row("guardian"))
 	_add_section(rows, "Looks", looks)
-	_add_section(rows, "Upgrade", [upgrade_tile()])
-	return {"title": "Guardian Stone", "sub": sub, "rows": rows, "anchor": anchor}
+	return {"title": "Guardian Stone", "sub": sub, "rows": rows, "anchor": anchor, "footer": upgrade_footer()}
 
 
 func _post_note() -> String:

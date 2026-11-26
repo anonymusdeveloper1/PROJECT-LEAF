@@ -49,6 +49,8 @@ var rings: Array = []                             # every marker (marker.gd): th
 var interact                                      # taps: a marker's card, or the walk to it (interact.gd)
 var closeup := Vector3.ZERO                       # the automated test can bring the camera in
 var closeup_at: Node3D = null                     # ...and point it at something other than the cat
+var _show_at := Vector3.ZERO                      # H4: show_spot: the spot the camera shows for a moment (a new building)
+var _show_t := 0.0                                # ... and for how long more (0: it follows the cat)
 var _cam_dist := CAM_DIST_CAMP
 var _shake := 0.0
 var _steps: Array = []                            # the cat's recent footsteps [position, age], for the grass
@@ -252,7 +254,25 @@ func _physics_process(_delta: float) -> void:
 					b.position += push
 
 
+## H4: the camera glides to `at` (a building just built from the build menu, build_menu_window.gd), holds it there,
+## then follows the cat again, `hold` seconds in all (the glide is today's smoothing, about 0.45 s, the time Fx.rise
+## waits). The cat keeps control the whole time; the shot ends at once when the joystick moves, a wave is on or the
+## cat goes below ground (_update_camera).
+func show_spot(at: Vector3, hold := 2.2) -> void:
+	_show_at = at
+	_show_t = maxf(hold, 0.0)
+
+
 func _update_camera(delta: float, snap := false) -> void:
+	# H4: show_spot's shot counts down. It ends at once when the player moves the joystick, when a wave is on (a Raid
+	# Mission's wave or a Random Raid's attack, which sends no wave_started: fight.in_wave is set only then, so a wave
+	# is never watched from a building) or when the cat is below ground. Counted here, before the test's closeup,
+	# which it never moves.
+	if _show_t > 0.0:
+		if joystick.vector != Vector2.ZERO or fight.in_wave or area != null:
+			_show_t = 0.0
+		else:
+			_show_t = maxf(0.0, _show_t - delta)
 	if closeup != Vector3.ZERO:
 		cam.fov = 26.0
 		var c: Vector3 = closeup_at.global_position if closeup_at != null and is_instance_valid(closeup_at) else player.global_position
@@ -265,7 +285,7 @@ func _update_camera(delta: float, snap := false) -> void:
 	if area != null:
 		want_dist = area.cam_dist()                     # Phase E: the Burrows show a whole room, walls and all
 	_cam_dist = want_dist if snap else lerpf(_cam_dist, want_dist, 1.0 - exp(-2.0 * delta))
-	var focus: Vector3 = player.global_position
+	var focus: Vector3 = _show_at if _show_t > 0.0 else player.global_position   # H4: show_spot's spot, for a moment
 	focus.y = 0.0
 	focus.z += CAM_LEAD
 	if area != null:
@@ -830,7 +850,9 @@ func on_camp_grown() -> void:
 			opened.append(String(Data.building(sid)["name"]))
 	if not opened.is_empty() and not Save.flag("told_market"):
 		Save.set_flag("told_market")
-		hud.tip_after_delay(3.0, "New at %s: build the %s." % [Data.camp_name(), " and the ".join(opened)], stations.rings["shop"])
+		# H4 (the owner's Q17 (a)): building is in the build menu now, so the tip says where its icon is, with no arrow
+		# (a tip can point only at a marker in the camp, never at a button)
+		hud.tip_after_delay(3.0, Data.word("tip_build_new") % [Data.camp_name(), " and the ".join(opened)], null)
 
 
 func on_player_hurt() -> void:

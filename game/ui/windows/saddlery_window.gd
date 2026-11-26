@@ -2,8 +2,8 @@ extends "res://ui/windows/building_window.gd"
 ## H4: the Saddlery's window (building and marker "saddlery": the mount's skills and attachments, G4). Moved from
 ## stations.gd (_card_saddlery, _saddle_tile and the Saddlery's part of the upgrade line) in H4 Stage 1, looking exactly
 ## as before (H5 rebuilds it): two shelves of tiles, "Skills" (Stomp, Ram, Pounce, Bellow: balance.json mount_skills)
-## and "Attachments" (Fire-spitter, Mossweave Saddle, Saddlebags: mount_attachments), in balance.json's order, then its
-## own upgrade ("Upgrade"). Each tile has one button:
+## and "Attachments" (Fire-spitter, Mossweave Saddle, Saddlebags: mount_attachments), in balance.json's order.
+## Stage 2 (P2c) pins the Saddlery's Upgrade in the footer. Each tile has one button:
 ##   not learned yet     "Buy" (its level-1 price, leaves and timber); badge "New"
 ##   learned             "Upgrade" (the next level's price; levels 4-5 only once the Burrows are open); off at the Saddlery's
 ##                       level (the line "Upgrade the Saddlery for more") or while the next level needs the Burrows
@@ -50,9 +50,8 @@ func _card_saddlery() -> Dictionary:
 		gear.append(_saddle_tile("attach", String(sk)))
 	_add_section(rows, "Skills", skills)
 	_add_section(rows, "Attachments", gear)
-	_add_section(rows, "Upgrade", [upgrade_tile()])
 	return {"title": title, "sub": "Level %d · %s uses its skills and wears one attachment while you ride" % [Data.saddlery_level(), Data.mount_name()],
-		"rows": rows, "anchor": _anchor("saddlery", 1.6)}
+		"rows": rows, "anchor": _anchor("saddlery", 1.6), "footer": upgrade_footer()}
 
 
 ## One skill's or attachment's tile on the Saddlery (part "skills" or "attach"; see the top of this file).

@@ -1924,7 +1924,7 @@ func _first_mission_unlocks() -> void:
 	if wave == 1 and not Save.flag("shop_target"):
 		Save.set_flag("shop_open")
 		Save.set_flag("shop_target")
-		main.hud.tip("%s's shop is open! Build a Training Target to hit harder." % Data.camp_name(true), st.rings["shop"])
+		main.hud.tip(Data.word("tip_build_target") % Data.camp_name(true), null)   # H4 (Q17 (a)): the build icon, no arrow
 	elif wave == chapter_waves() and not Save.flag("home"):
 		Save.set_flag("home")
 		main.hud.tip("%s's shop now sells upgrades for the cat itself." % Data.camp_name(true), st.rings["shop"])

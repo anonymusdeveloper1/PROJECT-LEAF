@@ -155,6 +155,21 @@ func scroll_card_to(needle: String) -> void:
 			return
 
 
+## H2: scrolls the open dialog so its shelf heading `heading` (a {"kind": "section"} row; the build icon asks for the
+## Hearthtree's "Buildings") is at the top. Nothing happens when the card has no such shelf (everything built). Waits
+## for the rows to be laid out.
+func scroll_to_section(heading: String) -> void:
+	await hud.get_tree().process_frame
+	await hud.get_tree().process_frame
+	if hud._card == null or hud._card_list == null or not is_instance_valid(hud._card_list) or hud._card_scroll == null:
+		return
+	var want := heading.to_upper()
+	for h in hud._card_list.get_children():
+		if (h as Control).visible and h.has_meta("section") and _holds_text(h, want):
+			hud._card_scroll.scroll_vertical = int((h as Control).position.y)
+			return
+
+
 ## A label under n holds `needle`.
 func _holds_text(n: Node, needle: String) -> bool:
 	for l in n.find_children("*", "Label", true, false):

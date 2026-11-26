@@ -1,10 +1,55 @@
 extends RefCounted
-## Where everything goes: the phone's safe insets, the top stack, the bottom buttons, the tip and the hint. A part of the HUD (hud.gd): it moved here from hud.gd (H2, P1) without a change.
+## Where everything goes (H2: the owner's sketch, docs/PHASE_H_PLAN.md H2; the H2 map's part 2 gives every rectangle
+## and the proofs that nothing always-on enters the middle third and nothing overlaps). HUD pixels: the canvas is 720
+## wide (a 540x960 window shows it at 0.75); t is the phone's top inset, b the bottom of the clear screen (above the
+## gesture bar). A part of the HUD (hud.gd).
+##   top-left    the three currencies (t+10), the dish / endgame line under them (t+46)
+##   top-right   the Settings gear (64 x 64)
+##   top-centre  the raid bar (460 x 24, t+76), the campfire's thin bar (t+104, in a fight), the words line (t+114);
+##               then the boss bar and the messages (banner, toast, status line), which never pass H/3 - 4 (a toast that
+##               does not fit waits, messages.gd)
+##   row 2       the defences to place at the left, Ride / Walk or Feed at the right (b-196)
+##   row 1       the Bag and the build icon at the left, the potion slot (the snack) at the right (b-100); Place and
+##               Done centred while placing
+##   the tip and the hint just above row 2
+## The buttons slide in and out (slide.gd): the layout gives each its place every frame and the slide adds its offset.
 
 const HudStyle := preload("res://ui/hud/hud_style.gd")
-const LINE2_H := 24.0                   # its second line, when there is something on it: the dish, the status line
-const GATE_W := 236.0
-const EDGE := 14.0                      # side margins
+const Slide := preload("res://ui/hud/slide.gd")
+const ActionButtons := preload("res://ui/hud/action_buttons.gd")
+const EDGE := 16.0                      # the top's side margins
+const RES_Y := 10.0                     # the currencies
+const RES_H := 32.0
+const LINE2_Y := 46.0                   # the line under them
+const LINE2_H := 22.0
+const GEAR := 64.0                      # the round gear, at the top-right
+const GEAR_Y := 8.0
+const BAR_W := 460.0                    # the raid bar, centred
+const BAR_Y := 76.0
+const BAR_H := 24.0
+const FIRE_Y := 104.0                   # the campfire's thin bar under it
+const FIRE_H := 8.0
+const WORDS_X := 40.0                   # the words line under them
+const WORDS_Y := 114.0
+const WORDS_H := 26.0
+const GROUP_H := 140.0                  # _top_h while the raid group shows (the words line's bottom)
+const GEAR_H := 72.0                    # ... and without it (the gear's bottom)
+const STACK_GAP := 6.0
+const BOSS_H := 30.0
+const GUARD := 4.0                      # the stack ends this far above the middle third
+const SIDE := 20.0                      # the bottom's side margins
+const ROW1 := 100.0                     # row 1's top, up from b
+const ROW2 := 196.0                     # row 2's top, up from b
+const BTN := Vector2(170, 84)           # Ride / Walk, Feed, the potion slot
+const BAG := Vector2(116, 84)
+const ICON := Vector2(84, 84)           # the build icon
+const DEF := Vector2(124, 84)           # the defence buttons (a little smaller)
+const GAP := 12.0                       # between the Bag and the build icon
+const DEF_GAP := 10.0
+const PLACE := Vector2(170, 96)         # Place and Done
+const PLACE_Y := 106.0
+const PLACE_GAP := 14.0
+const LINE_GAP := 6.0                   # between row 2 and the hint
 
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
 
@@ -43,80 +88,136 @@ func _layout() -> void:
 				(g as GridContainer).columns = n
 
 
-## Where everything goes this frame: the top bar grows a second line when there is something on it, and what sits
-## under it stacks down (boss bar, banner, toast, status line); at the bottom the buttons, with the tip and the hint
-## just above them. A dialog takes none of this room: it sits over the dim (_place_card).
+## Where everything goes this frame (see the header). A dialog takes none of this room: it sits over the dim
+## (_place_card).
 func _place_all() -> void:
 	var size: Vector2 = hud.get_viewport().get_visible_rect().size
 	var t: float = hud._safe.x
-	var two: bool = hud._stage_l.visible or hud._meal_l.visible or hud._eg_l.visible
-	hud._top_h = hud.ROW_H + (LINE2_H if two else 0.0) + 4.0
-	hud._top.position = Vector2(0, 0)
-	hud._top.size = Vector2(size.x, t + hud._top_h)
-	hud._res.position = Vector2(EDGE, t + 8)
-	hud._res.size = Vector2(size.x * 0.6, 34)
-	hud._gate_bar.position = Vector2(size.x - EDGE - GATE_W, t + 10)
-	hud._gate_bar.size = Vector2(GATE_W, 30)
-	hud._line2.position = Vector2(EDGE, t + hud.ROW_H)
+	var w := size.x
+	# the top-left: the currencies, the line under them
+	hud._res.position = Vector2(EDGE, t + RES_Y)
+	hud._res.size = Vector2(0, RES_H)
+	hud._line2.position = Vector2(EDGE, t + LINE2_Y)
 	hud._line2.size = Vector2(0, LINE2_H)
-	var used := 0.0
-	if hud._eg_l.visible:
-		used += HudStyle.text_w(hud._eg_l)
 	if hud._meal_l.visible:
-		var mw: float = minf(HudStyle.text_w(hud._meal_l), size.x * 0.4)
-		hud._meal_l.custom_minimum_size = Vector2(mw, 0)
-		used += mw + (12.0 if hud._eg_l.visible else 0.0)
-	var gap := 16.0 if used > 0.0 else 0.0
-	hud._stage_l.position = Vector2(EDGE + used + gap, t + hud.ROW_H - 2)
-	hud._stage_l.size = Vector2(size.x - EDGE * 2.0 - used - gap, LINE2_H)
-	var y: float = t + hud._top_h + 6.0
-	hud._boss_bar.position = Vector2(EDGE + 4, y)
-	hud._boss_bar.size = Vector2(size.x - EDGE * 2.0 - 8.0, 30)
-	if hud._boss_bar.visible:
-		y += 36.0
-	hud._banner.position = Vector2(26, y)
-	hud._banner.size = Vector2(size.x - 52, 0)
-	hud._banner.custom_minimum_size = Vector2(size.x - 52, 0)
-	if hud._banner.modulate.a > 0.01:
-		y += hud._banner.get_combined_minimum_size().y + 6.0
+		hud._meal_l.custom_minimum_size = Vector2(minf(HudStyle.text_w(hud._meal_l), w * 0.4), 0)
+	# the top-right: the gear
+	hud._gear.position = Vector2(w - EDGE - GEAR, t + GEAR_Y)
+	hud._gear.size = Vector2(GEAR, GEAR)
+	# the top-centre: the raid bar, the campfire's bar, the words
+	hud._top_h = GROUP_H if hud._gate_bar.visible else GEAR_H
+	var bx := (w - BAR_W) * 0.5
+	hud._gate_bar.position = Vector2(bx, t + BAR_Y)
+	hud._gate_bar.size = Vector2(BAR_W, BAR_H)
+	hud._fire_bar.position = Vector2(bx, t + FIRE_Y)
+	hud._fire_bar.size = Vector2(BAR_W, FIRE_H)
+	hud._stage_l.position = Vector2(WORDS_X, t + WORDS_Y)
+	hud._stage_l.size = Vector2(w - WORDS_X * 2.0, WORDS_H)
+	# under them: the boss bar, the banner, the toast, the status line, never past the guard
+	var limit := _limit()
+	var y := _toast_y()
 	hud._toast.position = Vector2(30, y)
-	hud._toast.size = Vector2(size.x - 60, 30)
+	hud._toast.size = Vector2(w - 60, 30)
 	if hud._toast.modulate.a > 0.01:
 		y += hud._toast.get_combined_minimum_size().y + 2.0
 	hud._hide_l.position = Vector2(0, y)
-	hud._hide_l.size = Vector2(size.x, 28)
+	hud._hide_l.size = Vector2(w, 28)
 	if hud._hide_l.visible:
-		y += 30.0
+		if y + 28.0 > limit:
+			hud._hide_l.visible = false                  # no room under a big banner: it comes back when the banner goes
+		else:
+			y += 30.0
 	hud._zone_end = y
-	# the bottom: the buttons above the gesture bar
-	var bottom: float = size.y - hud._safe.y
-	var bar_y := bottom - 16.0 - 84.0
-	var buttons := true
-	hud.bag_button.position = Vector2(20, bar_y)
-	hud.bag_button.size = Vector2(116, 84)
-	hud.bag_button.visible = not hud._place_bar.visible
+	_place_bottom(size)
+
+
+## The boss bar and the banner (from the top group down); returns where the toast goes.
+func _toast_y() -> float:
+	var w: float = hud.get_viewport().get_visible_rect().size.x
+	var y: float = hud._safe.x + hud._top_h + STACK_GAP
+	hud._boss_bar.position = Vector2(18, y)
+	hud._boss_bar.size = Vector2(w - 36.0, BOSS_H)
+	if hud._boss_bar.visible:
+		y += BOSS_H + STACK_GAP
+	hud._banner.position = Vector2(26, y)
+	hud._banner.size = Vector2(w - 52, 0)
+	hud._banner.custom_minimum_size = Vector2(w - 52, 0)
+	var tw: Tween = hud._banner_tw
+	if hud._banner.modulate.a > 0.01 or (tw != null and tw.is_valid() and tw.is_running()):
+		y += hud._banner.get_combined_minimum_size().y + STACK_GAP
+	return y
+
+
+## The bottom of the room the top stack may use: just above the middle third.
+func _limit() -> float:
+	return hud.get_viewport().get_visible_rect().size.y / 3.0 - GUARD
+
+
+## The toast fits under the boss bar and the banner without reaching the middle third.
+func toast_fits() -> bool:
+	return _toast_y() + hud._toast.get_combined_minimum_size().y <= _limit()
+
+
+## The bottom rows (header). Each button sits in a fixed place; a button sliding out keeps its place until it hides.
+func _place_bottom(size: Vector2) -> void:
+	var w := size.x
+	var b: float = size.y - hud._safe.y
+	var r1 := b - ROW1
+	var r2 := b - ROW2
+	var a: ActionButtons = hud.p_actions
+	# row 1, left: the Bag and the build icon
+	hud.bag_button.size = BAG
+	Slide.at(hud.bag_button, Vector2(SIDE, r1))
 	hud.bag_button.disabled = hud.main.frozen or hud.main.player.hp <= 0 or (hud.main.fishing != null and hud.main.fishing.busy())
-	hud._build_bar.position = Vector2(148, bar_y)
-	hud._build_bar.size = Vector2(size.x - 168, 84)
-	hud._place_bar.position = Vector2(20, bar_y - 6.0)
-	hud._place_bar.size = Vector2(size.x - 40, 96)
-	hud._build_bar.modulate.a = 1.0 if buttons else 0.0
-	hud._place_bar.modulate.a = 1.0 if buttons else 0.0
-	hud._build_bar.mouse_filter = Control.MOUSE_FILTER_PASS if buttons else Control.MOUSE_FILTER_IGNORE
-	for c in hud._build_bar.get_children() + hud._place_bar.get_children():
-		(c as Control).visible = buttons
-	var line_bottom := bar_y - 6.0
+	hud._build_icon.size = ICON
+	Slide.at(hud._build_icon, Vector2(SIDE + BAG.x + GAP, r1))
+	# the right-hand column (_build_bar): Ride / Walk or Feed in row 2, the potion slot in row 1
+	hud._build_bar.position = Vector2(w - SIDE - BTN.x, r2)
+	hud._build_bar.size = Vector2(BTN.x, ROW2 - ROW1 + BTN.y)
+	for c in [a.ride_button, a.feed_button]:
+		_right(c as Button, 0.0)
+	_right(hud._snack_button, ROW2 - ROW1)
+	# row 2, left: the defences, packed from the left
+	hud._defence_bar.position = Vector2(SIDE, r2)
+	hud._defence_bar.size = Vector2(maxf(0.0, w - SIDE * 2.0 - BTN.x - GAP), DEF.y)
+	var x := 0.0
+	var row2: bool = (a.ride_button as Button).visible or (a.feed_button as Button).visible
+	for type in ActionButtons.DEFENCES:
+		var d: Button = a.def_buttons[type]
+		if not d.visible:
+			continue
+		d.size = DEF
+		Slide.at(d, Vector2(x, 0))
+		x += d.size.x + DEF_GAP
+		row2 = true
+	# Place and Done, centred in row 1 while placing
+	hud._place_bar.position = Vector2(0, b - PLACE_Y)
+	hud._place_bar.size = Vector2(w, PLACE.y)
+	hud.p_actions.place_button.size = PLACE
+	hud.p_actions.done_button.size = PLACE
+	Slide.at(hud.p_actions.place_button, Vector2(w * 0.5 - PLACE_GAP * 0.5 - PLACE.x, 0))
+	Slide.at(hud.p_actions.done_button, Vector2(w * 0.5 + PLACE_GAP * 0.5, 0))
+	hud._bottom_h = ROW2 if row2 else ROW1               # the edge arrows stay above the rows that show
+	# the hint and the tip just above row 2; they never land mid-screen. While fishing, its words ("Tap!") take the
+	# hint's line.
+	var line_bottom := r2 - LINE_GAP
 	hud._hint.position = Vector2(0, line_bottom - 30.0)
-	hud._hint.size = Vector2(size.x, 30)
+	hud._hint.size = Vector2(w, 30)
 	var tip_bottom: float = (line_bottom - 32.0) if hud._hint.modulate.a > 0.01 else line_bottom
-	hud._tip.size = Vector2(size.x - 60, 0)
+	hud._tip.size = Vector2(w - 60, 0)
 	var th: float = hud._tip.get_combined_minimum_size().y
 	hud._tip.position = Vector2(30, tip_bottom - th)
-	hud._tip.size = Vector2(size.x - 60, th)
-	# the tip and the hint never land mid-screen. While fishing, its words ("Tap!") take the hint's line.
+	hud._tip.size = Vector2(w - 60, th)
 	var low: bool = hud._tip.position.y > size.y * 0.66
 	hud._tip.visible = low
 	hud._hint.visible = hud._hint.position.y > size.y * 0.66 and not (hud.main.fishing != null and hud.main.fishing.busy())
+
+
+## A button of the right-hand column at its place, `y` down in the column, against its right edge (a long word makes
+## it wider to the left, never off the screen).
+func _right(c: Button, y: float) -> void:
+	c.size = BTN
+	Slide.at(c, Vector2(BTN.x - c.size.x, y))
 
 
 ## The y of the line just above the bottom buttons (fishing's "Tap!" and the like).

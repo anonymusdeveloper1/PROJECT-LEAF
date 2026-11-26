@@ -1,5 +1,6 @@
 extends RefCounted
-## The icons drawn in code (leaf, log, shard, tick, gem) and the cache of icon pictures. A part of the HUD (hud.gd).
+## The icons drawn in code (leaf, log, shard, tick, gem; H2: the Settings gear and the build icon's house) and the cache
+## of icon pictures. A part of the HUD (hud.gd).
 
 const UiIcons := preload("res://scripts/ui_icons.gd")           # Phase G2: the shop tiles' pictures
 ## The ids icon() draws here; every other id is a shop tile's picture from ui_icons.gd.
@@ -150,6 +151,63 @@ func _make_shard() -> ImageTexture:
 				c = Color(0.3, 0.14, 0.52)                          # a dark outline
 			img.set_pixel(x, y, c)
 	return ImageTexture.create_from_image(img)
+
+
+## H2: the Settings gear's picture (a stand-in drawn in code until the owner picks an icon): a cream cog with eight
+## teeth, a brown rim and a hole in the middle (64 x 64).
+func _make_gear() -> ImageTexture:
+	var n := 64
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var c := Vector2(32, 32)
+	for y in n:
+		for x in n:
+			var p := Vector2(x + 0.5, y + 0.5) - c
+			var r := p.length()
+			var tooth := clampf((cos(p.angle() * 8.0) - 0.1) * 3.0, 0.0, 1.0)
+			var outer := 19.0 + 8.0 * tooth
+			var cover := clampf(outer - r + 0.5, 0.0, 1.0) * clampf(r - 8.0 + 0.5, 0.0, 1.0)
+			if cover <= 0.0:
+				continue
+			var col := Color(1.0, 0.95, 0.84)
+			if r > outer - 2.6 or r < 10.6:
+				col = Color(0.42, 0.27, 0.12)
+			col.a = cover
+			img.set_pixel(x, y, col)
+	return ImageTexture.create_from_image(img)
+
+
+## H2: the build icon's picture (a stand-in until H4's build menu): a small house, a terracotta roof over a cream wall
+## with a door, a dark outline (64 x 64).
+func _make_build() -> ImageTexture:
+	var n := 64
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var roof := PackedVector2Array([Vector2(32, 5), Vector2(61, 31), Vector2(3, 31)])
+	var wall := PackedVector2Array([Vector2(11, 28), Vector2(53, 28), Vector2(53, 59), Vector2(11, 59)])
+	var door := Rect2(26, 41, 12, 18)
+	var ink := Color(0.3, 0.17, 0.07)
+	for y in n:
+		for x in n:
+			var p := Vector2(x + 0.5, y + 0.5)
+			var in_roof := Geometry2D.is_point_in_polygon(p, roof)
+			if not in_roof and not Geometry2D.is_point_in_polygon(p, wall):
+				continue
+			var col := Color(0.93, 0.45, 0.27) if in_roof else Color(1.0, 0.93, 0.78)
+			if not in_roof and door.has_point(p):
+				col = Color(0.58, 0.36, 0.16)
+			if _edge_dist(p, roof if in_roof else wall) < 2.4:
+				col = ink
+			img.set_pixel(x, y, col)
+	return ImageTexture.create_from_image(img)
+
+
+## How far a point is from a closed polygon's nearest edge.
+func _edge_dist(p: Vector2, poly: PackedVector2Array) -> float:
+	var best := INF
+	for i in poly.size():
+		var a: Vector2 = poly[i]
+		var b: Vector2 = poly[(i + 1) % poly.size()]
+		best = minf(best, Geometry2D.get_closest_point_to_segment(p, a, b).distance_to(p))
+	return best
 
 
 func _make_log() -> ImageTexture:

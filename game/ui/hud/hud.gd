@@ -1,11 +1,15 @@
 extends CanvasLayer
-## Everything drawn on top of the game. There are no menus. The screen (18 Nov 2026, the user's call; see
-## docs/PHASE_A_PROGRESS.md, "Camp layout and HUD"):
-##   the top      one slim bar on a soft dark strip: leaves, timber, shards (the satchel below ground), the dish of the
-##                chapter and the endgame-save label on the left; the fight's bar (the campfire, the raid meter and its
-##                countdown, the Burrow's fight pips) and the status line on the right. Under it the boss bar, then the
-##                banners (a compact strip), the toast and the status or hiding line.
-##   the bottom   the buttons (Ride / Feed / Snack, the defences to place), the tip and the hint just above them.
+## Everything drawn on top of the game. There are no menus. The screen (H2, 26 Nov 2026: the owner's sketch and answers;
+## docs/PHASE_H_PLAN.md H2; ui/hud/hud_layout.gd has every place):
+##   the top      top-left the three currencies, small, no strip behind them (the satchel after them below ground), the
+##                dish and the endgame-save label under them; top-right the Settings gear; top-centre the raid bar (no
+##                words, no numbers), the campfire's thin bar under it in a fight, and the words line (the next wave's
+##                roads, the wave, the Gloom, the Gloomwood's level). Under them the boss bar, then the banners (a
+##                compact strip), the toast and the status or hiding line, never into the middle third.
+##   the bottom   row 1: the Bag and the build icon (the Hearthtree's buildings) at the left, the potion slot (the
+##                snack below ground) at the right; row 2: the defences to place at the left, Ride / Walk (or Feed) at
+##                the right; Place and Done while placing. The buttons slide and fade in and out (slide.gd). The tip
+##                and the hint just above them.
 ##   the middle   nothing but the health bars over the cat (lifebar.gd) and the pointer arrow: the cat stands there.
 ##   a card       (19 Nov 2026, the user's call) the card of a thing the player tapped (marker.gd, interact.gd) opens as
 ##                a dialog in the middle of the screen over a soft dim of the game: a header with its name and a round
@@ -21,7 +25,7 @@ const LifebarScript := preload("res://ui/hud/lifebar.gd")
 const ArrowsScript := preload("res://ui/hud/threat_arrows.gd")
 const InventoryScript := preload("res://scripts/inventory.gd")
 const SettingsWindowScript := preload("res://ui/hud/settings_window.gd")
-const ROW_H := 48.0                     # the top bar's first line: riches on the left, the fight's bar on the right
+const ROW_H := 72.0                     # the top bar's height with only the gear (hud_layout.gd GEAR_H)
 const DIALOG_W := 0.9
 const TILE_INK := Color(0.25, 0.16, 0.08)
 const LayoutScript := preload("res://ui/hud/hud_layout.gd")
@@ -51,7 +55,9 @@ var _meal_l: Label                     # the dish eaten this chapter, or waiting
 var _eg_l: Label                       # "Endgame test save" (the debug endgame start)
 var _res: HBoxContainer                # the top bar's left: leaves, timber, shards, the satchel below ground
 var _line2: HBoxContainer              # ... its second line: the endgame label, the dish
-var _top: Panel                        # the soft dark strip behind the top bar
+var _top: Panel                        # H2: no strip behind the top bar any more (null; the name stays for the tests)
+var _gear: Button                      # H2: the Settings gear at the top-right
+var _fire_bar: Control                 # H2: the campfire's thin bar under the raid bar (in a fight)
 var _lifebar: Control                  # the health bars over the cat (and its mount)
 var _stage_l: Label
 var _gate_bar: Control
@@ -89,13 +95,16 @@ var _tip_ring = null
 var _tip_time := 0.0
 var _shown_leaves := 0
 var _gate_flash := 0.0
-var _build_bar: HBoxContainer
+var _build_bar: Control                # the bottom-right column: Ride / Walk or Feed over the potion slot (the snack)
+var _defence_bar: Control              # H2: the defences to place, bottom-left above the Bag
+var _build_icon: Button                # H2: the build icon next to the Bag (the Hearthtree's buildings)
+var _bottom_h := 100.0                 # how tall the bottom rows that show are, up from the gesture bar (the edge arrows)
 var inventory
 var settings                           # H2: the Settings window (the gear), opened through the card
 var bag_button: Button
 var _snack_button: Button
 var _hide_l: Label
-var _place_bar: HBoxContainer
+var _place_bar: Control                # Place and Done while placing
 var status := ""                        # a line under the top bar (rebuilding the campfire...)
 var _point_pos := Vector3.ZERO          # point_at: an arrow to a spot in the world (a raid's trail), for _point_t s
 var _point_t := 0.0
@@ -252,6 +261,7 @@ func _on_boss_changed(new_boss: Node) -> void:
 func _on_fight_progress(done: int, total: int) -> void:
 	p_fight.progress_done = done
 	p_fight.progress_total = total
+	_gate_bar.queue_redraw()                    # the raid bar fills as enemies are beaten
 	if main.fight.wave != _progress_wave:
 		_progress_wave = main.fight.wave
 		_raid_attacking = false                 # a new attack: the first message refreshes the bar again
@@ -272,6 +282,7 @@ func _process(delta: float) -> void:
 	_point_t = maxf(0.0, _point_t - delta)
 	p_fight.tick_stage()
 	p_msgs.tick_status()
+	p_msgs.tick_toast()
 	p_fight.tick_bar()
 	p_msgs.tick_tip(delta)
 	p_layout._place_all()

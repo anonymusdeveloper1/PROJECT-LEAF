@@ -6,6 +6,7 @@ const HudStyle := preload("res://ui/hud/hud_style.gd")
 var hud                                 # the HUD node (untyped on purpose: hud._stage_l and the rest are read at run time)
 ## A tip that waits for the one on screen to go first (gifts, which come with the "mission won" tips).
 var _tip_queue: Array = []
+var _toast_wait := false                # a toast waiting for room under the banner (tick_toast shows it)
 
 
 func _init(h) -> void:
@@ -65,6 +66,8 @@ func build() -> void:
 	hud._hint = HudStyle.label("Drag anywhere to move · tap things to use them", 22)
 	hud._hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud.add_child(hud._hint)
+	for c in [hud._banner, hud._toast, hud._hide_l, hud._tip, hud._hint]:
+		(c as Control).add_to_group("hud_edge")           # H2: the layout test's edge controls (no overlap, none mid-screen)
 
 
 func build_fade() -> void:
@@ -157,16 +160,39 @@ func banner_later(delay: float, title: String, color := Color(1, 1, 1), sub := "
 	hud.get_tree().create_timer(delay).timeout.connect(banner.bind(title, color, sub, big))
 
 
-## A short message under the top bar (under the banner when one shows).
+## A short message under the top bar (under the banner when one shows). H2: when it would reach into the middle third
+## (a boss bar and a big banner above it), it waits, hidden, until there is room (the banner fades), then shows in full:
+## delayed, never lost. Its words are set at once (the tests read them).
 func toast(text: String) -> void:
 	hud._toast.text = text
 	if hud._toast_tw != null and hud._toast_tw.is_valid():
 		hud._toast_tw.kill()
+	if not hud.p_layout.toast_fits():
+		hud._toast.modulate.a = 0.0
+		_toast_wait = true
+		return
+	_show_toast()
+
+
+func _show_toast() -> void:
+	_toast_wait = false
 	var tw: Tween = hud.create_tween()
 	hud._toast_tw = tw
 	tw.tween_property(hud._toast, "modulate:a", 1.0, 0.15)
 	tw.tween_interval(1.7)
 	tw.tween_property(hud._toast, "modulate:a", 0.0, 0.35)
+
+
+## Every frame: a waiting toast shows once it fits; a toast on screen that a new banner pushed too far down waits again.
+func tick_toast() -> void:
+	if _toast_wait:
+		if hud.p_layout.toast_fits():
+			_show_toast()
+	elif hud._toast.modulate.a > 0.01 and not hud.p_layout.toast_fits():
+		if hud._toast_tw != null and hud._toast_tw.is_valid():
+			hud._toast_tw.kill()
+		hud._toast.modulate.a = 0.0
+		_toast_wait = true
 
 
 ## tip_after, a few seconds from now (after a banner).

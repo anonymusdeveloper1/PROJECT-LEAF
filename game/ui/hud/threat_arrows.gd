@@ -114,8 +114,13 @@ func _draw() -> void:
 		return
 	var size := get_viewport_rect().size
 	var hud = main.hud
-	var top: float = float(hud._safe.x) + float(hud._top_h) + 40.0 if hud != null else 120.0
-	var bottom: float = size.y - (float(hud._safe.y) if hud != null else 0.0) - 130.0
+	# H2: the box follows the HUD: under the top group (and the boss bar), above the bottom rows that show (an arrow's
+	# point reaches about 35 px past the box)
+	var top := 120.0
+	var bottom := size.y - 130.0
+	if hud != null:
+		top = float(hud._safe.x) + float(hud._top_h) + 40.0 + (36.0 if hud._boss_bar.visible else 0.0)
+		bottom = size.y - float(hud._safe.y) - float(hud._bottom_h) - 36.0
 	var c: Vector2 = main.cam.unproject_position(main.player.global_position + Vector3(0, 0.4, 0))
 	var box := Rect2(Vector2(28.0, top), Vector2(size.x - 56.0, bottom - top))
 	c = c.clamp(box.position + Vector2(1, 1), box.end - Vector2(1, 1))

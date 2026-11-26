@@ -1911,13 +1911,13 @@ func status_text() -> String:
 		var nm := title()
 		if not in_wave:
 			return "%s ready · Defend Camp at the signpost" % nm
-		return "%s · %d raiders left" % [nm, left_in_wave()]
+		return nm                                   # H2: the raid bar shows the progress (no count of who is left)
 	if not in_wave:
 		var pv := preview_text()
 		if pv != "":                                # one slim line: the title gives way to where they come from
 			return "Wave %d of %d ready · %s" % [wave + 1, waves(), pv]
 		return "%s · wave %d of %d ready · start at the signpost" % [title(), wave + 1, waves()]
-	return "%s · wave %d of %d · %d left" % [title(), wave, waves(), left_in_wave()]
+	return "%s · wave %d of %d" % [title(), wave, waves()]    # H2: the raid bar shows how much of the wave is beaten
 
 
 func _first_mission_unlocks() -> void:

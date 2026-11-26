@@ -81,14 +81,10 @@ var bag := {}
 ## H3: the Timers jobs (core/timers.gd writes them): {"seen": the highest clock reading (Unix s), "jobs": {id: {"start",
 ## "len", "data", "told"}}}.
 var timers := {"seen": 0.0, "jobs": {}}
-var pantry := {"berries": 0, "herbs": 0, "honey": 0, "fish": 0, "goldfish": 0}   # H3 legacy: removed in P5 (not loaded, not saved)
-var snack_choice := "auto"                         # H3 legacy: removed in P5 (not loaded, not saved)
-var meal_ready := ""                               # H3 legacy: removed in P5 (not loaded, not saved)
-var meal_on := ""                                  # H3 legacy: removed in P5 (not loaded, not saved)
 var fish_log := {}                                 # catch id -> how many caught
 var fish_dry := 0                                  # catches since the last rare one (the pity counter)
-# Phase D: the Gloom Raids. No timestamps anywhere: the meter fills only while the game runs, and a raid that was
-# coming (or under way) comes back at its warning.
+# Phase D: the Gloom Raids. The only timestamps are the Timers jobs (`timers`, above): the raid meter fills only while the
+# game runs, and a raid that was coming (or under way) comes back at its warning.
 var shards := 0:                                   # Gloom shards: earned in play only, never sold
 	set(v):
 		if v == shards:
@@ -104,7 +100,8 @@ var fire_look := ""                                # "" or "shardfire"
 var save_v := Upgrades.CURRENT_VERSION             # format version written by save_game()
 ## Version read from disk before upgrades. Zero means no save was loaded.
 var loaded_v := 0
-# Phase E: the Burrows. No timestamps anywhere: a run in progress waits at the Hollow while the game is closed.
+# Phase E: the Burrows. No timestamps here (only the Timers jobs have them): a run in progress waits at the Hollow
+# while the game is closed.
 var mats := {"amber": 0}                           # the expedition materials (H1: amber only; an older save's glowstone and
                                                    # heartwood became leaves, core/save_upgrades.gd 2 -> 3)
 var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}

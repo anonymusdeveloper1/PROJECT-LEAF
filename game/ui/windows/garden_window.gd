@@ -84,7 +84,7 @@ func tick(delta: float) -> void:
 
 ## A new visit to the garden: garden.gd counts the Gloom bump once per visit that picks something (map 3.7).
 func opened() -> void:
-	if main != null and main.garden != null and main.garden.has_method("window_opened"):
+	if main != null and main.garden != null:
 		main.garden.window_opened()
 
 

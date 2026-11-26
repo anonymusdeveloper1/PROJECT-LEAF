@@ -49,10 +49,11 @@ awning, a lake beside it. The Gloom is violet crystal. The Gloomwood is a night 
 
 - **Not Clash of Clans.** One cat guards one campfire camp. No villagers, no workers, no build timers, nothing that
   makes resources by itself. It is a camp, never a village.
-- **Nothing happens while the game is closed.** No timer runs, no raid attacks, no plant grows, nothing is lost. The
-  game never reads the clock. **Rule change (the owner, 25 Nov 2026, Phase H):** only timers will keep running while
-  the game is closed: cooking, crop growth, and later long jobs that use the timer system (H3). Raids, fights, the Well
-  and the rest of the camp still wait. Until H3 is built, nothing runs while the game is closed.
+- **Only timers keep running while the game is closed** (the owner's rule change, 25 Nov 2026; built in H3, 26 Nov
+  2026). Crops grow and the cooking pot cooks by the phone's clock, also while the game is closed (part 6). Nothing
+  else moves: no raid attacks, no fight goes on, and the Gloom meter, the Well and the mount's rest all wait. A running
+  potion pauses while the game is in the background and ends if the game is closed (it lasts 5 to 30 s). Nothing else
+  is lost.
 - **Not open world.** The camp is home and the enemies come to it. Going out happens in small separate places: the
   Gloomwood now, islands by boat later.
 - **No menus.** You go to a thing and its card opens (part 2).
@@ -75,9 +76,9 @@ The owner plays on a Samsung Galaxy S24. The APK with the full update was instal
 | Shoot | Automatic. The cat turns to the nearest enemy in range (5.5 m at the start) and keeps shooting, also while walking. |
 | Hide | Stand in tall grass or a bush, outside the camp. Enemies can't see the cat. After 1.5 s hidden, the next shot is an **Ambush**: double damage. Not while riding. |
 | Ride | Tap **Ride** once Thistle has come. The cat is faster and the mount takes the hits. Drag to turn the mount and run in that direction. The cat shoots across a 280-degree arc, leaving an 80-degree gap directly behind. Its skills come from the Saddlery. Tap **Walk** to get off. |
-| Feed | When the mount is knocked out, Ride turns into **Feed** (2 Sunberries). |
+| Potions | **New (H3, 26 Nov 2026):** when the cat is hurt and the Bag holds a Health Potion, its button shows at the bottom right: tap it to heal. When the mount is knocked out and the Bag holds a Mount Health Potion, that button takes Ride's place. The other potions and fish are used from the Bag. Feed is gone. |
 | Leaf Dash | **Gloomwood only.** Flick your thumb quickly as you lift it. The cat dashes 3 m and nothing can hurt it during the dash. Dash through an attack at the last moment (a **close call**) and the next arrow hits double. It recharges in 1.4 s; an arc under the health bar shows it. |
-| Build | Buy a defence in the shop. A button such as "Barricade ×2" appears at the bottom. Tap it, walk the see-through piece to where you want it, tap **Place**, then **Done**. **New (G2): barricades are not built this way.** Tap a road marker instead (see the next block). |
+| Build | Buy an acorn tower or thorn spikes in the shop. **New (H3): it goes into the Bag.** Tap its button above the Bag (such as "Tower ×2"), or open the Bag, tap it and tap **Place**. Walk the see-through piece to where you want it, tap **Place**, then **Done**. The piece drops in with a small bounce and a puff of dust. **New (G2): barricades are not built this way.** Tap a road marker instead (see the next block). |
 | Barricade row | After raid 1, tap an open road pad to build a **row of 3 pieces** for 90 leaves and 5 timber between waves. Pads open as the Hearthtree grows. Tap a built row to repair it at any time, including during a wave. See Defences. |
 | Use a building | Tap it (see below). Its card opens. Tap a green button to buy. |
 | Grow the home | Open the Hearthtree's card (the Shop). **New (Phase F):** the top section, "Grow the home", lists the goals. Tap **Go** on a goal and the card closes and the cat walks to the building that sells it, or tap **Show** to scroll the card to that row. |
@@ -86,14 +87,12 @@ On a PC: WASD or the arrow keys move, the mouse works as a finger, and Space das
 
 Most camp cards work between waves. During a wave, the signpost and built barricade rows can still be tapped.
 
-**New (23 Nov 2026) · Bag.** Tap Bag at the bottom-left for a shared grid of square item slots. Food, amber,
-unplaced defences and dishes appear as icons with counts. Leaves, timber and shards sit above the grid.
-The cat appears beside the selected item's details, seated on her current mount while riding. Tap a slot to see its
-name and uses. Gameplay continues while the panel is open.
-The X, an outside tap, Escape or Android Back closes it. The garden and cooking pot show food icons and owned totals.
-Recipe ingredients show Have and Need, every unlocked recipe is reachable, and cooking explains when its dish activates.
-Picking, fishing and trading report what was gained or spent and the new totals. The Market handles trade and the pot
-handles cooking. The Bag displays their supplies.
+**New (H3, 26 Nov 2026) · the Bag.** Tap **Bag** at the bottom-left. At the top are the health bars and the three
+currencies. Below them the cat (seated on her mount while riding) stands beside the selected item's details, and under
+that is a grid of **24 square slots**. Only things you have take a slot. Tap a slot to see its name, how many you have,
+what it is for, and its one button: **Use** for potions and fish, **Place** for towers and spikes. Gameplay continues
+while the Bag is open. The X, a tap outside, Escape or Android Back closes it. How things stack and what happens when
+the Bag is full: part 6. Picking, cooking, fishing and trading say what you got or spent and your new total.
 
 > **New (19 Nov 2026): tap to open.** Walking near something opens nothing, and there are no glowing ground rings.
 > Each usable thing has a small leaf-shaped pin with an icon over it: small and dim far away, bigger and glowing with
@@ -118,7 +117,9 @@ handles cooking. The Bag displays their supplies.
 0.2 seconds instead of popping, and a button that is sliding out stops taking touches at once.
 
 - **Top-left**: the three currencies only, small, with no dark strip: golden leaves, timber and Gloom shards. All three
-  always show. Below ground the satchel follows them (amber and what you carry).
+  always show. Below ground the satchel follows them (amber and what you carry). **New (H3):** while a Damage or Speed
+  Potion works, a small line under them shows it and the seconds left, for example "Damage +25% · 24 s" (both when
+  both run). It hides when none runs.
 - **Top-right**: the **Settings gear** (round), always shown. See "Settings" below.
 - **Top-centre**: the **raid bar**. It has no words and no numbers, and it never counts enemies left. It shows progress:
   - in a Raid Mission, the share of this wave beaten; between waves the track is empty;
@@ -136,12 +137,16 @@ handles cooking. The Bag displays their supplies.
 - **Over the cat**: a red health bar. A hit drains it, and the part just lost shows grey for a moment. While riding,
   a thinner amber bar shows the mount's health. The Moss Warden has its own moss-green bar. The **Bag** shows the same
   health as bars (no "Health n/n" text), with the currencies packed under them.
-- **Bottom, first row**: the **Bag** (left), the **build icon** (a house) next to it, and the snack or potion slot at the
-  right. The build icon opens the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below
-  ground, and in a wave it gives the usual "A wave is on!". (H4 swaps in the real build menu.)
-- **Bottom, second row**: the defences to place (smaller buttons) just above the Bag, and **Ride** or **Walk** (or
-  **Feed** while the mount is knocked out) at the right, above the snack slot.
-- **While placing a defence**: **Place** and **Done** sit centred at the bottom and the Bag group slides out.
+- **Bottom, first row**: the **Bag** (left), the **build icon** (a house) next to it, and at the right the **Health
+  Potion** button (New, H3): it shows only when the cat is hurt and the Bag holds one, with the potion's picture and
+  "×N". It turns grey while it cannot work now (for example while a potion is still healing). The build icon opens
+  the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below ground, and in a wave it
+  gives the usual "A wave is on!". (H4 swaps in the real build menu.)
+- **Bottom, second row**: the defences to place (smaller buttons) just above the Bag, and **Ride** or **Walk** at the
+  right. **New (H3):** while the mount is knocked out, the **Mount Health Potion** button takes Ride's place (only when
+  the Bag holds one).
+- **While placing a defence**: **Place** and **Done** sit centred at the bottom. The Bag group and both potion buttons
+  slide out.
 - **Start wave** is on the signpost's card only. There is no Start wave button on the screen.
 - Above the buttons: the **tip** (each tip shows once, often with a gold arrow pointing where to go) and the "Drag
   anywhere to move" hint.
@@ -271,12 +276,12 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 | Signpost | **Raid Missions:** 15 down to 1 in spacious animated cards; To finish / Completed, Start / Replay, and saved-run resume. **Random Raids:** unlocks after all 15 Raid Missions, retaining Watch controls (part 7). | From the start |
 | Training Target | Damage, Draw speed and Range for the cat (Range from level 2). 5 levels. | Shop, after raid 1's first wave |
 | Bow Shop | **New (21 Nov 2026, G3): the Bow Bench is now the Bow Shop** (same place, same model). One card with a tile per bow, one button each: **Upgrade** for the equipped bow, **Equip** for an owned bow (between waves only; during a wave it says "Between waves"), **Buy** for a bow not owned yet (or "Needs Bow Shop level N"). Buying equips the bow if no wave is on. Each bow keeps its own level. Bow levels; 5 levels. See part 11 for the bows' data. **New (22 Nov 2026):** the shop has four bows, in the table below the buildings. | Shop, after raid 1 is won |
-| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25. Bramble sells no materials (New, H1, 25 Nov 2026). **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), and after the missions amber: 1 amber for 1,000 leaves and 1 Gloom shard. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
+| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25. Food goes into the Bag; with no room the tile says "Bag full" and nothing is paid (New, H3). He does not sell Emberpeppers or Swiftroots. Bramble sells no materials (New, H1, 25 Nov 2026). **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), a Golden Carp for 300 leaves at any time (New, H3, 26 Nov 2026), and after the missions amber: 1 amber for 1,000 leaves and 1 Gloom shard. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
 | Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for raid 3. |
 | Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
 | Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Skill and attachment levels 4 and 5 open after the Raid Missions (New, H1, 25 Nov 2026: they cost leaves and timber only, no materials). Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
 | Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. **New (H1, 25 Nov 2026):** it is built at **Hearthtree 3** (it used to need 4 raids won; a save that already has it keeps it). Its card has only its Upgrade row, and the card's subtitle shows its rates. In waves it mends **1%, 1.5% or 2.5%** of max health a second (it was 0.5, 1 and 2); between waves 3%, 6% and 10% as before. It also mends the standing Moss Warden; a downed golem gets up by its own rules. A worn Well is still repaired from the signpost's Mend list. | Shop, at Hearthtree 3 |
-| Garden and cooking pot | Grow food and cook dishes (part 6) | Gift for winning raid 1, with 4 Sunberries |
+| Garden and cooking pot | Grow food in real time and cook potions (part 6; New, H3). Garden levels 2 and 3 cost 400 and 1,000 leaves. | Gift for winning raid 1, with 4 Sunberries |
 | Fishing Spot | Fishing at the lake (part 6) | Gift for winning raid 6 |
 | Guardian Stone | The Moss Warden's home: its post, colours and upgrades (part 5) | Appears when the Warden is freed |
 | The Old Hollow | The way into the Gloomwood (part 8) | Sealed with Gloom crystals from the first raid won; opens with raid 15's first win |
@@ -352,7 +357,7 @@ Go to the signpost. Its card ("To the woods") shows the next raid: its waves and
 - **Every cleared wave saves.** Closing the game resumes the next uncleared wave; a camp fall retries only the
   failed wave. Numbers continue from 1 through 15 or 20, including 5→6, 10→11 and 15→16.
 - Every five waves, a **supply chest** pays out and the campfire refills. The chapter structure still controls enemy
-  pools, food duration and these rewards. Older chapter-only saves keep their original checkpoint. **Give up** is an
+  pools and these rewards. Older chapter-only saves keep their original checkpoint. **Give up** is an
   explicit choice to restart that raid while keeping what was earned.
 - A wave can never hang: if its last 3 enemies do nothing for 45 s, they flee.
   **New (H1, 25 Nov 2026):** this is for Raid Missions only, and it has not changed. Random Raids work differently (part 7).
@@ -489,6 +494,15 @@ change tip/fletching colours at each tier: leaf/silver, pale blue, gold, violet 
 turns and tilts. Loading, string draw, release, recoil and the arrow trail are animated. Broken towers stop and
 hide their arrow until repaired. An upgrade loads the new tier automatically.
 
+**New (H3, 26 Nov 2026): towers and spikes are placed from the Bag.** A tower or spikes you buy goes into the Bag (it
+takes a slot; 20 stack in one). With no room, the shop tile says "Bag full" and nothing is paid. Its tile says "2 in
+the Bag · place it from the Bag". Place it with its button above the Bag, or from the Bag: tap it, then **Place**. The
+Bag closes and the green or red ghost shows in front of the cat. Below ground Place says "Place it in the camp". A
+placed piece drops in with a small bounce and a puff of dust. **The ghost is now red by the lake and by the home**
+(the owner's yes, 26 Nov 2026): it uses the same rule as the start-up check, so a piece is never put somewhere that
+sends it back to the Bag at the next start. A piece sent back that way always goes in, even into a full Bag. There
+is no Undo yet (H6).
+
 Buying a barricade level on the Hearthtree's card makes every row tougher at once. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
 and opens after the raids; level 5 (Heartwood, Amber, Amber Thorns) costs leaves only and still opens with the Gloomwood (New, H1, 25 Nov 2026: it asked for expedition materials before). Broken defences are
 mended free when a raid is won; after a camp fall or a raid they stay broken until mended in the shop or with
@@ -507,8 +521,8 @@ mended free when a raid is won; after a camp fall or a raid they stay broken unt
 | What happens | What it costs |
 |---|---|
 | The cat is knocked out while the fire burns | Nothing. It is back by the fire in 5 s. |
-| The mount is knocked out | It stays out until fed (2 Sunberries) or the next chapter break (part 5). |
-| The camp falls | The Gloom takes 30% of the leaves gained since this chapter began, never more than you hold. Savings, completed supply chests and gains during chapter breaks are safe. Ruins and broken defences stay damaged. Rebuild the ashes at the campfire before resuming. **Retry only the failed wave**; all earlier cleared waves stay cleared. A dish eaten this chapter goes back into the pot. No level is lost. |
+| The mount is knocked out | It stays out until a Mount Health Potion brings it back, or the next chapter break (part 5; New, H3). |
+| The camp falls | The Gloom takes 30% of the leaves gained since this chapter began, never more than you hold. Savings, completed supply chests and gains during chapter breaks are safe. Ruins and broken defences stay damaged. Rebuild the ashes at the campfire before resuming. **Retry only the failed wave**; all earlier cleared waves stay cleared. No level is lost. |
 | You give up a raid | Its next try starts at wave 1. What you earned stays. |
 
 ### The 15 raids
@@ -575,10 +589,15 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
   her torso, shoulders, arms and head above a seat that stays aligned with the mount. Turn the mount for enemies directly behind.
   She can't hide while riding. The mount uses the skills it learned at the Saddlery.
 - **Thistle takes the hits** while the cat rides. Its health is the thin amber bar under the cat's.
-- **Knocked out**, it throws the cat off. In a raid it stays out until you **feed** it 2 Sunberries with the Feed
-  button (any time, even mid-wave; it comes back whole and the cat hops on) or until the next chapter break. In the
-  Gloomwood it stays out until fed. Outside raids it rests 20 s and gets up by itself. With no food, the button
-  says "No food".
+- **Knocked out**, it throws the cat off. **New (H3, 26 Nov 2026, the owner's answer): the Mount Health Potion
+  replaces Feed.** In a fight it stays out until a **Mount Health Potion** brings it back, or until the next chapter
+  break. In the Gloomwood it stays out until a potion. The potion's button takes Ride's place while the mount is out
+  and the Bag holds one. It works any time, even mid-wave: the mount gets up with **full health** and the cat hops on.
+  If the Market is in ruins, the mount comes to the cat instead. Outside fights in the camp it rests 20 s and gets up
+  by itself, as before. Sunberries are now only for cooking.
+- **Mending a standing mount** (New, H3): raw fish mends 10% of its health at once, the Golden Carp 50%, and Cooked
+  Fish mends it to full over 10 s. Use them from the Bag, ridden or not, also with the Market in ruins. They do not
+  bring back a knocked-out mount. When not ridden, it also gets 1 health back every 2 s.
 - It is whole again at every chapter break and when a raid ends.
 
 ### The Saddlery: the mount's skills and attachments (New, 21 Nov 2026, G4)
@@ -607,7 +626,8 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
   | **Saddlebags** | Kills drop 5% more leaves (raids, raids and the expeditions) | +5% (level 5: +25%) |
 
   The worn Saddlery attachment works in raids, raids and the expeditions. Claude made the models for both mounts.
-  Fire-spitter speed follows the cat's draw upgrades, current bow and food boosts, independently of the mount skill gap.
+  Fire-spitter speed follows the cat's draw upgrades and current bow, independently of the mount skill gap (the old
+  dish boosts are gone since H3).
   **Flame visuals (23 Nov 2026):** shots have a hot round core, directional flame tail and sparks. Hits create a
   glowing scorch with low, animated ground flames. It extinguishes after 3 seconds, fading during the last 0.8 s;
   nearby hits refresh the same fire. This is a visual effect alongside the existing impact damage and enemy burn.
@@ -660,42 +680,117 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 
 ---
 
-## 6. Food
+## 6. Food, potions and the Bag
 
-Food matters from the start: it brings the mount back, and dishes give a boost.
+**New (H3, 26 Nov 2026).** You grow food in the garden and catch fish at the lake, cook them into potions at the pot,
+and keep everything in the Bag. **Crops and cooking run in real time, by the phone's clock, also while the game is
+closed** (the only things that do). The 7 old dishes, the pantry and its limit of 20, eating food, the snacks below
+ground and Feed are gone. Garden food is only for cooking; fish and the Golden Carp can also mend the mount.
+
+### The Bag
+
+- **24 square slots** in a grid (4 rows of 6). Only things you have take a slot. The Bag sorts itself: food first,
+  then potions, amber, and towers and spikes. (Moving things between slots yourself is not built.)
+- **Stacks:** food, fish, amber, towers and spikes stack to **20** in a slot and use more slots when you have more:
+  45 Sunberries take 3 slots (20, 20 and 5).
+- **Potions:** each potion is **one stack with its own limit**: Health Potion 3, Mount Health Potion 3, Cooked Fish
+  10, Damage Potion 1, Speed Potion 2. A potion's slot shows how many of its limit you have, for example "2/3".
+- **Tap a slot** to see its name, how many you have and what it is for, and its one button:
+  - **Use** for potions and fish. It closes the Bag when it works. When it cannot work now, the reason shows under the
+    button ("Full health", "Already active", "Only for a knocked-out mount" and so on). The reason shows only while it
+    is still true: if the cat gets hurt while the Bag is open, "Full health" goes away and Use works.
+  - **Place** for towers and spikes (part 4). Below ground it says "Place it in the camp".
+  - Food and amber have no button. Their line says what they are for ("For cooking at the pot.", "Rare. Bramble buys
+    it.").
+- An empty Bag says "The Bag is empty". Below ground, amber shows the run's satchel ("At camp N · This run N").
+- **When the Bag is full:**
+  - a fishing catch that does not fit swims away ("Bag full, the rest swims away");
+  - buying food from Bramble, or a tower or spikes, is refused with "Bag full" before you pay;
+  - a ripe crop stays ripe ("Bag full"), and a finished potion waits in the pot;
+  - Cook is refused when its potion would not fit ("No room in the Bag");
+  - things already paid for always go in, even past 24 slots (the grid then adds a row): pieces sent back to the Bag
+    at the start, an old save's food and potions, amber brought home from the Gloomwood, and the garden's 4 Sunberries.
 
 ### The garden
 
-- South of the camp, the gift for winning raid 1 (with 4 Sunberries, so the pantry is never empty).
-- 3, 5 or 6 plots by garden level. **Plant** (seed packets cost a few leaves), **water**, and **pick** when ripe (a
-  glint shows it).
-- **It grows one step for every wave the camp holds**, two while watered (watering lasts 3 to 5 waves). That means
-  raid waves, replays and raid waves. It never grows with real time, while the game is closed, or while you wait
-  in the camp. Ripe plants never rot. (Gloomwood runs do not grow it.)
+- South of the camp, the gift for winning raid 1 (with 4 Sunberries).
+- **3, 5 or 6 plots** by garden level (levels 2 and 3 cost 400 and 1,000 leaves; level 3 also gives +1 on every
+  harvest).
+- **The garden's window looks like the bed in the camp:** plots 3, 2, 1 on the top row and 6, 5, 4 below. A plot not
+  open yet is dim and says which garden level opens it ("Garden 2"). The seeds are in a row under the plots, with
+  Water under them.
+- **Planting:** drag a seed onto an empty plot. You pay when you drop it. A seed you cannot pay for does not drag.
+- **Growing:** in real time, also while the game is closed. Each plot shows a sprout, then the growing plant, a bar
+  and the time left ("3:12"); a ripe plot says "Ripe: tap" and a gold glint shows over the bed. Ripe plants never rot.
+  When crops ripen, a toast says so ("Ripe in the garden: Sunberries"), and the garden's badge pulses.
+- **Water:** free, with no cooldown. It waters every growing plot that is not watered yet. Those plots grow **twice
+  as fast for 5 minutes** at garden level 1, 6 minutes at level 2 and 7 minutes at level 3 (or until they are ripe,
+  if that is sooner). The soil looks dark and wet meanwhile. A seed planted afterwards is dry: tap Water again for
+  it. A watered plot can be watered again once its watered time ends. The line under Water says it: "Watered plants
+  grow twice as fast for 5 min".
+- **Picking:** tap a ripe plot and its crop goes into the Bag. If it does not fit, "Bag full" shows and the plant
+  stays ripe. The Gloom meter gets +2 once per garden visit that picks something (after the raids).
+- The garden's card is closed during a wave, but the crops keep growing. Pick them after the wave.
 
-| Crop | Gives | Ripe after |
-|---|---|---|
-| Sunberries | 3 Sunberries | 4 steps |
-| Fernmint | 2 Fernmint | 5 steps |
-| Honeybells | 2 honey | 6 steps |
+| Crop | Gives | Seed | Grows in |
+|---|---|---|---|
+| Sunberries | 3 Sunberries | 10 leaves | 4 min |
+| Fernmint | 2 Fernmint | 12 leaves | 5 min |
+| Honeybells | 2 honey | 15 leaves | 6 min |
+| **Emberpeppers** (new) | 2 Emberpeppers | 20 leaves | 8 min |
+| **Swiftroots** (new) | 2 Swiftroots | 18 leaves | 7 min |
 
-The pantry holds up to 20 of each food.
+All five seeds are there from garden level 1. Bramble sells Sunberries, Fernmint, honey and fish, but not Emberpeppers
+or Swiftroots.
 
 ### Cooking
 
-- The pot sits on the campfire's rim and comes with the garden. Cook **one dish** between waves. It waits in the pot,
-  is **eaten when the next chapter (or raid) starts**, and lasts that chapter. A held chapter uses it up; if the camp
-  falls it goes back into the pot. No cooking on the ashes.
+- The pot sits on the campfire's north-east rim and comes with the garden. One pot.
+- **The window:** the pot with **3 slots** at the top, and under them your ingredients as big icons with their counts.
+  The count shown is what is left after the pieces already in the slots; at 0 an icon is grey and does not drag.
+- **Filling the pot:** drag an ingredient into a slot, or **tap** it to fill the next empty slot. Tap a filled slot to
+  empty it. Nothing leaves the Bag until you tap Cook, and the slots empty when the window closes, so nothing is lost.
+- When the pieces make a recipe exactly, its name and what it does show, and **Cook** lights up.
+- **Cooking** takes 30 s to 1 min in real time, also while the game is closed. The pot shows the recipe's icon, a bar
+  and "Ready in 0:32". When it is done, a toast says so ("Health Potion is ready at the pot") and the pot's badge
+  pulses. **Collect** puts it in the Bag. If the Bag is full, "Bag full" shows and it waits in the pot.
+- One thing cooks at a time: a second Cook says "Cooking already", or "Collect first" when the last one is done.
+- A **recipe list** at the bottom of the window shows every recipe you know and what it needs.
+- The Gloom meter gets +3 on each Cook tap (after the raids), never when the cooking ends.
+- **The fire out** (the Last Stand, the ashes): the pot's badge hides and you cannot cook or collect, but the cooking
+  goes on. The pot's card is closed during a wave.
+- When a crop ripens and the pot finishes in the same moment (for example when you open the game after a long time
+  away), one toast says both: "Ripe in the garden: Sunberries · Health Potion is ready at the pot".
 
-| Dish | Made from | Boost | Shown |
-|---|---|---|---|
-| Berry Tart | 3 Sunberries | shoots 15% faster | from the start |
-| Fernmint Tea | 2 Fernmint | +2 health | from the start |
-| Honey Cake | 2 honey, 1 Sunberry | pet, mount and Warden hit 40% harder | from the start |
-| Hearth Stew | 2 Fernmint, 1 honey, 2 Sunberries | campfire 40% more health | from the start |
-| Fish Skewers | 2 fish, 1 Fernmint | arrows hit 20% harder | once fishing is there |
-| Warden's Root Stew | 2 fish, 2 Fernmint, 1 honey | Warden +50% health, back up in 15 s | fishing and the Warden |
-| Golden Carp Feast | 1 Golden Carp, 2 Sunberries, 1 honey | a little of everything | once a Golden Carp was caught |
+### The recipes
+
+| Recipe | Ingredients | What it does | Bag limit | Cooks in |
+|---|---|---|---|---|
+| **Health Potion** | 2 Fernmint, 1 honey | Heals the cat by 40% of its health over 5 s | 3 | 40 s |
+| **Mount Health Potion** | 2 Sunberries, 1 honey | Brings a knocked-out mount back on its feet with **full** health (the owner, 26 Nov 2026) | 3 | 45 s |
+| **Cooked Fish** | 1 fish | Mends the mount to full health over 10 s | 10 | 30 s |
+| **Damage Potion** | 2 Emberpeppers, 1 honey | The cat's arrows hit 25% harder for 30 s | 1 | 60 s |
+| **Speed Potion** | 2 Swiftroots, 1 honey | The cat moves 25% faster for 20 s (also while riding) | 2 | 50 s |
+
+- Cooked Fish shows once the Fishing Spot is built; the other four from the start.
+- **The Health Potion** needs a hurt cat. **The Mount Health Potion** only works on a knocked-out mount, and Cooked
+  Fish and raw fish only on a standing, hurt one (part 5).
+- **A potion that is still working** cannot be used again ("Already active"), so none is wasted. Running potions pause
+  while the game is paused, end when the cat is knocked out, and are lost when the game closes (they last 5 to 30 s).
+- The Damage Potion is for the cat's arrows only, not towers, the pet or the mount's skills.
+- The old dish boosts (shooting faster, +2 health, companions hitting harder, a tougher campfire, the Warden's stew)
+  went with the dishes.
+- **The icons** of the potions, Emberpeppers and Swiftroots are simple stand-ins drawn in code (a small bottle in each
+  potion's colour, a red pepper, a pale root), until the owner asks for designs.
+
+### Potion buttons
+
+- **The Health Potion button** (bottom right, row 1) shows when the cat is hurt and the Bag holds one. In the camp the
+  cat heals by itself, so it may show for a moment there too.
+- **The Mount Health Potion button** takes Ride's place (row 2) while the mount is knocked out and the Bag holds one.
+- Each shows the potion's picture and "×N". It turns grey and cannot be tapped while it cannot work now (for example
+  while a Health Potion is still healing).
+- Both hide while you place a defence. The Damage Potion, the Speed Potion, Cooked Fish and fish are used from the Bag.
 
 ### Fishing
 
@@ -707,20 +802,25 @@ The pantry holds up to 20 of each food.
   (leaves and timber). A rare catch comes at least once every 20 catches.
 - Three lake treasures, found in order: the **Lucky Lure** (bites come 25% sooner), the **Silk Line** (one more slip
   forgiven when reeling), the **Lake-moss Charm** (the Warden's Lakeweed colours).
+- **New (H3):** fish go into the Bag. A fish mends the mount by 10% at once, or cooks into Cooked Fish. The **Golden
+  Carp** mends the mount by 50% at once, or Bramble buys it for 300 leaves. It is not used in cooking. When the Bag is
+  full, the rest swims away.
 
-### Food in the Gloomwood
+### Healing in the Gloomwood
 
-- The **Feed** button works there too (2 Sunberries for the knocked-out mount).
-- A **Snack** button: one piece of food heals the cat (fish +4, honey +3, Golden Carp +6, Fernmint +2, Sunberries +2;
-  tried in that order so the mount's berries last). At most one every 3 s.
-- A dish waiting in the pot **goes down with the cat** and lasts the run.
+- **Only Health Potions heal the cat** below ground (the owner's answer, 26 Nov 2026), besides the dew drops, dew buds,
+  the Moonwell's spring and the Mossheart boon (part 8). There is no Snack button and no food to eat.
+- The Mount Health Potion brings the knocked-out mount back there too.
+- Brew your potions at the pot before you go in: the Bag goes with the cat.
 
-**New (23 Nov 2026) · choosing food.** In Bag, select a food to see its healing amount and cooking uses. Quick heal
-chooses that food for the bottom button. Use Auto follows the existing order in the paragraph above. The button shows
-the chosen food, quantity, healing amount, and cooldown or full-health state. When a chosen food runs out, Choose food
-opens the Bag. Eat in the Bag uses the selected food and closes the panel on success. Both actions share the same
-cooldown and save the spent food with the run's healed health. Selecting a material slot shows At camp and This run
-amounts and the amount kept after a knock-out.
+### Old saves (save version 4)
+
+An older save is upgraded once when it loads (a backup is made first):
+- the pantry's food goes into the Bag, all of it;
+- a dish waiting in the pot, or one eaten in a mission that was saved, becomes a **Health Potion** (up to 3 in the Bag;
+  each one more would pay 50 leaves, which cannot happen today);
+- a half-grown crop keeps its share: a crop 2 of 4 steps along is half grown and ripens in the rest of its new time.
+  Old watering is dropped.
 
 ---
 
@@ -841,10 +941,14 @@ At most a few helpers are with it at once.
 > 50% more health and hit 1 harder,
 > bigger packs, the three ambushes above, elites from level 1, the spring heals only part of the cat's health, and
 > Mossback is much tougher and **enrages** near the end (faster, a second ring with each slam, more helpers). The goal:
-> a cat that only stands and shoots must be knocked out before the end; a cat played with care (riding, feeding,
-> snacks, dashing out of danger) must win. Measured: a standing endgame cat is knocked out just after the Glowcap
+> a cat that only stands and shoots must be knocked out before the end; a cat played with care (riding, potions,
+> dashing out of danger) must win. Measured: a standing endgame cat is knocked out just after the Glowcap
 > clearing; Mossback has about 9,900 health at level 1 (was 3,000) and takes about 70 s for a cat that only shoots.
 > Pay is up 25% to match. Tune by play on the phone.
+>
+> **Known (H3, 26 Nov 2026):** since only Health Potions heal below ground, the careful test cat (`--dungeoncareful`,
+> with 3 Health and 3 Mount Health Potions) now loses at the boss in about 2 runs of 3. The owner's call: noted, not
+> retuned now. Expeditions are rebuilt in H8 and balanced in H11.
 
 ### Levels
 
@@ -1013,6 +1117,10 @@ is no longer needed.
   on the S24's screen?
 - Check the top bar under the S24's real status bar and camera hole.
 - A balance pass by play: run length, boss times, materials per run, prices, raids, the Warden, the garden's pace.
+- **New (H3, 26 Nov 2026):** on the H3 APK, try dragging seeds and ingredients with a finger (the game's first
+  drag-and-drop), close the game while crops grow or the pot cooks and come back later, use the potion buttons in a
+  fight, and check that the old save's food, dishes and crops came over. On the PC at 540x960 the garden's card scrolls
+  about 150 px to reach its Upgrade row (the window itself fits); at the phone's shape nothing scrolls.
 
 ### Decisions
 
@@ -1021,6 +1129,10 @@ is no longer needed.
 - The money proposals in part 9.
 - Buildings never fade, so the cat can be hidden behind them. How to handle that is open.
 - The optional Moth Lantern and Bramble Snare (raid extras), only with the owner's yes.
+- **New (H3):** the potion, Emberpepper and Swiftroot icons are stand-ins drawn in code. Designed icons come only when
+  the owner asks. Cooked Fish has a bottle like the other recipes (the owner chose bottles); its light orange is close
+  to the Damage Potion's orange.
+- **New (H3):** the Gloomwood is harder without food heals (part 8, under "The road"). It is retuned in H8 and H11.
 
 ### Later
 
@@ -1057,11 +1169,13 @@ safety net.
   CanvasLayer (`joystick.gd`), the cat (`player.gd`), `defences.gd`, `garden.gd`, `cooking.gd`, `fishing.gd`,
   `stations.gd` (every building, its ring and its card), `burrow.gd`, the HUD (`ui/hud/hud.gd`, H2), the camera. Companions are
   added later by `main.refresh_companions()`: `pet.gd`, `mount.gd`, `npc.gd` (Bramble), `guardian.gd`.
-- **Autoloads** (`project.godot`). **New (H1, 25 Nov 2026):** five now, in this order: `Events` (`core/events.gd`, first:
-  the signals and who sends them; read the file), `Data` (`data.gd`: `balance.json`, the derived numbers, costs and
-  currencies, `Data.args()`; it also reads `content/index.json` through `catalog()` and `item()`), `Save` (`save.gd`),
-  `Quality` (`quality.gd`) and `Pools` (`core/pools.gd`). Static helpers by `class_name`: `Fx` (effects),
-  `Props` (loads Blender props or builds placeholders), `Sfx` (sounds; a missing sound plays nothing).
+- **Autoloads** (`project.godot`). **New (H1, 25 Nov 2026; H3 added Timers):** six now, in this order: `Events`
+  (`core/events.gd`, first: the signals and who sends them; read the file), `Data` (`data.gd`: `balance.json`, the
+  derived numbers, costs and currencies, `Data.args()`; it also reads `content/index.json` through `catalog()` and
+  `item()`), `Save` (`save.gd`), `Timers` (`core/timers.gd`, H3: the real-time jobs), `Quality` (`quality.gd`) and
+  `Pools` (`core/pools.gd`). Static helpers by `class_name`: `Fx` (effects), `Props` (loads Blender props or builds
+  placeholders), `Sfx` (sounds; a missing sound plays nothing), and since H3 `Bag` (`core/bag.gd`) and `Effects`
+  (`core/effects.gd`).
 - **Markers and cards.** Each usable thing has a marker (`marker.gd`, the leaf-shaped badge); `interact.gd` picks the
   marker under a tap and opens its card with `hud.show_card(...)` (the code is in `ui/hud/card.gd`), walking the cat there first if it is out of reach.
   A card is a dictionary `{title, sub, rows, anchor}` built by `stations._card_*()`, `burrow.card()` or
@@ -1072,9 +1186,11 @@ safety net.
   refuses while any fight is active.
 - **enemy.gd** is every enemy. It loads `assets/enemies/<id>/<id>.glb` and its JSON, or a stand-in from the
   `model`, `scale` and `tint` keys of its `balance.json` entry. When the real model lands, delete those three keys.
-- **The no-clock rule.** Nothing reads the wall clock or saves a time. Timers clamp their frame time
-  (`minf(delta, 0.1)`) and stop while `main.frozen` (the app is paused). Earlier phases checked this with a grep
-  for clock calls outside the autotests; keep it that way.
+- **The clock rule** (changed in H3, 26 Nov 2026). Only `core/timers.gd` reads the wall clock, through `Timers.clock`
+  (and the 3→4 save step reads that same clock). Its jobs (the crops and the pot) are the only things that run while
+  the game is closed. Everything else still runs on frame time: it clamps it (`minf(delta, 0.1)`) and stops while
+  `main.frozen` (the app is paused), and that includes the raids, the Well, the mount's rest and the potions' effects.
+  A grep for `get_unix_time` outside the autotests should find only `core/timers.gd` and `core/save_upgrades.gd`.
 
 ### The far-away area contract (dungeons)
 
@@ -1083,7 +1199,8 @@ plane (120 m) and the sun's shadow box, so the camp is not drawn while the cat i
 
 - While a run is on, `main.area` points to the runner (`burrow_run.gd`, `main.burrows.runner`); otherwise it is
   null. Camp systems check it: the raid meter does not fill and a pending raid's warning waits (`raids.can_fill`,
-  `blocked_reason` "away"), the Leaf Dash is enabled (`main.dash_enabled`), the HUD shows Ride/Feed and Snack only.
+  `blocked_reason` "away"), the Leaf Dash is enabled (`main.dash_enabled`), the HUD hides the build icon and the
+  defence buttons (H3: Ride and the two potion buttons stay; Feed and Snack are gone).
 - `area.owns(p)` (x past `burrows.own_x`, 200) tells world, fight and enemy code that a point is in the dungeon.
 - The area answers: `constrain`, `outside`, `steer`, `cam_focus`, `cam_dist`, `hide_at`, `flee_point`, `foes`,
   `spawn`, `wake_pack`, `strike`, `on_enemy_died`, `cat_down`, `persist`, `status_text`, `fight_pips`, `satchel`,
@@ -1100,7 +1217,8 @@ plane (120 m) and the sun's shadow box, so the camp is not drawn while the cat i
 
 | File | What is in it |
 |---|---|
-| `game/data/balance.json` | Every number. Blocks: `cat`, `stats`, `stations`, `home_names`, `bows`, `defences`, `enemies`, `patches` (the 4 trails), `missions` and `mission` (the rules and pay; Phase F keys below), `raid` (the **raid** camp-falls numbers), `gloom_raids`, `guardian`, `garden`, `ingredients`, `cooking`, `fishing`, `looks`, `building_hp`, `burrows`, `attachments`, `save_upgrades`, and (New, G1b and G2) `squads`, `enemy_roles`, `market`, `camp_name`. Most blocks start with a `_note`. |
+| `game/data/balance.json` | The general rules. Blocks: `cat`, `stats`, `stations`, `home_names`, `bows`, `defences`, `enemies`, `patches` (the 4 trails), `missions` and `mission` (the rules and pay; Phase F keys below), `raid` (the **raid** camp-falls numbers), `gloom_raids`, `guardian`, `garden`, `ingredients`, `cooking`, `fishing`, `looks`, `building_hp`, `burrows`, `attachments`, `save_upgrades`, (New, G1b and G2) `squads`, `enemy_roles`, `market`, `camp_name`, and (New, H3) `timers`, `bag`, `potions`. Most blocks start with a `_note`. |
+| `game/content/<kind>/<id>/entry.json` | **New (H2, H3):** one folder per thing (`docs/ARCHITECTURE.md` part 5): `settings/` (graphics, sound), `crops/` (5) and `recipes/` (5). `content/index.json` lists every folder by kind; it is written by hand until `tools/build_content_index` exists, and `--content` checks it. |
 | `game/data/dungeons/<id>.json` | One dungeon map: spine, clearings, branches, arena, fights, checkpoints, chests, traps, lanterns, `floor`, woods, theme, `end`. Positions are `[x, z]`, `{"s": arc length, "off": metres right}` or `{"in": clearing}`. |
 | `game/assets/<group>/<id>/<id>.glb` and `.json` | Characters (enemies, companions, NPCs): clips, events, speeds, spring chains |
 | `game/assets/props/*.glb` and `<group>.json` | Blender props and their lists (`camp_life.json`, `raids.json`, `burrows.json` and others) |
@@ -1379,8 +1497,9 @@ The first pieces of `docs/ARCHITECTURE.md` (the target structure). Step H1 only.
     Pool sizes are in `balance.json` `pools`, per graphics level. A pool that runs out makes more.
   - Shockwave, swipe, flower_ring and bellow now share one mesh and one material per colour (`fx.gd`).
   - `save_upgrades.gd`: versioned save upgrades. Its one step so far, 2→3 (H1 part 3), turns old amber, glowstone, heartwood and Hollow keys into leaves (`balance.json` `save_upgrades.to_v3`).
-- **`game/content/`:** `index.json` is empty for now. `Data.catalog()` and `Data.item()` read it.
-- **`game/tests/`:** sample saves for `--saves` (`v2_sample.json` and `v3_sample.json`). The folder is left out of the phone build.
+- **`game/content/`:** `index.json` was empty in H1 (H2 added `settings`, H3 `crops` and `recipes`). `Data.catalog()`
+  and `Data.item()` read it.
+- **`game/tests/`:** sample saves for `--saves` (`v2_sample.json` and `v3_sample.json`; H3 added `v4_sample.json`). The folder is left out of the phone build.
 - **Balance blocks:** `kill_leaf_bonus` (1.3, see part 9), `save_upgrades` (`to_v3`: the frozen rates for the 2→3 step), `burrows.amber` (the amber drops) and `pools` (arrows, numbers, hit_fx, pickups: three numbers
   each, for Low, Medium and High).
 - **Save notes:** under "Saving".
@@ -1409,6 +1528,69 @@ Step H2. The screen is described under "The screen" in part 2.
   the middle third and no two overlap.
 - **Persistent buttons** leave `ui_block` and stop taking touches when they start to fade out, and `build_buttons()`
   skips hidden ones, so the joystick and the tests do not misread them.
+
+### Food, potions and the Bag (New, H3, 26 Nov 2026)
+
+Step H3. The game side is part 6. The owner's answers and the defaults that were built are in `docs/PHASE_H_PLAN.md`,
+H3.
+
+- **New files:**
+  - `core/timers.gd` (autoload `Timers`, right after `Save`): real-time jobs. A job is `"<kind>:<key>"` (`crop:0` …
+    `crop:5`, `cook:pot`); its kind must be in `balance.json timers.jobs`. API: `now`, `start`, `has`, `done`, `left`,
+    `progress`, `job_data`, `set_job_data`, `shorten`, `remove`, `ids`, `check`, `use_real_clock`. `now()` never goes
+    below `seen`, so a clock set back makes jobs wait. `check()` runs every `timers.check_every_s` (1 s), on resume and
+    focus, and 1 s after a save loads; each job that ended sends `Events.timer_finished(id)` once. Timers never changes
+    the game itself (no Bag, no Gloom meter, no leaves), and raising `seen` alone never marks the save dirty.
+  - `core/bag.gd` (`class_name Bag`, static): the only writer of the counts. Food, fish and potions in `Save.bag`,
+    towers and spikes in `Save.items`, amber in `Save.mats`. The kinds come from data (`ingredients`, `content/recipes`,
+    `Data.MATS`, `defences.<id>.from_bag`). `add(id, n, force)` puts in only what fits unless `force` (a thing already
+    paid for). It sends `item_gained` and `bag_changed`. The `Data.has_items`, `take_items` and `add_items` wrappers
+    stay (fishing uses them); the Market and the pot call Bag directly.
+  - `core/effects.gd` (`class_name Effects`): the effects list, types `heal`, `heal_over_time`, `stat_mult` and
+    `revive`, with `known`, `reason`, `apply` and `hud_potion`. `parts/effects_holder.gd` (the child "Effects" of the
+    cat and of the mount) runs the timed ones on frame time; the cat's hands Data the full map of running stats
+    (`Data.set_effect_mults`, read by `Data.effect_mult` in `cat_speed()` and `arrow_damage()`).
+  - `commands/use_potion.gd`: `UsePotion.new(id).can_run(main)` ("" or the reason) and `.run(main)`. The HUD's potion
+    buttons, the Bag's Use and the tests send it. It never calls the HUD and never saves.
+  - `ui/windows/garden_window.gd` and `ui/windows/cooking_window.gd`: the two windows, shown in their card as a row
+    `{"kind": "window", "window": hud.garden_window}` (card.gd). The window API: `content()` (safe to call again on any
+    rebuild), `tick(delta)`, `opened()` (once per visit) and `closed()` (when the card closes or another replaces it,
+    never on a rebuild or a wave blank). The cards have a stable `view_id`, so a leaf pickup does not rebuild them
+    under a drag. The windows hold no rules: those are in `garden.gd` and `cooking.gd`.
+  - `ui/kit/drag_source.gd` and `ui/kit/drop_slot.gd`: the game's first drag-and-drop (seeds onto plots, ingredients
+    into the pot). Payloads `{"kind": "seed" | "food", "id"}`. A press that moves less than 12 px is a tap.
+  - `content/crops/<id>/entry.json` (sunberry, fernmint, honeybell, emberpepper, swiftroot: `gives`, `yield`, `grow_s`,
+    `price`, `unlock`, `model`, `icon`) and `content/recipes/<id>/entry.json` (health_potion, mount_potion,
+    cooked_fish, damage_potion, speed_potion: `needs`, `cook_s`, `limit`, `unlock`, `effects`, `color`, `icon`). A
+    recipe is its result's type: its id is the Bag item's id. `icon` is a `ui_icons.gd` id and `model` the base of
+    the Props ids (`<model>_growing`, `<model>_ripe`) until the art moves into the folders. `Data.unlocked(rule)` knows
+    `{}` and `{"building": [id, level]}`.
+- **Rewritten:** `garden.gd` (plots are `{"crop": id}`, growth is the job `crop:<i>`; `plant`, `water`, `pick`,
+  `wants_pulse`, `window_opened`), `cooking.gd` (the job `cook:pot`; `known`, `match_recipe`, `can_cook`, `cook`,
+  `collect`, `wants_pulse`), `scripts/inventory.gd` (the Bag window), `defences.gd` (counts through Bag, the drop-in,
+  the ghost's rule shared with the start-up check), `ui/hud/action_buttons.gd` (`potion_button`,
+  `mount_potion_button`, `tick_potions`), `ui/hud/top_bar.gd` (the running potions line, `hud._meal_l`), and
+  `ui_icons.gd` (stand-in icons `peppers`, `roots` and the five potions).
+- **Gone:** the dish lifecycle (eating at a chapter start, `Data.set_meal`, `meal_boost`), the snacks
+  (`snack_pick`, `eat_snack`, the snack button), Feed (`feed_mount`, the Feed button, `mount.revive_food`), growth by
+  waves (`grow_wave`), the pantry strip on the cards and the legacy balance keys (`garden.crops`, `cooking.recipes`,
+  `burrows.lunch` and the others).
+- **The handlers:** `garden.gd` and `cooking.gd` listen to `Events.timer_finished`. They refresh the look and the
+  stations (a ring pulses only after `stations.refresh()`) and show one toast for everything that ended in that check
+  (the garden's toast also takes the pot's line). What changes the game (pay, pick, collect, the Gloom bumps
+  `harvest` and `dish`) happens only on the player's taps. A handler can miss an event, so each also reads the state
+  (the garden checks its stages every 2 s).
+- **Save version 4** (`core/save_upgrades.gd` step 3→4, frozen numbers in `balance.json save_upgrades.to_v4`):
+  `Save.bag` (`{id: count}`) and `Save.timers` (`{"seen": Unix s, "jobs": {id: {"start", "len", "data", "told"}}}`).
+  The step moves the pantry into the Bag, turns old dishes into Health Potions, keeps a half-grown crop's share as a
+  job, and erases `pantry`, `snack_choice`, `meal_ready`, `meal_on` and a run's `meal`. The step reads its "now" from
+  `Timers.clock`, so a test that holds the clock still holds the upgrade too.
+- **Data:** `balance.json` `timers`, `bag` (`slots` 24, `stack` 20, `use` for fish and the Golden Carp, `desc`),
+  `potions.hud` (which potion each HUD button uses), `garden.water_s_by_level` [0, 300, 360, 420] and `water_speed` 2,
+  `cooking.pot_slots` 3, `ingredients` peppers and roots, `defences.tower/spikes.from_bag`, and `market.buys` the
+  Golden Carp.
+- **Tests:** see "Test modes" below. A test that moves the clock sets `Timers.clock` to a method of its own node (not
+  a lambda) and calls `Timers.use_real_clock()` on every way out.
 
 ### Graphics levels (`quality.gd`)
 
@@ -1446,7 +1628,10 @@ On the phone `user://` is the app's `files/` folder (package `com.projectleaf.ga
 (`Save.mission_run`) and every raid end. Raids save quietly (`Save.save_game(true)`) every 10 meter points, at stir,
 at full, at each wave held, and on pause, focus-out or close (`main._notification` calls `raids.persist()` and
 `burrows.persist()`). A Burrows run saves at checkpoints, when hurt (throttled) and on pause. Old saves load field by
-field with defaults (`d.get`); `save_v` is 3 (the 2 to 3 step turns old amber, glowstone, heartwood and keys into leaves). A dish eaten mid-chapter goes back into the pot on load.
+field with defaults (`d.get`); `save_v` is 4 (the 2 to 3 step turns old amber, glowstone, heartwood and keys into
+leaves; the 3 to 4 step, H3, moves the pantry into the Bag, turns old dishes into Health Potions and old crop growth
+into Timers jobs). Since H3 the save holds `bag` (the Bag's food, fish and potions) and `timers` (the real-time jobs:
+the crops and the pot); there is no `pantry`, dish or snack field any more.
 
 **New (H1, 25 Nov 2026):**
 - `Save.mark_dirty()` and `Save.flush()`: while the save is dirty it is flushed every 10 s, and on pause, background
@@ -1455,13 +1640,13 @@ field with defaults (`d.get`); `save_v` is 3 (the 2 to 3 step turns old amber, g
   by force-closing the game.
 - Writes are atomic, through a `.tmp` file. If the main save cannot be read, the `.bak` copy is loaded. A backup is
   written before an upgrade.
-- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (2→3 so far).
+- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (2→3, and 3→4 since H3).
 - Currency changes send `Events.currency_changed`. `Events.save_loaded` is sent after a load.
 
 ### The debug endgame start
 
 Debug builds only. `--endgame` opens a **separate save** as if all 15 raids were won: home level 5, a grown cat
-(Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, no Hollow keys, food, the Gloomwood open (the Warden still to be found). The HUD
+(Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, no Hollow keys, food in the Bag (8 Sunberries, 4 Fernmint, 2 honey, 3 fish; H3), an empty garden, the Gloomwood open (the Warden still to be found). The HUD
 says "Endgame test save". It stays on at every launch until one launch with `--endgame-off`; then the real save is
 back, untouched. `--endgame --fresh` starts it over (an older endgame save keeps its old levels until then). On the phone, put the argument on a line in `files/test_args.txt`.
 Release builds ignore both.
@@ -1485,18 +1670,18 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | Area | Script | Modes |
 |---|---|---|
 | Raids and camp | `autotest.gd` | default (all 15 waves of raid 1), `--smoke`, `--resume=1` then `=2`, `--village`, `--siege`, `--laststand`, `--bars`, `--skins`, `--levels`, `--grow`, `--gallery`, `--patch=N`, `--grasswalk`, `--lake`, `--perf`, `--perfdiag` |
-| Warden, garden, cooking, fishing | `autotest.gd` | `--guardian`, `--guardianab`, `--garden`, `--cook`, `--fishing`, `--feed`, `--camplife` |
+| Warden, fishing | `autotest.gd` | `--guardian`, `--guardianab`, `--fishing` (H3: the catch goes into the Bag), `--camplife`. `--garden`, `--cook` and `--feed` moved to the H3 row |
 | Gloom / Random Raids | `autotest.gd`, `autotest_assault.gd` | `--assault` / `--raidsave` (29 continuous-assault checks); `--raid` (with `--raid-small`, `--with-warden`), `--raidloss`, `--meter`, `--raidresume=1/2/3`, `--raidtypes`, `--wear`, `--shards`, `--raidintro`, `--raidshots`, `--raidperf`; flags `--raid-type=`, `--raid-warn=`, `--raid-meter=` |
 | The Gloomwood | `autotest_e.gd` | `--dungeon`, `--dungeonshots`, `--dungeonfall`, `--dungeonresume=1` then `=2`, `--boss`, `--dungeonperf`, `--dungeontreasure`, `--dungeonlevels`, `--dungeonstand` (`=god`, `=items`), `--dungeoncareful`, `--floormaps=<dir>`; kept from Phase E: `--burrowsave`, `--hollow`, `--dash`, `--traps`, `--burrowfoes`, `--topup`, `--burrowhooks` |
-| Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck` (121 checks since H2: real taps on Ride, the gear, a graphics row, the Bag and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills), `--taps`, `--arrows` |
+| Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck` (121 checks since H2: real taps on Ride, the gear, a graphics row, the Bag and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills. 128 since H3: also the potion buttons, the potions line and the garden and pot windows fitting), `--taps`, `--arrows` |
 | Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (goals and raid access), `--fightf` (90 passes: manual waves, rewards, save/resume, losses, legacy saves, squads and Gloom Raids), `--enemyf` (boars, support enemies, grub and totem) |
 | G1b and G2 | `autotest_g2_def.gd`, `autotest_towers.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (168 checks: pads, repair, the Well, five tower levels, full-circle arrows and loading cycles), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
 | G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, late damage and leaf budgets, upgrades, equipping, pierce, burn, frost, models and shot effects; 78 passes, 25 Nov 2026) |
 | G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 111 passes, 25 Nov 2026); add `--rideclear` for the clearance sweep |
 | Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
-| Supplies inventory | `autotest_inventory.gd` | `--inventory` (56 checks covering the shared slot grid, currency layout, cat and mount preview, real input, gathering, cooking, trades, food choice, live combat, healing, dungeon resume, settlement and older saves) |
-| H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/`, `v2_sample.json` and `v3_sample.json`, load, upgrade and save) |
+| H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/`, `v2_sample.json`, `v3_sample.json` and since H3 `v4_sample.json`, load, upgrade and save, with the clock held still) |
 | H2 (New, 26 Nov 2026) | `autotest_settings.gd` | `--settings` (40 checks: the settings file, Graphics Auto/Low/Medium/High, sound on/off, the gear window, nothing written during autotests) |
+| H3 (New, 26 Nov 2026) | `autotest_timers.gd`, `autotest_content.gd`, `autotest_bag.gd`, `autotest_potions.gd`, `autotest_garden.gd`, `autotest_cook.gd`, `autotest_saves.gd` | `--timers` (jobs with a pretend clock: they follow it, end "while the game is closed", wait when the clock is set back; resume checks; `seen` alone never marks the save dirty), `--content` (the crop and recipe folders and `index.json`), `--bag` (also `--inventory`, the old name; `autotest_inventory.gd` is now `autotest_bag.gd`: the Bag window, stacks, "Bag full", Use and Place, the drop-in, the Golden Carp sale; at its end it runs the potions checks of `autotest_potions.gd`), `--feed` (the potions checks only: every effect, the HUD potion buttons, the mount), `--garden` (the window, a real drag, real-time growth, watering, "grows while closed", picking, the Gloom bump per visit, the ring), `--cook` (the window, a real drag, Cook, the timer, Collect, a full Bag, the fire out), and `--saves --startup=1` (with `--fresh`) then `--saves --startup=2` (without `--fresh`): a real first launch with a v3 save on disk |
 | Mounted target lock | `autotest_mounted_aim.gd` | `--mountedaim` (69 checks: strict 280-degree arc boundaries, rear blind spot, both mounts, real arrows and hits, torso aiming above a forward-facing root, hips and feet, outfits and different bows, left/right steering and forward gait, target reacquisition, Ram direction and dismounting mid-shot) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it
@@ -1534,7 +1719,7 @@ installs and compares the save hashes. Routine ADB stderr messages no longer sto
 
 ### Backups
 
-Copies before each big change are in `D:\DevCache\backup\pre_*` (the latest: `pre_g4_20261121`, `pre_g3_20261121`, `pre_phase_g2_20261120_1429`, `pre_phase_g1_20261120_1359`, `pre_phase_f_20261119_1209`, `pre_homefix_20261119_0023`,
+Copies before each big change are in `D:\DevCache\backup\pre_*` (the latest: `pre_h3_2026-11-26`, `pre_g4_20261121`, `pre_g3_20261121`, `pre_phase_g2_20261120_1429`, `pre_phase_g1_20261120_1359`, `pre_phase_f_20261119_1209`, `pre_homefix_20261119_0023`,
 `pre_markers_dungeon2_20261119_0052`, `pre_dungeon2_20261119_0053`); phone saves in `D:\DevCache\backup\phone_save_*`
 and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\`. Back up what you touch first.
 
@@ -1544,6 +1729,9 @@ and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\
 - The Golden Grub, Gloom Totem and later Training Target and Bow Shop levels use the stand-ins listed above.
 - The Gloomwood's road and difficulty are in the live project; only `--dungeon` has been run since, so the full
   regression is still to do.
+- **H3** (food, potions and the Bag) is built on `feature/h3-food-bag` and waits for the owner's phone test. Known:
+  `--dungeoncareful` loses at the boss in about 2 runs of 3 (part 8); the garden's card scrolls about 150 px at
+  540x960 to reach its Upgrade row (the window fits; nothing scrolls at the phone's shape).
 
 ### Rules
 
@@ -1562,8 +1750,8 @@ and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\
   singletons, the patterns and the house rules). Phase H moves the game over to it step by step; read it before
   writing game code.
 - **Godot MCP** uses the local `.mcp.json` and `tools/mcp/` to connect to the Godot 4.7.2 console.
-- Keep the design rules (updated by the owner, 25 Nov 2026): only timers keep running while the game is closed (from
-  H3); camp, not village; looks-only selling, with purple shards the paid currency for looks only and Bramble never
+- Keep the design rules (updated by the owner, 25 Nov 2026): only timers keep running while the game is closed (built
+  in H3: the crops and the pot); camp, not village; looks-only selling, with purple shards the paid currency for looks only and Bramble never
   buying shards; nothing tall between the camera and where the cat can walk; nothing of the HUD in the middle third of
   the screen. Numbers live in data (`game/data/`, and `game/content/` as Phase H moves content there).
 - **Phase H removes the Mushroom Cottage** (H5): the pet's upgrades move to the Market's Pets tab.

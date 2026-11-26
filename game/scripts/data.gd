@@ -699,14 +699,13 @@ func _by_id(list: Array, id: String) -> Dictionary:
 
 
 ## H3: a crop's content entry (content/crops/<id>/entry.json: name, desc, icon, model, gives, yield, grow_s, price,
-## unlock), or {} for "" or an unknown id. (balance.json garden.crops is legacy until P5.)
+## unlock), or {} for "" or an unknown id.
 func crop(id: String) -> Dictionary:
 	return item("crops", id) if id != "" else {}
 
 
 ## H3: a recipe's content entry (content/recipes/<id>/entry.json: the recipe is its result's type, and its id is the
-## Bag item's id: name, plural, desc, icon, color, needs, cook_s, limit, unlock, effects), or {}. (balance.json
-## cooking.recipes is legacy until P5.)
+## Bag item's id: name, plural, desc, icon, color, needs, cook_s, limit, unlock, effects), or {}.
 func recipe(id: String) -> Dictionary:
 	return item("recipes", id) if id != "" else {}
 
@@ -740,7 +739,7 @@ func item_name(id: String, n: int) -> String:
 	return id
 
 
-## H2 legacy (the old Bag window and the pantry strip read it until their owners change them in H3).
+## H2 legacy: nothing calls it since H3 (kept; removing it was not part of H3).
 func food_known(id: String) -> bool:
 	if Bag.count(id) > 0:
 		return true
@@ -748,14 +747,6 @@ func food_known(id: String) -> bool:
 		"goldfish": return int(Save.fish_log.get("carp", 0)) > 0
 		"fish": return int(Save.stations.get("fishing", 0)) > 0 or not Save.fish_log.is_empty()
 	return b["ingredients"].has(id)
-
-
-## H3 legacy: removed in P5 (balance.json burrows.lunch; the snack button goes in H3).
-func snack(id: String) -> Dictionary:
-	for entry in burrow_cfg().get("lunch", []):
-		if String(entry["item"]) == id:
-			return entry
-	return {}
 
 
 ## Completed Bag changes and what the Bag holds now, shared by gathering, cooking and trading: "+3 Sunberries · now 8"
@@ -781,16 +772,6 @@ func take_items(needs: Dictionary) -> bool:
 ## H3: puts things in the Bag, each as far as it has room (Bag.add_all). Returns what did not fit.
 func add_items(d: Dictionary) -> Dictionary:
 	return Bag.add_all(d)
-
-
-## H3 legacy: removed in P5. The old dishes are gone (their boosts with them); these do nothing.
-func set_meal(_id: String) -> void:
-	pass
-
-
-## H3 legacy: removed in P5. No dish boosts any more: always 0.0.
-func meal_boost(_k: String) -> float:
-	return 0.0
 
 
 # ---------------------------------------------------------------- money

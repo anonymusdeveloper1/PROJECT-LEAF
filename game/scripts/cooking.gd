@@ -3,10 +3,11 @@ extends Node
 ## north-east rim comes with the garden. The player puts ingredients in the pot's slots (the window,
 ## ui/windows/cooking_window.gd); Cook takes them from the Bag and starts the Timers job "cook:pot", which runs in real
 ## time, also while the game is closed. The result waits in the pot until Collect puts it in the Bag.
-## Used by: the pot's window (every rule it shows is asked here), stations._card_pot (wants_pulse), the tests.
+## Used by: the pot's window (every rule it shows is asked here), stations._card_pot (wants_pulse), garden.gd
+## (take_note: its ripe toast says the pot's line too), the tests.
 ## Uses: Timers (the job), Bag (the ingredients and the result), Data (content/recipes: needs, cook_s, limit, unlock;
 ## balance.json ingredients and fishing.catches for the pieces that hop into the pot), Events (timer_finished), and
-## main: raids (the Gloom bump), stations (the pot, its ring, the fire), hud (toasts), world.
+## main: raids (the Gloom bump), stations (the pot, its ring, the fire), hud (toasts), garden (flush_pending), world.
 ## Rules:
 ##   - The recipes are content entries (content/recipes/<id>/entry.json): a recipe is its result's type, and its id is
 ##     the Bag item's id. known() is every entry whose unlock passes (Data.unlocked) and that is not hidden.
@@ -26,6 +27,8 @@ extends Node
 const JOB := "cook:pot"
 
 var main
+var _note := ""                                      # the "ready at the pot" line that waits for the end of the frame
+var _note_queued := false
 
 
 func setup(m) -> void:
@@ -190,10 +193,31 @@ func _on_timer_finished(id: String) -> void:
 	if id != JOB or main == null:
 		return
 	var rid := cooking_id()
-	if rid != "" and main.hud != null:
-		main.hud.toast("%s is ready at the pot" % Data.item_name(rid, 1))
+	if rid != "":
+		_note = "%s is ready at the pot" % Data.item_name(rid, 1)
+		if not _note_queued:                         # the toast waits one frame: a crop ripe in the same check shares it
+			_note_queued = true
+			_flush_note.call_deferred()
 	if main.stations != null:
 		main.stations.refresh()                      # the ring pulses
+
+
+## The pot's "ready" line, once, and forgotten ("" when none waits). The garden's toast takes it to say both in one line.
+func take_note() -> String:
+	var n := _note
+	_note = ""
+	return n
+
+
+func _flush_note() -> void:
+	_note_queued = false
+	if _note == "" or main == null:
+		return
+	if main.garden != null and main.garden.flush_pending():
+		return                                       # the garden's toast is coming and takes the line
+	var n := take_note()
+	if main.hud != null:
+		main.hud.toast(n)
 
 
 # ---------------------------------------------------------------- inside

@@ -2,7 +2,7 @@ class_name Bag
 extends RefCounted
 ## The Bag (H3, 26 Nov 2026; docs/ARCHITECTURE.md part 4 Type Object, part 10 the save): what the cat carries in the
 ## camp, as counts and stacks. Static functions only (like Fx and Props); it keeps no state of its own.
-## Used by: Data's has_items / take_items / add_items wrappers (fishing, the Market, cooking), the garden and the pot,
+## Used by: Data's has_items / take_items / add_items wrappers (fishing uses them), the Market, the garden and the pot,
 ## the Bag window (inventory.gd), placing from the Bag (defences.gd), the potion command and buttons, the tests.
 ## Uses: Save (the counts), Data (balance.json "bag", "ingredients", "defences"; content/recipes; Data.MATS) and Events
 ## (item_gained, bag_changed).

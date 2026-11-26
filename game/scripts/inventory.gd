@@ -37,7 +37,8 @@ var _buttons := {}
 var _bars := {}
 var _state := ""
 var _refresh_t := 0.0
-var _reason := ""               # why the last Use or Place was refused (under the button until the selection changes)
+var _reason := ""               # why the last Use or Place was refused (under the button until the selection changes,
+                                # a Use reason stops being true, or a bag_changed rebuild)
 var _rebuild_due := false       # a bag_changed came: one rebuild at the end of the frame
 
 
@@ -69,6 +70,10 @@ func tick(delta: float) -> void:
 func refresh() -> void:
 	if hud.card_ring() != self:
 		return
+	if _reason_gone():
+		_reason = ""                                         # the refusal is no longer true: redraw without it
+		hud.refresh_card()
+		return
 	if _state != _snapshot():
 		hud.refresh_card()
 	else:
@@ -80,6 +85,18 @@ func slot_of(id: String) -> Control:
 	return slots.get("%s#0" % id)
 
 
+## A refused Use's reason shows only while the command would still refuse for that reason (cheap: it asks only while
+## a reason is showing).
+func _reason_gone() -> bool:
+	if _reason == "":
+		return false
+	var id := String(_selected_stack().get("id", ""))
+	if id == "" or Bag.effects(id).is_empty():
+		return false                                         # a Place reason stays until the selection changes
+	var cmd: Variant = _use_command(id)
+	return cmd != null and String(cmd.can_run(main)) != _reason
+
+
 func _on_bag_changed() -> void:
 	if _rebuild_due:
 		return
@@ -89,6 +106,7 @@ func _on_bag_changed() -> void:
 
 func _rebuild_now() -> void:
 	_rebuild_due = false
+	_reason = ""
 	if is_instance_valid(hud) and hud.card_ring() == self:
 		hud.refresh_card()
 
@@ -379,7 +397,7 @@ func _select(key_s: String) -> void:
 ## reason shows under the button (the card rebuilds after the press and keeps it).
 func _use() -> void:
 	var id := String(_selected_stack().get("id", ""))
-	var cmd = _use_command(id)
+	var cmd: Variant = _use_command(id)
 	var why := "Can't be used"
 	if cmd != null:
 		why = String(cmd.can_run(main))

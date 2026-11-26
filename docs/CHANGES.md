@@ -2,6 +2,67 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 26 Nov 2026 · H3: food, potions and the Bag (on `feature/h3-food-bag`, waiting for the owner's phone test)
+
+Built in three stages: `f0f181a` (stage 1: timers, the Bag model, crops and recipes, save v4), `09dc171` (stage 2:
+potions, the Bag window, the garden and the cooking pot) and stage 3 (the clean-up, two small fixes, these docs). The
+branch starts from `feature/h2-hud`, so it merges after H2. Not pushed yet. Backup: `D:\DevCache\backup\pre_h3_2026-11-26`.
+
+- **Real time (the owner's rule change of 25 Nov):** crops grow and the pot cooks by the phone's clock, also while the
+  game is closed. Nothing else runs then. If the phone's clock is set back, the jobs wait until it catches up. This is
+  one general timer system (`core/timers.gd`, the `Timers` autoload): a later long job is one entry in `balance.json`
+  `timers.jobs` and a small handler.
+- **The garden:** a window that looks like the bed (plots 3 2 1 over 6 5 4). Drag a seed onto an empty plot and pay on
+  the drop. Two new crops, Emberpeppers (20 leaves, 8 min) and Swiftroots (18 leaves, 7 min), beside Sunberries,
+  Fernmint and Honeybells (4, 5 and 6 min). Water is free: watered plants grow twice as fast for 5, 6 or 7 min at
+  garden level 1, 2 or 3. Tap a ripe plot to pick it into the Bag. The Gloom meter gets +2 once per visit that picks.
+- **The cooking pot:** drag or tap ingredients into 3 slots; Cook lights up on an exact recipe; it cooks for 30–60 s in
+  real time; Collect puts the result in the Bag. A read-only recipe list sits in the window (the owner's yes). The
+  Gloom meter gets +3 on the Cook tap.
+- **5 recipes replace the 7 old dishes:** Health Potion (2 Fernmint, 1 honey: heals the cat 40% over 5 s), Mount
+  Health Potion (2 Sunberries, 1 honey: brings a knocked-out mount back with full health), Cooked Fish (1 fish: mends
+  the mount to full over 10 s), Damage Potion (2 Emberpeppers, 1 honey: arrows +25% for 30 s), Speed Potion (2
+  Swiftroots, 1 honey: the cat +25% faster for 20 s). Crops and recipes are content folders (`game/content/crops/`,
+  `game/content/recipes/`). Raw fish mends a standing mount by 10%, the Golden Carp by 50%, and Bramble buys the Golden
+  Carp for 300 leaves.
+- **The Bag:** 24 slots; food, fish, amber, towers and spikes stack to 20; each potion is one stack up to its limit
+  (Health Potion 3, Mount Health Potion 3, Cooked Fish 10, Damage Potion 1, Speed Potion 2). Tap a slot for **Use**
+  (potions and fish) or **Place** (towers and spikes). A full Bag refuses a
+  purchase before you pay; a catch swims away; a ripe crop stays ripe; a potion waits in the pot. Things already paid
+  for always go in. Eat, Quick heal, Use auto and the "x/20" pantry are gone.
+- **HUD:** the Health Potion button (row 1 right) shows while the cat is hurt and the Bag holds one. The Mount Health
+  Potion button takes Ride's place while the mount is knocked out. A line under the currencies shows a running Damage
+  or Speed Potion ("Damage +25% · 24 s"; the owner's yes).
+- **Gone (the owner's answers):** Feed and its 2 Sunberries (the Mount Health Potion replaces it); eating food below
+  ground and the Snack button (only Health Potions heal the cat there); the dishes and their boosts; growing by waves.
+- **Placing from the Bag:** towers and spikes go into the Bag when bought. Place closes the Bag and shows the ghost; the
+  piece drops in with a bounce and a puff of dust. The ghost is now red by the lake and the home, the same rule as the
+  start-up check (the owner's yes).
+- **Icons:** stand-ins drawn in code for the five potions (a bottle in each recipe's colour), Emberpeppers and
+  Swiftroots (the owner's pick).
+- **Save version 4:** the pantry goes into the Bag; an old dish waiting or eaten becomes a Health Potion (up to 3);
+  half-grown crops keep their share as timer jobs; old watering is dropped. New fields `bag` and `timers`.
+- **Code:** new `core/timers.gd`, `core/bag.gd`, `core/effects.gd`, `parts/effects_holder.gd`,
+  `commands/use_potion.gd`, `ui/windows/garden_window.gd`, `ui/windows/cooking_window.gd`, `ui/kit/drag_source.gd`
+  and `ui/kit/drop_slot.gd` (the game's first drag-and-drop). `garden.gd`, `cooking.gd` and `inventory.gd` are
+  rewritten. Stage 3 removed the legacy names (`Save.pantry`, `snack_choice`, `meal_ready`, `meal_on`, `Data.snack`,
+  `set_meal`, `meal_boost`) and the old balance keys (`garden.crops`, `cooking.recipes`, `burrows.lunch`,
+  `mount.revive_food` and others), and fixed two review points: a refused Use's reason in the Bag clears once it is no
+  longer true, and when a crop ripens and the pot finishes in the same check, one toast says both.
+- **Tests (stage 2, PC, 26 Nov):** new `--timers` 29, `--content` 33, `--bag` 109 (also `--inventory`; it runs the
+  potions checks too), `--garden` 62, `--cook` 53; `--feed` now runs the potions checks; `--saves` 69, plus
+  `--saves --startup=1` then `--startup=2` (a real first launch with a v3 save); `--hudcheck` 128, `--cards` 55,
+  `--fightf` 90, `--campg` 58, `--fishing` 9, `--burrowhooks` 9, `--layoutsave=2` 5, `--smoke` OK; no failures except
+  the known one below. Stage 3 (new checks for its two fixes): `--bag` 110, `--garden` 63, `--cook` 55, `--smoke`
+  OK; `--content`, `--timers`, `--saves` (and `--startup=1/2`), `--fishing`, `--campg`, `--burrowhooks` and
+  `--hudcheck` 128 pass after the clean-up.
+- **Known:** `--dungeoncareful` loses at the boss in about 2 runs of 3 (it passed 1 of 3). The cat has 14 health: in
+  the run it won the boss took 25 health from it, in a run it lost 32, with all 3 Health Potions used both times. Only
+  Health Potions heal below ground now, and the careful cat has 3 Health and 3 Mount Health Potions. The owner's call:
+  noted, not retuned; expeditions are rebuilt in H8 and balanced in H11. The garden's card scrolls about 150 px at
+  540x960 to reach its Upgrade row (the window itself fits); at the phone's shape (480x1040 with safe insets) nothing
+  scrolls. Cooked Fish's light orange bottle is close to the Damage Potion's orange.
+
 ## 26 Nov 2026 · H2: the new HUD and Settings (on `feature/h2-hud`, waiting for the owner's phone review)
 
 Built in three commits: `c030041` (part 1), `1d0377c` (parts 2, 4 and 5) and `042d78c` (part 3). Not merged yet.

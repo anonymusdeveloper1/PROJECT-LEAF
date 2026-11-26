@@ -11,7 +11,8 @@
 ## something only on an exact match; Cook takes the ingredients, starts "cook:pot" and gives Gloom +3 on the tap; a
 ## second Cook is refused; the job ends "while the game is closed" (save, clock, reload), is told once, gives no Gloom,
 ## and its handler alone makes the ring pulse; the handler ignores other "cook:" jobs; Collect puts the result in the
-## Bag and the ring stops pulsing at once; a full stack: "Bag full" and the result waits; Cook refused with no room;
+## Bag and the ring stops pulsing at once; a crop and the pot done in the same check give one toast that says both (the
+## garden's first plot is emptied again after it); a full stack: "Bag full" and the result waits; Cook refused with no room;
 ## the fire out: the ring hides, the timer runs, Cook and Collect wait; a real tap on a filled slot empties just that
 ## slot; the card blank in a wave, and nothing cooked or
 ## collected then; the slots stay through a wave blank and the rebuild after it, and empty when the card closes; the
@@ -70,6 +71,7 @@ func run() -> bool:
 	var ok := _check_recipes(ck)
 	ok = await _check_window_cook(ck) and ok
 	ok = await _check_finish(ck) and ok
+	ok = await _check_joined_toast(ck) and ok
 	ok = _check_full_bag(ck) and ok
 	ok = _check_fire_out(ck) and ok
 	ok = await _check_wave_and_slots(ck) and ok
@@ -229,6 +231,8 @@ func _check_finish(ck) -> bool:
 	ok = t._expect("the end is told once, with the pot's id", _told.count(JOB) == 1, {"told": _told}) and ok
 	ok = t._expect("the handler alone makes the pot's ring pulse (nothing else refreshed the stations)",
 		not pulse_before and ring.pulse and ck.wants_pulse()) and ok
+	await get_tree().process_frame                   # H3 stage 3: the pot's toast waits for the end of the frame (cooking.gd)
+	await get_tree().process_frame
 	var toast := String(main.hud._toast.text)
 	ok = t._expect("the handler says it is ready at the pot", toast.contains(Data.item_name(POTION, 1)) and toast.contains("ready"),
 		{"toast": toast}) and ok
@@ -255,6 +259,40 @@ func _check_finish(ck) -> bool:
 	ok = t._expect("Collect puts the Health Potion in the Bag and empties the pot", Bag.count(POTION) == 1 and not Timers.has(JOB)
 		and ck.cooking_id() == "" and not ck.is_ready(), {"potions": Bag.count(POTION)}) and ok
 	ok = t._expect("after Collect the pot's ring stops pulsing at once", not ring.pulse and not ck.wants_pulse()) and ok
+	return ok
+
+
+# ---------------------------------------------------------------- a crop and the pot done in the same check
+## One Timers.check ends a crop's job and the pot's: one toast says both (garden.gd _flush_ripe takes the pot's line).
+func _check_joined_toast(ck) -> bool:
+	var g = main.garden
+	var leaves_was: int = Save.leaves
+	Timers.remove("crop:0")
+	Save.garden[0] = {"crop": ""}
+	Save.leaves = 1000
+	Bag.add("herbs", 2, true)
+	Bag.add("honey", 1, true)
+	var planted: String = g.plant("sunberry", 0)
+	var cooked: String = ck.cook(POTION)
+	var ok := t._expect("a crop and the pot both started", planted == "" and cooked == "" and Timers.has("crop:0")
+		and Timers.has(JOB), {"plant": planted, "cook": cooked})
+	main.hud.toast("-")
+	_offset += maxf(float(Data.crop("sunberry")["grow_s"]), float(Data.recipe(POTION)["cook_s"])) + 5.0
+	Timers.check()
+	await get_tree().process_frame                   # both toasts wait for the end of the frame
+	await get_tree().process_frame
+	var want := "Ripe in the garden: %s · %s is ready at the pot" % [String(Data.crop("sunberry")["name"]),
+		Data.item_name(POTION, 1)]
+	var toast := String(main.hud._toast.text)
+	ok = t._expect("a crop and the pot done in the same check: one toast says both", toast == want,
+		{"toast": toast, "want": want}) and ok
+	ck.collect()                                     # the potion into the Bag (herbs 1, honey 0 as before)
+	Timers.remove("crop:0")
+	Save.garden[0] = {"crop": ""}
+	g.refresh_look()
+	Save.leaves = leaves_was
+	main.hud._toast.text = ""
+	main.stations.refresh()
 	return ok
 
 

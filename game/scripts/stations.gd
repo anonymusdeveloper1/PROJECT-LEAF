@@ -788,7 +788,7 @@ func _card_garden() -> Dictionary:
 	var g = main.garden
 	if g == null or main.hud == null or main.hud.garden_window == null:
 		return {"title": "Garden", "sub": sub, "rows": [], "anchor": anchor}
-	var pulse: bool = bool(g.wants_pulse()) if g.has_method("wants_pulse") else false     # H3 P5: the guard goes then
+	var pulse: bool = bool(g.wants_pulse())
 	var rows: Array = [{"kind": "window", "window": main.hud.garden_window, "enabled": true, "pulse": pulse}]
 	_add_section(rows, "Upgrade", [_station_upgrade_row("garden")])
 	return {"title": "Garden", "sub": sub, "rows": rows, "anchor": anchor, "view_id": "garden"}
@@ -803,7 +803,7 @@ func _card_pot() -> Dictionary:
 	var ck = main.cooking
 	if ck == null or main.hud == null or main.hud.cooking_window == null:
 		return {"title": "Cooking Pot", "sub": "", "rows": [], "anchor": anchor}
-	var pulse: bool = bool(ck.wants_pulse()) if ck.has_method("wants_pulse") else false   # H3 P5: the guard goes then
+	var pulse: bool = bool(ck.wants_pulse())
 	return {"title": "Cooking Pot", "sub": "", "rows": [{"kind": "window", "window": main.hud.cooking_window, "enabled": true, "pulse": pulse}],
 		"anchor": anchor, "view_id": "pot"}
 

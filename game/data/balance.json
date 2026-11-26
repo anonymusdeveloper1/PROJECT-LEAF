@@ -1869,7 +1869,7 @@
   },
   "mount": {
     "name": "Thistle",
-    "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission or a run, it throws the cat off and stays out until a Mount Health Potion brings it back (H3, 26 Nov 2026, the owner's Q1: the potion replaces Feed; the HUD's potion button in Ride's place, any time; revive_food is legacy until P5 and no longer read) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
+    "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission or a run, it throws the cat off and stays out until a Mount Health Potion brings it back (H3, 26 Nov 2026, the owner's Q1: the potion replaces Feed; the HUD's potion button in Ride's place, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
     "speed_by_level": [
       0,
       1.275,
@@ -1891,9 +1891,6 @@
       13
     ],
     "rest_s": 20,
-    "revive_food": {
-      "berries": 2
-    },
     "_note_aim": "23 Nov 2026 (owner's follow-up): the mount faces joystick travel and runs forward as before. The cat acquires and shoots only within aim_cone_deg either side of that heading (140 each side, a 280-degree arc). aim_cone_keep_deg is zero so held targets are released outside it; the rear blind spot is 80 degrees. Dedicated upper-body mounted Front, QuarterLeft/Right and RearLeft/Right shooting clips blend across this arc. The character root, pelvis and seated legs keep facing the mount; only the torso, shoulders, arms and head aim. The rear poses limit chest rotation and reposition both arms for an over-shoulder shot. Draw and release stay synchronized with Shoot. Pose values are authored animation data in assets/cat/mounted/shooting.res.",
     "aim_cone_deg": 140,
     "aim_cone_keep_deg": 0,
@@ -2341,7 +2338,6 @@
   },
   "garden": {
     "_note": "H3 (26 Nov 2026): crops grow in real time through Timers (core/timers.gd, the job crop:<plot>), also while the game is closed. The crops are content folders (content/crops/<id>/entry.json: grow_s, yield, price). Watering is free: every growing plot that is not watered grows water_speed times as fast for the level's water_s_by_level seconds (or until it is ripe, if that is sooner). plots_by_level: open plots per garden level; extra_by_level: added to every harvest.",
-    "_legacy_note": "H3 legacy until P5: crops, grow_dry, grow_wet and wet_waves_by_level (the old wave-step garden; the old garden code still reads them until it is rewritten).",
     "water_s_by_level": [
       0,
       300,
@@ -2355,51 +2351,11 @@
       5,
       6
     ],
-    "wet_waves_by_level": [
-      0,
-      3,
-      4,
-      5
-    ],
     "extra_by_level": [
       0,
       0,
       0,
       1
-    ],
-    "grow_dry": 1,
-    "grow_wet": 2,
-    "crops": [
-      {
-        "id": "sunberry",
-        "name": "Sunberries",
-        "gives": "berries",
-        "yield": 3,
-        "grow": 4,
-        "seed": {
-          "leaves": 10
-        }
-      },
-      {
-        "id": "fernmint",
-        "name": "Fernmint",
-        "gives": "herbs",
-        "yield": 2,
-        "grow": 5,
-        "seed": {
-          "leaves": 12
-        }
-      },
-      {
-        "id": "honeybell",
-        "name": "Honeybells",
-        "gives": "honey",
-        "yield": 2,
-        "grow": 6,
-        "seed": {
-          "leaves": 15
-        }
-      }
     ]
   },
   "ingredients": {
@@ -2434,116 +2390,7 @@
   },
   "cooking": {
     "_note": "H3 (26 Nov 2026): the recipes are content folders (content/recipes/<id>/entry.json; a recipe is its result's type and its id is the Bag item's id). You put ingredients in the pot's pot_slots slots; Cook takes them from the Bag and starts the Timers job cook:pot (the recipe's cook_s, real time, also while the game is closed); the result waits in the pot until Collect puts it in the Bag.",
-    "_legacy_note": "H3 legacy until P5: pantry_cap, max_rows and recipes (the old dishes; the old cooking code still reads them until it is rewritten).",
-    "pot_slots": 3,
-    "pantry_cap": 20,
-    "max_rows": 6,
-    "recipes": [
-      {
-        "id": "berry_tart",
-        "name": "Berry Tart",
-        "needs": {
-          "berries": 3
-        },
-        "boost": {
-          "draw": 0.15
-        },
-        "says": "shoots 15% faster",
-        "unlock": "garden",
-        "color": "#e8603c"
-      },
-      {
-        "id": "fernmint_tea",
-        "name": "Fernmint Tea",
-        "needs": {
-          "herbs": 2
-        },
-        "boost": {
-          "hp": 2
-        },
-        "says": "+2 health",
-        "unlock": "garden",
-        "color": "#8fd18a"
-      },
-      {
-        "id": "honey_cake",
-        "name": "Honey Cake",
-        "needs": {
-          "honey": 2,
-          "berries": 1
-        },
-        "boost": {
-          "friends": 0.4
-        },
-        "says": "your pet, mount and Warden hit 40% harder",
-        "unlock": "garden",
-        "color": "#ffd36e"
-      },
-      {
-        "id": "hearth_stew",
-        "name": "Hearth Stew",
-        "needs": {
-          "herbs": 2,
-          "honey": 1,
-          "berries": 2
-        },
-        "boost": {
-          "fire": 0.4
-        },
-        "says": "the campfire has 40% more health",
-        "unlock": "garden",
-        "color": "#d98b4a"
-      },
-      {
-        "id": "fish_skewers",
-        "name": "Fish Skewers",
-        "needs": {
-          "fish": 2,
-          "herbs": 1
-        },
-        "boost": {
-          "damage": 0.2
-        },
-        "says": "arrows hit 20% harder",
-        "unlock": "fishing",
-        "color": "#f07f6a"
-      },
-      {
-        "id": "root_stew",
-        "name": "Warden's Root Stew",
-        "needs": {
-          "fish": 2,
-          "herbs": 2,
-          "honey": 1
-        },
-        "boost": {
-          "guardian_hp": 0.5,
-          "guardian_revive_s": 15
-        },
-        "says": "the Warden: +50% health, back up in 15 s",
-        "unlock": "fishing+stone",
-        "color": "#7fcf6a"
-      },
-      {
-        "id": "carp_feast",
-        "name": "Golden Carp Feast",
-        "needs": {
-          "goldfish": 1,
-          "berries": 2,
-          "honey": 1
-        },
-        "boost": {
-          "hp": 2,
-          "damage": 0.15,
-          "draw": 0.1,
-          "friends": 0.2,
-          "guardian_hp": 0.2
-        },
-        "says": "a little of everything",
-        "unlock": "goldfish",
-        "color": "#ffb43c"
-      }
-    ]
+    "pot_slots": 3
   },
   "timers": {
     "_note": "H3 (26 Nov 2026): Timers (core/timers.gd) runs real-time jobs that keep going while the game is closed. A job id is <kind>:<key>; its kind must be listed in jobs (a new long job is one entry here plus a small handler). check_every_s: how often (seconds of real time) ended jobs are told, besides on resume and 1 s after a save loads.",
@@ -5988,7 +5835,6 @@
     "reveal_old_save_s": 6.0,
     "reveal_wait_s": 1.0,
     "reveal_wait_max": 4,
-    "meals_in_runs": true,
     "knockout_keep": 0.5,
     "strength_by_depth": [
       0,
@@ -6537,31 +6383,7 @@
           "seal_s": 3.0
         }
       }
-    ],
-    "_legacy_note": "H3 legacy until P5: lunch, snack_every_s and meals_in_runs (the old food snacks and dishes below ground; the old code still reads them until it is rewritten in H3).",
-    "lunch": [
-      {
-        "item": "fish",
-        "heal": 4
-      },
-      {
-        "item": "honey",
-        "heal": 3
-      },
-      {
-        "item": "goldfish",
-        "heal": 6
-      },
-      {
-        "item": "herbs",
-        "heal": 2
-      },
-      {
-        "item": "berries",
-        "heal": 2
-      }
-    ],
-    "snack_every_s": 3.0
+    ]
   },
   "attachments": {
     "_note": "Phase E: attachments for the mount and the pet. They help in the Burrows only (burrow_run.gd adds their mods to Data.run_mods with the boons), one worn per companion, bought with leaves (H1: no materials) and worn on the Stable (Market Stall) and Nest (Mushroom Cottage) cards. Card-only for now: no model on the companions yet. mods: mount_hp (+share of the mount's health), thump_mult (+share of its Stomp, the Thump before G4), loot_mult (x chests and kills), trap_warn (+s on trap and spore warnings), pet_dmg (+share of Sprig's sparks), hp (+cat health). G4 (21 Nov 2026): the Mossweave Saddle (mount_saddle) and the Saddlebags (mount_bags) moved to the Saddlery (mount_attachments, working everywhere; old saves keep them there: saddlery.old_attachments). The Thunder Shoes stay here as they were.",

@@ -3,10 +3,11 @@ extends Node3D
 ## garden's level opens 3, 5 or 6 (balance.json garden.plots_by_level). The cat plants a seed on one plot (paid on the
 ## drop in the garden's window), waters, and picks a ripe plot into the Bag for the cooking pot.
 ## Used by: the garden's window (ui/windows/garden_window.gd: every rule it shows is asked here), stations.gd (the bed,
-## the ring's pulse), main.gd (made in its setup) and the tests (autotest_garden.gd).
+## the ring's pulse), main.gd (made in its setup), cooking.gd (flush_pending) and the tests (autotest_garden.gd).
 ## Uses: Timers (a plot's growth is the job "crop:<plot>", data {"crop", "wet_until"}), Bag (the harvest), Data (the
 ## crops are content entries, content/crops/<id>/entry.json; balance.json garden: plots, watering, the extra per
-## harvest), Save.garden (6 x {"crop": id or ""}), Events (timer_finished, save_loaded), Fx, Sfx and Props.
+## harvest), Save.garden (6 x {"crop": id or ""}), Events (timer_finished, save_loaded), main.cooking (take_note: one
+## toast for a crop and the pot done in the same check), Fx, Sfx and Props.
 ## Rules:
 ##   - Crops grow in real time, also while the game is closed (the owner's rule: only timers keep running then). A
 ##     planted plot is ripe when its job is done; a planted plot with no job counts as ripe (nothing is lost). Ripe
@@ -271,8 +272,20 @@ func _flush_ripe() -> void:
 	if main != null and main.get("stations") != null:
 		main.stations.refresh()                 # the ring pulses only after a stations refresh (stations.gd)
 	_pulse = wants_pulse()
-	if not names.is_empty() and main != null and main.hud != null:
-		main.hud.toast("Ripe in the garden: %s" % " and ".join(names))
+	var lines := PackedStringArray()
+	if not names.is_empty():
+		lines.append("Ripe in the garden: %s" % " and ".join(names))
+	if main != null and main.get("cooking") != null:
+		var pot: String = main.cooking.take_note()    # the pot's line, if it finished in the same check
+		if pot != "":
+			lines.append(pot)
+	if not lines.is_empty() and main != null and main.hud != null:
+		main.hud.toast(" · ".join(lines))
+
+
+## A toast for plots that ripened this frame is queued (the pot's "ready" line waits for it).
+func flush_pending() -> bool:
+	return _flush_queued
 
 
 ## A save was loaded (Save.garden is new): the plants follow it. The 2 s check refreshes the ring if it must change.

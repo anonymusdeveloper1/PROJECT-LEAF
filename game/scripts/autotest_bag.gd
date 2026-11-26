@@ -1,11 +1,12 @@
 extends Node
 ## The Bag (H3, 26 Nov 2026; `-- --autotest --fresh --bag`, also `--inventory`, the H2 name; the H3 build map, part 5.3,
 ## P2b): the Bag window (it opens and closes as in H2, 24 slots, stacks, only owned things, the empty Bag, a full Bag,
-## a forced add past 24, Use and Place), placing from the Bag (the drop-in, below ground refused, the ghost uses the
-## start-up check's rule: the owner's Q25), pieces sent back into a full Bag, a tower refused with a full Bag, and
-## Bramble buying a Golden Carp. At its end it runs the potions' checks (autotest_potions.gd, P2a) when that file is
-## there. Uses the test save only: it seeds the endgame camp (as the old --inventory did) and puts the Bag, the pieces
-## and amber back to the seed's at the end. It never touches the Timers clock.
+## a forced add past 24, Use and Place, a refused Use's reason clearing once it is no longer true), placing from the
+## Bag (the drop-in, below ground refused, the ghost uses the start-up check's rule: the owner's Q25), pieces sent back
+## into a full Bag, a tower refused with a full Bag, and Bramble buying a Golden Carp. At its end it runs the potions'
+## checks (autotest_potions.gd, P2a) when that file is there. Uses the test save only: it seeds the endgame camp (as the
+## old --inventory did) and puts the Bag, the pieces and amber back to the seed's at the end. It never touches the
+## Timers clock.
 
 const POTIONS_TEST := "res://scripts/autotest_potions.gd"
 const USE_POTION := "res://commands/use_potion.gd"
@@ -326,6 +327,14 @@ func _use() -> void:
 	_x("Use at full health is refused: the reason shows under the button, the Bag stays open, nothing is used",
 		why != "" and hud.card_ring() == inv and Bag.count("health_potion") == 1, {"reason": why})
 	await t._shot("bag_use_refused")
+	main.player.hp = maxi(1, Data.cat_max_hp() - 3)    # the cat gets hurt while the Bag stays open
+	await t._wait(0.3)                                 # the Bag's 0.15 s tick asks the command again
+	_x("the reason clears once it is no longer true (the cat got hurt, the Bag stayed open)", hud.card_ring() == inv
+		and (not inv._labels.has("reason") or String(inv._labels["reason"].text) == ""),
+		{"reason": String(inv._labels["reason"].text) if inv._labels.has("reason") else ""})
+	main.player.hp = Data.cat_max_hp()
+	if inv._buttons.has("use"):
+		await _tap(inv._buttons["use"])                # refused again, so the selection check below has a reason to clear
 	inv._select("health_potion#0")                     # a new selection clears the reason
 	await t._wait(0.2)
 	_x("the reason clears when the selection changes", not inv._labels.has("reason") or String(inv._labels["reason"].text) == "")

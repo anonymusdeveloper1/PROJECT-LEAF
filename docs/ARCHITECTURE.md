@@ -61,8 +61,9 @@ game/
   tests/       one test file per system, the content check, and sample old saves
 ```
 
-- **Today** the scripts are all in `game/scripts/`, the models in `game/assets/`, and every number in
-  `game/data/balance.json`. They move into this layout during Phase H (part 13).
+- **Today** (H3) most scripts are still in `game/scripts/` (`core/`, `parts/`, `commands/` and `ui/` have their first
+  files), the models are in `game/assets/`, and the numbers are in `game/data/balance.json` and the first content
+  folders (`settings`, `crops`, `recipes`). They move into this layout during Phase H (part 13).
 - **Moving a script:** move it together with its `.uid` file, update every `preload("res://…")` path, then run the
   smoke test. A move commit changes nothing else.
 
@@ -185,8 +186,8 @@ depends on whom, so **there are exactly eight**, each with one job:
 - **Listeners:** the HUD, Audio, the Hearthtree goal lists, the raid meter, hints, the tests.
 - **The rule:** an event says **what happened**. It never asks for an answer, and the sender never depends on who
   listens.
-- **Today** there are 6 signals and about 730 direct calls like `main.hud.…`; those are replaced as each step rewrites
-  its part.
+- **Today** (H3, 26 Nov 2026) there are 21 signals, and many direct calls like `main.hud.…` remain; those are replaced
+  as each step rewrites its part. `timer_finished` is sent by Timers (`check()`) since H3.
 
 ### Prototype: variants written as "that one, but…"
 - An entry can say `"base": "thornling"` and list only what is different, for example the Gloomtouched elite (+health,
@@ -403,8 +404,9 @@ depends on whom, so **there are exactly eight**, each with one job:
   prices use known currencies; unlock rules point to things that exist; effects use known types; `base` points to a
   real entry; the index is up to date. Then buy, save and load one entry of each kind. **In H3** (crops and recipes):
   the index is written by hand, so the test checks that it lists every entry folder and nothing else; the model check
-  is `Props.has(<model>_ripe)` and `Props.has(<model>_growing)`, and the icon check is the `ui_icons.gd` id (an icon
-  not drawn yet is a note, not a failure, until the owner decides the icons); the effect types are checked in `--bag`.
+  is `Props.has(<model>_ripe)` and `Props.has(<model>_growing)`, and the icon check is the `ui_icons.gd` id (a missing
+  icon is a failure: the owner chose stand-ins drawn in code, so every icon exists); the effect types are checked in
+  `--bag`.
 - `--timers`: Timers' jobs with a pretend clock: they follow it, end "while the game is closed", wait when the clock is
   set back, and never mark the save dirty by the clock alone.
 - `--saves`: loads every sample save and checks nothing is lost.
@@ -432,18 +434,29 @@ depends on whom, so **there are exactly eight**, each with one job:
 | H10 | the Store with its real and pretend providers; offers as content folders |
 | later | the cat's and mount's own parts, mount skills as abilities, and anything not yet moved, when a step next touches them |
 
-**Where the game is today** (25 November 2026):
-- five autoloads (Events, Data, Save, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades) and
-  `game/content/index.json` (empty for now); the rest is in `game/scripts/`; every number in one `balance.json`;
-- a few very big files: `stations.gd` 2,760 lines, `enemy.gd` 2,352, `fight.gd` 2,184,
-  `burrow_run.gd` 1,897;
-- the Events board has 14 signals; since H2 (26 Nov 2026) the HUD is split under `game/ui/hud/` and listens to Events;
-  many direct calls through `main` remain elsewhere;
+**Where the game is today** (26 November 2026, H3 built on `feature/h3-food-bag`):
+- six autoloads (Events, Data, Save, Timers, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades);
+  most other scripts are still in `game/scripts/`;
+- **built so far in `core/`, `parts/`, `commands/`, `ui/` and `content/`:**
+  - Timers (`core/timers.gd`, H3; the jobs live in `Save.timers`: the crops and the cooking pot);
+  - the Bag model (`core/bag.gd`, H3; static functions, the only writer of the Bag's counts);
+  - the effects list (`core/effects.gd`, H3) and the Effects holder (`parts/effects_holder.gd`, on the cat and the
+    mount);
+  - the commands Ride/Walk (H2) and Use potion (H3) in `commands/`;
+  - the HUD under `ui/hud/` (H2), the first windows in `ui/windows/` (the garden and the cooking pot, H3) and the first
+    kit pieces in `ui/kit/` (`drag_source.gd`, `drop_slot.gd`: drag-and-drop, H3);
+  - content folders: `content/settings/` (H2), `content/crops/` (5) and `content/recipes/` (5) (H3), listed by hand in
+    `content/index.json`; the general rules stay in `balance.json`;
+- a few very big files: `stations.gd` 2,672 lines, `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
+  `defences.gd` 1,334;
+- the Events board has 21 signals; the HUD listens to Events (H2); many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy
   each physics step;
 - states as words with `match` blocks;
 - MultiMesh already used for grass, trees, props and the dungeon floor;
-- the save at version 3 (the 2→3 step turns old amber, glowstone, heartwood and Hollow keys into leaves), dirty-flag flushing and atomic writes (H1).
+- the save at version 4 (2→3 turns old amber, glowstone, heartwood and Hollow keys into leaves; 3→4, H3, moves the
+  pantry into the Bag, old dishes into Health Potions and old crop growth into Timers jobs), dirty-flag flushing and
+  atomic writes (H1).
 
 ## 14. Decided later, during the steps
 

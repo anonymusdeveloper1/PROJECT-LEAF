@@ -19,7 +19,8 @@ extends Node
 ##   (e) a real tap on a ripe square picks it into the Bag; with the Bag full it says "Bag full" and stays ripe
 ##   (f) one Gloom bump per visit; a wave blank (the card is blank, nothing works) and the rebuild after it are not a new
 ##       visit; closing and opening the card is
-##   (g) the ring pulses when a crop ripens while playing (only the timer_finished handler refreshed the stations)
+##   (g) the ring pulses when a crop ripens while playing (only the timer_finished handler refreshed the stations), and
+##       the toast is the garden's own "Ripe in the garden: ..." line
 ##   (h) grows while closed: save, move the clock, reload, and it is ripe
 ##   (i) the Upgrade row: level 2 opens 5 plots, and the bottom row is plots 6 5 4 (index 5, 4, 3)
 ## Screenshots: garden_window_empty, garden_window_planted, garden_window_ripe, garden_bed_ripe, garden_window_level2.
@@ -426,6 +427,9 @@ func _check_ring_pulse() -> bool:
 	await get_tree().process_frame
 	ok = _x("the crop ripened while playing: timer_finished(crop:0) was sent", _told.has("crop:0"), {"told": _told}) and ok
 	ok = _x("the ring pulses after the timer_finished handler (nothing else refreshed the stations)", bool(ring.pulse) and g.is_ripe(0)) and ok
+	var ripe_toast := "Ripe in the garden: %s" % String(Data.crop("sunberry")["name"])
+	ok = _x("a crop alone keeps its own toast", String(main.hud._toast.text) == ripe_toast,
+		{"toast": main.hud._toast.text, "want": ripe_toast}) and ok
 	look.paused = false
 	Save.leaves = 1000
 	_clear_garden()

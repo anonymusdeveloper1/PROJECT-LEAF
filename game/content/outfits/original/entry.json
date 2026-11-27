@@ -1,0 +1,11 @@
+{
+  "id": "original",
+  "name": "Original Ranger",
+  "desc": "The look she started with",
+  "icon": "outfit",
+  "picture": "res://assets/ui/cat_skins/original.png",
+  "model": "",
+  "price": {},
+  "unlock": {},
+  "_note": "H5 (26 Nov 2026): an outfit, moved from balance.json cat_skins. The look she started with: always owned, free, and the default (price {} and no unlock). Its model is empty: the hero model is used (balance.json hero_model, player.gd original_base, and the --cat1 / --cat2 test flags). Looks only: an outfit changes no number."
+}

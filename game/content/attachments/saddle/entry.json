@@ -1,0 +1,21 @@
+{
+  "id": "saddle",
+  "name": "Mossweave Saddle",
+  "desc": "More health for your mount",
+  "icon": "saddle",
+  "picture": "res://content/attachments/saddle/icon.png",
+  "model": "res://assets/companions/attachments/saddle_{mount}.glb",
+  "shop": "saddlery",
+  "slot": "mount",
+  "scope": "all",
+  "price": {"leaves": 900, "timber": 35},
+  "upgrades": [
+    {"leaves": 1300, "timber": 45},
+    {"leaves": 2100, "timber": 60},
+    {"leaves": 3940, "timber": 80, "needs_burrows": true},
+    {"leaves": 6560, "timber": 110, "needs_burrows": true}
+  ],
+  "unlock": {"building": ["saddlery", 1]},
+  "hp_per_level": 0.15,
+  "_note": "H5 (26 Nov 2026): a Saddlery attachment, moved from balance.json mount_attachments (its rules are in that block's _note). It works everywhere and fits every mount; the mount wears one at a time. price: learning it (level 1); upgrades: levels 2-5 in order, never above the Saddlery's level, and one with needs_burrows only once the Burrows are open (a gate, never a payment). model: the file fitted to each mount's saddle bone, {mount} being the mount look's id (Data.gear_model)."
+}

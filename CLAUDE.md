@@ -44,6 +44,11 @@ Split the work into subagents and pick the model by how hard the task is:
 - **Codex CLI** (GPT-6.2 Sol, the owner's own quota; the owner, 25 November 2026): medium to fairly hard, well-fenced
   tasks and all concept images, never the hardest tasks. It runs read-only and returns a patch that Claude reads and
   applies. If Codex stops (quota, error), Sonnet or Haiku finishes the same brief.
+- **Codex Astra** (GPT-6.2 Astra, `-m gpt-6.2-astra`, the owner's own quota; the owner, 26 November 2026): the
+  frontier model, for complex work (build maps, hard game parts). Read-only, like Codex Sol. If Codex's quota runs out,
+  Opus takes the same brief.
+- **Light runs** (the owner, 26 November 2026, to save quota): a step is builders plus one test agent. No review,
+  verify and fix chain after the tests unless the owner asks for one.
 - The full flow (brief, build, review, test, the owner) is in `docs/PHASE_H_PLAN.md`, Part F.
 
 Rules for running agents side by side:

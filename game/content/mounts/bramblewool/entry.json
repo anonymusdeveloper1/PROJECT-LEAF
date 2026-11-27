@@ -1,0 +1,22 @@
+{
+  "id": "bramblewool",
+  "name": "Bramblewool the ram",
+  "short": "Bramblewool",
+  "desc": "A sturdy ram: the cat rides it, and it takes the hits for her",
+  "icon": "mount",
+  "picture": "res://content/mounts/bramblewool/icon.png",
+  "model": "res://assets/companions/bramblewool/bramblewool.glb",
+  "price": {},
+  "unlock": {"building": ["stall", 1]},
+  "shop": "stall",
+  "fur": [0.08, 0.05],
+  "skins": [
+    {"id": "natural", "name": "Natural", "to": [-1, 1, 1]},
+    {"id": "snow", "name": "Snow", "to": [-1, 0.12, 1.3]},
+    {"id": "midnight", "name": "Midnight", "to": [0.6, 0.55, 0.6]},
+    {"id": "autumn", "name": "Autumn", "to": [0.02, 1.15, 0.85]},
+    {"id": "golden", "name": "Golden", "to": [0.115, 0.85, 1.08]},
+    {"id": "gloomlit", "name": "Gloomlit", "to": [0.76, 0.75, 0.9], "shards": 60}
+  ],
+  "_note": "H5 (26 Nov 2026): a mount look, moved from balance.json looks.mount. Every mount rides the same: its speed and health come from the mount's level (balance.json mount, Data.mount_level), its moves from the Saddlery. price {} with this unlock: it comes free with the Market. picture: the Market's full-body picture (Data.shop_picture; the icon stands in while the file is missing). model: its clips and saddle bone are in the .json beside it. fur and skins: the colours (Props.set_skin); a skin with shards (Gloomlit) is earned with Gloom shards, never sold."
+}

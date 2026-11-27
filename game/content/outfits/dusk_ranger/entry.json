@@ -1,0 +1,11 @@
+{
+  "id": "dusk_ranger",
+  "name": "Dusk Ranger",
+  "desc": "Ranger gear in dusk colours",
+  "icon": "outfit",
+  "picture": "res://assets/ui/cat_skins/dusk_ranger.png",
+  "model": "res://assets/cat/skins/dusk_ranger.glb",
+  "price": {"leaves": 3000},
+  "unlock": {"building": ["tailor", 1]},
+  "_note": "H5 (26 Nov 2026): an outfit, moved from balance.json cat_skins, sold at the Tailor's Nook once it is built. Looks only. model: a whole hero model with the CatRanger skeleton and clips (<id>_clips.json beside it); a missing file shows the original look and the outfit is not sold. picture: its card's picture. A price in a currency the game cannot take yet leaves it unsold, never free."
+}

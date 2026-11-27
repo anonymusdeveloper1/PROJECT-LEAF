@@ -1,6 +1,10 @@
 extends Node
 ## Data (autoload): the balance numbers and content catalogues, and the cat's numbers worked out from balance
 ## and what the player has bought (Save).
+## H5: the shops' catalogue (mounts, pets, outfits, attachments) is worked out in scripts/shop_data.gd; this file stays
+## the front door, so callers always ask Data.
+
+const ShopData := preload("res://scripts/shop_data.gd")
 
 var b: Dictionary = {}
 var _catalogues: Dictionary = {}
@@ -54,6 +58,106 @@ func catalog(kind: String) -> Array:
 func item(kind: String, id: String) -> Dictionary:
 	var entries: Dictionary = _catalogues.get(kind, {})
 	return entries.get(id, {})
+
+
+# ---------------------------------------------------------------- H5: the shops' catalogue (scripts/shop_data.gd)
+## H5: every entry of a content kind that can be shown and sold (mounts, pets, outfits, attachments, or any kind), in
+## index order; hidden and malformed entries are left out.
+func shop_entries(kind: String) -> Array[Dictionary]:
+	return ShopData.shop_entries(kind)
+
+
+## H5: one entry that can be shown and sold, by its exact id; {} for an unknown or hidden id. Check it before paying,
+## so an unknown offer never falls back to Sprig or Thistle.
+func shop_entry(kind: String, id: String) -> Dictionary:
+	return ShopData.shop_entry(kind, id)
+
+
+## H5: the attachments a shop sells for a slot, in index order: shop "saddlery" (levelled, everywhere) or "stall" (the
+## Market's expedition gear); slot "mount" or "pet" ("" for both).
+func attachment_entries(shop: String, slot: String) -> Array[Dictionary]:
+	return ShopData.attachment_entries(shop, slot)
+
+
+## H5: the level the player owns of entry id: 0 = not owned, 1 = owned (a look or an outfit), a Saddlery attachment's
+## bought level. From the v5 save (Save.owned[kind][id] = {"level": n}); an entry with an explicit free price ({})
+## whose unlock rule holds counts as owned at level 1 (Thistle and Bramblewool once the Market is built, the original
+## outfit).
+func owned_level(kind: String, id: String) -> int:
+	return ShopData.owned_level(kind, id)
+
+
+## H5: a mount's or pet's model (slot "mount" or "pet"; its entry's "model") when the file exists, else "".
+func companion_model(slot: String, id: String) -> String:
+	return ShopData.companion_model(slot, id)
+
+
+## H5: an entry's full-body shop picture (its "picture") when the file exists, else "" (the window shows its "icon").
+func shop_picture(kind: String, id: String) -> String:
+	return ShopData.shop_picture(kind, id)
+
+
+## H5: an attachment's model fitted to a mount look (res://assets/companions/attachments/<id>_<look>.glb, from its
+## entry's "model") when the file exists, else "".
+func gear_model(id: String, look_id: String) -> String:
+	return ShopData.gear_model(id, look_id)
+
+
+## H5: what reaching `level` of an entry costs (level 1: its "price"; later levels: its "upgrades"), its currencies
+## only; {} when it is free, past its top or unknown. entry_price_ok says whether it can be paid at all.
+func entry_price(kind: String, id: String, level: int = 1) -> Dictionary:
+	return ShopData.entry_price(kind, id, level)
+
+
+## H5: that level can be sold: a shown entry, a level it has, a price in currencies the shops take (fails closed).
+func entry_price_ok(kind: String, id: String, level: int = 1) -> bool:
+	return ShopData.entry_price_ok(kind, id, level)
+
+
+## H5: what training the pet to `level` costs (balance.json pet.level_prices: levels 2 and 3); {} for level 1 (buying
+## the pet is its entry's price) and past the top.
+func pet_level_price(level: int) -> Dictionary:
+	return ShopData.pet_level_price(level)
+
+
+## H5: the pet's top level (3). pet_level_cap() is the highest it can be trained to now (never above the Hearthtree).
+func pet_top() -> int:
+	return ShopData.pet_top()
+
+
+func pet_level_cap() -> int:
+	return ShopData.pet_level_cap()
+
+
+## H5: the mount's walking-speed multiplier and base health at mount level `level` (balance.json mount tables, levels
+## 1-5). The Saddlery's confirm, the pet and mount windows, riding and the mount's health all read these.
+func mount_speed_at(level: int) -> float:
+	return ShopData.mount_speed_at(level)
+
+
+func mount_base_hp_at(level: int) -> int:
+	return ShopData.mount_base_hp_at(level)
+
+
+## H5 (the owner's Q2 A): the mount's level with the Saddlery at `level`: 0 when no mount is owned, else the highest of
+## 1, that level and the tier an old save already paid for (Save.saddlery mount_credit).
+func mount_level_at_saddlery(level: int) -> int:
+	return ShopData.mount_level_at_saddlery(level)
+
+
+## H5: the skill in each of the mount's circles, in order ("" for an empty one), always saddlery.skill_slot_count (3)
+## of them; every mount shares them. skill_level(id) is still the learned level, in a circle or not.
+func skill_slots() -> Array[String]:
+	return ShopData.skill_slots()
+
+
+func skill_is_slotted(id: String) -> bool:
+	return ShopData.skill_is_slotted(id)
+
+
+## H5: the level the mount fights with: the learned level while the skill is in a circle, else 0.
+func active_skill_level(id: String) -> int:
+	return ShopData.active_skill_level(id)
 
 
 ## The game's own command-line arguments (after "--"). On a debug build a one-shot file user://test_args.txt (one
@@ -356,6 +460,20 @@ func _goal(g: Dictionary) -> Dictionary:
 			else:
 				prog = ("Build the %s" % nm) if lv <= 1 else ("Build the %s, then lv %d" % [nm, lv])
 				station = "build" if from_menu(id) else id    # H4: bought in the build menu
+		"pet_level":
+			# H5 (the owner's Q4 A): the pet trained to `level`. The pet is bought and trained at the shop its entry
+			# names (the Market): Go walks to it once it is built, else Show opens the build menu at it (id).
+			var shop := ShopData.pet_shop()
+			var pn := pet_name()
+			have = pet_level()
+			need = lv
+			text = word("pet_level_goal") % [pn, lv]
+			if have > 0:
+				prog = word("pet_level_progress") % [pn, have, lv]
+			else:
+				prog = word("pet_level_get") % [pn, String(building(shop).get("name", shop)), lv]
+			station = shop if station_level(shop) > 0 or not from_menu(shop) else "build"
+			gid = shop
 		"stat":
 			var sid := String(g.get("id", ""))
 			var si := stat_info(sid)
@@ -483,7 +601,12 @@ func skin(slot: String, look_id: String, skin_id: String) -> Dictionary:
 	return skins[0] if not skins.is_empty() else {}
 
 
+## A companion look by id, the slot's first look for an unknown id. H5: the mount's and the pet's looks are content
+## entries (content/mounts, content/pets: name, short, fur, skins; a pet's flies and spark); the guardian's stay in
+## balance.json looks.guardian.
 func look(slot: String, id: String) -> Dictionary:
+	if ShopData.SLOT_KINDS.has(slot):
+		return ShopData.look(slot, id)
 	for l in b["looks"][slot]:
 		if String(l["id"]) == id:
 			return l
@@ -1146,16 +1269,11 @@ func burrow_fights(id: String) -> int:
 	return (dungeon(burrow_map_id(id)).get("fights", []) as Array).size()
 
 
-## The attachments worn now (the mount's and the pet's, balance.json attachments): Burrows-only help. G4: the mount's
-## saddle and bags moved to the Saddlery (mount_attachments, below); only the Thunder Shoes are left in the mount slot.
+## The attachments worn now (the mount's and the pet's): Burrows-only help, each entry with its "mods". G4: the mount's
+## saddle and bags moved to the Saddlery (below); only the Thunder Shoes are left in the mount slot. H5: the expedition
+## gear is content (content/attachments, "scope": "expedition"); what is owned and worn is still Save.attach.
 func attachments_on() -> Array:
-	var out: Array = []
-	var all: Dictionary = b.get("attachments", {}).get("items", {})
-	for slot in ["mount", "pet"]:
-		var id := String(Save.attach.get(slot, ""))
-		if id != "" and all.has(id) and (Save.attach.get("owned", []) as Array).has(id):
-			out.append(all[id])
-	return out
+	return ShopData.expedition_worn()
 
 
 # ---------------------------------------------------------------- G4: the Saddlery (the mount's skills and attachments)
@@ -1171,13 +1289,20 @@ func saddlery_level() -> int:
 
 
 ## One shelf of the Saddlery: "skills" (balance.json mount_skills.items: stomp, ram, pounce, bellow) or "attach"
-## (mount_attachments.items: fire_spitter, saddle, saddlebags), in the card's order. Save.saddlery has the same two parts.
+## (H5: the content/attachments entries the Saddlery sells: fire_spitter, saddle, saddlebags), in the card's order,
+## id -> entry. Save.saddlery has the same two parts.
 func saddle_items(part: String) -> Dictionary:
-	var blk: Dictionary = b.get("mount_skills" if part == "skills" else "mount_attachments", {})
+	if part != "skills":
+		return ShopData.saddle_attachments()
+	var blk: Dictionary = b.get("mount_skills", {})
 	return blk.get("items", {})
 
 
+## A skill's or a Saddlery attachment's entry ({} for an unknown id). H5: an attachment's is its content entry (name,
+## desc, icon, its numbers; price and upgrades are read through saddle_price).
 func saddle_info(part: String, id: String) -> Dictionary:
+	if part != "skills":
+		return ShopData.saddle_attachment(id)
 	return saddle_items(part).get(id, {})
 
 
@@ -1226,13 +1351,17 @@ func best_owned_attach() -> String:
 	return best
 
 
-## Its top level (the length of its price list: 5).
+## Its top level (5). A skill: the length of its price list; H5, an attachment: its price plus its upgrades.
 func saddle_top(part: String, id: String) -> int:
+	if part != "skills":
+		return ShopData.entry_top("attachments", id) if not saddle_info(part, id).is_empty() else 0
 	return (saddle_info(part, id).get("price", []) as Array).size()
 
 
 ## What reaching level lv costs (lv 1: learning it), its currencies only (needs_burrows is not money); {} past the top.
 func saddle_price(part: String, id: String, lv: int) -> Dictionary:
+	if part != "skills":
+		return ShopData.entry_price("attachments", id, lv) if not saddle_info(part, id).is_empty() else {}
 	var prices: Array = saddle_info(part, id).get("price", [])
 	var out := {}
 	if lv < 1 or lv > prices.size():
@@ -1246,6 +1375,8 @@ func saddle_price(part: String, id: String, lv: int) -> Dictionary:
 
 ## Level lv is sold only once the Burrows are open (after the missions). Since H1 its price is leaves and timber.
 func saddle_needs_burrows(part: String, id: String, lv: int) -> bool:
+	if part != "skills":
+		return not saddle_info(part, id).is_empty() and ShopData.entry_needs_burrows("attachments", id, lv)
 	var prices: Array = saddle_info(part, id).get("price", [])
 	return lv >= 1 and lv <= prices.size() and bool((prices[lv - 1] as Dictionary).get("needs_burrows", false))
 
@@ -1345,50 +1476,37 @@ func saddle_gap() -> float:
 
 
 # ---------------------------------------------------------------- 23 Nov 2026: the cat's outfits (the Tailor's Nook)
-## The outfits (balance.json cat_skins), looks only: each is a whole hero model with the CatRanger skeleton and clips.
-## "original" is always owned and the default. Prices are in each outfit's `currency` (today "leaves"); a currency the
-## game cannot pay with yet (not in CURRENCIES: a premium one, later) leaves the outfit unbuyable, never free.
+## The outfits, looks only: each is a whole hero model with the CatRanger skeleton and clips. "original" is always
+## owned and the default. H5: they are content entries (content/outfits/<id>/entry.json: name, desc, icon, picture,
+## model, price, unlock), read through scripts/shop_data.gd. A price in a currency the shops cannot take (a premium
+## one, later, or amber) leaves the outfit unbuyable, never free.
 const CAT_SKIN_DEFAULT := "original"
 
 
-## The outfit ids in balance.json's order (the Tailor's Nook shows them in this order).
+## The outfit ids in content/index.json's order (the Tailor's Nook shows them in this order), hidden ones left out.
 func cat_skin_ids() -> Array:
-	var out: Array = []
-	for k in b.get("cat_skins", {}):
-		if not String(k).begins_with("_"):
-			out.append(String(k))
-	if not out.has(CAT_SKIN_DEFAULT):
-		out.push_front(CAT_SKIN_DEFAULT)
-	return out
+	return ShopData.outfit_ids(CAT_SKIN_DEFAULT)
 
 
-## Outfit id's entry ({} for an unknown id; the original has a stand-in entry if balance.json lacks it).
+## Outfit id in the H4 shape ({"name", "short" (its desc), "price" (one amount, 0 when free), "currency", "model",
+## "picture"}), {} for an unknown id. H5: a copy made from its content entry; to change what the game does, change
+## the shared entry (Data.item("outfits", id)).
 func cat_skin(id: String) -> Dictionary:
-	var all: Dictionary = b.get("cat_skins", {})
-	if all.has(id) and typeof(all[id]) == TYPE_DICTIONARY:
-		return all[id]
-	if id == CAT_SKIN_DEFAULT:
-		return {"name": "Original Ranger", "short": "", "price": 0, "currency": "leaves", "model": ""}
-	return {}
+	return ShopData.outfit_view(id)
 
 
 func cat_skin_name(id: String) -> String:
-	return String(cat_skin(id).get("name", id))
+	return String(item("outfits", id).get("name", id))
 
 
-## What outfit id costs: {currency: price} ({} when it is free).
+## What outfit id costs: every amount its price names ({} when it is free).
 func cat_skin_cost(id: String) -> Dictionary:
-	var info := cat_skin(id)
-	var n := int(info.get("price", 0))
-	if n <= 0:
-		return {}
-	return {String(info.get("currency", "leaves")): n}
+	return ShopData.outfit_cost(id)
 
 
-## An outfit can be sold when its model is available and the game can take its currency.
+## An outfit can be sold when its model is available and its price is in currencies the shops take.
 func cat_skin_buyable(id: String) -> bool:
-	return CURRENCIES.has(String(cat_skin(id).get("currency", "leaves"))) \
-		and (id == CAT_SKIN_DEFAULT or cat_skin_model(id) != "")
+	return ShopData.outfit_price_ok(id) and (id == CAT_SKIN_DEFAULT or cat_skin_model(id) != "")
 
 
 func cat_skin_owned(id: String) -> bool:
@@ -1399,12 +1517,10 @@ func cat_skin_owned(id: String) -> bool:
 func cat_skin_model(id: String) -> String:
 	if id == CAT_SKIN_DEFAULT:
 		return ""
-	var path := String(cat_skin(id).get("model", ""))
-	if path == "" or not ResourceLoader.exists(path):
-		return ""
-	return path
+	return ShopData.outfit_model(id)
 
 
-## Outfit id's tile picture (res://assets/ui/cat_skins/<id>.png); the tile uses it only when the file exists.
-static func cat_skin_picture(id: String) -> String:
-	return "res://assets/ui/cat_skins/%s.png" % id
+## Outfit id's tile picture (its entry's "picture": res://assets/ui/cat_skins/<id>.png); the tile uses it only when the
+## file exists. "" for an unknown id.
+func cat_skin_picture(id: String) -> String:
+	return String(item("outfits", id).get("picture", ""))

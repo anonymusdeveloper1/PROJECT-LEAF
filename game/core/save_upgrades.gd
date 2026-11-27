@@ -15,7 +15,10 @@ static func upgrade(d: Dictionary) -> Dictionary:
 	var steps: Dictionary[int, Callable] = {
 		2: _upgrade_2_to_3,
 		3: _upgrade_3_to_4,
-		# Next step (4 -> 5): add 4: _upgrade_4_to_5.
+		# Next step (4 -> 5, H5): its moves are built in core/save_upgrade_v5.gd (Stage 1) but not switched on yet, so
+		# the game still writes v4. Stage 2's activation, together with Save's v5 reader and writer, adds this line here
+		# and sets CURRENT_VERSION (above) to 5:
+		#   4: Callable(preload("res://core/save_upgrade_v5.gd"), "upgrade"),
 		# The legacy raid fix for v1 saves runs by Save.loaded_v (raids.gd), whatever CURRENT_VERSION is.
 	}
 	var original_version := int(d.get("save_v", 1))

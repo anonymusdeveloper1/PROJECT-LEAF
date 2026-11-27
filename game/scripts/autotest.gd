@@ -2928,6 +2928,8 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_timers.gd"
 	elif a.has("--content"):                           # H3: the content folders and index.json
 		file = "res://scripts/autotest_content.gd"
+	elif a.has("--h5found"):                           # H5 Stage 1: the shops' foundations (catalogue, v5 step, trades, Buy)
+		file = "res://scripts/autotest_h5_found.gd"
 	elif a.has("--bag") or a.has("--inventory"):       # H3: the Bag (and its potions); --inventory was the H2 name
 		file = "res://scripts/autotest_bag.gd"
 	elif a.has("--garden"):                            # H3: the garden's window, real-time growth, picking

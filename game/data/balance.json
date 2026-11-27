@@ -201,7 +201,37 @@
     "home_stats": "The cat's upgrades up to level %d", "home_defences": "Defences up to level %d", "home_opens": "Opens: %s",
     "build_title": "Build", "build": "Build", "build_empty": "Nothing to build right now", "build_ruined": "Repair %s first",
     "tip_build_target": "%s's shop is open! Tap the build icon next to the Bag to build a Training Target.",
-    "tip_build_new": "New at %s: tap the build icon next to the Bag to build the %s."
+    "tip_build_new": "New at %s: tap the build icon next to the Bag to build the %s.",
+    "_note_h5": "H5 (26 Nov 2026): the words of the Market (Sells, Buys, Mounts, Pets), the Saddlery (Attachments, Skills), the Tailor's Nook and the trade popup, with their receipts and refusals. A tab keeps its word as its name even when only its icon shows.",
+    "tab_sells": "Sells", "tab_buys": "Buys", "tab_mounts": "Mounts", "tab_pets": "Pets",
+    "tab_attachments": "Attachments", "tab_skills": "Skills",
+    "buy": "Buy", "sell": "Sell", "learn": "Learn", "train": "Train", "wear": "Wear", "wearing": "Wearing", "worn": "Worn",
+    "take_off": "Take off", "use": "Use", "unlock": "Unlock", "next": "Next", "ride": "Ride", "walk": "Walk",
+    "included": "Included", "owned": "Owned", "new": "New",
+    "amount": "Amount: %d", "you_get": "You get %s", "you_pay": "You pay %s", "needs": "Needs %s",
+    "bag_full": "Bag full", "between_waves": "Between waves", "coming_later": "Coming later",
+    "have_only": "You have %d", "after_missions": "After the Raid Missions", "already_owned": "Already yours",
+    "pet_first": "Buy %s first",
+    "pet_level": "%s · level %d", "pet_sparks": "Flicks sparks: %d damage every %.1fs",
+    "pet_next": "Next: %d damage every %.1fs",
+    "pet_level_goal": "%s lv %d", "pet_level_progress": "%s lv %d/%d", "pet_level_get": "Get %s at the %s, then lv %d",
+    "pet_same": "Same damage and speed, a different friend",
+    "mount_same": "Same speed, health and skills, a new look",
+    "mount_speed_hp": "%s runs %s%% faster and has %d health",
+    "ride_mount": "Ride %s", "get_off": "Get off %s", "ride_note": "%s%% faster, takes the hits for you",
+    "ride_back": "%s goes back to the %s",
+    "saddle_level_cap": "Skills and attachments up to level %d",
+    "saddle_catching_up": "%s keeps its level %d speed and health until the %s passes level %d",
+    "saddle_cap_hint": "Upgrade the %s for more", "opens_after_missions": "Level %d opens after the Raid Missions",
+    "level_badge": "Level %d/%d", "next_level": "Next level: %s",
+    "skill_slot_hint": "Drag a learned skill into a circle to use it. Every mount shares the circles.",
+    "skill_slot_clear": "Tap a circle to empty it",
+    "colours": "Colours: %s", "gloomlit_colours": "%s colours", "gloomlit_note": "Earned with Gloom shards, never sold",
+    "receipt_bought": "%s bought!", "receipt_learned": "%s learned!", "receipt_ready": "%s ready!",
+    "receipt_wear_here": "Wear it here to use it (between waves)", "receipt_wears_now": "She wears it now",
+    "receipt_wear_later": "Wear it between waves", "receipt_new_look": "Same power, a new look",
+    "receipt_colours": "%s colours!", "receipt_colours_note": "Earned with Gloom shards",
+    "receipt_sold": "Sold %s · %s", "receipt_leaves": "%s · leaves %d"
   },
   "build_menu": {"_note": "H4: locked buildings show in the build menu once this many Raid Missions are won", "locked_from_missions": 1},
   "home_names": [
@@ -1008,16 +1038,21 @@
       0.9
     ],
     "range": 5.0,
-    "bolt_speed": 9.0
+    "bolt_speed": 9.0,
+    "_note_level_prices": "H5 (26 Nov 2026): the pet's one shared level (every pet look fights the same; Data.pet_level). level_prices[n - 1] is what training it to level n costs, leaves and timber only (the old Mushroom Cottage's level prices); level 1 is buying the pet (content/pets: Sprig's price, 160 leaves), so level_prices[0] is {}. Never above the Hearthtree's level (Data.pet_level_cap).",
+    "level_prices": [{}, {"leaves": 350}, {"leaves": 900, "timber": 30}]
   },
   "mount": {
     "name": "Thistle",
     "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission or a run, it throws the cat off and stays out until a Mount Health Potion brings it back (H3, 26 Nov 2026, the owner's Q1: the potion replaces Feed; the HUD's potion button in Ride's place, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
+    "_note_tiers": "H5 (26 Nov 2026, the owner's Q6 A): mount levels 4 and 5 (speed 1.6575x and 1.785x, base health 18 and 24) come with the Saddlery's levels 4 and 5 once the v5 save is live (Data.mount_level_at_saddlery); until then the mount's level is still the Market's (1-3).",
     "speed_by_level": [
       0,
       1.275,
       1.4025,
-      1.53
+      1.53,
+      1.6575,
+      1.785
     ],
     "thump_damage_by_level": [
       0,
@@ -1031,7 +1066,9 @@
       0,
       6,
       9,
-      13
+      13,
+      18,
+      24
     ],
     "rest_s": 20,
     "_note_aim": "23 Nov 2026 (owner's follow-up): the mount faces joystick travel and runs forward as before. The cat acquires and shoots only within aim_cone_deg either side of that heading (140 each side, a 280-degree arc). aim_cone_keep_deg is zero so held targets are released outside it; the rear blind spot is 80 degrees. Dedicated upper-body mounted Front, QuarterLeft/Right and RearLeft/Right shooting clips blend across this arc. The character root, pelvis and seated legs keep facing the mount; only the torso, shoulders, arms and head aim. The rear poses limit chest rotation and reposition both arms for an over-shoulder shot. Draw and release stay synchronized with Shoot. Pose values are authored animation data in assets/cat/mounted/shooting.res.",
@@ -1171,7 +1208,9 @@
       "per_station_level": 1,
       "per_tower": 1,
       "per_defence_level": 1,
-      "per_guardian_level": 1
+      "per_guardian_level": 1,
+      "_note_h5": "H5 (26 Nov 2026): once the Mushroom Cottage is gone and the Market has one level, the old Cottage and Market levels count as the pet's level and the mount's level, each per_station_level, the mount's no higher than mount_level_cap (the old Market's top level), so raids are as strong as before; the Saddlery's own level is not counted again.",
+      "mount_level_cap": 3
     },
     "first_raid": "siege",
     "max_same_in_a_row": 2,
@@ -5580,6 +5619,8 @@
   "saddlery": {
     "_note": "G4 (docs/PHASE_G_PLAN.md, 21 Nov 2026): the Saddlery's own rules (the building itself, its price, levels and needs_missions, is stations.saddlery). gap_s: the shortest time between mount skills; the Fire-spitter has an independent firing clock matching the cat's current shooting interval. free_stomp: a save from before G4 that had won mission `mission` gets that skill at `level`, once (the mount's old built-in Thump). old_attachments: the Burrows-only mount attachments that became Saddlery attachments, old id -> [new id, level] (the level whose numbers match the old item best: the saddle's +50% health -> level 3, +45%; the bags' +25% loot -> level 5, +25% leaves from kills). stand_in: until the owner's Meshy model comes, the Saddlery shows these models by its level, tinted (delete the block then). worn_tie_order (22 Nov 2026, one attachment worn at a time): a save that owns attachments but has none marked worn (one from before that rule) wears the highest-level one it owns; on a tie the first in this list wins (the Saddlebags).",
     "gap_s": 0.6,
+    "_note_slots": "H5 (26 Nov 2026, the owner's Q3): skill_slot_count is how many learned skills the mount uses at once: the circles on the Saddlery's Skills tab, shared by every mount (Data.skill_slots; 0 to 3 filled, never 4). A learned skill outside the circles keeps its level and is not used.",
+    "skill_slot_count": 3,
     "worn_tie_order": [
       "saddlebags",
       "saddle",
@@ -6249,6 +6290,23 @@
         "fernmint": 300,
         "honeybell": 360
       }
+    },
+    "_note_v5": "to_v5 (H5, 26 Nov 2026): the Mushroom Cottage goes and the shops' things get one form (owned). An old Cottage level (1 to old_level_cap) becomes the pet's level, and any Cottage gives both pet_looks for free (the owner's Q1); any Market gives both mount_looks, its level becomes the mount's carried tier (saddlery mount_credit, the owner's Q2) and its building health old_market_hp[level] is kept (the owner's Q5). The outfits owned keep original_outfit. Learned skills fill the skill_slots circles in skill_order, skipping unknown ones (the owner's Q3: Stomp, Ram, Pounce; Bellow stays learned). A save from before G4 (no saddlery key) that had won mission g4_mission gets g4_free_skill at level 1, and each old Burrows item in g4_gear becomes that Saddlery attachment at that level, once. A save whose owned Saddlery attachments have none worn wears the highest level, the first in worn_tie_order on a tie. Frozen: never tune these, they are what the H4 game gave.",
+    "to_v5": {
+      "old_level_cap": 3,
+      "old_market_hp": [0, 200, 340, 500],
+      "mount_looks": ["thistle", "bramblewool"],
+      "pet_looks": ["sprig", "lumi"],
+      "original_outfit": "original",
+      "skill_order": ["stomp", "ram", "pounce", "bellow"],
+      "skill_slots": 3,
+      "g4_mission": "spitters",
+      "g4_free_skill": "stomp",
+      "g4_gear": {
+        "mount_saddle": {"id": "saddle", "level": 3},
+        "mount_bags": {"id": "saddlebags", "level": 5}
+      },
+      "worn_tie_order": ["saddlebags", "saddle", "fire_spitter"]
     }
   }
 }

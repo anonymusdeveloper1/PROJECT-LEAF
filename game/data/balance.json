@@ -199,7 +199,7 @@
     "defence_stat_slow": "Slow %s%% → %s%%", "defence_pad_preview": "%d pieces across the road · %d health each", "defence_pad_title": "Road spot",
     "goal_to_place": " · %d to place", "broken_defences": "Broken defences", "workshop_built_sub": "Buy defences, improve them, learn specialisations",
     "tab_specialisations": "Specialisations", "repair": "Repair",
-    "workshop_needs": "Build the Defence Workshop first", "workshop_ruined": "Repair the Defence Workshop first",
+    "workshop_limit": "Limit reached (%d)", "workshop_needs": "Build the Defence Workshop first", "workshop_ruined": "Repair the Defence Workshop first",
     "workshop_wave": "Between waves", "workshop_below": "Return to camp first",
     "workshop_returned": "Returned %d to the Bag",
     "mend_defences_own_cards": "Repair broken defences from their own cards",

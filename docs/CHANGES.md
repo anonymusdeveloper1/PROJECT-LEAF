@@ -2,6 +2,57 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 27 Nov 2026 · H6: the Defence Workshop, per-piece upgrades, specialisations and armour (on `feature/h6-defence-workshop`, local only, waiting for the owner's phone test)
+
+Built in three stages: `a46d449` (stage 1: the code rebuild with H5's gameplay; nothing the player sees changes; save
+still version 5), `b3b2364` (stage 2: the Workshop, the per-piece cards, the specialisations, armour, Undo, save version 6)
+and stage 3 (the test split, the defence save and the Workshop rules moved to their own files, the last old code taken
+out, these docs). The branch starts from `feature/h5-market-saddlery-tailor`, so it merges after H5. Not pushed.
+
+- **The Defence Workshop (the owner's design, rebuilt low-poly):** built from the build menu after mission 2, on its own
+  new spot. Its window has Defences (buy towers and spikes into the Bag, with each kind's count and limit; a kind not
+  open yet is a locked row), Specialisations, and a pinned Upgrade for levels 1 to 5, never above the Hearthtree. The
+  Hearthtree's temporary Defences tab is gone.
+- **Each piece upgrades on its own:** tap a placed tower, barricade row or spike patch for its own card. It shows the
+  piece's level, what the next level gives, Upgrade (with the confirm window) and Repair when it is down. Upgrading heals
+  the piece to full. A piece's level is capped by the Workshop's level and by the old gates (all Raid Missions won for
+  level 4, the Burrows open for level 5).
+- **Prices (the owner's Q1, B):** each piece pays today's price for its kind, in leaves. Level-4 shards became timber;
+  level 5 stays leaves only. No shards buy power.
+- **Repair:** there is no "Mend all defences" button. The Wishing Well mends standing defences, as the owner asked.
+- **Specialisations (the owner's Q3, A):** Explosive acorns (Acorn Towers; a blast of 1.2 m for 30/45/60% of the hit),
+  Reinforced barricades (+25/40/55% row health; a row cracks at 35% instead of 50%) and Deep thorns (the slow is 30/40/50%
+  stronger and lasts 1 s after an enemy steps off). Each is learned at the Workshop, then levels 2 and 3 are bought.
+- **Armour on the four tanks:** Toadstool Brute 20%, Stump Golem 25%, Crystal Snail 30%, Beetle Knight 35%. Their health
+  is lowered so they take as long to kill as before. Bosses have no armour, and a tank that is an expedition room's boss
+  has none either (the owner confirmed this on 27 Nov).
+- **Undo:** the last tower or spikes placed can be taken back with Undo. It is not offered during a wave or below ground.
+- **Save version 6:** every placed piece keeps its `level`. A piece put back in the Bag keeps its level and damage. Towers
+  and spikes already in an old Bag keep today's level for their kind, and a paid kind level with no piece is kept as a
+  one-time credit for the first new piece of that kind. New purchases start at level 1. `def_levels` is gone from the
+  writer and the loader. A converter (`core/save_upgrade_v6.gd`) runs on version 5 saves.
+- **Code:** `scripts/defences.gd` is now a facade. The rules moved to `defence_levels.gd` (levels, quotes, upgrades),
+  `defence_placement.gd` (Place and Undo, as commands in `commands/place_defence.gd` and `undo_place_defence.gd`),
+  `defence_persistence.gd` (what happens on load, save and relink) and, in stage 3, `save_defences.gd` (the defence part of
+  the load) and `workshop_rules.gd` (the Workshop's rules, moved out of `stations.gd`). Enemies take damage through one
+  function, with armour as a component. The ability toolbox is `abilities/ability.gd`, and Explosive acorns is its first
+  ability. `buy.gd` handles the Workshop, the specialisations and the upgrades. Content: `content/buildings/workshop/`,
+  the defence and enemy folders, and `balance.json` (the Workshop, the defence prices, the specialisations and the armour).
+- **Stage 3 fixes (from the Opus review, before the tests):** `relevel()` and `level()` were removed from `defences.gd`
+  (`level()` read the removed `Save.def_levels`). The "limit reached" note now shows the count of towers held plus placed,
+  so towers still in the Bag are counted. The old scratch hook `--zshot` was removed.
+- **Tests (all pass on the PC):** `--workshop` 123 (also at the phone's shape, 480x1040 with the safe bars), new
+  `--workshop --foundation` 14, `--saves` 95, `--rows` 169, `--campg` 110, `--bag` 110, `--layout` 132, `--hudcheck` 130,
+  `--homegoals` 93, `--buildmenu` 48, `--content` 48, `--shards` 15, `--topup` 24, `--laststand` 1, `--wear` 11, `--taps` 22,
+  and `--smoke` (no checks in that mode; it finished). The default run reached wave 15. The logs show no script errors
+  or parse errors. `--dungeoncareful` was not run (its H3 point stands).
+- **Known points (noted, not fixed now):**
+  - The Workshop hides the cat when the cat stands directly behind it. From the front the cat is fully visible. The
+    owner should rule on this (the "nothing tall between the camera and the cat" rule in `CLAUDE.md`).
+  - The two screenshots were taken with a stand-in Workshop model, not the final one.
+  - Phone speed numbers are still to be measured.
+  - The optional `buy.gd` change at line 383 was not made.
+
 ## 27 Nov 2026 · H5: the Market, the Saddlery and the Tailor's Nook (on `feature/h5-market-saddlery-tailor`, waiting for the owner's phone test)
 
 Built in three stages: `098b04f` (stage 1: the shop catalogue, the Buy command and the save converter; nothing visible

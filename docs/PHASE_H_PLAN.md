@@ -636,7 +636,51 @@ developers). Below: the plan, then **As built** and the owner's answers.
 
 ### H6: the Defence Workshop, upgrading each defence, armour
 
-**Needs the Workshop model.**
+**Built (27 Nov 2026) on `feature/h6-defence-workshop`** (commits `a46d449` and `b3b2364`, then a stage 3 clean-up).
+The branch starts from `feature/h5-market-saddlery-tailor`, so it merges after H5. It is local, not pushed, and waits
+for the owner's phone test. The change list is in `docs/CHANGES.md`; the status is in `docs/STATUS.md`. Below: the plan,
+then the owner's answers and **As built**. (`docs/GAME_GUIDE.md` does not yet describe H6.)
+
+**The owner's answers (27 Nov 2026):**
+- **Q1 (B), a piece's upgrade costs today's price, per piece:** each placed piece pays what upgrading its whole kind
+  costs today, in leaves (barricade row 200 / 480 / 1,500 / 3,480; Acorn Tower 220 / 500 / 2,400 / 5,760; Thorn Spikes
+  180 / 420 / 1,200 / 3,060, for levels 2 / 3 / 4 / 5). The level-4 shards are replaced by timber (20 / 30 / 15).
+  **Level 5 stays leaves only.** No shards buy power.
+- **Q2 (A), the Workshop:** it builds for 250 leaves and 10 timber. Levels 2 to 5 cost 400/20, 900/35, 1,800/55 and
+  3,200/80 (leaves/timber). Its health at levels 1 to 5 is 200, 320, 480, 650 and 850. Each specialisation costs 250/10
+  to learn, then 550/20 and 1,100/35.
+- **Q3 (A), the first guesses:** Explosive acorns (a 1.2 m blast for 30/45/60% of the hit); Reinforced barricades
+  (+25/40/55% row health, and a row cracks at 35% instead of 50%); Deep thorns (the slow is 30/40/50% stronger and lasts
+  1 s after an enemy steps off). Armour: Toadstool Brute 20%, Stump Golem 25%, Crystal Snail 30%, Beetle Knight 35%, with
+  their health lowered so they take as long to kill as today.
+- **Q4 (A):** a piece put back in the Bag keeps its level and damage. Towers and spikes already in an old Bag keep
+  today's level for their kind. New purchases start at level 1. No Pick up button.
+- **Gates (both kept):** a piece's level is capped by the Workshop's level, and still needs all Raid Missions won for
+  level 4 and the Burrows open for level 5.
+- **Mend:** no "Mend all defences" button. The Wishing Well mends standing defences in the background, as the owner
+  said. The Hearthtree's Mend row goes with its Defences tab.
+- **Bosses:** the owner confirmed that a tank made an expedition room's boss has no armour, and its health is as today.
+
+**As built (H6):**
+- **The Defence Workshop** (the owner's design, rebuilt low-poly, `assets/props/defence_workshop.glb`): built from the
+  build menu after mission 2, on its own spot. Its window: Defences (buy towers and spikes into the Bag, with each
+  kind's count and limit; a kind not open yet is a locked row), Specialisations, and the pinned Upgrade (levels 1 to 5,
+  never above the Hearthtree). The Hearthtree's temporary Defences tab is gone.
+- **Each piece on its own:** tap a placed tower, barricade row or spike patch for its own card: its level, what the next
+  level gives, Upgrade (with the confirm window), and Repair when it is down. Upgrading heals it to full. The caps are
+  the Workshop's level and the old gates. Barricade looks by level are now per row.
+- **Specialisations:** Explosive acorns, Reinforced barricades, Deep thorns. A specialisation shows once its kind is
+  open (Deep thorns at mission 3). Any more need the owner's yes.
+- **Armour:** on the four tanks as ordinary enemies only. Armour piercing (H9) is not built.
+- **Undo:** the last tower or spikes placed can be taken back. Not offered during a wave or below ground.
+- **Save version 6:** every placed piece keeps its `level`; a converter runs on version 5 saves; a paid kind level with
+  no piece is kept as a one-time credit for the first new piece of that kind.
+- **Built by agents** as Part F sets out (Codex Sol and Sonnet builders, Opus advice; every Codex patch was reviewed by an Opus agent,
+  as the owner asked on 27 Nov; Sonnet wrote the stage 2 test part when Codex ran out of quota).
+- **Tests (all pass on the PC):** `--workshop` 123 (also at the phone's shape), new `--workshop --foundation` 14, and the
+  older modes listed in `game/README.md`. The default run reached wave 15.
+- **Known points (noted, not fixed now):** the Workshop hides the cat when the cat stands directly behind it (the owner
+  to rule); the screenshots used a stand-in Workshop model; phone speed numbers still to be measured.
 
 **What you'll see:**
 - a new building for all defences;

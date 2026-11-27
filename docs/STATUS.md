@@ -120,6 +120,33 @@ map's six questions (`docs/PHASE_H_PLAN.md`, H5) are built as given.
   Nook's try-on, an old save's pets and mount), then the merges in order H2, H3, H4, H5 on the owner's yes. After that H6
   (the Defence Workshop), as `docs/PHASE_H_PLAN.md` sets out.
 
+**H6** (the Defence Workshop, per-piece upgrades, specialisations, armour) is built on `feature/h6-defence-workshop` in
+three stages (`a46d449`, `b3b2364` and the stage 3 clean-up; 27 Nov 2026). The branch starts from
+`feature/h5-market-saddlery-tailor`, so it merges after H5. Local only, not pushed. The owner's answers are in
+`docs/PHASE_H_PLAN.md` (H6).
+- **The Defence Workshop** is built from the build menu after mission 2, on its own spot. Its window has Defences (buy
+  towers and spikes into the Bag, with counts and limits), Specialisations, and the pinned Upgrade (levels 1 to 5, never
+  above the Hearthtree). The Hearthtree's Defences tab is gone.
+- **Each piece upgrades on its own.** Tap a placed tower, barricade row or spike patch: its card shows the level, what
+  the next level gives, Upgrade and Repair when it is down. Prices are today's kind prices per piece, in leaves; level 4
+  asks timber instead of shards. **No "Mend all defences" button:** the Wishing Well mends standing defences.
+- **Specialisations:** Explosive acorns, Reinforced barricades, Deep thorns (learn, then levels 2 and 3).
+- **Armour** on the Toadstool Brute, Stump Golem, Crystal Snail and Beetle Knight (20/25/30/35%); their health is lowered
+  to keep the time to kill. Bosses have no armour.
+- **Undo** takes back the last tower or spikes placed (not during a wave or below ground).
+- **Save version 6.** Every placed piece keeps its level; pieces in the Bag keep theirs; `def_levels` is gone.
+- **Tests (all pass on the PC):** `--workshop` 123 (also at the phone's shape), new `--workshop --foundation` 14, and the
+  older modes (`--saves` 95, `--rows` 169, `--campg` 110, `--bag` 110, `--layout` 132, `--hudcheck` 130, `--homegoals`
+  93, `--content` 48, `--taps` 22 and others, all with 0 failures). The default run reached wave 15. The logs show no
+  script or parse errors.
+- **Known points (noted, not fixed now):**
+  - **The Workshop hides the cat when the cat stands directly behind it** (the cat is seen only by the tips of its ears).
+    From the front it is fully visible. **The owner should rule on this.**
+  - The screenshots used a stand-in Workshop model.
+  - Phone speed numbers are still to be measured.
+- **Next:** the owner's phone test of H6 (the Workshop's window, a tap on a placed tower, the cat behind the Workshop,
+  Undo, a specialisation, an armoured tank), then the merges in order H2, H3, H4, H5, H6 on the owner's yes.
+
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin
 concepts, exact image-generation prompts and direct renders of the shipping cat. The latest image restores the

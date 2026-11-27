@@ -13,6 +13,7 @@ extends Node
 signal changed
 
 const Upgrades := preload("res://core/save_upgrades.gd")
+const SaveDefences := preload("res://scripts/save_defences.gd")   # H6: the defence part of load_game
 const FLUSH_EVERY_S := 10.0                        # seconds dirty changes may wait during play
 
 var _dirty := false
@@ -59,7 +60,6 @@ var placed: Array = []                              # built in the world: towers
                                                    # "wreck"?}]; Phase G2 barricade rows {"type": "barricade", "slot":
                                                    # [road, spot], "row": pieces, "wrecks"?: each piece's kept share of
                                                    # health, -1 = whole} (an older save's pieces become rows, defences.gd)
-var def_levels := {"barricade": 1, "tower": 1, "spikes": 1}   # one level for all pieces of a kind
 # H6 (Stage 1: declared only, nothing reads or writes them until Stage 2): what the cat carries of each defence kind
 # that is not plain level-1 stock. defence_reserves: kind -> Array of {"level", "wreck"?} records, oldest first, never
 # more than Bag.count(kind). defence_legacy_credit: kind -> int, the old paid level waiting for the first piece.
@@ -277,7 +277,7 @@ func load_game() -> void:
 			if typeof(sp) == TYPE_DICTIONARY and sp.has("type"):
 				placed.append(sp)                      # each kind's fields are read with defaults (defences.gd)
 	_loaded_fields.erase("def_levels")                # H6: the old shared levels are never kept (a v5 file was converted)
-	_load_defence_levels(d)
+	SaveDefences.load_levels(self, d)
 	flags = d.get("flags", {})
 	best_night = int(d.get("best_night", 0))
 	stages_won = int(d.get("stages_won", 0))
@@ -478,49 +478,6 @@ static func _load_owned(v: Variant) -> Dictionary:
 			records[String(id)] = rec
 		out[String(kind)] = records
 	return out
-
-
-## H6: the defence levels after a load (a v6 file never meets the converter, so the loader checks them): every placed
-## record's level is a whole number in 1..cap (the same dictionary, since live pieces point at it); the carried records
-## and the credits are read through the same rules.
-func _load_defence_levels(d: Dictionary) -> void:
-	var cfg: Dictionary = {}
-	var su: Variant = Data.b.get("save_upgrades", {})
-	if su is Dictionary and (su as Dictionary).get("to_v6") is Dictionary:
-		cfg = (su as Dictionary)["to_v6"]
-	var caps: Dictionary = cfg.get("level_cap", {}) if cfg.get("level_cap") is Dictionary else {}
-	var bag_kinds: Array = cfg.get("bag_kinds", ["tower", "spikes"]) if cfg.get("bag_kinds") is Array else ["tower", "spikes"]
-	for sp: Variant in placed:
-		var rec: Dictionary = sp
-		if caps.has(String(rec.get("type", ""))):
-			rec["level"] = clampi(_whole(rec.get("level", 1)), 1, maxi(1, _whole(caps.get(String(rec.get("type", "")), 5))))
-	defence_reserves = {}
-	var rv: Variant = d.get("defence_reserves", {})
-	if rv is Dictionary:
-		for k: Variant in bag_kinds:
-			var kind := String(k)
-			var src: Variant = (rv as Dictionary).get(kind)
-			if not src is Array:
-				continue
-			var cap := maxi(1, _whole(caps.get(kind, 5)))
-			var list: Array = []
-			for r: Variant in src:
-				if not r is Dictionary or list.size() >= maxi(0, int(items.get(kind, 0))):
-					continue
-				var one: Dictionary = {"level": clampi(_whole((r as Dictionary).get("level", 1)), 1, cap)}
-				var w: Variant = (r as Dictionary).get("wreck")
-				if _is_num(w) and is_finite(float(w)):
-					one["wreck"] = clampf(float(w), 0.0, 1.0)
-				list.append(one)
-			if not list.is_empty():
-				defence_reserves[kind] = list
-	defence_legacy_credit = {}
-	var cd: Variant = d.get("defence_legacy_credit", {})
-	if cd is Dictionary:
-		for kind: String in ["barricade", "tower", "spikes"]:
-			var c := _whole((cd as Dictionary).get(kind, 0))
-			if c > 0:
-				defence_legacy_credit[kind] = clampi(c, 1, maxi(1, _whole(caps.get(kind, 5))))
 
 
 ## A JSON number as a whole number (cut like int()); anything else, or a number that is not finite, is 0.

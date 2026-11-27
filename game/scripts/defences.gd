@@ -262,12 +262,6 @@ func rebuild() -> void:
 	_markers.follow_spots()
 
 
-## The OLD shared level of a kind (Save.def_levels). Nothing live reads it any more (each piece has its own level); it stays
-## for the older tests, relevel and the old shelf.
-func level(type: String) -> int:
-	return clampi(int(Save.def_levels.get(type, 1)), 1, (Data.defence_info(type)["levels"] as Array).size())
-
-
 ## The model of a kind at a level: the tier's own "model" (defence_info levels[].model). A level whose model is not made
 ## yet shows the one before it.
 func model(type: String, lv: int) -> String:
@@ -395,34 +389,6 @@ func _set_seg(p: Dictionary) -> void:
 	var b := _half - (PIECE_R if k < n - 1 else 0.0)
 	p["a"] = (p["pos"] as Vector3) - along * a
 	p["b"] = (p["pos"] as Vector3) + along * b
-
-
-## The OLD shared-level path (the shelf's upgrade, and older tests): every piece of a kind goes to level(type), models and
-## health new. Damage kept after a raid or a camp fall keeps its share; the rest is whole. Live play does not call it:
-## each piece is upgraded on its own (upgrade_placed).
-func relevel(type: String) -> void:
-	var lv := level(type)
-	for row in rows:
-		if type == "barricade":
-			row["level"] = lv
-	for p in pieces:
-		if p["type"] != type:
-			continue
-		var share := clampf(float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0)
-		p["level"] = lv
-		p["max_hp"] = _max_hp(type, lv)
-		if p["wrecked"]:
-			p["hp"] = float(p["max_hp"]) * share
-			p["broken"] = float(p["hp"]) <= 0.0
-		else:
-			p["hp"] = p["max_hp"]
-			p["broken"] = false
-		_swap_model(p, lv)
-		_show(p)
-		_collide(p)
-		_markers.reattach_piece(int(p["id"]))
-		Fx.boing(p["node"], 0.3)
-	_refresh_marks()
 
 
 ## A piece wears the model of a level: a barricade section gets it from its row, a tower or patch frees its node and

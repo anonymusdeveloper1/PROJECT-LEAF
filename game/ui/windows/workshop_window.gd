@@ -110,7 +110,10 @@ func _stock_row(kind: String, entry: Dictionary) -> Dictionary:
 		note = _w("workshop_count_spikes") % [held, placed, Bag.room_for(kind)]
 	var unlocked: bool = d.unlocked(kind)
 	if why != "":
-		note += "\n" + why
+		var shown := why   # H6 S3c: "Max level for now" is about levels; a piece at its limit says so
+		if why == Data.word("max_for_now"):
+			shown = _w("workshop_limit") % (held + placed)
+		note += "\n" + shown
 	return list_row(String(entry["icon"]), String(entry["name"]), note, buy.price() if unlocked else {},
 		_w("buy") if unlocked else "", why == "", st._buy_piece.bind(kind), "", kind)
 

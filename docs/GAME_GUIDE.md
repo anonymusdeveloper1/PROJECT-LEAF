@@ -20,6 +20,12 @@ Upgrade, the build menu, and new windows for the Market, the Saddlery and the Ta
 gone**; the pet is bought and trained at the Market. They are described in part 3 ("The building windows") and part 5,
 and marked **(H4)** or **(H5)**. The plan is `docs/PHASE_H_PLAN.md`.
 
+**New (27 Nov 2026, H6).** Defences have their own building, **the Defence Workshop**. Every tower, barricade row and
+spike patch now has **its own level** and its own card with an Upgrade. The Hearthtree's Defences tab and its Mend row
+are gone: **the Wishing Well mends standing defences** (the owner's answer). Four tanks have **armour**, three
+**specialisations** can be learned, and placing a tower or spikes can be **undone**. They are described in parts 3 and
+4, and marked **(H6)**. Part 11 lists the new code.
+
 ---
 
 ## 1. The game in one page
@@ -214,16 +220,18 @@ In a fight, enemies go for the campfire last but hardest. If it is destroyed, th
 
 The tree home and its campfire are both called **the Hearthtree** (New, G2; the level names stay).
 The home's counter is the **shop**. It sells: the Training Target and the Bow Shop (New, 21 Nov 2026, G3: it was the Bow Bench); the cat's own Health, Move speed
-and Leaf magnet; acorn towers and thorn spikes, and their levels; "Mend the defences"; growing the home (see the goals
+and Leaf magnet; growing the home (see the goals
 above); and the **Graphics** setting (Auto, Low, Medium, High). After the raids, "Mend all" sits at the top when
-anything is damaged.
+anything is damaged. **New (H6): towers, spikes and "Mend the defences" are no longer sold here.** They moved to the
+Defence Workshop (part 3).
 
-**New (H4, 26 Nov 2026): the shop is a window with tabs.** It has **Hearthtree**, **Cat** and **Defences** tabs along
-the top. A tab shows once it has something, and there is no tab bar while only one tab shows. The window always opens
+**New (H4, 26 Nov 2026): the shop is a window with tabs.** It has **Hearthtree** and **Cat** tabs along
+the top (H4 also had a Defences tab; **H6 removed it**, the Workshop took its place). A tab shows once it has something, and there is no tab bar while only one tab shows. The window always opens
 on the Hearthtree tab, and a tab gets a small "!" when something on it can be bought. Mend all, Patch it up and
 "Nothing for sale yet" stay at the top of the Hearthtree tab, and Graphics at the bottom. The Cat tab lists Health,
-Move speed and Leaf magnet, each with its level, what the next level gives, and its own button. The Defences tab holds
-the old defences shelf until a later step (H6) gives it its own place. See "The building windows" below.
+Move speed and Leaf magnet, each with its level, what the next level gives, and its own button. See "The building
+windows" below. A goal that used to say "Show" on the Defences tab now sends the cat to the Workshop, the Bag, a pad
+or a placed piece.
 
 > **New (20 Nov 2026, G2): what changed at the shop.**
 > - **Barricades** are no longer sold here. Build them as rows on the road markers (part 2). The barricade's level
@@ -296,6 +304,7 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 | Market | Bramble the hedgehog trader. **New (H5): the Market is one window with four icon tabs at the bottom: Sells, Buys, Mounts and Pets** (see "The building windows" below). It has no levels and no Upgrade. **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25. Food goes into the Bag; with no room the picture says "Bag full" and nothing is paid (New, H3). He does not sell Emberpeppers or Swiftroots. Bramble sells no materials (New, H1, 25 Nov 2026). **Buys:** timber (5 for 30 leaves), a Golden Carp for 300 leaves at any time (New, H3, 26 Nov 2026), and after the missions amber: 1 amber for 1,000 leaves and 1 Gloom shard. **New (H5, the owner's rule): Bramble no longer buys Gloom shards** (5 for 100 leaves is gone). **Mounts and Pets:** Thistle and Bramblewool (free with the Market), Sprig (160 leaves) and Lumi (400 leaves), the pet's training, colours and the Gloomwood gear. A new Market has 200 health; one an old save already upgraded keeps its 340 or 500. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle and Bramblewool come free with it. |
 | Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). **New (H5):** its window shows the cat turning on a stand, with the outfits as cards below. It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
 | Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Skill and attachment levels 4 and 5 open after the Raid Missions (New, H1, 25 Nov 2026: they cost leaves and timber only, no materials). Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
+| Defence Workshop | **New (H6, 27 Nov 2026).** Where defences are bought, improved and specialised (see "The Defence Workshop" below). It has 5 levels, and its level caps every piece's level. It stands on its own new open spot, full size (about 3 x 3 m), off the paths and the road pads (the owner's answer). It can be attacked and ruined like other buildings. Health at levels 1 to 5: 200, 320, 480, 650, 850. The owner's own model is in the game; a warm-tinted Bow Bench stands in if its file is missing. | Build menu, after Raid Mission 2 is won: 250 leaves and 10 timber. Levels 2 to 5 cost 400/20, 900/35, 1,800/55 and 3,200/80 (leaves/timber), never above the Hearthtree's level. |
 | Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. **New (H1, 25 Nov 2026):** it is built at **Hearthtree 3** (it used to need 4 raids won; a save that already has it keeps it). Its card has only its Upgrade row, and the card's subtitle shows its rates. In waves it mends **1%, 1.5% or 2.5%** of max health a second (it was 0.5, 1 and 2); between waves 3%, 6% and 10% as before. It also mends the standing Moss Warden; a downed golem gets up by its own rules. A worn Well is still repaired from the signpost's Mend list. | Shop, at Hearthtree 3 |
 | Garden and cooking pot | Grow food in real time and cook potions (part 6; New, H3). Garden levels 2 and 3 cost 400 and 1,000 leaves. | Gift for winning raid 1, with 4 Sunberries |
 | Fishing Spot | Fishing at the lake (part 6) | Gift for winning raid 6 |
@@ -360,6 +369,19 @@ shows only its repair card.
   outfit you don't own is grey and can still be tried on. **Tap a card to dress the preview** (it changes only the
   picture, never what the cat wears). One button shows Buy, Wear or Wearing, under the same rules as before (part 9).
   Back closes the Nook.
+- **The Defence Workshop (H6).** Two tabs at the bottom, **Defences** then **Specialisations**. Its Upgrade is pinned.
+  - **Defences:** one row per kind: the Acorn Tower, Thorn Spikes and the Road Barricade. Each row shows how many you
+    have and the limit (held in the Bag plus placed), its price, and one Buy. A tower or spikes you buy go into the
+    Bag, as in H3 (part 4). A barricade row is built on a road pad (part 4), not bought here. A kind that is not open
+    yet shows a locked row with what it needs. When a kind's limit is reached its Buy is grey and the row says
+    "Limit reached (N)". **Max level for now** is only about levels, never about the limit.
+  - **Specialisations:** three cards, each with **Learn** and then two upgrades (see "Specialisations" in part 4). A
+    card shows once its kind is open: Explosive acorns and Reinforced barricades from the start, Deep thorns once
+    spikes open at Raid Mission 3.
+  - **The Upgrade:** the Workshop's own level, 1 to 5, never above the Hearthtree. Its confirm says "Defences up to
+    level N" (the cap it gives), with the price (leaves and timber) in red when you can't pay.
+  - It works only above ground and between waves, like the other building windows. A building in ruins shows only its
+    repair card.
 
 ### The bows (New, 22 Nov 2026)
 
@@ -387,7 +409,7 @@ nothing until it is repaired (a ruined home closes the shop, a ruined stall mean
 raid mends every ruin for free.
 
 > **New (20 Nov 2026, G2): tower repair.** A knocked-down acorn tower shows a repair marker. Tap it to repair the tower.
-> **New (22 Nov 2026, loop fixes): the tower's repair costs the same as "Mend the defences" for that tower**, leaves
+> **New (22 Nov 2026, loop fixes): the tower's repair costs the same as "Mend the defences" did for that tower** (that row went in H6; the price rule stays), leaves
 > only (for example 27 leaves in the raids, 41 after the raids, at tower level 2). It was 30% of the tower and its
 > upgrades, plus timber.
 >
@@ -556,9 +578,71 @@ within 7 m, then the **nearest building** within 9 m, then the **campfire**.
 >   mended cheaply in a wave);
 > - hurt but not cracked: its missing share of health.
 
-All acorn towers and thorn spikes share one level, bought in the shop and capped by the home level. Upgrading
-a defence type updates every placed piece of that type. **Acorn arrows (23 Nov 2026):** the five existing tower
-models reach 5/6/7/8/9 m and deal 8/14/24/36/44 damage. Their arrows grow 1.6× to 2.4× the cat's Twig arrow and
+**New (H6, 27 Nov 2026): every piece has its own level.** (Before H6 all towers of a kind shared one level, bought on
+the Hearthtree's card.) The numbers below are the owner's answers.
+
+- **Where a level comes from.** Tap a placed tower, barricade row or spike patch: its own card opens with its level
+  ("Level 2 of 5"), its health, what the next level gives, and **Upgrade**. Upgrade opens the usual confirm window.
+  From farther away, the tap walks the cat to the piece first, like any camp marker. Dragging still moves the cat, and
+  while you place a piece the ghost and its Place and Cancel stay in control. The old tap rule for buildings and
+  other markers is unchanged.
+- **Price.** A piece pays what upgrading its whole kind cost before H6, in leaves (the owner's answer, Q1):
+
+  | Kind | Level 2 | Level 3 | Level 4 | Level 5 |
+  |---|---|---|---|---|
+  | Barricade row | 200 | 480 | 1,500 | 3,480 |
+  | Acorn Tower | 220 | 500 | 2,400 | 5,760 |
+  | Thorn Spikes | 180 | 420 | 1,200 | 3,060 |
+
+  Level 4 used to cost Gloom shards (60, 90 and 50). It now costs **timber** (20, 30 and 15), and **level 5 stays
+  leaves only**. No shards ever buy power. Upgrading a piece **heals it to full**.
+- **Caps.** A piece's level is capped by the Workshop's level **and** the old gates still hold (the owner kept both):
+  level 4 needs all Raid Missions won, level 5 needs the expedition Burrows open. A grey Upgrade says which one is
+  missing ("Needs Workshop lv 2").
+- **Buying.** A new tower or spikes starts at level 1. **A piece that goes back into the Bag keeps its level and its
+  damage** (the owner's answer, Q4), and keeps them when you place it again. There is no Pick up button.
+- **Mending (the owner's answer).** The owner said the Wishing Well does this job. **There is no "Mend all defences"
+  button any more**: the Hearthtree's Mend row went with its Defences tab. The Well mends standing defences back to
+  full by itself, in the background (part 3), and a piece that is broken (0 health) is repaired from its own card, as
+  before: a tower shows Repair only when it is down, a row when a section is broken. The Hearthtree's "Mend all" for
+  the camp's buildings stays. Winning a raid still repairs the defences for free.
+- **Old saves.** Every placed piece keeps the level its kind had. Towers and spikes already in the Bag keep that level.
+  A kind that was levelled but has no piece (placed or held) keeps its paid level as a one-time credit for the first
+  piece of that kind.
+
+#### Specialisations (New, H6)
+
+Learned at the Workshop's second tab, for leaves and timber. Learn costs 250 leaves and 10 timber, then two upgrades
+of 550/20 and 1,100/35. Each acts on every piece of its kind at once. The numbers are the plan's first guesses, which
+the owner accepted (Q3); they are in `content/specialisations/<id>/entry.json`.
+
+| Specialisation | Kind | Levels 1 / 2 / 3 |
+|---|---|---|
+| Explosive acorns | Acorn Tower | The acorn bursts in a 1.2 m blast for 30 / 45 / 60% of the hit on each other foe near it. The blast never chains. |
+| Reinforced barricades | Barricade row | Rows have +25 / 40 / 55% health, and a row cracks at 35% health instead of 50%. |
+| Deep thorns | Thorn Spikes | The slow is 30 / 40 / 50% stronger, and it lasts 1 s after an enemy steps off. |
+
+#### Armour (New, H6)
+
+Four tanks now have armour, which cuts every hit (arrow, acorn, burn, spikes) by a share. Their health was lowered by
+the same share, so they take as long to kill as before.
+
+| Enemy | Armour |
+|---|---|
+| Toadstool Brute | 20% |
+| Stump Golem | 25% |
+| Crystal Snail | 30% |
+| Beetle Knight | 35% |
+
+- **Bosses have none**: the Bear, the Owl, the Stag, the Gloom Herald and the expedition Chief. **A tank that is an
+  expedition room's boss has no armour and its health as today** (the owner, 27 Nov).
+- The Frog Shaman's heal is reduced by the same armour. The Beetle Knight's shield still comes first.
+
+#### Undo (New, H6)
+
+After you place a tower or spikes, an **Undo** button shows beside Place and Done, and takes the last piece back to the
+Bag with its level and damage. It goes away when a wave starts, when you go below ground, or when you load a save.
+**Acorn arrows (23 Nov 2026):** the five tower levels' models reach 5/6/7/8/9 m and deal 8/14/24/36/44 damage. Their arrows grow 1.6× to 2.4× the cat's Twig arrow and
 change tip/fletching colours at each tier: leaf/silver, pale blue, gold, violet and amber. Only the upper crossbow
 turns and tilts. Loading, string draw, release, recoil and the arrow trail are animated. Broken towers stop and
 hide their arrow until repaired. An upgrade loads the new tier automatically.
@@ -570,12 +654,11 @@ Bag closes and the green or red ghost shows in front of the cat. Below ground Pl
 placed piece drops in with a small bounce and a puff of dust. **The ghost is now red by the lake and by the home**
 (the owner's yes, 26 Nov 2026): it uses the same rule as the start-up check, so a piece is never put somewhere that
 sends it back to the Bag at the next start. A piece sent back that way always goes in, even into a full Bag. There
-is no Undo yet (H6).
+is no Pick up button; **Undo** (H6, above) takes the last placed piece back.
 
-Buying a barricade level on the Hearthtree's card makes every row tougher at once. Towers and spikes get stronger each level. Level 4 (Shardstone and the shard levels) costs Gloom shards
-and opens after the raids; level 5 (Heartwood, Amber, Amber Thorns) costs leaves only and still opens with the Gloomwood (New, H1, 25 Nov 2026: it asked for expedition materials before). Broken defences are
-mended free when a raid is won; after a camp fall or a raid they stay broken until mended in the shop or with
-"Mend all".
+Broken defences are mended free when a raid is won. After a camp fall or a raid, a piece that is only worn is mended
+by the Wishing Well. A piece that is broken stays broken until you repair it from its own card (H6; the "Mend the
+defences" row and "Mend all" for defences are gone).
 
 ### The Last Stand and the camp falling
 
@@ -641,6 +724,8 @@ The owner wants 2 or 3 more bosses later (part 10).
 | The Elder Thornstag (boss) | Charges through barricades, stamps, calls Stump Golems |
 | Golden Grub (bonus) | Runs round the camp with 40 leaves and escapes after 14 s (part 4, Reasons to move) |
 | Gloom Totem | A crystal spire that speeds up and toughens enemies near it until the cat breaks it |
+
+**New (H6): armour.** The Toadstool Brute (20%), Stump Golem (25%), Crystal Snail (30%) and Beetle Knight (35%) cut every hit by that share (part 4, "Armour"). Bosses have none.
 
 The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (part 8).
 
@@ -959,7 +1044,7 @@ Raids start with the first win of raid 15. They come only while you are playing 
 
 - Damage carries over between raids: **ruins**, **wrecked defences**, and **wear** (a building keeps the share of
   health raids took from it; it darkens and gets rubble piles at its foot).
-- Fix it with **Patch it up** on a building's card, "Mend the defences" in the shop, or **Mend all** (or **Mend
+- Fix it with **Patch it up** on a building's card, a defence's own card (H6; the Well mends the standing ones), or **Mend all** (or **Mend
   some**, when you cannot pay for all) on the Watch card and at the top of the shop. Each mended thing springs back
   with a flower ring. Ruin repairs are capped in price (the Hearthtree's: part 3; New, 22 Nov 2026, loop fixes).
 - The Warden is knocked down by raids and gets up by itself.
@@ -1567,7 +1652,7 @@ Step H5. The game side is parts 3 and 5. The owner's answers are in `docs/PHASE_
   with `outfit_preview.gd`. Kit: `ui/kit/item_popup.gd` (the amount popup) and `skill_triangle.gd`. Tests reach them as
   `hud.windows["stall"]` (`select(t)`, `tab_ids()`, `tab_spec(t)`, `entries(t)`, `inspect(id)`, `back()`, `open_on(t)`,
   `.trade`), `hud.windows["saddlery"]` and `hud.windows["tailor"]` (`entries()`, `try_on(id)`, `selected_id()`).
-- **The save is version 5** (`core/save_upgrade_v5.gd`, frozen numbers in `balance.json save_upgrades.to_v5`). What a
+- **The save was version 5 in H5 and is version 6 since H6** (see the H6 section; this is the 4→5 step) (`core/save_upgrade_v5.gd`, frozen numbers in `balance.json save_upgrades.to_v5`). What a
   player owns is `owned[kind][id] = {"level": n}`. New fields: `owned`, `pet_level`, `market_hp_floor`;
   `saddlery` is `{skills, skill_slots, worn, mount_credit}`; `attach` is `{mount, pet}` (the worn ones). The 4 to 5 step:
   the Cottage's level becomes `pet_level` and Sprig and Lumi are owned; the Market becomes level 1, its old level is
@@ -1587,6 +1672,104 @@ Step H5. The game side is parts 3 and 5. The owner's answers are in `docs/PHASE_
 - **Tests:** `--campg`, `--saddlery`, `--tailor`, `--cards`, `--content` and `--saves` were rewritten or extended, and
   `--layout`, `--hudcheck`, `--taps`, `--bag`, `--topup`, `--homegoals`, `--buildmenu`, `--village`, `--wear` and
   `--shards` were moved to the new windows. New `--h5found`. Results are in `docs/STATUS.md`.
+
+### The Defence Workshop, per-piece levels, armour and the code rebuild (New, H6, 27 Nov 2026)
+
+Step H6, on `feature/h6-defence-workshop` (local; H2 to H5 are pushed and not merged). The player side is parts 3 and
+4. The owner's answers (Q1 to Q4, the gates, the Well's mending, the Workshop's spot, the code rebuild) are in
+`docs/PHASE_H_PLAN.md`, H6. The structure is in `docs/ARCHITECTURE.md` (parts 4, 5, 10 and 13). H6 was built in three
+stages: stage 1 the code rebuild with H5's gameplay (commit `a46d449`), stage 2 the Workshop and the player changes
+(`b3b2364`), stage 3 the clean-up and the docs.
+
+- **Enemies are built from parts and states.** `scripts/enemy.gd` is a facade (`hp` and `max_hp` forward to Health;
+  `setup(kind, patch, strength, armoured := true)`; every old private name is a one-line forwarder, so the tests kept
+  them). The parts are in `parts/`: `health.gd`, `armour.gd`, `enemy_mover.gd`, `enemy_attack.gd`, `enemy_heal.gd`,
+  `status.gd`, `enemy_loot.gd`, `health_bar.gd` and `enemy_brain.gd`. The states are in `states/enemy/`
+  (`enemy_state.gd` is the base; then action, blink, charge, dash, dash_windup, daze, dig, down, emerge, flee, pounce,
+  roam, sleep and windup). The Brain still reads `enemy.state`, a word.
+- **One damage function.** Hits, burns and spikes all go through `enemy._apply_damage(dir, amount, source)` with source
+  `"hit"`, `"burn"` or `"spikes"` (`hurt_spikes(amount)`; `heal_raw(amount)` for the Frog). The order is: shield, daze
+  weak spot, Bellow, Totem, then `last_raw` (arrow.gd reads it to start the Ember burn), then armour, then Health.
+  `last_dealt` is what is left after armour. The Frog's heal is times (1 - armour). The blast hits each other foe once
+  and never chains.
+- **Armour is a part.** `parts/armour.gd` has `share`, `set_share`, `factor` and `reduce`. It is always present; share 0
+  changes nothing. The share comes from the enemy's entry (`parts.armour.share`) and is set only when
+  `setup(..., armoured)` is true: `fight.spawn` and `burrow_run` pass false for a boss and for a tank that is an
+  expedition room's boss (`opts.boss`). Max health is `hp * mult * factor()`, so the four tanks die as fast as before.
+- **The enemy grid** (`core/enemy_grid.gd`, `main.enemy_grid`, `balance.json enemy_grid`: `cell_m` 4, `slack_m` 0.5,
+  `max_cells` 64). `add`, `move`, `remove` (each safe to repeat), `candidates(min_xz, max_xz, group)` and
+  `near(centre, r, group)`. `candidates` gives a superset in registration order; the caller keeps its own exact
+  distance test. Used by arrows, acorns, fireballs, the mount, towers, spikes, the heal and drum scans, the totem and
+  the blast.
+- **Place and Undo.** `commands/place_defence.gd` (`PlaceDefence.new(kind, spot, rotation_y)`) and
+  `commands/undo_place_defence.gd` (`UndoPlaceDefence.new(piece_id)`), both with `can_run(main)` and `run(main)`.
+  `scripts/defence_placement.gd` is the one place that places (the ghost, `valid`, `place_here`, the receipt, revert),
+  and `defences.gd` forwards (`commit_placement`, `undo_place`, `can_undo_place`, `return_blocked_for_station`). The
+  receipt is cleared when a wave starts, the area changes or a save loads. The HUD's Undo button is in
+  `ui/hud/action_buttons.gd` and `hud_layout.gd`.
+- **The ability toolbox.** `abilities/ability.gd` (damage in a circle through the grid, knockback, effects) and
+  `abilities/explosive_acorns.gd`, the first ability on it. `acorn.gd` calls it when the tower's specialisation is
+  learned. No mount skill has moved onto it yet.
+- **Defences, in files.** `defences.gd` is the facade (1,159 lines after H6, still over the 800-line guide).
+  `defence_levels.gd` holds levels, caps, quotes, upgrades, `apply_level`, `restat`, the repair quote, `crack_at`,
+  `slow_mult` and `max_hp`. `defence_markers.gd` holds the road-pad, tower and spike markers, the cards, the tap boxes
+  and the walk points. `defence_persistence.gd` holds loading, wrecks and carried records. `defence_placement.gd` holds
+  placing. The facade offers `piece_cap`, `level_stats`, `new_row_level`, `pad_reason`, `repair_quote`, `repair_placed`,
+  `piece_marker`, `empty_pad_marker`, `row_broken`, `piece_at`, `piece_level`, `row_level`, `best_level(kind)` (raids
+  use it), `placed_count`, `upgrade_quote`, `upgrade_placed`, `goal_marker` and `refresh_specialisation`. **`level(kind)`
+  and `relevel` are gone**: one level per kind died with `def_levels`.
+- **Markers and taps.** Each tower (`tower_<id>`) and spike patch (`spikes_<id>`) has a marker; a row has one per road
+  pad. `marker.gd` gained `set_badge_visible`, `badge_is_visible`, `set_body_proxy(Callable)` and
+  `body_hit(cam, pos)`. `interact.gd` `tap(pos, pieces_ok)` and `pick`: piece against piece, a badge hit wins, then the
+  smaller depth, then the lower id. The rule for every other marker is unchanged. `pieces_ok` is false while a finger
+  is down for a drag.
+- **The Workshop.**
+  - Content: `content/buildings/workshop/entry.json` (price, unlock `missions_won 2`, `arrives: "menu"`, levels,
+    `layout`), `content/defences/{barricade,spikes,tower}/` and `content/specialisations/{explosive_acorns,
+    reinforced_barricades,deep_thorns}/`. The Workshop's position is `[13.5, 0, 4.8]`, `foot_radius` 2.13, ring offset
+    `[0, 0, 2.75]`. Its model is `assets/props/defence_workshop.glb`; the layout's `stand_in` (`bow_bench_1`, warm
+    tint) is used only if the model is missing.
+  - Rules: `scripts/workshop_rules.gd` (static: build, model, tint, reason, upgrade reason, upgrade, buy a
+    specialisation). `stations.gd` keeps one-line entry points with the same names (`workshop_reason`,
+    `workshop_upgrade_reason`, `upgrade_workshop`, `buy_specialisation`). `Buy` learned the kind `specialisations`
+    (`_why_specialisation`, `_workshop_why`).
+  - Windows (`ui/windows/`): `workshop_window.gd` (two bottom tabs, pinned Upgrade), `defence_piece_window.gd` (a placed
+    piece's card) and `defence_pad_window.gd` (an empty road pad). `defences.use_window_builders` plugs them in after
+    `WindowList.make_all`. `defences_tab.gd` is deleted; the Bag test's Buy row comes from the Workshop window. Words
+    are in `balance.json windows` (`workshop_wave`, `workshop_below`, `workshop_returned`, `workshop_limit`,
+    `upgrade_stale`, `upgrade_gone`, `upgrade_cap`, `needs_raids`, `needs_burrows`, `pad_*`,
+    `mend_defences_own_cards`).
+  - Data: `Data.specialisation_level(id)`, `Data.defence_level_info(kind, lv)`, `Data.entry_price`, `Data.enemy`,
+    `enemy_has`, `enemy_role`, `squad`, `squad_ids` and `Data.building_layout(id)`.
+  - The Hearthtree's Defences tab and `stations._mend_raid` are gone. `raids.camp_row` and `mend_all` pay only for ruins
+    and wear, and an info row points a player with broken defences to their own cards. `camp_score` does not count the
+    Workshop. Raid power reads `best_level(kind)`.
+- **Buildings are laid out in data.** A building's entry has `layout`: `position`, `foot_radius` (or `foot_by_level` for
+  the home), `ring_offset`, `reserved {offset, r}`, `village {r, ring_r}`, `path {points, smooth, half_mult, peak,
+  trunk_of, fork_at}`, `grass_radius`, `grass_always`, `models_by_level`, `scale_at_camp` and `rotation_pi`.
+  `world.gd` (`station_pos`, `spot_ring`, `in_village`, `in_reserved`, `on_station_ground`, `_station_lines`) and
+  `stations.gd` (`foot`, `model_name`) read it. `SPOTS`, `SPOT_RING`, `MOVED`, `STATION_PATHS`, `RESERVED` and the
+  model tables are gone. `world.CAMP_ORDER` ends with "workshop". The Workshop's path leaves the Tailor's path at its
+  fork.
+- **Content folders.** New kinds in `content/index.json`: `enemies` (24), `squads` (12), `defences` (3) and
+  `specialisations` (3); `buildings` is now 11. The enemy catalogue left `balance.json` (it lost about 950 lines);
+  read it only through the `Data` calls above. Armour is each tank's `parts.armour.share`.
+- **The save is version 6** (`core/save_upgrade_v6.gd`, frozen `balance.json save_upgrades.to_v6`; ARCHITECTURE part
+  10). Every placed record has `level`. `Save.def_levels` is gone, from the writer and the loader. New fields are
+  `defence_reserves` (`{kind: [{level, wear?}]}`; empty kinds are not written) and `defence_legacy_credit`
+  (`{kind: level}`). `scripts/save_defences.gd` (static) checks them on load. `Save.STATIONS_DEFAULT` has
+  `"workshop": 0`. `tests/saves/v6_sample.json` is new.
+- **Tests (PC), end of stage 3, all passing:** `--workshop` 123 (phone shape 480x1040), `--workshop --foundation` 14,
+  `--rows` 169, `--campg` 110, `--bag` 110, `--layout` 132, `--hudcheck` 130, `--saves` 95, `--homegoals` 93,
+  `--content` 48, `--buildmenu` 48, `--taps` 22, `--topup` 24, `--shards` 15, `--wear` 11, `--laststand` 1, `--smoke`
+  clean, and the default run to wave 15. `autotest_workshop.gd` was split into itself, `autotest_workshop_pieces.gd`
+  and `autotest_workshop_rules.gd`; all three run inside `--workshop`. Stages 1 and 2 also passed `--fightf` 90,
+  `--enemyf` 22, `--assault` 33, `--burrowfoes` 9, `--saddlery` and `--bowshop`.
+- **Known and left for the owner or a later step:**
+  - With the cat standing directly behind the Workshop, its roof hides the cat (only the ears show). The design rule
+    "nothing tall between the camera and where the cat walks" is not met there; the owner may want to rule on it.
+  - `defences.gd` (1,159) and `stations.gd` (1,800) are over the 800-line guide.
+  - It is not on the phone yet.
 
 ### Tailor's Nook and cat outfits (23 Nov 2026)
 

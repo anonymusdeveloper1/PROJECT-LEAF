@@ -222,6 +222,20 @@ a building's window through `main.hud.windows[<id>]`, never through `stations`.
 - Moved to the new windows: `--layout`, `--hudcheck`, `--taps`, `--bag`, `--topup`, `--burrowsave`, `--homegoals`,
   `--buildmenu`, `--village`, `--wear` and `--shards`. Run them one after another, never in parallel.
 
+**H6 (27 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines):**
+- `--workshop` (`scripts/autotest_workshop.gd`, 123 checks; it runs three parts in one live run:
+  `scripts/autotest_workshop_pieces.gd` for Place, Done and the last-placement Undo, the piece cards' taps, per-piece
+  levels and repair, and `scripts/autotest_workshop_rules.gd` for the three specialisations, armour and the save (v5
+  in, v6 out, held stock, wear, the credit, two loads)). It also runs at the phone's shape:
+  `--workshop --safe-top=73 --safe-bottom=42` at 480x1040.
+- `--workshop --foundation` (14 checks, in the same file): the v5 to v6 converter and the frozen inputs, and the Place and
+  Undo commands. It skips the live run.
+- The Workshop's save part is in `scripts/save_defences.gd` and its rules in `scripts/workshop_rules.gd`; both are
+  checked through `--workshop` and `--saves` (95 checks, with a v6 round trip).
+- Also re-run for H6: `--smoke`, `--content` (48), `--saves` (95), `--rows` (169), `--campg` (110), `--bag` (110),
+  `--layout` (132), `--hudcheck` (130), `--homegoals` (93), `--buildmenu` (48), `--shards` (15), `--topup` (24),
+  `--laststand` (1), `--wear` (11) and `--taps` (22). Run them one after another, never in parallel.
+
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
 bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Current PC result: 77 pass,

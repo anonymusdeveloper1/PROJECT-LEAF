@@ -35,7 +35,7 @@ game/
                effects.gd (the effects list), bag.gd (the Bag's counts and stacks, static functions), enemy_grid.gd
   parts/       health.gd, armour.gd, mover.gd, attack.gd, heal.gd, status.gd, effects_holder.gd, loot.gd,
                health_bar.gd, brain.gd, shooter.gd, skills.gd, attachment_slot.gd, level.gd …
-  brains/      enemy/, boss/, companion/, cat/, mount/, game/      one small file per state
+  brains/      enemy/, boss/, companion/, cat/, mount/, game/      one small file per state (H6 built the enemies' as `states/enemy/` next to `parts/`; the rest move later)
   abilities/   ability.gd (the shared toolbox) + one file per move: stomp.gd, ram.gd, heal_pulse.gd …
   commands/    move.gd, shoot.gd, ride.gd, use_skill.gd, use_potion.gd, place_defence.gd, buy.gd …
   world/       camp/, expedition/ (the run builder, room types), biome.gd
@@ -115,11 +115,11 @@ game/
     (`CardParts.TAB_ICON_ALONE`); `card_signpost._start_signpost_reveal` accepts a row that was already freed.
   - The pet (`pet.gd`) takes its model from its content entry and never hides.
   - `hearthtree_window.gd` has tabs at the top: **Hearthtree** (Mend all, Patch it up, "Nothing for sale yet", its
-    goals and the Graphics row, with the pinned Upgrade), **Cat** (the cat's own upgrades, `stat_list.gd`) and
-    **Defences** (`defences_tab.gd`, the whole old shelf until H6's Workshop). A tab shows once it has something, and
+    goals and the Graphics row, with the pinned Upgrade), **Cat** (the cat's own upgrades, `stat_list.gd`).
+    (H6 removed its **Defences** tab and `defences_tab.gd`: the Workshop took the shelf.) A tab shows once it has something, and
     there is no tab bar with one tab. The window always opens on the Hearthtree tab, and a tab shows a "!" dot while
-    something on it can be bought. A goal's Go walks the cat to the marker that sells it; Show opens the Cat or
-    Defences tab at its row, or the build menu at a building not built yet (`Data._goal` gives such goals the station
+    something on it can be bought. A goal's Go walks the cat to the marker that sells it; Show opens the Cat tab at its row,
+    the Workshop, the Bag, a pad or a placed piece (H6), or the build menu at a building not built yet (`Data._goal` gives such goals the station
     `"build"`).
   - `bow_shop_window.gd` lists the bows as list rows: the bow in the paw shows Upgrade with its price, then a grey
     Equipped when it can't level now; other owned bows show Equip, the rest Buy or Locked. A tap on a bow's picture
@@ -212,6 +212,24 @@ depends on whom, so **there are exactly eight**, each with one job:
   start and end of a `stat_mult` hands its owner the full map of every running stat (the cat: `Data.set_effect_mults`,
   read by `Data.effect_mult`). Its API: `add(e, source)`, `has_source`, `left`, `mult`, `active()`, `clear()`,
   `step(dt)` and the signal `changed`.
+- **Built in H6 (enemies):** `scripts/enemy.gd` is the one node; it makes its parts and finds them by the names `_health`,
+  `_armour`, `_mover`, `_attack`, `_heal`, `_status`, `_loot`, `_bar` and `_brain` (child nodes of the enemy, with no
+  process callbacks: the enemy's own `_tick` drives them).
+  - `parts/health.gd` (signals `changed` and `died`; `apply_damage`, `set_hp`, `set_max_hp`, `heal`) and
+    `parts/armour.gd` (`share`, `set_share`, `factor`, `reduce`). `hp` and `max_hp` on the enemy forward to Health.
+  - **Armour is a part, and it lives in each enemy's entry** (`parts.armour.share`). It is set only when `setup(kind,
+    patch, strength, armoured)` gets `armoured` true; bosses and a tank that is an expedition room's boss get false.
+    Max health is `hp * mult * armour.factor()`.
+  - `parts/enemy_mover.gd` (walk, flee, dig, pounce, blink, charge, dash, emerge, stride), `enemy_attack.gd`,
+    `enemy_heal.gd` (heal and drum), `status.gd` (burn, frost, the thorn slow and its linger, the totem scan),
+    `enemy_loot.gd`, `health_bar.gd` and `enemy_brain.gd` (`step`, `sleep_step`, `check_enrage`, `change_state`).
+  - **One damage function:** `enemy._apply_damage(dir, amount, source)`, source `"hit"`, `"burn"` or `"spikes"`. Order:
+    shield, daze weak spot, Bellow, Totem, `last_raw` (kept for the Ember burn), armour, wake (hit only), Health.
+    `last_dealt` is after armour. `hurt_spikes(amount)` and `heal_raw(amount)` are the other two doors.
+  - The old private names stay as one-line forwarders, so the tests did not change.
+- **Built in H6 (defences):** a tower, a spike patch and a barricade row each carry their own `level`. The levels, caps,
+  quotes and stats are `scripts/defence_levels.gd`; `tower.gd` reads `Data.defence_level_info(kind, level)` for its own
+  level. Still plain scripts and dictionaries, not the `parts/level.gd` of the plan.
 
 ### State: the Brain is a set of small state scripts
 - Each state is one short file with `enter()`, `exit()` and `update(delta)`, which returns the next state's name or
@@ -226,8 +244,14 @@ depends on whom, so **there are exactly eight**, each with one job:
 | Mount | Walk, Run, Skill move (Ram and Pounce carry it), Knocked out |
 | The game itself | Camp, Wave, Between waves, Random Raid, Expedition, Paused |
 
-- **Today** these exist as a word (`state := "walk"`) and a big `match` inside `enemy.gd`, `player.gd` and
+- **Today** (except the enemies, below) these exist as a word (`state := "walk"`) and a big `match` inside `player.gd` and
   `guardian.gd`.
+- **Built in H6 (enemies):** `states/enemy/enemy_state.gd` is the base, and each special state is one file:
+  `action_state`, `blink_state`, `charge_state`, `dash_state`, `dash_windup_state`, `daze_state`, `dig_state`,
+  `down_state`, `emerge_state`, `flee_state`, `pounce_state`, `roam_state` (the old `_think`, as `think()`), `sleep_state`
+  and `windup_state`. `parts/enemy_brain.gd` runs them. **Known difference:** the Brain still reads the enemy's
+  `state` word, and the 44 places that set `state = "..."` were not changed, so the states are not yet the only way a
+  state changes. Bosses' phases, the cat, the mount and the companions are still `match` blocks.
 
 ### Command: actions are objects that anyone can issue
 - **The cat:** Move, Shoot, Ride/Walk, Use skill, Use potion. The joystick, the buttons, auto-aim and the tests all send
@@ -237,6 +261,15 @@ depends on whom, so **there are exactly eight**, each with one job:
   through `core/effects.gd`). The HUD's two potion buttons, the Bag's Use button and the tests send it. A command never
   calls the HUD and never saves; the caller shows a refusal.
 - **Camp building:** Place, Move, Upgrade and Remove a defence, with **Undo** for placing from the Bag.
+  - **Built in H6** (`commands/place_defence.gd`, `commands/undo_place_defence.gd`): `PlaceDefence.new(kind, spot,
+    rotation_y)` and `UndoPlaceDefence.new(piece_id)`, each with `can_run(main)` (a reason or "") and `run(main)`. They
+    take a tower or spikes out of the Bag into the camp and back, with the piece's level and wear. A command never saves
+    and never calls the HUD; the facade (`defences.commit_placement`, `undo_place`) saves. The one place that places is
+    `scripts/defence_placement.gd`, which holds the ghost and the **receipt** of the last placement; the receipt is
+    dropped when a wave starts, the area changes or a save loads,. The HUD's
+    Undo button and the tests send the same command. **Move and Remove** are not built (the owner said no Pick up
+    button); **Upgrade** is `defences.upgrade_placed` and the Workshop's own is `stations.upgrade_workshop`, called
+    from the window's confirm, not yet as commands.
 - **Buying:** one **Buy** command used by every shop window. It checks the price and unlock rule, shows the confirm
   window, pays, marks the save, and announces `item_gained`. There is one way to buy anything.
   - **Built in H5** (`commands/buy.gd`): `Buy.new(kind, id, amount, expected_level, look_id)`, `can_run(main)` gives ""
@@ -298,6 +331,11 @@ depends on whom, so **there are exactly eight**, each with one job:
 - Each move is a short file using only those tools: the mount skills (Stomp, Ram, Pounce, Bellow), the Fire-spitter,
   boss attacks, the friend's heal pulse, specialisations (for example Explosive acorns).
 - **Today** the mount skills are functions inside `mount.gd` (`_stomp`, `_ram`, …).
+- **Built in H6:** `abilities/ability.gd` (static tools: hurt every foe in a circle once each through the enemy grid,
+  play a hit effect) and `abilities/explosive_acorns.gd`, the first ability on it. `acorn.gd` calls
+  `ExplosiveAcorns.burst(main, impact, first, raw_damage, level)` when `Data.specialisation_level("explosive_acorns")`
+  is above 0. The blast is 1.2 m for 30, 45 or 60% of the hit (the owner's Q3, in the specialisation's entry), hits
+  each other foe once and never chains. The mount skills and the Fire-spitter have **not** moved onto it yet.
 
 ### Object Pool: reuse instead of create and destroy
 - **Pooled:** arrows, tower bolts, acorns, fireballs, fire patches, damage numbers and text pop-ups, hit effects, leaf
@@ -318,8 +356,16 @@ depends on whom, so **there are exactly eight**, each with one job:
   friend finding hurt allies (a second grid for allies).
 - **Expeditions are built room by room:** only the current room and its neighbours exist. The rest of the run is a
   small description (a seed, the room list, what is cleared or opened). Rooms behind the cat go back to the pool.
-- **Today** every arrow checks every enemy each physics step, `main.nearest_enemy` loops over every foe, and the
-  Gloomwood is built whole when the cat goes in (its enemies spawn per fight and sleep until the cat is near).
+- **Built in H6** (`core/enemy_grid.gd`, `main.enemy_grid`, created first in `main._ready`; `balance.json enemy_grid`:
+  `cell_m` 4, `slack_m` 0.5, `max_cells` 64 are first guesses, to be measured on the phone). An enemy calls `add` at the
+  end of its setup, `move` after each physics frame while alive, and `remove` when it dies or leaves the tree (each safe
+  to repeat). `candidates(min_xz, max_xz, group)` gives a **superset** of the foes that could touch the box, in the order
+  they were registered (the order `get_nodes_in_group` gave), and `near(centre, r, group)` is a box around a point. The
+  grid never decides a hit: every caller keeps its own exact distance, cone and sleep tests. Used by arrows, acorns,
+  fireballs, the mount, towers, spikes (a 0.8 m box), the Frog's heal and the Crow's drum, the totem scan, the blast,
+  `main.nearest_enemy` and the separation step. A box that spans more than `max_cells` cells walks every entry. **The
+  allies' grid is not built.**
+- **Today** (outside the grid) the Gloomwood is built whole when the cat goes in (its enemies spawn per fight and sleep until the cat is near).
 
 ### Dirty Flag: recompute only when something changed
 - **The cat's final stats** (bow, levels, outfit, potions, boons): worked out when one of those changes, not every frame.
@@ -366,6 +412,27 @@ depends on whom, so **there are exactly eight**, each with one job:
   `pet_level {level}`. `gloom_raids.shard_trade` is gone. `balance.json` no longer has `looks.mount`, `looks.pet`,
   `cat_skins`, `attachments` or `mount_attachments`; `looks.guardian` stays. A code word moves into `windows` and is
   read through `Data.word` (`pet_joins`, `head_outfits`, the Market's words).
+- **Built by H6** (more kinds in `content/index.json`): `enemies` (24), `squads` (12), `defences` (barricade, spikes,
+  tower) and `specialisations` (explosive_acorns, reinforced_barricades, deep_thorns); `buildings` gains `workshop`
+  (11 in all). The enemy and squad catalogues left `balance.json`; callers read them only through `Data.enemy(id)`
+  (`{}` for an unknown id), `enemy_has`, `enemy_role`, `squad` and `squad_ids`.
+  - **An enemy's `entry.json`** has `role`, `height`, `radius`, `color`, `model` and `parts` (`health.max`,
+    `armour.share`, `mover.speed`, `attack {...}`, `status`, `loot`, `health_bar`, `brain {aggro...}`). **Armour lives
+    here**: Brute 0.20, Stump 0.25, Snail 0.30, Beetle 0.35 (the owner's Q3), with the health lowered so the time to kill
+    stays the same. Bosses have no `armour` block.
+  - **A defence's entry** has the kind's `levels` (each with its `price`, `hp`, `range`, `dps` or `slow`, `model`), the
+    `from_bag` and the limit by home level (`max_by_camp_level`); the level-5 tier has `needs_burrows`. **A specialisation's entry** has `kind`, `effect` (the ability's id),
+    `unlock`, `price` (to learn) and `upgrades` (the prices of levels 2 and 3). `Data.specialisation_level(id)` is 0 when
+    not learned. Both read prices through `Data.entry_price(kind, id, level)`.
+  - **Building layouts are data, one way for every building** (the H4 exception is closed). A building's entry has a
+    `layout` block: `position`, `foot_radius` (or `foot_by_level`), `ring_offset`, `reserved {offset, r}`, `village {r,
+    ring_r}`, `path {points, smooth, half_mult, peak, trunk_of, fork_at}`, `grass_radius`, `grass_always`,
+    `models_by_level {level_from, step_down, models}`, `scale_at_camp`, `rotation_pi`, `ring_marker` and `stand_in`.
+    `Data.building_layout(id)` reads it; `world.gd` and `stations.gd` keep no spot tables. `world.CAMP_ORDER` lists
+    the buildings that take part. A test (`--layout`, with the parity of H5's numbers) checks the camp is unchanged.
+  - **The Workshop's entry** is the first new building added this way: `position [13.5, 0, 4.8]`, `foot_radius` 2.13,
+    its path forking from the Tailor's, `model: defence_workshop`, `stand_in: bow_bench_1` (warm tint), price 250
+    leaves and 10 timber, `unlock {missions_won: 2}`, `arrives: "menu"`, five levels (the owner's Q2).
 
 - **The folder name is the id.** Ids are lowercase with underscores and **never change after release**; the name the
   player sees can change (the Ember Ranger's id is still `nightfall_ranger`).
@@ -430,7 +497,7 @@ depends on whom, so **there are exactly eight**, each with one job:
   - A building's `arrives` field says how it comes: `menu` (bought in the build menu), `gift` (a mission gives it),
     `found` or `always`. `Data.from_menu` replaces the old `SHOP_BUILT` list.
   - **H4 exception:** buildings' models, spots, footprints and ring offsets stay in `stations.gd` and `world.gd` until
-    a step adds a building with its own spot (the Workshop in H6).
+    a step adds a building with its own spot (the Workshop in H6). **H6 then moved every building's spot, foot, ring, path and models into its `layout` block** (below), so this exception is closed.
   - The window words live in `balance.json "windows"`, read through `Data.word(key)`. General building tables stay in
     `balance.json`: `building_hp`, `stat_cap_by_station_level`, `bow_cap_by_bench_level`, `bow_upgrade_curve` and the
     like.
@@ -507,8 +574,8 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ## 10. The save
 
-- **A version number** (today 5). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
-  (2→3, 3→4 and 4→5 are built), run in order when an older save loads. Before upgrading, the old file is copied to a
+- **A version number** (today 6). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
+  (2→3, 3→4, 4→5 and 5→6 are built), run in order when an older save loads. Before upgrading, the old file is copied to a
   backup. A step reads only frozen numbers (`balance.json save_upgrades.to_vN`) and erases every field it converts.
 - **4→5 (H5, `core/save_upgrade_v5.gd`, frozen `save_upgrades.to_v5`):**
   - the Cottage's level becomes the shared `pet_level`, and Sprig and Lumi are owned;
@@ -522,6 +589,21 @@ depends on whom, so **there are exactly eight**, each with one job:
   now `{"mount", "pet"}` (the worn expedition gear) and `saddlery` is `{skills, skill_slots, worn, mount_credit}`.
   `Data.pet_level()` is the shared pet level and `Data.mount_level()` is the highest of 1, the Saddlery's level and
   `mount_credit` (0 while no mount is owned).
+- **5→6 (H6, `core/save_upgrade_v6.gd`, frozen `balance.json save_upgrades.to_v6`):** defence levels move from one level
+  per kind (`def_levels`) onto the pieces. A pure function on the dictionary; it never touches Save, Bag or the world.
+  - Every tower and spikes record, and every barricade record (a single-piece old one too), gets `level` = its kind's
+    old level, clamped to 1..the cap.
+  - Held towers and spikes keep that level: when it is not 1, `defence_reserves[kind]` holds one `{level, wear?}` per
+    held piece. Fresh level-1 stock needs no record, and empty kinds are not written.
+  - A paid level above 1 with no piece to carry it (none placed, no row spot, none held) becomes
+    `defence_legacy_credit[kind] = level`: the first new piece of that kind starts there (the owner: old saves keep what
+    they paid for). A barricade in the Bag is refund stock and never counts.
+  - `def_levels` is erased. **`Save.def_levels` is gone from the writer and the loader** (the owner's review rule).
+    A file without it was already converted, so a second run checks and changes nothing.
+  - A v6 file never meets the step, so the loader checks it: `scripts/save_defences.gd` (static) makes every placed
+    record's level a whole number in 1..cap and reads the reserves and credits by the same rules.
+  - `Save.STATIONS_DEFAULT` has `"workshop": 0`; a save with the Workshop keeps its level and its ruin flag like any
+    other building. The Bag still counts towers and spikes in `items` (the reserves carry their levels).
 - **What the player owns has one form for every kind:** `owned[kind][id] = {"level": 1, …}`, built in H5 for mounts,
   pets, outfits and attachments (`Data.owned_level`). **Not yet for the rest:** in H3 the
   Bag is a simple `bag` of counts (`{"berries": 5, "health_potion": 1}`: food, fish and potions; `core/bag.gd` writes
@@ -533,7 +615,7 @@ depends on whom, so **there are exactly eight**, each with one job:
   by an upgrade step (as amber, glowstone, heartwood and the keys become leaves in H1, and in H3 the pantry goes into
   the Bag, an old dish becomes a Health Potion, and a half-grown crop keeps its share as a Timers job).
 - **Sample saves** of every version live in `tests/saves/` (today `v2_sample.json`, `v3_sample.json` and
-  `v4_sample.json`, and H5 adds `v5_sample.json`), and a test loads each one.
+  `v4_sample.json`; H5 added `v5_sample.json` and H6 `v6_sample.json`), and a test loads each one.
 
 ## 11. Tests
 
@@ -561,6 +643,17 @@ depends on whom, so **there are exactly eight**, each with one job:
   `--village`, `--wear`, `--shards`, `--burrowsave`) read the Market, Saddlery and Tailor windows only through
   `main.hud.windows[<id>]`. A test that needs the old Cottage's ground uses the fixture `(6.4, 0, 3.6)`, never
   `station_pos("cottage")`.
+- `--workshop` (H6; `autotest_workshop.gd`, with `autotest_workshop_pieces.gd` and `autotest_workshop_rules.gd` loaded by
+  it, 123 checks on the phone shape 480x1040): boot at v6, the Workshop's content, build and shop, Place and Undo, taps
+  on pieces, levels and gates, repair, the Well, goal routes, the specialisations, armour and the save.
+  `--workshop --foundation` (14) keeps the H5 gameplay check on the live boot.
+- `--saves` (95 since H6) loads v2 to v6: the frozen v5 file is backed up and upgraded; a mixed-level v5 camp covers
+  held stock, a worn tower, uneven row wear and a credit; a second load and a bare second file inherit nothing.
+- `--content` (48) knows the new kinds. `--rows` (169), `--layout` (132, includes the Workshop's ground), `--bag`,
+  `--campg`, `--hudcheck`, `--homegoals`, `--buildmenu`, `--taps`, `--topup`, `--wear`, `--shards` and `--laststand` were
+  moved to per-piece levels and the Workshop; none reads `Save.def_levels` any more. The enemy modes (`--fightf`,
+  `--enemyf`, `--assault`, `--burrowfoes`) passed unchanged in stage 1, which is the proof that the parts and states
+  changed no behaviour.
 - `--pools`: after a wave, pool sizes are steady and no pooled object was freed.
 - Each system keeps its own test mode, plus `--smoke`.
 - **Tests never run in parallel** (they share the test save); light testing as in CLAUDE.md.
@@ -580,12 +673,12 @@ depends on whom, so **there are exactly eight**, each with one job:
 | H3 | Timers; the effects list; crops and recipes as content folders; the Use-potion command |
 | H4 | the window kit (`ui/kit/`); one window file per building; buildings and bows as content folders |
 | H5 | the Buy command; outfits, mounts, pets and attachments as content folders |
-| H6 | Components and States for enemies (armour arrives here); the enemy grid; Place/Undo; the ability toolbox for specialisations; enemies, squads and defences as content folders |
+| H6 (built, local) | Components and States for enemies (armour arrives here); the enemy grid; Place/Undo; the ability toolbox for specialisations; enemies, squads and defences as content folders. Also the Defence Workshop, per-piece levels, building layouts in data and the save at v6 |
 | H8 | Components and States for the golem and the friend; fighting styles; the Gloomwood as the first biome; expeditions built room by room |
 | H10 | the Store with its real and pretend providers; offers as content folders |
 | later | the cat's and mount's own parts, mount skills as abilities, and anything not yet moved, when a step next touches them |
 
-**Where the game is today** (27 November 2026, H5 built on `feature/h5-market-saddlery-tailor`, on top of H4):
+**Where the game is today** (27 November 2026, H6 built locally on `feature/h6-defence-workshop`, on top of H5; H2 to H5 are pushed and not merged):
 - six autoloads (Events, Data, Save, Timers, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades);
   most other scripts are still in `game/scripts/`;
 - **built so far in `core/`, `parts/`, `commands/`, `ui/` and `content/`:**
@@ -610,14 +703,29 @@ depends on whom, so **there are exactly eight**, each with one job:
     (H5), listed by hand in `content/index.json`; the general rules stay in `balance.json`;
   - the Buy command (`commands/buy.gd`, H5) and the window files for the Market, the Saddlery and the Tailor's Nook
     (see part 2); `ui/kit/item_popup.gd` and `skill_triangle.gd` (H5);
+  - **H6:**
+    - enemies as parts (`parts/health.gd`, `armour.gd`, `enemy_mover.gd`, `enemy_attack.gd`, `enemy_heal.gd`, `status.gd`,
+      `enemy_loot.gd`, `health_bar.gd`, `enemy_brain.gd`) and states (`states/enemy/`, 14 files); `enemy.gd` is their
+      facade (1,537 lines, from 2,419);
+    - the enemy grid (`core/enemy_grid.gd`);
+    - the commands Place and Undo (`commands/place_defence.gd`, `undo_place_defence.gd`) over
+      `scripts/defence_placement.gd`;
+    - the ability toolbox (`abilities/ability.gd`, `explosive_acorns.gd`);
+    - `content/enemies/` (24), `squads/` (12), `defences/` (3) and `specialisations/` (3), and `content/buildings/`
+      is 11 (the Workshop added); every building's spot and look are in its `layout`;
+    - the Defence Workshop: `ui/windows/workshop_window.gd`, `defence_piece_window.gd`, `defence_pad_window.gd`;
+      rules in `scripts/workshop_rules.gd` and `defence_levels.gd`; `defences.gd` is the facade over
+      `defence_levels.gd`, `defence_markers.gd`, `defence_persistence.gd` and `defence_placement.gd`;
+    - per-piece levels, armour on the four tanks, Explosive acorns, Reinforced barricades and Deep thorns;
+    - the save at version 6 (`core/save_upgrade_v6.gd`, `scripts/save_defences.gd`; part 10).
 - a few very big files: `stations.gd` 1,800 lines (2,672 before H4; the H5 shop rules are thin callers), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
-  `defences.gd` 1,334;
+  `defences.gd` 1,159 (1,334 before H6);
 - the Events board has 21 signals; the HUD listens to Events (H2); many direct calls through `main` remain elsewhere;
-- arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy
-  each physics step;
-- states as words with `match` blocks;
+- arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); since H6 arrows, towers, the mount,
+  acorns and area moves ask the enemy grid instead of every enemy;
+- states as words with `match` blocks for the cat, the bosses, the mount and the companions; the enemies have state files (H6), still switched by the `state` word;
 - MultiMesh already used for grass, trees, props and the dungeon floor;
-- the save at version 5 (4→5, H5, is in part 10); version 4 (2→3 turns old amber, glowstone, heartwood and Hollow keys into leaves; 3→4, H3, moves the
+- the save at version 6 (5→6, H6, and 4→5, H5, are in part 10); version 4 (2→3 turns old amber, glowstone, heartwood and Hollow keys into leaves; 3→4, H3, moves the
   pantry into the Bag, old dishes into Health Potions and old crop growth into Timers jobs), dirty-flag flushing and
   atomic writes (H1).
 

@@ -42,6 +42,7 @@ const FLAME := preload("res://shaders/flame.gdshader")
 const Buy := preload("res://commands/buy.gd")
 const MarketTrade := preload("res://scripts/market_trade.gd")
 const CompanionShop := preload("res://scripts/companion_shop.gd")
+const WorkshopRules := preload("res://scripts/workshop_rules.gd")   # H6: the Defence Workshop's rules
 const MARKET := "stall"  # H5: the Market's building id (the save's): Bramble's trades, the companions' shop
 
 var main
@@ -139,7 +140,7 @@ func model_name(id: String) -> String:
 		"campfire": return _by_level(FIRE_MODELS)
 		"saddlery": return _saddlery_model()          # the owner's model, else the stand-in (balance saddlery.stand_in)
 		"tailor": return _tailor_model()              # the owner's model, else the stand-in (its entry's stand_in)
-		"workshop": return _workshop_model()          # the owner's model, else the stand-in (its entry's layout.stand_in)
+		"workshop": return WorkshopRules.model()          # the owner's model, else the stand-in (its entry's layout.stand_in)
 		"pot": return "cook_pot"
 	var lay: Dictionary = Data.building_layout(id)
 	if lay.has("models_by_level"):
@@ -178,23 +179,6 @@ func _tailor_tint() -> Color:
 	if Props.has("tailors_nook"):
 		return Color(1, 1, 1)
 	return Color.html(String((Data.building("tailor").get("stand_in", {}) as Dictionary).get("tint", "#B48CE6")))
-
-
-## H6: the Defence Workshop's model: its entry's `model` (defence_workshop) once the file is in the game, else the
-## stand-in of its layout (a warm-tinted Bow Bench, see _workshop_tint). One model at every level.
-func _workshop_model() -> String:
-	var own := String(Data.building("workshop").get("model", "defence_workshop"))
-	if own != "" and Props.has(own):
-		return own
-	return String((Data.building_layout("workshop").get("stand_in", {}) as Dictionary).get("model", "bow_bench_1"))
-
-
-## The stand-in's tint (its layout.stand_in.tint); white (none) on the owner's own model.
-func _workshop_tint() -> Color:
-	var own := String(Data.building("workshop").get("model", "defence_workshop"))
-	if own != "" and Props.has(own):
-		return Color(1, 1, 1)
-	return Color.html(String((Data.building_layout("workshop").get("stand_in", {}) as Dictionary).get("tint", "#C99A5B")))
 
 
 func shown(id: String) -> bool:
@@ -245,7 +229,7 @@ func refresh(celebrate := "", rise := false) -> void:
 				if id == "tailor":
 					Props.set_param(have, "tint", _tailor_tint())     # 23 Nov 2026: the stand-in stall, tinted purple
 				if id == "workshop":
-					Props.set_param(have, "tint", _workshop_tint())   # H6: the stand-in Bow Bench, tinted warm (white on the owner's model)
+					Props.set_param(have, "tint", WorkshopRules.tint())   # H6: the stand-in Bow Bench, tinted warm (white on the owner's model)
 				if rise and celebrate == id:
 					# H4: the camera's glide to it takes about this long; the dust and the flowers come as it rises (a
 					# tween on the building, so nothing plays if it is gone by then)
@@ -1089,7 +1073,7 @@ func _cost_row(text: String, note: String, cost: Dictionary, label: String, ok: 
 ## gift of mission 2 did. An id that is no building any more (the Mushroom Cottage) builds nothing.
 func _build_station(sid: String) -> void:
 	if sid == "workshop":
-		_build_workshop()
+		WorkshopRules.build(self)
 		return
 	if Data.building(sid).is_empty() or int(Save.stations.get(sid, 0)) > 0 or not Data.station_open(sid) \
 			or not Data.pay(Data.build_price(sid)):
@@ -1114,86 +1098,22 @@ func _build_station(sid: String) -> void:
 			main.hud.banner("%s built!" % _name(sid), Color(1.0, 0.9, 0.45))
 
 
-## H6: builds the Defence Workshop. Checks first (unlocked, not built, above ground, no wave, the fire and the Hearthtree
-## standing) and the money, then sends any held piece standing on its ground back to the Bag (defences.
-## return_blocked_for_station; a safety net, the boot already moves them) before paying, so a refused build changes
-## nothing. One notice tells how many went back.
-func _build_workshop() -> void:
-	if not Data.station_open("workshop") or int(Save.stations.get("workshop", 0)) > 0 or main.area != null or _locked() \
-			or Save.fire_ruined or Save.ruined.has("home"):
-		return
-	var price: Dictionary = Data.build_price("workshop")
-	if not Data.can_afford(price):
-		return
-	var back: int = main.defences.return_blocked_for_station("workshop")
-	Data.pay(price)                            # cannot fail now: the money was checked above
-	Save.stations["workshop"] = 1
-	if main.fight.active:
-		hp["workshop"] = full_hp("workshop")
-	Save.save_game()
-	Events.building_upgraded.emit("workshop", 1)
-	refresh("workshop", true)                  # it rises out of the ground (the build menu's camera shows it)
-	main.on_purchase()
-	main.hud.banner("%s built!" % _name("workshop"), Color(1.0, 0.85, 0.5), Data.word("workshop_built_sub"))
-	if back > 0:
-		main.hud.toast(Data.word("workshop_returned") % back)
-
-
-## Why the Defence Workshop cannot sell or improve anything now: not built or in ruins (MarketTrade.building_reason),
-## below ground, or a wave on. "" when it serves.
+## H6 (moved to scripts/workshop_rules.gd in Stage 3): the Workshop's entry points keep their names for the window,
+## the Buy command, defence_levels.gd and the tests.
 func workshop_reason() -> String:
-	var why: String = MarketTrade.building_reason("workshop")
-	if why != "":
-		return why
-	if main.area != null:
-		return Data.word("workshop_below")
-	if _locked():
-		return Data.word("workshop_wave")
-	return ""
+	return WorkshopRules.reason(self)
 
 
-## Why the Workshop's own Upgrade cannot happen now (expected_level is the level its window showed): "" when it can.
-## Money is never a reason (the confirm shows the price in red).
 func workshop_upgrade_reason(expected_level: int) -> String:
-	var why: String = workshop_reason()
-	if why != "":
-		return why
-	var lv: int = Data.station_level("workshop")
-	if expected_level != lv:
-		return Data.word("upgrade_stale")
-	var levels: Array = Data.building_levels("workshop")
-	var next: int = lv + 1
-	if next > levels.size():
-		return Data.word("max")
-	if next > Save.camp_level:
-		return MarketTrade.say("needs_home", [Data.camp_name(), next])
-	var entry: Dictionary = levels[lv]
-	if bool(entry.get("needs_burrows", false)) and not Data.burrows_open():
-		return Data.word("needs_burrows")
-	if bool(entry.get("needs_raids", false)) and not Data.raids_open():
-		return Data.word("needs_raids")
-	return ""
+	return WorkshopRules.upgrade_reason(self, expected_level)
 
 
-## The Workshop's Upgrade (its window's confirm): rechecks the reason, then the usual building upgrade (_upgrade_station:
-## the Hearthtree's cap, the price, the save, the event). True when its level moved.
 func upgrade_workshop(expected_level: int) -> bool:
-	if workshop_upgrade_reason(expected_level) != "":
-		return false
-	var before: int = Data.station_level("workshop")
-	_upgrade_station("workshop")
-	return Data.station_level("workshop") > before
+	return WorkshopRules.upgrade(self, expected_level)
 
 
-## Learns or upgrades a specialisation at the Workshop (Buy kind "specialisations": exact id, shown level, price), then
-## saves and refreshes the placed pieces it changes. True when it was bought.
 func buy_specialisation(id: String, expected_level: int) -> bool:
-	if not Buy.new("specialisations", id, 1, expected_level).run(main):
-		return false
-	Save.save_game()
-	main.defences.refresh_specialisation(id)
-	main.on_purchase()
-	return true
+	return WorkshopRules.buy_specialisation(self, id, expected_level)
 
 
 ## Buys one tower or spikes piece into the Bag (H3: placed from the Bag or the row-2 button). H5: the Buy command
@@ -1205,29 +1125,6 @@ func _buy_piece(type: String) -> bool:
 	main.on_purchase()
 	main.hud.refresh_build()
 	return true
-
-
-## What a defence level costs: leaves, and Gloom shards for level 4 (H1: level 5 is leaves only, after the Burrows open).
-func _def_cost(type: String, lv: int) -> Dictionary:
-	var l: Dictionary = Data.defence_info(type)["levels"][lv - 1]
-	var c := {"leaves": int(l["upgrade"])}
-	for k in Data.CURRENCIES:
-		if k != "leaves" and int(l.get(k, 0)) > 0:
-			c[k] = int(l[k])
-	return c
-
-
-func _upgrade_defence(type: String) -> void:
-	var dl: int = main.defences.level(type)
-	var levels: Array = Data.defence_info(type)["levels"]
-	if dl >= levels.size() or dl + 1 > Save.camp_level or (dl + 1 >= 4 and not Data.raids_open()) or (dl + 1 >= 5 and not Data.burrows_open()):
-		return
-	if not Data.pay(_def_cost(type, dl + 1)):
-		return
-	Save.def_levels[type] = dl + 1
-	Save.save_game()
-	main.defences.relevel(type)
-	main.on_purchase()
 
 
 ## Grows the home a level: every goal on the next level's list met (Data.home_goals_met, which keeps the older

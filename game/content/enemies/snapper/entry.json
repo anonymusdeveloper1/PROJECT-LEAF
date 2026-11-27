@@ -1,0 +1,24 @@
+{
+  "id": "snapper",
+  "name": "Root Snapper",
+  "desc": "A rooted plant that bites.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "pitcher",
+  "height": 1.2,
+  "radius": 0.5,
+  "color": "#6E8F3A",
+  "scale": 1.15,
+  "tint": "#6E8F3A",
+  "_note": "Phase E stand-in: the pitcher, bigger and tinted bark-green",
+  "parts": {
+    "health": {"max": 90},
+    "mover": {"speed": 0.0, "anchored": true, "turn_rate": 2.0},
+    "attack": {"damage": 2, "gate_damage": 0, "reach": 3.2, "attack_every": 2.2, "bite_cone_deg": 35, "bite_warn": 0.7, "bite_width": 0.9},
+    "status": {},
+    "loot": {"leaves": 6},
+    "health_bar": {},
+    "brain": {"aggro": 3.2}
+  }
+}

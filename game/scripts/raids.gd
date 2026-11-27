@@ -169,7 +169,7 @@ func camp_score() -> int:
 		if p["type"] == "tower":
 			s += float(cs["per_tower"])
 	for t in ["barricade", "tower", "spikes"]:
-		s += float(cs["per_defence_level"]) * (main.defences.level(t) - 1)
+		s += float(cs["per_defence_level"]) * (main.defences.best_level(t) - 1)
 	s += float(cs["per_guardian_level"]) * Data.guardian_level()
 	return int(round(s))
 
@@ -282,15 +282,14 @@ func _pick_lanes(t: Dictionary, level: int) -> Array:
 func spec_for(plan: Dictionary) -> Dictionary:
 	var t: Dictionary = cfg()["types"][String(plan["type"])]
 	var lv := int(plan["level"])
-	var enemies: Dictionary = Data.b["enemies"]
 	var pool: Array = []
 	for pair in t["pool"]:
-		if enemies.has(String(pair[0])):
+		if Data.enemy_has(String(pair[0])):
 			pool.append([String(pair[0]), int(pair[1])])
 	if pool.is_empty():
 		pool = [["thornling", 1]]
 	var leader := String(plan.get("leader", ""))
-	if not enemies.has(leader):
+	if not Data.enemy_has(leader):
 		leader = ""                                 # no leader model yet
 	var assault: Dictionary = cfg()["assault"]
 	var count_rng := RandomNumberGenerator.new()
@@ -369,7 +368,7 @@ func type_name(plan: Dictionary) -> String:
 
 
 func leader_name(id: String) -> String:
-	if id == "" or not Data.b["enemies"].has(id):
+	if id == "" or not Data.enemy_has(id):
 		return "the Gloom"
 	var n := String(Data.enemy(id)["name"])
 	return "The " + n if id == "herald" else n
@@ -979,11 +978,11 @@ func coming_text() -> String:
 	for pair in pool:
 		if names.size() >= 3:
 			break
-		if Data.b["enemies"].has(String(pair[0])):
+		if Data.enemy_has(String(pair[0])):
 			names.append(String(Data.enemy(String(pair[0]))["name"]) + "s")
 	var leader := String(plan.get("leader", ""))
 	var bits: Array = [", ".join(names)]
-	if Data.b["enemies"].has(leader):
+	if Data.enemy_has(leader):
 		bits.append("led by %s" % _the(leader_name(leader)))
 	bits.append("level %d" % int(plan["level"]))
 	return " · ".join(bits)

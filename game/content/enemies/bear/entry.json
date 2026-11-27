@@ -1,0 +1,22 @@
+{
+  "id": "bear",
+  "name": "Mossback",
+  "desc": "A bear that roars and slams the ground.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "bear",
+  "boss": true,
+  "height": 2.9,
+  "radius": 0.95,
+  "color": "#7A4A2A",
+  "parts": {
+    "health": {"max": 1500},
+    "mover": {"speed": 0.6},
+    "attack": {"damage": 2, "gate_damage": 45, "reach": 1.3, "attack_every": 1.8, "slam_range": 3.2, "slam_every": 5.0},
+    "status": {},
+    "loot": {"leaves": 300},
+    "health_bar": {},
+    "brain": {"aggro": 9.0, "roar_every": 14.0, "roar_minions": 3, "dash_every": 8.0}
+  }
+}

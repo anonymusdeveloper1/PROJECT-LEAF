@@ -1,0 +1,13 @@
+{
+  "id": "spitter_nest",
+  "name": "Spitter Nest",
+  "desc": "Pitcher Spitter, Thornling",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 8,
+  "members": [
+    {"kind": "pitcher", "n": [2, 2]},
+    {"kind": "thornling", "n": [2, 2]}
+  ]
+}

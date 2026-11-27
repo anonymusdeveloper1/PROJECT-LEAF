@@ -11,6 +11,7 @@ const MARKET := "stall"
 
 var b: Dictionary = {}
 var _catalogues: Dictionary = {}
+var _enemies: Dictionary = {}
 var run_mods := {}                   # Phase E: a Burrows run's boons and attachments (burrow.gd sets it, clears it on leaving)
 var _args := PackedStringArray()
 var _args_read := false
@@ -23,6 +24,7 @@ func _ready() -> void:
 	else:
 		push_error("data/balance.json did not parse")
 	_load_content_index()
+	_load_catalogue_views()
 
 
 func _load_content_index() -> void:
@@ -49,6 +51,35 @@ func _load_content_index() -> void:
 				if entry is Dictionary:
 					entries[id] = entry
 		_catalogues[kind] = entries
+
+
+## Prepare the flat combat fields once, with the unarmoured HP used in wave planning.
+func _load_catalogue_views() -> void:
+	var roles: Dictionary = {}
+	for id: String in enemy_ids():
+		var entry: Dictionary = item("enemies", id)
+		var info: Dictionary = entry.duplicate()
+		var parts: Dictionary = entry["parts"]
+		var health: Dictionary = parts["health"]
+		info["hp"] = health["max"]
+		for part: String in ["mover", "attack", "heal", "status", "loot", "health_bar", "brain"]:
+			info.merge(parts.get(part, {}))
+		_enemies[id] = info
+		if entry.has("role"):
+			roles[id] = entry["role"]
+
+	# The H5 shelf and checkpoint tests still read these tables during the rebuild.
+	var defences: Dictionary = b.get("defences", {})
+	defences.merge(_catalogues.get("defences", {}))
+	b["defences"] = defences
+	b["enemy_roles"] = roles
+	b["squads"] = _catalogues.get("squads", {})
+
+	# Keep the H5 stand-in readers working from the new layout source.
+	var saddlery: Dictionary = b.get("saddlery", {})
+	saddlery["stand_in"] = building_layout("saddlery").get("stand_in", {})
+	var tailor: Dictionary = building("tailor")
+	tailor["stand_in"] = building_layout("tailor").get("stand_in", {})
 
 
 ## Shared content entries in index order. Callers treat entries as read-only.
@@ -180,8 +211,31 @@ func args() -> PackedStringArray:
 	return _args
 
 
+## The enemy's combat and planning fields together with its part data.
 func enemy(id: String) -> Dictionary:
-	return b["enemies"][id]
+	return _enemies.get(id, {})
+
+
+func enemy_has(id: String) -> bool:
+	return _enemies.has(id)
+
+
+func enemy_ids() -> Array:
+	var entries: Dictionary = _catalogues.get("enemies", {})
+	return entries.keys()
+
+
+func enemy_role(id: String) -> String:
+	return String(enemy(id).get("role", ""))
+
+
+func squad(id: String) -> Dictionary:
+	return item("squads", id)
+
+
+func squad_ids() -> Array:
+	var entries: Dictionary = _catalogues.get("squads", {})
+	return entries.keys()
 
 
 func patch(i: int) -> Dictionary:
@@ -323,6 +377,11 @@ func building(id: String) -> Dictionary:
 	return item("buildings", "home" if id == "camp" or id == "shop" else id)
 
 
+## The building's geometry and model variants as stored in its entry.
+func building_layout(id: String) -> Dictionary:
+	return building(id).get("layout", {})
+
+
 ## H4: every building entry, in content/index.json's order.
 func buildings() -> Array:
 	return catalog("buildings")
@@ -414,12 +473,9 @@ func gift_mission(id: String) -> int:
 	return -1
 
 
-const _DEF_NAMES := {"barricade": "Barricades", "tower": "Towers", "spikes": "Thorn Spikes", "fence": "Fences"}
-
-
-## "Barricades", "Towers", "Thorn Spikes": a defence kind as a whole (goals, the level tiles on the Hearthtree's card).
+## A defence kind as a whole, for the Hearthtree's goals and defence shelf.
 func def_kind_name(type: String) -> String:
-	return String(_DEF_NAMES.get(type, type))
+	return String(defence_info(type).get("group_name", type))
 
 
 ## One goal from the home entry worked out from the save (see home_goals). An unknown type counts as met, so a typo in
@@ -526,7 +582,7 @@ func _goal(g: Dictionary) -> Dictionary:
 					prog += " · %d to place" % held
 		"defence":
 			var did := String(g.get("id", ""))
-			var dn := String(_DEF_NAMES.get(did, did))
+			var dn := String(defence_info(did).get("name", did))
 			have = int(Save.def_levels.get(did, 1))
 			need = lv
 			text = "%s lv %d" % [dn, lv]
@@ -703,8 +759,43 @@ func bow_level_mult(id: String, level: int) -> float:
 	return 1.0 + float(bow_info(id)["per_level"]) * (upgrades - late) + float(curve["late_per_level"]) * late
 
 
+## The live entry, or the old fence data used when refunding a save's fences.
 func defence_info(id: String) -> Dictionary:
-	return b["defences"][id]
+	if id == "fence":
+		var legacy: Dictionary = b.get("defences", {})
+		return legacy.get(id, {})
+	return item("defences", id)
+
+
+func defence_ids() -> Array:
+	var entries: Dictionary = _catalogues.get("defences", {})
+	return entries.keys()
+
+
+## Each defence starts at level 1. An unknown kind or a level outside its tiers has no stat row.
+func defence_level_info(kind: String, level: int) -> Dictionary:
+	var levels: Array = item("defences", kind).get("levels", [])
+	if level < 1 or level > levels.size():
+		return {}
+	return levels[level - 1]
+
+
+## The staged entry and the tuning for its effect. The Stage 1 shops leave the entries hidden.
+func specialisation_info(id: String) -> Dictionary:
+	var entry: Dictionary = item("specialisations", id)
+	if entry.is_empty():
+		return {}
+	var effects: Dictionary = b.get("specialisations", {})
+	var info: Dictionary = entry.duplicate()
+	info["tuning"] = effects.get(String(entry["effect"]), {})
+	return info
+
+
+## The bought level in the save, zero until learned.
+func specialisation_level(id: String) -> int:
+	if item("specialisations", id).is_empty():
+		return 0
+	return owned_level("specialisations", id)
 
 
 # ---------------------------------------------------------------- caps (what a station's level allows)

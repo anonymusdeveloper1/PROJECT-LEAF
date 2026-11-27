@@ -1,0 +1,23 @@
+{
+  "id": "thornling",
+  "name": "Thornling",
+  "desc": "A small bramble creature.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "thornling",
+  "role": "light",
+  "height": 0.78,
+  "radius": 0.3,
+  "color": "#4E8A2E",
+  "scale": 1.25,
+  "parts": {
+    "health": {"max": 18},
+    "mover": {"speed": 1.5},
+    "attack": {"damage": 1, "gate_damage": 4, "reach": 0.45, "attack_every": 1.0},
+    "status": {},
+    "loot": {"leaves": 2},
+    "health_bar": {},
+    "brain": {"aggro": 4.5}
+  }
+}

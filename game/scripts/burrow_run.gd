@@ -520,7 +520,7 @@ func _chest_break(id: String) -> void:
 	main.shake(0.3)
 	var c: Dictionary = ch["def"]
 	var r := _rng("guard:" + id)
-	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.b["enemies"].has(String(k)))
+	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.enemy_has(String(k)))
 	var ek := String(elites[r.randi() % elites.size()]) if not elites.is_empty() else "thornling"
 	_nook_guard.clear()
 	var g = spawn(ek, map.wpt(c.get("guard", c["at"])), {"gloomtouched": true, "elite": true})
@@ -651,7 +651,7 @@ func _rng(what: String) -> RandomNumberGenerator:
 
 ## A kind from the level's pool (weighted); kinds the game does not have yet are skipped.
 func _pool_kind(r: RandomNumberGenerator, pool: Array) -> String:
-	var ok: Array = pool.filter(func(e): return Data.b["enemies"].has(String(e[0])))
+	var ok: Array = pool.filter(func(e): return Data.enemy_has(String(e[0])))
 	if ok.is_empty():
 		return "thornling"
 	var tot := 0.0
@@ -684,7 +684,7 @@ func pack_plan(f: Dictionary) -> Array:
 	var cap: int = int(cfg()["max_alive_by_quality"][clampi(Quality.level, 0, 2)])
 	var kinds: Array = []
 	if first and pk.has("first_run"):
-		kinds = (pk["first_run"] as Array).filter(func(k): return Data.b["enemies"].has(String(k)))
+		kinds = (pk["first_run"] as Array).filter(func(k): return Data.enemy_has(String(k)))
 	else:
 		var n := int(round(float(pk.get("base", 3)) + float(pk.get("per_level", 0.0)) * (level() - 1)))
 		n = clampi(n, 1, cap - (1 if pk.has("elite") else 0))
@@ -697,7 +697,7 @@ func pack_plan(f: Dictionary) -> Array:
 		if k >= spots.size():
 			at += Vector3(r.randf_range(-0.7, 0.7), 0, r.randf_range(-0.7, 0.7))
 		out.append([String(kinds[k]), at, {}])
-	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.b["enemies"].has(String(k)))
+	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.enemy_has(String(k)))
 	if pk.has("elite"):
 		var ek := String(pk.get("first_elite", "")) if first and pk.has("first_elite") else (String(elites[r.randi() % elites.size()]) if not elites.is_empty() else "thornling")
 		var ep: Array = pk["elite"]
@@ -705,7 +705,7 @@ func pack_plan(f: Dictionary) -> Array:
 	elif not first and not out.is_empty() and r.randf() < _by_level("pack_elite_chance_by_level") and not elites.is_empty():
 		out[0][0] = String(elites[r.randi() % elites.size()])
 		out[0][2] = {"gloomtouched": true, "elite": true}
-	if not first and level() >= 2 and Data.b["enemies"].has("snapper"):
+	if not first and level() >= 2 and Data.enemy_has("snapper"):
 		var ch := _by_level("snapper_chance_by_depth")
 		for sn in pk.get("snappers", []):
 			if r.randf() < ch:
@@ -843,7 +843,7 @@ func _fight_won(f: Dictionary) -> void:
 ## own plus the level's (never scaled by strength), no structure damage. opts: asleep, gloomtouched, boss, hp_mult,
 ## summon, elite, emerge, fight. Returns null when the boss's adds are at their cap (callers ignore it).
 func spawn(kind: String, at: Vector3, opts := {}) -> Node3D:
-	if not active or map == null or not Data.b["enemies"].has(kind):
+	if not active or map == null or not Data.enemy_has(kind):
 		return null
 	if kind == "raccoon":
 		return null                                        # nothing to steal here
@@ -870,7 +870,7 @@ func spawn(kind: String, at: Vector3, opts := {}) -> Node3D:
 		st *= float(opts.get("hp_mult", 1.0))
 	elif opts.has("fight"):
 		st *= 1.0 + float(cfg()["fight_ramp"]) * int(opts["fight"])
-	e.setup(kind, AREA_PATCH, st)
+	e.setup(kind, AREA_PATCH, st, not bool(opts.get("boss", false)))   # H6: a room boss is not armoured
 	e.damage = int(info["damage"]) + damage_add()
 	e.gate_damage = 0
 	e.summoned = bool(opts.get("summon", false))
@@ -1826,7 +1826,7 @@ func _strike_now(at: Vector3, r: float, dmg: int, slow_s: float) -> void:
 func _maybe_grub(where: String, what: String) -> void:
 	var ag: Dictionary = cfg()["amber_grub"]
 	var ch := float(ag["fight_chance"] if where == "fight" else ag["spring_chance"])
-	if _rng("grub:" + what).randf() >= ch or not Data.b["enemies"].has("amber_grub") or (_grub != null and is_instance_valid(_grub)):
+	if _rng("grub:" + what).randf() >= ch or not Data.enemy_has("amber_grub") or (_grub != null and is_instance_valid(_grub)):
 		return
 	var cat: Vector3 = main.player.global_position
 	var hole := Vector3.ZERO

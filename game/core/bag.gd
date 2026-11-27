@@ -35,8 +35,7 @@ static func kind_of(id: String) -> String:
 		return "potion"
 	if Data.MATS.has(id):
 		return "material"
-	var entry: Variant = (Data.b.get("defences", {}) as Dictionary).get(id)
-	if entry is Dictionary and (entry as Dictionary).get("from_bag", false) == true:
+	if Data.defence_ids().has(id) and Data.defence_info(id).get("from_bag", false) == true:
 		return "build"
 	return ""
 
@@ -51,10 +50,9 @@ static func ids() -> Array[String]:
 			out.append(String((e as Dictionary)["id"]))
 	for id: Variant in Data.MATS:
 		out.append(String(id))
-	var defs: Dictionary = Data.b.get("defences", {})
-	for id: Variant in defs:
-		if defs[id] is Dictionary and (defs[id] as Dictionary).get("from_bag", false) == true:
-			out.append(String(id))
+	for id: String in Data.defence_ids():
+		if Data.defence_info(id).get("from_bag", false) == true:
+			out.append(id)
 	return out
 
 
@@ -194,6 +192,70 @@ static func add_all(items: Dictionary, force: bool = false) -> Dictionary:
 	return left
 
 
+# ---------------------------------------------------------------- carried defences (H6)
+## What the next take_defence(kind) would hand out: {} when there is no stock; the first carried record; else
+## {"level": credit} when an old paid level waits for the first piece; else fresh stock {"level": 1}.
+static func peek_defence(kind: String) -> Dictionary:
+	if kind_of(kind) != "build" or count(kind) <= 0:
+		return {}
+	_sync_reserves(kind)
+	var list: Array = _reserves(kind)
+	if not list.is_empty():
+		return (list[0] as Dictionary).duplicate()
+	var credit := int(Save.defence_legacy_credit.get(kind, 0))
+	if credit > 0:
+		return {"level": credit}
+	return {"level": 1}
+
+
+## Takes one piece out and returns its record ({} = no stock). A carried record leaves first; else the credit is used
+## up ({"level": L, "credit": true}); else fresh stock {"level": 1}. Always marks the save dirty; bag_changed only
+## when notify.
+static func take_defence(kind: String, notify: bool = true) -> Dictionary:
+	if kind_of(kind) != "build" or count(kind) <= 0:
+		return {}
+	_sync_reserves(kind)
+	var record: Dictionary = {"level": 1}
+	var list: Array = _reserves(kind)
+	var credit := int(Save.defence_legacy_credit.get(kind, 0))
+	_set_count(kind, "build", count(kind) - 1)
+	if not list.is_empty():
+		record = list.pop_front()
+	elif credit > 0:
+		Save.defence_legacy_credit.erase(kind)
+		record = {"level": credit, "credit": true}
+	Save.mark_dirty()
+	if notify:
+		Events.bag_changed.emit()
+	return record
+
+
+## Puts a piece back (always forced: it was paid for). Keeps the record only when it is not plain stock (a level
+## other than 1, or a wreck); never makes a credit again. With notify: item_gained, then bag_changed, like add().
+static func return_defence(kind: String, record: Dictionary, notify: bool = true) -> void:
+	if kind_of(kind) != "build":
+		return
+	_sync_reserves(kind)
+	_set_count(kind, "build", count(kind) + 1)
+	if int(record.get("level", 1)) != 1 or record.has("wreck"):
+		var keep: Dictionary = {"level": int(record.get("level", 1))}
+		if record.has("wreck"):
+			keep["wreck"] = float(record["wreck"])
+		_reserves(kind).append(keep)
+	Save.mark_dirty()
+	if notify:
+		Events.item_gained.emit("build", kind, 1)
+		Events.bag_changed.emit()
+
+
+## The count of kind changed by something else (a command wrote it): marks the save dirty, tells the HUD.
+static func defence_changed(kind: String, amount: int) -> void:
+	Save.mark_dirty()
+	if amount > 0:
+		Events.item_gained.emit("build", kind, amount)
+	Events.bag_changed.emit()
+
+
 # ---------------------------------------------------------------- what the Bag shows
 ## One entry per stack, in the Bag order: {"id", "kind", "n" (in this stack), "index" (0 = the id's first stack)}.
 static func stacks() -> Array:
@@ -280,4 +342,28 @@ static func _take_raw(id: String, n: int) -> void:
 	if kind == "material":
 		Save.add_mat(id, -n)
 	else:
+		if kind == "build":
+			_sync_reserves(id)
+			var list: Array = _reserves(id)
+			for i in mini(n, list.size()):
+				list.pop_front()                            # the oldest carried records leave first
 		_set_count(id, kind, count(id) - n)
+
+
+## The carried records of kind (the array itself, made when missing).
+static func _reserves(kind: String) -> Array:
+	var v: Variant = Save.defence_reserves.get(kind)
+	if not v is Array:
+		v = []
+		Save.defence_reserves[kind] = v
+	return v
+
+
+## Keeps the rule reserves.size() <= count: old callers write Save.items directly, so extra records go from the back.
+static func _sync_reserves(kind: String) -> void:
+	if not Save.defence_reserves.has(kind):
+		return
+	var list: Array = _reserves(kind)
+	var have := maxi(0, int(Save.items.get(kind, 0)))
+	while list.size() > have:
+		list.pop_back()

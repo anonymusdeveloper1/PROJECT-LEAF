@@ -1,0 +1,15 @@
+{
+  "id": "choir",
+  "name": "Choir",
+  "desc": "Frog Shaman, Crow Drummer, Thornling, Bramble Boar",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 9,
+  "members": [
+    {"kind": "frog", "n": [1, 1]},
+    {"kind": "crow", "n": [1, 1]},
+    {"kind": "thornling", "n": [2, 2]},
+    {"kind": "boar", "n": [1, 1]}
+  ]
+}

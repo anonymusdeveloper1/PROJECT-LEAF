@@ -49,3 +49,28 @@ gone; its picture and model stay in `assets/`.
 To add one: copy an entry of the same kind, give it a new folder ID, list the
 ID in `index.json`, keep it `hidden` until the owner says it goes in, and run
 `--content`.
+
+## H6 rebuild
+
+- An enemy entry holds its existing model ID in `assets/enemies/`, role and
+  part data. `parts.health.max` is the base HP used for wave planning.
+  `Data.enemy` presents the combat fields alongside the parts. The Gloom Totem
+  still uses its procedural prop look. The H5 entries use zero armour.
+- A squad entry lists its members in spawn order. Each member has a `kind`
+  and an inclusive `n` range. `from_mission` and `elite` keep their H5 meaning.
+  Add new enemies and squads to the index and run the encounter checks.
+- A defence has one `levels` row per tier, starting at level 1. Each row names
+  its prop and stats. H5 upgrade leaves and shards come from `upgrade` and
+  `shards`. `price` is for buying a piece or building a road row.
+  `from_bag` marks the pieces the Bag carries. The old fence refund stays in
+  balance data. Add new entries to the index and run the Bag and row checks.
+- Building `model` names a prop. `layout` holds position, collision footprint,
+  ring offset, path and grass clearance where used. Points and offsets are
+  XYZ arrays in metres. `path` gives the original points, smoothing steps
+  and multiplier on the camp path half-width. The Well also has a stamp peak.
+  The Hearthtree's marker on the model has its own fallback offset.
+  Stand-ins and level variants use the same layout records.
+- Specialisation entries are staged and hidden. `price` is the cost to learn
+  and `upgrades` gives the next two prices. `effect` names the tuning under
+  balance data's `specialisations`. Use `Data.specialisation_info` to read
+  the tuning during the foundation test.

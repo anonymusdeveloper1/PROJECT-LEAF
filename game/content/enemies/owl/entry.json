@@ -1,0 +1,22 @@
+{
+  "id": "owl",
+  "name": "The Owl Witch",
+  "desc": "An owl that casts spells and summons allies.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "owl",
+  "boss": true,
+  "height": 2.4,
+  "radius": 0.8,
+  "color": "#7A5A3A",
+  "parts": {
+    "health": {"max": 2200},
+    "mover": {"speed": 0.7},
+    "attack": {"damage": 2, "gate_damage": 50, "reach": 1.1, "attack_every": 2.0, "bolt_speed": 3.6, "orb_every": 3.6, "orbs": 3, "hex_every": 7.0, "hex_range": 2.2},
+    "status": {},
+    "loot": {"leaves": 400},
+    "health_bar": {},
+    "brain": {"aggro": 10.0, "blink_every": 9.0, "summon_every": 15.0, "summon": 3}
+  }
+}

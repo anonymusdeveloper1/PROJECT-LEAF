@@ -1,0 +1,22 @@
+{
+  "id": "crow",
+  "name": "Crow Drummer",
+  "desc": "A drummer that speeds up nearby enemies.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "crow",
+  "role": "support",
+  "height": 1.5,
+  "radius": 0.5,
+  "color": "#2E2A3A",
+  "parts": {
+    "health": {"max": 80},
+    "mover": {"speed": 0.9},
+    "attack": {"damage": 1, "gate_damage": 8, "reach": 0.6, "attack_every": 1.5},
+    "status": {"drum_range": 4.0, "drum_buff": 0.35, "drum_time": 4.0},
+    "loot": {"leaves": 8},
+    "health_bar": {},
+    "brain": {"aggro": 3.0, "drum_every": 6.0}
+  }
+}

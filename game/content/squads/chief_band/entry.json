@@ -1,0 +1,14 @@
+{
+  "id": "chief_band",
+  "name": "Chief's Band",
+  "desc": "Thornling Chief, Thornling",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 1,
+  "elite": true,
+  "members": [
+    {"kind": "chief", "n": [1, 1]},
+    {"kind": "thornling", "n": [3, 3]}
+  ]
+}

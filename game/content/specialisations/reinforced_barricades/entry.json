@@ -1,0 +1,12 @@
+{
+  "id": "reinforced_barricades",
+  "name": "Reinforced barricades",
+  "desc": "Barricade rows have more health and crack later.",
+  "icon": "barricade",
+  "hidden": true,
+  "kind": "barricade",
+  "unlock": {"missions_won": 1},
+  "effect": "reinforced_barricades",
+  "price": {"leaves": 250, "timber": 10},
+  "upgrades": [{"leaves": 550, "timber": 20}, {"leaves": 1100, "timber": 35}]
+}

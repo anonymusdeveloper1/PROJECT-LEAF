@@ -18,6 +18,7 @@ const PickupScript := preload("res://scripts/pickup.gd")
 const AutotestScript := preload("res://scripts/autotest.gd")
 const PetScript := preload("res://scripts/pet.gd")
 const MountScript := preload("res://scripts/mount.gd")
+const EnemyGridScript := preload("res://core/enemy_grid.gd")
 const NpcScript := preload("res://scripts/npc.gd")
 const GuardianScript := preload("res://scripts/guardian.gd")
 const GardenScript := preload("res://scripts/garden.gd")
@@ -77,10 +78,12 @@ var _status_mine := false                         # the Last Stand's status line
 var empowered_t := 0.0                            # Phase E: a close call (dashing through an attack): the next arrow hits double
 var _heading = null                               # the marker the cat is walking to (full size), and for how long more
 var _heading_t := 0.0
+var enemy_grid = null                             # H6: who is near where (core/enemy_grid.gd); made first in _ready
 const RING_NEAR := 3.2                            # markers nearer than this show full size; the rest small and dim
 
 
 func _ready() -> void:
+	enemy_grid = EnemyGridScript.new()            # H6: first, before the world, the fight and the defences use it
 	Sfx.init(self)
 	world = Node3D.new()
 	world.set_script(WorldScript)
@@ -133,6 +136,7 @@ func _ready() -> void:
 	stations.main = self
 	add_child(stations)
 	stations.build(self)
+	enemy_grid.add(stations.dummy)                # H6: the dummy is registered first, as it is first in group order
 	burrows = Node3D.new()                        # Phase E: after the stations (its card asks them), before the HUD
 	burrows.set_script(BurrowScript)
 	add_child(burrows)
@@ -252,6 +256,8 @@ func _physics_process(_delta: float) -> void:
 					a.position -= push
 				if b.state != "charge":
 					b.position += push
+	for f in foes:                                         # H6: the grid learns where the separation put them
+		enemy_grid.move(f)
 
 
 ## H4: the camera glides to `at` (a building just built from the build menu, build_menu_window.gd), holds it there,
@@ -483,7 +489,9 @@ func _update_grass(delta: float) -> void:
 func nearest_enemy(from: Vector3, max_dist: float, ahead := Vector3.ZERO, cone := PI):
 	var best = null
 	var best_d := max_dist
-	for e in get_tree().get_nodes_in_group("foes"):
+	# H6: only the foes near enough to matter (a 3D distance within max_dist is also within it on the ground), in group
+	# order, with the same tests and ties
+	for e in enemy_grid.near(from, max_dist, &"foes"):
 		if e.dead:
 			continue
 		var d: float = from.distance_to(e.global_position)

@@ -1,0 +1,29 @@
+{
+  "id": "barricade",
+  "name": "Road Barricade",
+  "group_name": "Barricades",
+  "desc": "Blocks a road at one of its glowing spots: enemies must break it",
+  "icon": "barricade",
+  "unlock": {"missions_won": 1},
+  "price": {"leaves": 90, "timber": 5},
+  "unlock_missions": 1,
+  "piece": 30,
+  "slots_at": [0.31, 0.55, 0.78],
+  "pad_rule": {"near_from_end_m": 2.4, "far_in_from_woods_m": 1.8, "bend_window": [0.2, 0.55], "bend_probe_m": 1.0, "mid_min_gap_from_gate_m": 5.0, "_note": "22 Nov 2026 owner rule. The gate pad (index 2) is near_from_end_m before the firelight. The far pad (index 0) is nearest to WOODS_R - far_in_from_woods_m from camp; a road's far_pad may set its own distance and unlock level. On roads with even_barricade_spacing the middle pad is halfway between those two along the road. Elsewhere it sits at the sharpest bend in bend_window, measured with bend_probe_m, and at least mid_min_gap_from_gate_m along the road from the gate."},
+  "length": 3.0,
+  "free_pieces": 2,
+  "row": {"pieces": 3, "cost": {"leaves": 90, "timber": 5}},
+  "rows_by_home": [0, 2, 3, 5, 7, 9, 12, 12, 12],
+  "rings_by_home": [0, 1, 1, 2, 2, 3, 3, 3, 3],
+  "repair_share": 0.3,
+  "crack_at": 0.5,
+  "_note": "Phase G2: not sold in the shop any more. Each road spot (3 per road, placed by pad_rule; slots_at is NO LONGER USED, kept only as a key) takes one row of row.pieces pieces, built by tapping the spot for row.cost. 22 Nov 2026: the pads open ring by ring with the Hearthtree: rings_by_home[Hearthtree level] = how many rings are open, nearest the camp first (ring 1 = the pad nearest the camp on each road, ring 2 = the middle pad, ring 3 = the far pad): levels 1-2 the 4 nearest pads, level 3 adds the 4 middle ones, level 4 adds the two far pads on the right (Fernwood and Bandit Thicket), level 5 opens all 12. Only open pads show their marker; every open empty pad can be built (between waves). A row already built on a pad that is not open yet (an older save) stays, works and can be repaired. rows_by_home is UNUSED now (kept only for old code). Each piece cracks below crack_at of its health and breaks at 0 (it falls, leaving rubble; enemies pass the gap). Repair: repair_share of the row's cost per broken piece, less for cracked ones. levels still set each piece's health and look (upgraded on the Hearthtree's card). slot_gap_min (test floor only, 22 Nov 2026): the closest pair on each road is middle-far; the floor of 2.5 m keeps the two rows apart.",
+  "slot_gap_min": 2.5,
+  "levels": [
+    {"hp": 220, "upgrade": 0, "model": "barricade_log"},
+    {"hp": 480, "upgrade": 200, "model": "barricade_stone"},
+    {"hp": 900, "upgrade": 480, "model": "barricade_thorn"},
+    {"hp": 1400, "upgrade": 1500, "shards": 60, "model": "barricade_shard", "name": "Shardstone"},
+    {"hp": 2000, "upgrade": 3480, "model": "barricade_heartwood", "name": "Heartwood", "needs_burrows": true}
+  ]
+}

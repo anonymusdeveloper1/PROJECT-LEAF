@@ -60,6 +60,11 @@ var placed: Array = []                              # built in the world: towers
                                                    # [road, spot], "row": pieces, "wrecks"?: each piece's kept share of
                                                    # health, -1 = whole} (an older save's pieces become rows, defences.gd)
 var def_levels := {"barricade": 1, "tower": 1, "spikes": 1}   # one level for all pieces of a kind
+# H6 (Stage 1: declared only, nothing reads or writes them until Stage 2): what the cat carries of each defence kind
+# that is not plain level-1 stock. defence_reserves: kind -> Array of {"level", "wreck"?} records, oldest first, never
+# more than Bag.count(kind). defence_legacy_credit: kind -> int, the old paid level waiting for the first piece.
+var defence_reserves: Dictionary = {}
+var defence_legacy_credit: Dictionary = {}
 var flags := {}                                     # what the first stage has shown already, and the like
 var best_night := 0
 var stages_won := 0
@@ -193,6 +198,8 @@ func _ready() -> void:
 func load_game() -> void:
 	set_deferred("_loading", false)                # a bad field can interrupt the load
 	loaded_v = 0
+	defence_reserves = {}                          # H6: a second load in one process starts clean
+	defence_legacy_credit = {}
 	var backup := path.get_basename() + ".bak.json"
 	var source := path
 	# Windows can be interrupted between removing the main file and renaming the completed temporary file.
@@ -514,7 +521,7 @@ func _endgame_seed() -> void:
 	claimed = [0, 1, 2, 3]
 	items = {"tower": 3, "spikes": 2}
 	placed = []
-	var bar: Dictionary = Data.b.get("defences", {}).get("barricade", {})
+	var bar: Dictionary = Data.defence_info("barricade")
 	var per := int(bar.get("row", {}).get("pieces", 3))
 	for ln in 4:                                     # Phase G2: a barricade row on every road (was 4 pieces to place)
 		placed.append({"type": "barricade", "slot": [ln, 2], "row": per})
@@ -607,7 +614,7 @@ func _load_raids(rd) -> Dictionary:
 				for summon in run.get("summons", []):
 					if total + summons.size() >= int(Data.gr()["assault"]["max_enemies"]):
 						break
-					if summon is Dictionary and Data.b["enemies"].has(String(summon.get("kind", ""))):
+					if summon is Dictionary and Data.enemy_has(String(summon.get("kind", ""))):
 						var entry: Dictionary = summon.duplicate()
 						entry["kind"] = String(summon["kind"])
 						entry["lane"] = clampi(int(summon.get("lane", 0)), 0, Data.lane_count() - 1)

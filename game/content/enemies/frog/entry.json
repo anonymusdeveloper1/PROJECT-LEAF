@@ -1,0 +1,23 @@
+{
+  "id": "frog",
+  "name": "Frog Shaman",
+  "desc": "A shaman that heals other enemies.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "frog",
+  "role": "support",
+  "height": 1.0,
+  "radius": 0.36,
+  "color": "#5E9A3A",
+  "parts": {
+    "health": {"max": 55},
+    "mover": {"speed": 0.9},
+    "attack": {"damage": 1, "gate_damage": 6, "reach": 0.5, "attack_every": 2.4, "cast_range": 5.5, "bolt_speed": 4.6, "siege_range": 7.5},
+    "heal": {"heal_every": 4.5, "heal": 22, "heal_range": 3.6},
+    "status": {},
+    "loot": {"leaves": 7},
+    "health_bar": {},
+    "brain": {"aggro": 6.0}
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "puffball",
+  "name": "Puffball Bomber",
+  "desc": "A bomber that bursts near its target.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "puffball",
+  "role": "light",
+  "height": 0.8,
+  "radius": 0.35,
+  "color": "#E8D6B0",
+  "parts": {
+    "health": {"max": 30},
+    "mover": {"speed": 1.4},
+    "attack": {"damage": 2, "gate_damage": 60, "reach": 0.4, "attack_every": 1.0, "burst_range": 1.6},
+    "status": {},
+    "loot": {"leaves": 3},
+    "health_bar": {},
+    "brain": {"aggro": 2.0}
+  }
+}

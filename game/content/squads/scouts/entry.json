@@ -1,0 +1,12 @@
+{
+  "id": "scouts",
+  "name": "Scouts",
+  "desc": "Thornling",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 1,
+  "members": [
+    {"kind": "thornling", "n": [3, 4]}
+  ]
+}

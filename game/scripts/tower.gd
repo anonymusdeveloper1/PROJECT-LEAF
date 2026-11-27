@@ -26,7 +26,7 @@ func setup(game, data: Dictionary, lv: int) -> void:
 	piece = data
 	level = lv
 	_cfg = Data.defence_info("tower")
-	_data = _cfg["levels"][level - 1]
+	_data = Data.defence_level_info("tower", level)
 	var turret := Props.find_part(self, "turret")
 	if turret == null:
 		return

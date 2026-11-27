@@ -13,7 +13,7 @@ extends Node3D
 ## the levels of barricades, towers and spikes: barricade rows are built at the road spots, defences.gd), and the
 ## graphics setting. The signpost lists all Raid Missions, with completed replays and the next unfinished mission;
 ## its separate Random Raids view unlocks once every Raid Mission is finished.
-## The buildings round the campfire (world.SPOTS; the well stands on the lake's near shore):
+## The buildings round the campfire (each entry's layout, content/buildings; the well stands on the lake's near shore):
 ##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) buys amber; Thistle
 ##                                        the hare comes free with it: ride it (mount.gd). H5: one level; its Pets
 ##                                        tab sells the pet (Sprig, 160 leaves) and trains it (pet.gd)
@@ -50,8 +50,6 @@ var rings := {}          # "shop", "target", "bench", "sign", "well", "stall", "
 var hp := {}             # building -> health in the current mission
 const VILLAGE := ["well", "stall"]
 const BUILDINGS := ["home", "target", "bench", "well", "stall", "saddlery", "tailor"]
-const FOOT := {"campfire": 0.6, "home": 1.15, "bench": 0.8, "target": 0.45, "well": 0.62, "stall": 0.9,
-	"stone": 0.7, "garden": 1.1, "pot": 0.25, "fishing": 0.45, "saddlery": 0.8, "tailor": 1.35}
 ## Phase C stations: never wrecked, never in BUILDINGS or VILLAGE (the Moss Warden takes the hits for the camp).
 const CAMP_LIFE := ["stone", "garden", "pot", "fishing"]
 var dummy: Node3D        # what the cat shoots at the training target
@@ -96,14 +94,10 @@ func _no_card() -> Dictionary:
 
 ## The home and the campfire by home level (1-6). A level whose model is not made yet shows the one before it.
 ## Home levels 7 and 8 (Phase E; H1: paid with leaves and timber) have no models of their own yet: they show level 6's.
-const HOME_MODELS := ["home_tree_1", "home_tree_1", "home_treehouse", "home_tree_4", "home_tree_5", "home_tree_6", "home_tree_7", "home_tree_8"]
 const FIRE_MODELS := ["campfire_1", "campfire_2", "campfire_2", "campfire_hearth", "campfire_bonfire", "campfire_brazier", "campfire_7", "campfire_8"]
-const HOME_FOOT := [1.15, 1.32, 1.15, 1.5, 1.7, 1.9, 1.9, 1.9]   # footprint radius of the home, by home level
 const FIRE_FOOT := [0.6, 0.8, 0.8, 0.8, 0.95, 0.9, 0.9, 0.9]     # ... and of the campfire (camp_hi.json for 4-6)
-## The Training Target and the Bow Shop (id "bench") by their level (Phase F: 5 levels each). There are no models for the new levels
-## (the owner decides how new models are made): the Target's levels 3-5 show target_2, the Bench's 4-5 bow_bench_3.
-const TARGET_MODELS := ["target_1", "target_2", "target_2", "target_2", "target_2"]
-const BENCH_MODELS := ["bow_bench_1", "bow_bench_2", "bow_bench_3", "bow_bench_3", "bow_bench_3"]
+## H6: the home's, the Training Target's and the Bow Shop's (id "bench") models and the home's footprint by level are in
+## their entries (layout.models_by_level, layout.foot_by_level); the campfire's stay here.
 
 
 func _by_level(list: Array) -> String:
@@ -113,29 +107,43 @@ func _by_level(list: Array) -> String:
 	return String(list[i])
 
 
+## A building's model list by level from its entry (layout.models_by_level.models): which level picks it (level_from:
+## "camp" = the home level, "station" = the building's own level) and whether a model Props has not got steps down to
+## the one before (step_down).
+func _layout_model(id: String, lay: Dictionary) -> String:
+	var mb: Dictionary = lay["models_by_level"]
+	var list: Array = mb.get("models", [])
+	if list.is_empty():
+		return ""
+	if String(mb.get("level_from", "station")) == "camp":
+		if bool(mb.get("step_down", false)):
+			return _by_level(list)
+		return String(list[clampi(Save.camp_level, 1, list.size()) - 1])
+	return String(list[clampi(int(Save.stations[id]), 1, list.size()) - 1])
+
+
 ## How far a building reaches on the ground, for collisions and for the enemies that attack it.
 func foot(id: String) -> float:
 	match id:
-		"home": return float(HOME_FOOT[clampi(Save.camp_level, 1, HOME_FOOT.size()) - 1])
 		"campfire": return float(FIRE_FOOT[clampi(Save.camp_level, 1, FIRE_FOOT.size()) - 1])
-	return float(FOOT[id])
+		"pot": return 0.25
+	var lay: Dictionary = Data.building_layout(id)
+	if lay.has("foot_by_level"):
+		var list: Array = lay["foot_by_level"]
+		return float(list[clampi(Save.camp_level, 1, list.size()) - 1])
+	return float(lay.get("foot_radius", 0.0))
 
 
 func model_name(id: String) -> String:
 	match id:
 		"campfire": return _by_level(FIRE_MODELS)
-		"home": return _by_level(HOME_MODELS)
-		"bench": return String(BENCH_MODELS[clampi(int(Save.stations["bench"]), 1, BENCH_MODELS.size()) - 1])
-		"target": return String(TARGET_MODELS[clampi(int(Save.stations["target"]), 1, TARGET_MODELS.size()) - 1])
-		"well": return "wishing_well"
-		"stall": return "market_stall"
-		"saddlery": return _saddlery_model()
-		"tailor": return _tailor_model()
-		"stone": return "guardian_stone"
-		"garden": return "garden_bed"
+		"saddlery": return _saddlery_model()          # the owner's model, else the stand-in (balance saddlery.stand_in)
+		"tailor": return _tailor_model()              # the owner's model, else the stand-in (its entry's stand_in)
 		"pot": return "cook_pot"
-		"fishing": return "fishing_spot"
-	return ""
+	var lay: Dictionary = Data.building_layout(id)
+	if lay.has("models_by_level"):
+		return _layout_model(id, lay)
+	return String(Data.building(id).get("model", ""))
 
 
 ## G4: the Saddlery's model: the owner's (props/saddlery.glb) once it is made, else the stand-in by its level
@@ -236,12 +244,12 @@ func refresh(celebrate := "", rise := false) -> void:
 				Fx.boing(have, 0.3)                # an upgrade that keeps its model (Phase C stations, Target 3-5, Bench 4-5): a boing shows it
 				Fx.flower_ring(main, w.station_pos(id), 1.4)
 			have.position = w.station_pos(id)
-			if id == "home" and Save.camp_level == 2:
-				have.scale = Vector3.ONE * 1.15
-			if id == "well":
-				have.rotation.y = PI / 2.0        # the roof ridge runs toward the camera, so the water and bucket show
-			if id == "garden":
-				have.rotation.y = PI              # the bed's work side faces the camp
+			var lay: Dictionary = Data.building_layout(id)
+			var scales: Dictionary = lay.get("scale_at_camp", {})
+			if scales.has(str(Save.camp_level)):
+				have.scale = Vector3.ONE * float(scales[str(Save.camp_level)])   # the home at camp level 2
+			if lay.has("rotation_pi"):
+				have.rotation.y = float(lay["rotation_pi"]) * PI   # the well's roof ridge toward the camera (0.5), the garden bed's work side to the camp (1.0)
 			if id == "stone":
 				for k in 3:                       # the leaf rune lights up a part per stone level
 					var rune := Props.find_part(have, "rune_%d" % (k + 1))
@@ -271,13 +279,12 @@ func refresh(celebrate := "", rise := false) -> void:
 		var pos: Vector3
 		match id:
 			"shop":
-				var marker: Node3D = Props.find_part(nodes["home"], "marker_ring") if nodes.has("home") else null
-				pos = marker.global_position if marker else w.station_pos("home") + Vector3(0.75, 0, 2.1)
-			"target", "bench", "well", "stall", "saddlery", "tailor": pos = w.spot_ring(id)    # on the camera's side of each
+				var hl: Dictionary = Data.building_layout("home")
+				var marker: Node3D = Props.find_part(nodes["home"], String(hl.get("ring_marker", "marker_ring"))) if nodes.has("home") else null
+				pos = marker.global_position if marker else w.spot_ring("home")   # the home's ring offset is the fallback
+			"target", "bench", "well", "stall", "saddlery", "tailor", "stone", "garden": pos = w.spot_ring(id)    # on the camera's side of each
 			"sign": pos = w.station_pos("sign") + Vector3(0, 0, 0.95)
 			"fire": pos = Vector3(0, 0, maxf(1.15, foot("campfire") + 0.45))
-			"stone": pos = w.station_pos("stone") + Vector3(0, 0, 1.1)
-			"garden": pos = w.station_pos("garden") + Vector3(0, 0, -1.2)
 			"pot": pos = Vector3(1.0, 0, -1.0)
 			"fishing": pos = w.FISH_RING
 		ring.global_position = Vector3(pos.x, 0.03, pos.z)

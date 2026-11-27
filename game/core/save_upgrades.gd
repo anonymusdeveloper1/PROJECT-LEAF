@@ -10,6 +10,7 @@ extends RefCounted
 const CURRENT_VERSION := 5
 const FIRST_STEP_VERSION := 2  # Version 1 still goes through the existing raid fix (raids.gd, by Save.loaded_v).
 const UpgradeV5 := preload("res://core/save_upgrade_v5.gd")   # the 4 -> 5 step's moves (H5)
+const UpgradeV6 := preload("res://core/save_upgrade_v6.gd")   # the 5 -> 6 step's moves (H6; not run while CURRENT_VERSION is 5)
 
 
 static func upgrade(d: Dictionary) -> Dictionary:
@@ -17,6 +18,7 @@ static func upgrade(d: Dictionary) -> Dictionary:
 		2: _upgrade_2_to_3,
 		3: _upgrade_3_to_4,
 		4: _upgrade_4_to_5,
+		5: _upgrade_5_to_6,
 		# The legacy raid fix for v1 saves runs by Save.loaded_v (raids.gd), whatever CURRENT_VERSION is.
 	}
 	var original_version := int(d.get("save_v", 1))
@@ -155,6 +157,13 @@ static func _upgrade_3_to_4(d: Dictionary) -> Dictionary:
 ## attach.owned, the Cottage everywhere).
 static func _upgrade_4_to_5(d: Dictionary) -> Dictionary:
 	return UpgradeV5.upgrade(d)
+
+
+## 5 -> 6 (H6): defence levels move from one level per kind onto the pieces. Its moves are in core/save_upgrade_v6.gd
+## (frozen numbers: balance.json save_upgrades.to_v6). Registered in Stage 1 but never reached: CURRENT_VERSION stays 5
+## until the Stage 2 live switch.
+static func _upgrade_5_to_6(d: Dictionary) -> Dictionary:
+	return UpgradeV6.upgrade(d)
 
 
 ## A JSON number as a float; anything else counts as 0.

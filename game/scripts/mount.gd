@@ -686,10 +686,12 @@ func _jolt(kind: String) -> void:
 		main.player.ride_jolt(kind)
 
 
-## The enemies now (alive), and the ones on the ground (fliers pass over Stomp, Ram and Pounce).
-func _foes(ground: bool) -> Array:
+## H6: the enemies alive near `centre` (the grid gives every foe whose body could reach `r` metres, in group order; each
+## move keeps its own exact distance test), and only the ones on the ground when `ground` is set (fliers pass over
+## Stomp, Ram and Pounce).
+func _foes_near(centre: Vector3, r: float, ground: bool) -> Array:
 	var out: Array = []
-	for e in get_tree().get_nodes_in_group("foes"):
+	for e in main.enemy_grid.near(centre, r, &"foes"):
 		if is_instance_valid(e) and not e.dead and not (ground and e.flyer):
 			out.append(e)
 	return out
@@ -730,7 +732,7 @@ func _stomp(lv: int) -> bool:
 	var info := Data.saddle_info("skills", "stomp")
 	var trig := float(info.get("trigger_m", 1.6))
 	var near := false
-	var foes := _foes(true)
+	var foes := _foes_near(global_position, maxf(trig, float(info.get("radius_m", 2.0))), true)
 	for e in foes:
 		if _flat(e.global_position - global_position).length() < trig + float(e.radius):
 			near = true
@@ -762,7 +764,7 @@ func _ram(lv: int) -> bool:
 	var reach := float(info.get("ahead_m", 4.0))
 	var cosa := cos(deg_to_rad(float(info.get("ahead_deg", 35.0))))
 	var any := false
-	for e in _foes(true):
+	for e in _foes_near(global_position, reach, true):
 		var to: Vector3 = _flat(e.global_position - global_position)
 		if to.length() < reach + float(e.radius) and (to.length() < 0.05 or to.normalized().dot(fwd) > cosa):
 			any = true
@@ -789,7 +791,8 @@ func _ram_strike() -> void:
 	var a := Vector2(_move_from.x, _move_from.z)
 	var b := Vector2(global_position.x, global_position.z)
 	var fwd := _move_off.normalized() if _move_off.length() > 0.01 else _fwd()
-	for e in _foes(true):
+	var mid := (_move_from + global_position) * 0.5            # the charge's middle; reach = half its length + the width
+	for e in _foes_near(mid, _flat(global_position - _move_from).length() * 0.5 + w, true):
 		var id: int = e.get_instance_id()
 		if _move_hit.has(id):
 			continue
@@ -815,7 +818,7 @@ func _pounce(lv: int) -> bool:
 	var info := Data.saddle_info("skills", "pounce")
 	var reach := float(info.get("reach_m", 6.0))
 	var blast := float(info.get("blast_m", 2.5))
-	var foes := _foes(true)
+	var foes := _foes_near(global_position, reach + blast, true)   # a foe counted round a target within reach is within reach + blast
 	var best_n := 0
 	var best_d := INF
 	var best_at := Vector3.ZERO
@@ -856,7 +859,7 @@ func _pounce_land(lv: int) -> void:
 	Fx.dust(main, global_position, 14, 1.8)
 	main.shake(0.22)
 	var any := false
-	for e in _foes(true):
+	for e in _foes_near(global_position, r, true):
 		var d: Vector3 = _flat(e.global_position - global_position)
 		if d.length() >= r + float(e.radius):
 			continue
@@ -874,7 +877,7 @@ func _bellow(lv: int) -> bool:
 	var info := Data.saddle_info("skills", "bellow")
 	var r := float(info.get("radius_m", 4.0))
 	var near: Array = []
-	for e in _foes(false):
+	for e in _foes_near(global_position, r, false):
 		if _flat(e.global_position - global_position).length() < r + float(e.radius):
 			near.append(e)
 	if near.size() < int(info.get("min_foes", 4)):

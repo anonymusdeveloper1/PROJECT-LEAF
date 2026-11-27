@@ -6,6 +6,15 @@
   "price": {},
   "unlock": {},
   "arrives": "gift",
+  "model": "garden_bed",
+  "layout": {
+    "position": [0.5, 0, 8.4],
+    "foot_radius": 1.1,
+    "ring_offset": [0, 0, -1.2],
+    "reserved": {"offset": [0, 0, -0.5], "r": 2.0},
+    "rotation_pi": 1.0,
+    "grass_radius": 1.5
+  },
   "levels": [
     {},
     {"leaves": 400},

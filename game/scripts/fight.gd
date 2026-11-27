@@ -198,16 +198,15 @@ func tank_weight(kind: String) -> float:
 	var tw = _sub("wave_limits").get("tank_weight", {})
 	if not (tw is Dictionary):
 		return 0.0
-	var e = (Data.b["enemies"] as Dictionary).get(kind, {})
-	if e is Dictionary and bool(e.get("boss", false)):
+	var e: Dictionary = Data.enemy(kind)
+	if bool(e.get("boss", false)):
 		return 0.0
 	return float(tw.get(kind, 0.0))
 
 
 ## A kind's planned health (its hp before the wave's strength).
 func _kind_hp(kind: String) -> float:
-	var e = (Data.b["enemies"] as Dictionary).get(kind, {})
-	return float(e.get("hp", 0.0)) if e is Dictionary else 0.0
+	return float(Data.enemy(kind).get("hp", 0.0))                  # the unarmoured base health: wave planning never sees armour
 
 
 ## A wave foe on the field that is its boss: a boss kind, or one of the last wave's `boss` enemies (_spawn_next marks
@@ -215,8 +214,7 @@ func _kind_hp(kind: String) -> float:
 func _is_boss_foe(e) -> bool:
 	if e.has_meta("wave_boss"):
 		return true
-	var d = (Data.b["enemies"] as Dictionary).get(String(e.get("id")), {})
-	return d is Dictionary and bool(d.get("boss", false))
+	return bool(Data.enemy(String(e.get("id"))).get("boss", false))
 
 
 ## Phase G1: the wave's foes on the field now (the bonus runners left out): {"n": how many, "tank": their summed tank
@@ -591,16 +589,12 @@ func squad_rules() -> Dictionary:
 
 ## A kind's role in a squad (balance.json enemy_roles: "light", "fighter", "tank", "support", "leader"; "" when none).
 func role_of(kind: String) -> String:
-	var roles = Data.b.get("enemy_roles", {})
-	var r = roles.get(kind, "") if roles is Dictionary else ""
-	return String(r) if r is String else ""
+	return Data.enemy_role(kind)
 
 
 ## Squad id's data (balance.json squads: "members" [{"kind", "n": [min, max]}], "from_mission", "elite"); {} when none.
 func squad_def(id: String) -> Dictionary:
-	var sq = Data.b.get("squads", {})
-	var d = sq.get(id, {}) if sq is Dictionary else {}
-	return d if d is Dictionary else {}
+	return Data.squad(id)
 
 
 ## The chapter's squads for wave w, [[id, weight], ...] (only the ones balance.json defines). `first`: the chapter's
@@ -633,7 +627,7 @@ func _light_kinds(list: Array) -> Array:
 func _roll_kinds(id: String, how := "") -> Array:
 	var kinds: Array = []
 	for m in squad_def(id).get("members", []):
-		if not (m is Dictionary) or not (Data.b["enemies"] as Dictionary).has(String(m.get("kind", ""))):
+		if not (m is Dictionary) or not Data.enemy_has(String(m.get("kind", ""))):
 			continue
 		var nn: Array = m.get("n", [1, 1])
 		var lo := int(nn[0]) if not nn.is_empty() else 1
@@ -690,8 +684,7 @@ func squad_leader_index(kinds: Array) -> int:
 
 ## A kind's body radius (balance.json enemies).
 func _kind_radius(kind: String) -> float:
-	var e = (Data.b["enemies"] as Dictionary).get(kind, {})
-	return float(e.get("radius", 0.4)) if e is Dictionary else 0.4
+	return float(Data.enemy(kind).get("radius", 0.4))
 
 
 ## Each member's spot in its squad's formation, in its leader's frame (x: to the side, z: forward; the leader's is
@@ -741,12 +734,9 @@ func squad_offsets(kinds: Array, lead: int) -> Array:
 
 ## The elite squad (balance.json squads with "elite": true) that has kind among its members; "" when none.
 func _elite_band(kind: String) -> String:
-	var sq = Data.b.get("squads", {})
-	if not (sq is Dictionary):
-		return ""
-	for id in sq:
-		var d = sq[id]
-		if d is Dictionary and bool(d.get("elite", false)) and _roll_kinds(String(id), "min").has(kind):
+	for id in Data.squad_ids():                       # in the catalogue's (H5) order: the first elite squad that has kind
+		var d: Dictionary = Data.squad(id)
+		if bool(d.get("elite", false)) and _roll_kinds(String(id), "min").has(kind):
 			return String(id)
 	return ""
 
@@ -1370,7 +1360,7 @@ func _next_spawn() -> int:
 		var has_boss := false
 		for j in range(k, end):
 			var kind := String(_queue[j])
-			if _queued_tag(j) == "boss" or bool(((Data.b["enemies"] as Dictionary).get(kind, {}) as Dictionary).get("boss", false)):
+			if _queued_tag(j) == "boss" or bool(Data.enemy(kind).get("boss", false)):
 				has_boss = true
 			else:
 				tw += tank_weight(kind)
@@ -1447,7 +1437,7 @@ func _spawn_next(k := 0) -> void:
 		ln = int(rs.pick_random()) if not rs.is_empty() else 0
 	lane = ln
 	_planned = true
-	var foe = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln)
+	var foe = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln, -1, q.size() > 2 and String(q[2]) == "boss")
 	_planned = false
 	if q.size() > 2 and String(q[2]) == "boss" and foe != null and is_instance_valid(foe):
 		foe.set_meta("wave_boss", true)             # the wave's boss: it never counts as a tank, and holds the others back
@@ -1537,7 +1527,7 @@ func _spawn_squad(k: int) -> void:
 func _spawn_member(row: Array, at: Vector3, ln: int, rot: float, leader, off: Vector3):
 	var q: Array = row[1]
 	_planned = true
-	var foe = spawn(String(row[0]), at, ln)
+	var foe = spawn(String(row[0]), at, ln, -1, q.size() > 2 and String(q[2]) == "boss")
 	_planned = false
 	if foe == null or not is_instance_valid(foe):
 		return null
@@ -1572,7 +1562,7 @@ func _wave_extras(dt: float) -> void:
 ## it run off after its time). Returns it (null if the kind is missing).
 func spawn_grub():
 	var kind := String(_sub("golden_grub").get("kind", "golden_grub"))
-	if not (Data.b["enemies"] as Dictionary).has(kind):
+	if not Data.enemy_has(kind):
 		return null
 	var ln := randi() % maxi(1, Data.patch_count())
 	var e = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln)
@@ -1586,7 +1576,7 @@ func spawn_grub():
 func spawn_totem(ln: int):
 	var tt := _sub("totem")
 	var kind := String(tt.get("kind", "gloom_totem"))
-	if not (Data.b["enemies"] as Dictionary).has(kind) or ln < 0 or ln >= main.world.trails.size():
+	if not Data.enemy_has(kind) or ln < 0 or ln >= main.world.trails.size():
 		return null
 	var at: Vector3 = main.world.trail_point(ln, float(main.world.trail_length(ln)) * float(tt.get("s", 0.35)))
 	_planned = true
@@ -1605,7 +1595,9 @@ func spawn_totem(ln: int):
 	return e
 
 
-func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
+## `mission_boss`: this one is a mission's boss from the wave queue (_spawn_next, _spawn_member): like a raid's leader
+## and a Burrow's room boss it is not armoured (enemy.setup's last argument).
+func spawn(kind: String, at: Vector3, p: int, raid_member := -1, mission_boss := false) -> Node3D:
 	if main.area != null and main.area.owns(at):
 		return main.area.spawn(kind, at, {"summon": true})   # Phase E: a summon below ground (the room's strength, the cap)
 	var summoned := false
@@ -1630,7 +1622,7 @@ func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 	var leader: bool = mode == "raid" and String(raid.get("leader", "")) != "" and kind == String(raid.get("leader", ""))
 	if leader:
 		st *= float(raid.get("leader_mult", 1.0))
-	e.setup(kind, p, st)
+	e.setup(kind, p, st, not (leader or mission_boss))
 	if leader:
 		e.set_meta("leader", true)
 		main.raids.on_leader(e)                     # its own banner and the boss bar

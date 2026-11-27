@@ -5,6 +5,9 @@ extends Node
 ## the front door, so callers always ask Data.
 
 const ShopData := preload("res://scripts/shop_data.gd")
+## H5: the Market's building id, named here for one rule only: the health an old save's Market had earned
+## (building_hp, Save.market_hp_floor).
+const MARKET := "stall"
 
 var b: Dictionary = {}
 var _catalogues: Dictionary = {}
@@ -383,7 +386,7 @@ func building_picture(id: String) -> String:
 
 
 ## Phase G2: the Hearthtree level station id needs before it can be built: the level of the ["home", n] part of its
-## entry's unlock rule, 1 when the rule has none (the Mushroom Cottage and the Market need level 2).
+## entry's unlock rule, 1 when the rule has none (the Market needs level 2).
 func station_needs_home(id: String) -> int:
 	return _required_building_level(building(id).get("unlock", {}), "home")
 
@@ -587,9 +590,14 @@ func power() -> int:
 	return p
 
 
+## A building's health at level lv (balance.json building_hp). H5 (the owner's Q5 A): a standing Market never has less
+## than the health an old save's upgraded Market had earned (Save.market_hp_floor: 340 or 500; 0 for one built since).
 func building_hp(id: String, lv: int) -> float:
 	var t: Array = b["building_hp"].get(id, [0, 200])
-	return float(t[clampi(lv, 0, t.size() - 1)])
+	var hp := float(t[clampi(lv, 0, t.size() - 1)])
+	if id == MARKET and lv >= 1:
+		hp = maxf(hp, float(Save.market_hp_floor))
+	return hp
 
 
 ## A look's skin by id (its first, "natural", when there is no such skin).
@@ -622,12 +630,16 @@ func pet_name() -> String:
 	return String(look("pet", Save.pet_look).get("short", "Sprig"))
 
 
+## H5: the pet's one shared level (Save.pet_level): 0 before the pet is bought at the Market's Pets tab, then 1-3.
+## Every pet look fights at it (pet.gd: balance.json pet damage_by_level, every_by_level).
 func pet_level() -> int:
-	return int(Save.stations.get("cottage", 0))
+	return ShopData.pet_level()
 
 
+## H5 (the owner's Q2 A): the mount's level now: 0 while no mount is owned, else the highest of 1, the Saddlery's level
+## and the tier an old save's Market paid for (mount_level_at_saddlery). Riding speed and the mount's health read it.
 func mount_level() -> int:
-	return int(Save.stations.get("stall", 0))
+	return mount_level_at_saddlery(saddlery_level())
 
 
 func pick(table: String, key: String, lv: int) -> float:
@@ -1271,7 +1283,8 @@ func burrow_fights(id: String) -> int:
 
 ## The attachments worn now (the mount's and the pet's): Burrows-only help, each entry with its "mods". G4: the mount's
 ## saddle and bags moved to the Saddlery (below); only the Thunder Shoes are left in the mount slot. H5: the expedition
-## gear is content (content/attachments, "scope": "expedition"); what is owned and worn is still Save.attach.
+## gear is content (content/attachments, "scope": "expedition"); what is worn is Save.attach "mount" and "pet", what is
+## owned the v5 save's owned.attachments (owned_level).
 func attachments_on() -> Array:
 	return ShopData.expedition_worn()
 
@@ -1290,7 +1303,7 @@ func saddlery_level() -> int:
 
 ## One shelf of the Saddlery: "skills" (balance.json mount_skills.items: stomp, ram, pounce, bellow) or "attach"
 ## (H5: the content/attachments entries the Saddlery sells: fire_spitter, saddle, saddlebags), in the card's order,
-## id -> entry. Save.saddlery has the same two parts.
+## id -> entry. What is learned is Save.saddlery "skills"; what is bought, Save.owned "attachments" (the v5 save).
 func saddle_items(part: String) -> Dictionary:
 	if part != "skills":
 		return ShopData.saddle_attachments()
@@ -1306,9 +1319,14 @@ func saddle_info(part: String, id: String) -> Dictionary:
 	return saddle_items(part).get(id, {})
 
 
-## How far skill or attachment id is learned: 0 = not yet, else its level (1-5).
+## How far skill or attachment id is learned: 0 = not yet, else its level (1-5). A skill: Save.saddlery "skills"; H5
+## (the v5 save), an attachment: its bought level in Save.owned.attachments (owned_level; Saddlery attachments only).
 func saddle_level(part: String, id: String) -> int:
-	return int((Save.saddlery.get(part, {}) as Dictionary).get(id, 0))
+	if part != "skills":
+		return ShopData.saddle_attachment_level(id)
+	var skills: Variant = Save.saddlery.get(part, {})
+	var lv: Variant = (skills as Dictionary).get(id, 0) if skills is Dictionary else 0
+	return int(lv) if lv is int or lv is float else 0
 
 
 func skill_level(id: String) -> int:
@@ -1509,8 +1527,9 @@ func cat_skin_buyable(id: String) -> bool:
 	return ShopData.outfit_price_ok(id) and (id == CAT_SKIN_DEFAULT or cat_skin_model(id) != "")
 
 
+## H5: outfit id is owned (the v5 save's owned.outfits; the original always).
 func cat_skin_owned(id: String) -> bool:
-	return id == CAT_SKIN_DEFAULT or Save.cat_skins_owned.has(id)
+	return id == CAT_SKIN_DEFAULT or owned_level("outfits", id) >= 1
 
 
 ## Outfit id's hero model (a res:// .glb) when its file exists, else "" (the original look is used).

@@ -228,6 +228,10 @@ func _charge(look: String) -> void:
 	await _reset()
 	var front = _foe(BASE + Vector3(0, 0, 2.5))
 	Save.saddlery["skills"]["ram"] = 1
+	# H5: the mount fights only with the skills in its three circles (Data.active_skill_level): Ram goes in one for this
+	# check, and the circles are put back as they were afterwards
+	var keep_slots: Variant = Save.saddlery.get("skill_slots", [])
+	Save.saddlery["skill_slots"] = ["ram", "", ""]
 	main.mount.cooldowns.clear()
 	main.mount.gap = 0.0
 	var started: bool = main.mount.try_move("ram")
@@ -238,6 +242,7 @@ func _charge(look: String) -> void:
 	t._expect("%s finishes Ram along its committed heading" % look, started and main.mount.moving() == "ram" and absf(wrapf(main.mount.rotation.y - heading, -PI, PI)) < 0.001)
 	main.mount._stop_move()
 	Save.saddlery["skills"].clear()
+	Save.saddlery["skill_slots"] = (keep_slots as Array).duplicate() if keep_slots is Array else []
 	front.dead = true
 
 

@@ -4,7 +4,9 @@ extends Node
 ## number comes from balance.json; a wave being on is faked by hand (fight.active, in_wave and on_break).
 ##   (a) the building: Locked below Hearthtree 3 ("Needs the Hearthtree at level 3"), then Build pays its price; its
 ##       model (the owner's, or the stand-in), its ring and badge, its health; ruined and repaired like the others
-##   (b) its card: one tile per outfit, in order, with the right labels (Wearing, Buy with the price, "Needs <price>")
+##   (b) its card (H5, picture 1): one window row (the turning cat on a stand, the one button, the grid of outfit cards, Back);
+##       the cards in order, grey when not owned, the button Wearing, Buy with the price or "Needs <price>"; a tap on a grey
+##       card tries it on (the picture only: save, money, her model and stats stay), an HUD refresh keeps it, Back frees it
 ##   (c) buying takes the leaves (and puts it on between waves); without enough it is refused
 ##   (d) wearing swaps Save.cat_skin and the hero model; with no outfit file she keeps the original, with no error;
 ##       an outfit "file" (the other hero model, CatRanger2 or CatRanger, standing in) is swapped in place, and back
@@ -14,7 +16,7 @@ extends Node
 ##   (g) an old save without the outfit keys loads with the original look; a worn outfit the game no longer sells
 ##       falls back to the original
 ## (h) the real outfit files: each swaps the hero to its file; bow, nocked arrow and cloth work; close-ups standing, running, shooting
-## Screenshots in --shots: tailor_nook.png (the building in the camp), tailor_card.png, tailor_swapped.png, skin_<id>_stand/run1/run2/shoot.png.
+## Screenshots in --shots: tailor_nook.png (the building in the camp), tailor_card.png, tailor_tryon.png (a grey outfit tried on), tailor_swapped.png, skin_<id>_stand/run1/run2/shoot.png.
 
 var t                     # autotest.gd (its helpers: _wait, _expect, _until, _log, _shot)
 var main
@@ -43,7 +45,7 @@ func run() -> bool:
 	main.hud.hide_card()
 	_clear()
 	Save.cat_skin = "original"
-	Save.cat_skins_owned = ["original"]
+	_set_owned(["original"])
 	main.player.apply_skin()
 	t._log("tailor done", {"model": main.player.model_path(), "swaps": main.player.skin_swaps})
 	return true
@@ -75,7 +77,7 @@ func _start_fresh(home: int) -> void:
 	Save.leaves = 0
 	Save.timber = 0
 	Save.cat_skin = "original"
-	Save.cat_skins_owned = ["original"]
+	_set_owned(["original"])
 	for k in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done"]:
 		Save.set_flag(k)
 	_st().refresh()
@@ -89,20 +91,38 @@ func _item(card: Dictionary, title: String) -> Dictionary:
 	return {}
 
 
-func _items(card: Dictionary) -> Array:
-	return (card["rows"] as Array).filter(func(r): return String(r.get("kind", "")) == "item")
+func _win():
+	return main.hud.windows["tailor"]
 
 
-func _sections(card: Dictionary) -> Array:
-	var out: Array = []
-	for r in card["rows"]:
-		if String(r.get("kind", "")) == "section":
-			out.append(String(r["text"]))
-	return out
+## The outfits owned: the v5 save's Save.owned["outfits"] (H5), else the H4 list, so the test reads either save.
+func _owned_list() -> Array:
+	var o: Variant = Save.get("owned")
+	if o is Dictionary:
+		var kinds: Variant = (o as Dictionary).get("outfits", {})
+		return (kinds as Dictionary).keys() if kinds is Dictionary else []
+	return []
 
 
+func _set_owned(ids: Array) -> void:
+	var o: Variant = Save.get("owned")
+	if o is Dictionary:
+		var rec := {}
+		for id in ids:
+			rec[String(id)] = {"level": 1}
+		(o as Dictionary)["outfits"] = rec
+
+
+func _own(id: String) -> void:
+	var ids := _owned_list()
+	if not ids.has(id):
+		ids.append(id)
+		_set_owned(ids)
+
+
+## What the Nook offers for outfit id (kind worn/owned/new, label, enabled, note, cost): ui/windows/tailor_window.gd state().
 func _tile(id: String) -> Dictionary:
-	return _item(main.hud.windows["tailor"].spec(), Data.cat_skin_name(id))
+	return _win().state(id)
 
 
 func _build_entry(id: String) -> Dictionary:
@@ -193,49 +213,58 @@ func _building() -> void:
 
 # ---------------------------------------------------------------- (b) the card
 func _card() -> void:
-	var card: Dictionary = main.hud.windows["tailor"].spec()
-	var titles: Array = _items(card).map(func(r): return String(r["title"]))
+	var win = _win()
+	var card: Dictionary = win.spec()
+	var windows: Array = (card["rows"] as Array).filter(func(r): return String(r.get("kind", "")) == "window")
+	var cells: Array = win.entries()
+	var titles: Array = cells.map(func(c): return String(c["title"]))
 	var want: Array = IDS.map(func(id): return Data.cat_skin_name(id))
-	_x("the card: title Tailor's Nook, one Outfits shelf, three tiles in order: %s" % ", ".join(want), String(card["title"]) == "Tailor's Nook"
-		and _sections(card) == ["Outfits"] and titles == want and want == ["Original Ranger", "Dusk Ranger", "Ember Ranger"],
-		{"title": card["title"], "sections": _sections(card), "titles": titles})
+	_x("the card: title Tailor's Nook, the one picture-and-grid window row, three outfit cards in order: %s" % ", ".join(want),
+		String(card["title"]) == "Tailor's Nook" and windows.size() == 1 and titles == want
+		and want == ["Original Ranger", "Dusk Ranger", "Ember Ranger"], {"title": card["title"], "windows": windows.size(), "titles": titles})
+	_x("a visit opens on the outfit she wears (the original)", win.selected_id() == Save.cat_skin and Save.cat_skin == "original")
 	var o := _tile("original")
-	_x("the original (worn): Wearing, no working button", String(o.get("label", "")) == "Wearing" and String(o.get("badge", "")) == "Wearing"
-		and not bool(o.get("enabled", true)), {"label": o.get("label", ""), "badge": o.get("badge", "")})
+	_x("the original (worn): the one button says Wearing and is off", String(o.get("label", "")) == "Wearing" and String(o.get("kind", "")) == "worn"
+		and not bool(o.get("enabled", true)), {"label": o.get("label", ""), "kind": o.get("kind", "")})
 	var ok := true
 	var seen := {}
 	for id in ["dusk_ranger", "nightfall_ranger"]:
 		var r := _tile(id)
 		var price := int(Data.cat_skin(id)["price"])
 		var words := "Needs %s leaves" % _thousands(price)
-		seen[id] = [r.get("label", ""), r.get("text", ""), r.get("cost", {}), r.get("enabled", false)]
-		ok = (ok and String(r.get("label", "")) == "Buy" and int((r.get("cost", {}) as Dictionary).get("leaves", 0)) == price
-			and String(r.get("text", "")) == words and not bool(r.get("enabled", true)) and String(Data.cat_skin(id)["currency"]) == "leaves")
+		seen[id] = [r.get("label", ""), r.get("note", ""), r.get("cost", {}), r.get("enabled", false)]
+		ok = (ok and String(r.get("label", "")) == "Buy" and String(r.get("kind", "")) == "new" and int((r.get("cost", {}) as Dictionary).get("leaves", 0)) == price
+			and String(r.get("note", "")) == words and not bool(r.get("enabled", true)) and String(Data.cat_skin(id)["currency"]) == "leaves")
 	_x("with no leaves: Buy with the price in leaves (3,000 and 6,000), off, the line 'Needs <price>'", ok
 		and int(Data.cat_skin("dusk_ranger")["price"]) == 3000 and int(Data.cat_skin("nightfall_ranger")["price"]) == 6000, seen)
+	var grey := {}
+	for c: Dictionary in cells:
+		grey[String(c["id"])] = bool(c.get("grey", false))
+	_x("the cards of outfits not owned are grey (and not locked: they can be tapped to try on); the one she wears is not",
+		grey == {"original": false, "dusk_ranger": true, "nightfall_ranger": true} and cells.all(func(c): return not bool(c.get("locked", true))), grey)
 	var pics := {}
-	for id in IDS:
-		var pic := Data.cat_skin_picture(id)
-		pics[id] = String(_tile(id).get("picture", "")) == pic if ResourceLoader.exists(pic) else not _tile(id).has("picture")
-	_x("each tile has its picture when res://assets/ui/cat_skins/<id>.png exists, else the outfit icon", pics.values().all(func(v): return v), pics)
+	for c: Dictionary in cells:
+		var pic := Data.cat_skin_picture(String(c["id"]))
+		pics[String(c["id"])] = String(c.get("picture", "")) == pic if ResourceLoader.exists(pic) else not c.has("picture")
+	_x("each card has its picture when res://assets/ui/cat_skins/<id>.png exists, else the outfit icon", pics.values().all(func(v): return v), pics)
 	# a currency the game cannot take yet (a premium one, later): never free, the button stays off
-	var info: Dictionary = Data.b["cat_skins"]["nightfall_ranger"]
-	var keep := String(info["currency"])
-	info["currency"] = "gems"
+	var info: Dictionary = Data.item("outfits", "nightfall_ranger")
+	var keep_price: Variant = info["price"]
+	info["price"] = {"gems": 6000}
 	Save.leaves = 100000
 	var r2 := _tile("nightfall_ranger")
 	_st()._buy_skin("nightfall_ranger")
 	_x("a currency the game cannot take yet: Buy is off ('Coming later') and buying does nothing", not bool(r2.get("enabled", true))
-		and String(r2.get("text", "")) == "Coming later" and not Data.cat_skin_owned("nightfall_ranger") and Save.leaves == 100000,
-		{"text": r2.get("text", "")})
-	info["currency"] = keep
+		and String(r2.get("note", "")) == "Coming later" and not Data.cat_skin_owned("nightfall_ranger") and Save.leaves == 100000,
+		{"note": r2.get("note", "")})
+	info["price"] = keep_price
 	var keep_model := String(info["model"])
 	info["model"] = "res://assets/cat/skins/missing_for_test.glb"
 	var missing := _tile("nightfall_ranger")
 	_st()._buy_skin("nightfall_ranger")
 	_x("a missing outfit model shows 'Coming later' and buying takes no leaves", not bool(missing.get("enabled", true))
-		and String(missing.get("text", "")) == "Coming later" and not Data.cat_skin_owned("nightfall_ranger") and Save.leaves == 100000,
-		{"text": missing.get("text", ""), "leaves": Save.leaves})
+		and String(missing.get("note", "")) == "Coming later" and not Data.cat_skin_owned("nightfall_ranger") and Save.leaves == 100000,
+		{"note": missing.get("note", ""), "leaves": Save.leaves})
 	info["model"] = keep_model
 	Save.leaves = 0
 
@@ -250,21 +279,22 @@ func _buy() -> void:
 	Save.leaves = price + 55
 	st._buy_skin("dusk_ranger")
 	_x("Buy Dusk Ranger: exactly its price taken, owned, and (between waves) she wears it", Save.leaves == 55 and Data.cat_skin_owned("dusk_ranger")
-		and Save.cat_skin == "dusk_ranger" and Save.cat_skins_owned.has("original"), {"leaves": Save.leaves, "owned": Save.cat_skins_owned, "worn": Save.cat_skin})
+		and Save.cat_skin == "dusk_ranger" and _owned_list().has("original"), {"leaves": Save.leaves, "owned": _owned_list(), "worn": Save.cat_skin})
 	var d := _tile("dusk_ranger")
 	var o := _tile("original")
 	var n := _tile("nightfall_ranger")
 	_x("now: Dusk Ranger Wearing, the original Wear (on), Nightfall Buy (off, 'Needs 6,000 leaves')", String(d.get("label", "")) == "Wearing"
-		and String(o.get("label", "")) == "Wear" and bool(o.get("enabled", false)) and String(o.get("badge", "")) == "Owned"
-		and String(n.get("label", "")) == "Buy" and not bool(n.get("enabled", true)) and String(n.get("text", "")) == "Needs 6,000 leaves",
-		{"dusk": d.get("label", ""), "original": [o.get("label", ""), o.get("enabled", false)], "nightfall": [n.get("label", ""), n.get("text", "")]})
+		and String(o.get("label", "")) == "Wear" and bool(o.get("enabled", false)) and String(o.get("kind", "")) == "owned"
+		and String(n.get("label", "")) == "Buy" and not bool(n.get("enabled", true)) and String(n.get("note", "")) == "Needs 6,000 leaves",
+		{"dusk": d.get("label", ""), "original": [o.get("label", ""), o.get("enabled", false)], "nightfall": [n.get("label", ""), n.get("note", "")]})
 	st._buy_skin("dusk_ranger")
-	_x("buying it again does nothing", Save.leaves == 55 and Save.cat_skins_owned.count("dusk_ranger") == 1)
+	_x("buying it again does nothing", Save.leaves == 55 and _owned_list().count("dusk_ranger") == 1)
 	Save.cat_skin = "original"                           # (d) starts from the original look
 	main.player.apply_skin()
 
 
-## The card as the player sees it (the original worn, Dusk Ranger owned, Nightfall Ranger not): tailor_card.png.
+## The card as the player sees it (the original worn, Dusk Ranger owned, Nightfall Ranger not): tailor_card.png, then the
+## try-on checks (tailor_tryon.png).
 func _card_shot() -> void:
 	var ring = _st().rings["tailor"]
 	main.player.global_position = ring.global_position
@@ -274,8 +304,73 @@ func _card_shot() -> void:
 	await t._wait(0.8)
 	_x("the card opens from the Nook's marker", main.hud.card_ring() == ring)
 	await t._shot("tailor_card")
+	await _try_on()
 	main.hud.hide_card()
 	await t._wait(0.3)
+
+
+## The card button of the Nook's picture (meta outfit_action, outfit_back) or null.
+func _card_button(meta: String) -> Button:
+	var scroll = main.hud._card_scroll
+	if scroll == null or not is_instance_valid(scroll):
+		return null
+	for b in scroll.find_children("*", "Button", true, false):
+		if b.has_meta(meta):
+			return b as Button
+	return null
+
+
+## Try-on: a tap on a grey card turns the picture's cat into that outfit and changes nothing else; an ordinary HUD refresh
+## keeps it turning; Back closes the Nook and frees the 3D view.
+func _try_on() -> void:
+	var win = _win()
+	var pv = win.preview()
+	var pl = main.player
+	var v = pv.view()
+	_x("the Nook opens with one turning cat on the outfit she wears", v != null and pv.shown_id() == "original" and pv.views_made == 1
+		and v.shown() != null, {"shown": pv.shown_id(), "views": pv.views_made})
+	var worn := Save.cat_skin
+	var leaves := Save.leaves
+	var owned := _owned_list()
+	var model: String = pl.model_path()
+	var hp: float = float(Data.cat_max_hp())
+	win.try_on("nightfall_ranger")
+	await t._wait(0.4)
+	var v2 = pv.view()
+	_x("tapping a grey card (Ember Ranger, not owned) tries it on: the picture shows it", win.selected_id() == "nightfall_ranger"
+		and pv.shown_id() == "nightfall_ranger" and v2 != null and v2.shown() != null, {"sel": win.selected_id(), "shown": pv.shown_id()})
+	_x("trying on changes nothing real: worn outfit, ownership, leaves, her model and health are as before", Save.cat_skin == worn
+		and Save.leaves == leaves and _owned_list() == owned and pl.model_path() == model and is_equal_approx(float(Data.cat_max_hp()), hp),
+		{"worn": Save.cat_skin, "leaves": Save.leaves, "model": pl.model_path()})
+	var act := _card_button("outfit_action")
+	_x("under the picture one button: Buy, off (she cannot pay Ember Ranger)", act != null and act.text == "Buy" and act.disabled, {"text": act.text if act else ""})
+	var t0: float = v2.turned()
+	await t._wait(0.5)
+	_x("the cat turns slowly", v2.turned() != t0)
+	main.hud.refresh_card()
+	await t._wait(0.2)
+	_x("an ordinary HUD refresh keeps the same picture, the same outfit and its turn", pv.view() == v2 and pv.views_made == 1
+		and pv.shown_id() == "nightfall_ranger" and win.selected_id() == "nightfall_ranger", {"views": pv.views_made})
+	await t._shot("tailor_tryon")
+	win.try_on("dusk_ranger")
+	await t._wait(0.2)
+	var d := _tile("dusk_ranger")
+	var act2 := _card_button("outfit_action")
+	_x("trying on an owned outfit that is not worn: one button, Wear, on", pv.shown_id() == "dusk_ranger" and act2 != null and act2.text == "Wear"
+		and not act2.disabled and String(d.get("kind", "")) == "owned" and Save.cat_skin == worn)
+	win.try_on("original")
+	await t._wait(0.2)
+	var act3 := _card_button("outfit_action")
+	_x("and the outfit she wears: Wearing, off", act3 != null and act3.text == "Wearing" and act3.disabled)
+	var back := _card_button("outfit_back")
+	_x("a visible Back button is on the card", back != null and back.text == "Back")
+	win.back()
+	await t._wait(0.3)
+	_x("Back closes the Nook and frees the 3D view", not main.hud.card_open() and pv.view() == null and pv.shown_id() == "")
+	main.open_ring(_st().rings["tailor"])
+	await t._wait(0.5)
+	_x("a new visit opens on the outfit she wears again (with a new picture)", win.selected_id() == Save.cat_skin and pv.view() != null
+		and pv.shown_id() == Save.cat_skin)
 
 
 # ---------------------------------------------------------------- (d) wearing
@@ -302,7 +397,7 @@ func _wear() -> void:
 	# an outfit file standing in: the other hero model (same skeleton and clips) as Dusk Ranger's file, so the swap in
 	# place is tried for real
 	var other := Data.cat_skin_model("dusk_ranger")           # the real Dusk Ranger file
-	var info: Dictionary = Data.b["cat_skins"]["dusk_ranger"]
+	var info: Dictionary = Data.item("outfits", "dusk_ranger")
 	var keep := String(info["model"])
 	info["model"] = other
 	var old_model: Node3D = pl.model
@@ -349,7 +444,7 @@ func _wave() -> void:
 	_fight(true)
 	var d := _tile("dusk_ranger")
 	_x("in a wave: Wear is off and the line says 'Between waves'", String(d.get("label", "")) == "Wear" and not bool(d.get("enabled", true))
-		and String(d.get("text", "")) == "Between waves", {"label": d.get("label", ""), "text": d.get("text", "")})
+		and String(d.get("note", "")) == "Between waves", {"label": d.get("label", ""), "note": d.get("note", "")})
 	st._wear_skin("dusk_ranger")
 	_x("and Wear does nothing in a wave", Save.cat_skin == "original")
 	_fight(false)
@@ -360,7 +455,7 @@ func _wave() -> void:
 # ---------------------------------------------------------------- (f) the bow, the nocked arrow and riding after a swap
 func _after_swap() -> void:
 	var pl = main.player
-	var info: Dictionary = Data.b["cat_skins"]["dusk_ranger"]
+	var info: Dictionary = Data.item("outfits", "dusk_ranger")
 	var keep := String(info["model"])
 	info["model"] = _keep_other
 	# a bow with its own model in the paw, if one exists (else the cat's own bow, tinted)
@@ -431,8 +526,7 @@ func _real_looks() -> void:
 	for id in ["dusk_ranger", "nightfall_ranger"]:
 		var file: String = Data.cat_skin_model(id)
 		_x("%s: its real file exists in the game (%s)" % [id, file], file != "" and ResourceLoader.exists(file) and file.begins_with("res://assets/cat/skins/"), {"file": file})
-		if not Save.cat_skins_owned.has(id):
-			Save.cat_skins_owned.append(id)
+		_own(id)
 		Save.cat_skin = "original"
 		pl.apply_skin()
 		await t._wait(0.3)
@@ -539,17 +633,17 @@ func _old_save() -> void:
 	f.close()
 	Save.path = tmp
 	Save.cat_skin = "dusk_ranger"
-	Save.cat_skins_owned = ["original", "dusk_ranger"]
+	_set_owned(["original", "dusk_ranger"])
 	Save.load_game()
 	_x("an old save without cat_skin / cat_skins_owned loads with the original look, owned and worn", Save.cat_skin == "original"
-		and Save.cat_skins_owned == ["original"] and main.player.hero_base() == main.player.original_base(), {"worn": Save.cat_skin, "owned": Save.cat_skins_owned})
+		and _owned_list() == ["original"] and main.player.hero_base() == main.player.original_base(), {"worn": Save.cat_skin, "owned": _owned_list()})
 	var gone := {"leaves": 10, "bows": {"twig": 1}, "cat_skin": "gone_outfit", "cat_skins_owned": ["gone_outfit", "dusk_ranger"]}
 	f = FileAccess.open(tmp, FileAccess.WRITE)
 	f.store_string(JSON.stringify(gone))
 	f.close()
 	Save.load_game()
 	_x("a worn outfit the game no longer sells falls back to the original; the others stay owned", Save.cat_skin == "original"
-		and Save.cat_skins_owned.has("original") and Save.cat_skins_owned.has("dusk_ranger"), {"worn": Save.cat_skin, "owned": Save.cat_skins_owned})
+		and _owned_list().has("original") and _owned_list().has("dusk_ranger"), {"worn": Save.cat_skin, "owned": _owned_list()})
 	Save.cat_skin = "dusk_ranger"
 	Save.save_game(true)
 	Save.cat_skin = "original"

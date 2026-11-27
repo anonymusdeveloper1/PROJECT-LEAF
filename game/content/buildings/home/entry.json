@@ -21,8 +21,8 @@
       {"type": "mission", "n": 5},
       {"type": "station", "id": "target", "level": 2},
       {"type": "station", "id": "bench", "level": 2},
-      {"type": "station", "id": "cottage", "level": 2},
-      {"type": "station", "id": "stall", "level": 2},
+      {"type": "station", "id": "stall", "level": 1},
+      {"type": "pet_level", "level": 2},
       {"type": "stat", "id": "damage", "level": 6},
       {"type": "stat", "id": "draw", "level": 5},
       {"type": "stat", "id": "range", "level": 3},
@@ -36,8 +36,7 @@
       {"type": "mission", "n": 9},
       {"type": "station", "id": "target", "level": 3},
       {"type": "station", "id": "bench", "level": 3},
-      {"type": "station", "id": "cottage", "level": 3},
-      {"type": "station", "id": "stall", "level": 3},
+      {"type": "pet_level", "level": 3},
       {"type": "station", "id": "well", "level": 2},
       {"type": "station", "id": "garden", "level": 2},
       {"type": "stat", "id": "damage", "level": 8},
@@ -82,5 +81,5 @@
       {"type": "depth", "n": 3}
     ]}
   ],
-  "_note": "Phase F (19 Nov 2026): each home level has `goals`; the home grows only when every goal is met and its price is paid. Goal types: mission {n: mission number, 1-based, won}; station {id, level}; stat {id, level}; bow {id, level} (that bow owned at that level); bow_any {level}; bow_owned {id}; towers {count, level} (placed towers at least that level); defence {id, level} (barricade / spikes / tower type level); all_stats {level}; depth {n} (Gloomwood level n beaten). needs_burrows / needs_depth on levels 6-8 are kept for older code."
+  "_note": "Phase F (19 Nov 2026): each home level has `goals`; the home grows only when every goal is met and its price is paid. Goal types: mission {n: mission number, 1-based, won}; station {id, level}; stat {id, level}; bow {id, level} (that bow owned at that level); bow_any {level}; bow_owned {id}; towers {count, level} (placed towers at least that level); defence {id, level} (barricade / spikes / tower type level); all_stats {level}; depth {n} (Gloomwood level n beaten); pet_level {level} (H5: the pet trained to that level, at the Market's Pets tab). needs_burrows / needs_depth on levels 6-8 are kept for older code. H5 (27 Nov 2026, the owner's Q4 A): the Mushroom Cottage left the camp and the Market has one level, so level 3 asks for a built Market and pet level 2 (were Cottage 2 and Market 2), and level 4 for pet level 3 (were Cottage 3 and Market 3)."
 }

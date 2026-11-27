@@ -19,7 +19,8 @@ const IDS := ["bow", "target", "damage", "draw", "range", "heart", "speed", "mag
 	"peppers", "roots"]
 ## Other names for the same pictures. G4: the Saddlery's tiles: the skills have their own, the Fire-spitter the flame,
 ## the Mossweave Saddle the saddle (the Saddlery's own picture), the Saddlebags their own. H3: the new crops by name.
-const ALIAS := {"health": "heart", "hp": "heart", "stall": "market", "cottage": "pet", "nest": "pet", "saddlery": "mount",
+## H5 (27 Nov 2026): the Mushroom Cottage's alias went with the Cottage (the pet's own picture is still "pet").
+const ALIAS := {"health": "heart", "hp": "heart", "stall": "market", "nest": "pet", "saddlery": "mount",
 	"hearthtree": "home", "guardian": "stone", "fire": "flame", "campfire": "flame", "sunberries": "berries",
 	"graphics": "settings", "mend": "repair", "signpost": "sign", "saddle": "mount", "fire_spitter": "flame",
 	"bags": "saddlebags", "needle": "tailor", "cat_skin": "outfit", "emberpepper": "peppers", "swiftroot": "roots"}

@@ -16,6 +16,8 @@ extends RefCounted
 ##       "section" headings; "list" rows and the footer from H4: ui/kit/card.gd, ui/kit/list_row.gd), the confirm window
 ##       (hud.confirm, ui/kit/confirm_window.gd), and the rules in stations.gd.
 
+const CompanionShop := preload("res://scripts/companion_shop.gd")   # H5: its SLOT_KINDS (which content kind a slot's looks are)
+
 var hud                         # the HUD node (untyped on purpose, as in the HUD's parts)
 var main                        # hud.main
 var st                          # main.stations: the rules (pay, level up, build) live there
@@ -271,7 +273,7 @@ func _price_words(cost: Dictionary, gloom := false) -> String:
 func _ruin_card(sid: String, title: String, anchor: Vector3) -> Dictionary:
 	var cost: Dictionary = st.repair_cost(sid)
 	var what: String = {"home": "Nothing can be bought here", "target": "No training here", "bench": "No bows to buy or upgrade",
-		"well": "It can't mend the camp", "cottage": "%s is hiding" % Data.pet_name(),
+		"well": "It can't mend the camp",
 		"stall": "%s won't come out, and no trading" % Data.mount_name(),
 		"saddlery": "No skills or attachments to buy or upgrade",
 		"tailor": "No outfits to buy or put on"}.get(sid, "")
@@ -304,18 +306,35 @@ func _station_icon(sid: String) -> String:
 	return String(Data.building(sid).get("icon", sid))
 
 
-# ---------------------------------------------------------------- the companions' looks (the Cottage, the Market, the Stone)
+# ---------------------------------------------------------------- the companions' looks (the Market, the Stone)
 ## The looks of a companion slot as tiles: the one in use ("Equipped", no button), the others free to Use (every look
-## has the same numbers).
+## has the same numbers). H5: the mount's and the pet's looks are content entries (content/mounts, content/pets) and
+## only the owned ones are listed here (Data.owned_level; buying one is the Market's Mounts and Pets tabs'); the
+## guardian's stay in balance.json looks.guardian.
 func _look_tiles(slot: String, icon: String, use_text: String, other_text: String) -> Array:
 	var out: Array = []
-	for lk in Data.b["looks"][slot]:
+	for lk: Dictionary in _slot_looks(slot):
 		var lid := String(lk["id"])
 		var use: bool = st._look_id(slot) == lid
 		var txt := use_text if use else other_text
 		if slot == "mount" and not use:
 			txt = "Same speed and skills, a new look"         # G4: looks have no move of their own
 		out.append(_tile(icon, String(lk["name"]), txt, {}, "" if use else "Use", not use, st._use_look.bind(slot, lid), "Equipped" if use else ""))
+	return out
+
+
+## The looks a slot can put out now, in their order: the owned mount or pet looks (content, H5), or every guardian look.
+func _slot_looks(slot: String) -> Array[Dictionary]:
+	var kind := String(CompanionShop.SLOT_KINDS.get(slot, ""))
+	var out: Array[Dictionary] = []
+	if kind == "":
+		for lk: Variant in (Data.b.get("looks", {}) as Dictionary).get(slot, []):
+			if lk is Dictionary:
+				out.append(lk)
+		return out
+	for e: Dictionary in Data.shop_entries(kind):
+		if Data.owned_level(kind, String(e["id"])) >= 1:
+			out.append(e)
 	return out
 
 
@@ -337,24 +356,27 @@ func _gloomlit_row(slot: String) -> Array:
 	return []
 
 
-## Phase E: attachments for the mount or the pet (balance.json attachments): Burrows-only help, bought with the price
-## balance.json names (leaves today), one worn at a time. Shown once the Burrows are open. Card-only for now (no model on the companion).
+## Phase E: attachments for the mount or the pet: Burrows-only help, bought once for its price (leaves today), one worn
+## at a time. Shown once the Burrows are open. Card-only for now (no model on the companion). H5: they are content
+## entries (content/attachments, "shop": "stall", "scope": "expedition"; Data.attachment_entries), owned in Save.owned
+## (Data.owned_level); Buy is stations._buy_attach (the Buy command), Wear and Take off stations._wear.
 func _attach_rows(slot: String) -> Array:
 	var rows: Array = []
 	if not Data.burrows_open():
 		return rows
-	var items: Dictionary = Data.b.get("attachments", {}).get("items", {})
-	var owned: Array = Save.attach.get("owned", [])
-	for aid in items:
-		var it: Dictionary = items[aid]
-		if String(it["slot"]) != slot:
+	for it: Dictionary in Data.attachment_entries(String(st.MARKET), slot):    # the Market sells it (its entries' "shop")
+		if String(it.get("scope", "")) != "expedition":
 			continue
+		var aid := String(it["id"])
+		var nm := String(it.get("name", aid))
+		var says := String(it.get("desc", ""))
 		var worn: bool = String(Save.attach.get(slot, "")) == aid
 		if worn:
-			rows.append(_tile(slot, String(it["name"]), String(it["note"]), {}, "Take off", true, st._wear.bind(slot, ""), "Equipped"))
-		elif owned.has(aid):
-			rows.append(_tile(slot, String(it["name"]), String(it["note"]), {}, "Wear", true, st._wear.bind(slot, String(aid)), "Owned"))
+			rows.append(_tile(slot, nm, says, {}, "Take off", true, st._wear.bind(slot, ""), "Equipped"))
+		elif Data.owned_level("attachments", aid) >= 1:
+			rows.append(_tile(slot, nm, says, {}, "Wear", true, st._wear.bind(slot, aid), "Owned"))
 		else:
-			var c: Dictionary = it["cost"]
-			rows.append(_tile(slot, String(it["name"]), String(it["note"]) + Data.mats_line(c), c, "Buy", true, st._buy_attach.bind(String(aid)), "New"))
+			var c: Dictionary = Data.entry_price("attachments", aid, 1)
+			rows.append(_tile(slot, nm, says + Data.mats_line(c), c, "Buy", Data.entry_price_ok("attachments", aid, 1),
+				st._buy_attach.bind(aid), "New"))
 	return rows

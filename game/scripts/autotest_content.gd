@@ -13,9 +13,19 @@ const INDEX_PATH := "res://content/index.json"
 const CROPS := ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"]
 const RECIPES := ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]
 const BOWS := ["twig", "sunwood", "ember", "frost", "volley", "foxfire"]
-const BUILDINGS := ["home", "target", "bench", "well", "cottage", "stall", "stone", "garden", "fishing", "saddlery", "tailor"]
+## H5: the Mushroom Cottage left the camp (its picture and model stay in assets/).
+const BUILDINGS := ["home", "target", "bench", "well", "stall", "stone", "garden", "fishing", "saddlery", "tailor"]
 ## The buildings with a picture rendered from their model in H4 (art/scripts/buildings/pictures.py).
-const PICTURED := ["target", "bench", "well", "cottage", "stall", "tailor"]
+const PICTURED := ["target", "bench", "well", "stall", "tailor"]
+## H5: the shop kinds (content/<kind>, read through scripts/shop_data.gd), in index order.
+const SHOP_KINDS := {"mounts": ["thistle", "bramblewool"], "pets": ["sprig", "lumi"],
+	"outfits": ["original", "dusk_ranger", "nightfall_ranger"],
+	"attachments": ["fire_spitter", "saddle", "saddlebags", "mount_shoes", "pet_lantern", "pet_charm", "pet_bell"]}
+## H5 (the owner's Q4 A, Q5 A): the Hearthtree's goals that replaced the Cottage's and the Market's levels, and the
+## one-level Market's health.
+const HOME_3_H5 := [{"type": "station", "id": "stall", "level": 1}, {"type": "pet_level", "level": 2}]
+const HOME_4_H5 := [{"type": "pet_level", "level": 3}]
+const MARKET_HP := 200
 ## The fields an effect may have (the effects list's shared fields, ARCHITECTURE part 5).
 const EFFECT_FIELDS := ["type", "target", "share", "stat", "mult", "seconds"]
 const TARGETS := ["cat", "mount"]
@@ -33,6 +43,8 @@ func run() -> bool:
 	ok = _check_recipes() and ok
 	ok = _check_bows() and ok
 	ok = _check_buildings() and ok
+	ok = _check_h5_buildings() and ok
+	ok = _check_shop_kinds() and ok
 	ok = _check_unlocked() and ok
 	ok = _check_icons() and ok
 	ok = _check_bag_kinds() and ok
@@ -281,13 +293,99 @@ func _check_building_refs(home_levels: Array) -> bool:
 				"towers":
 					if not defences.has("tower"):
 						bad.append(goal)
-	return t._expect("stats and home goals refer to existing buildings, bows, stats and defences", bad.is_empty(), {"bad": bad})
+				"pet_level":
+					# H5: the pet is trained at its shop (the first pet entry's "shop", the Market), up to its top level
+					var pets: Array[Dictionary] = Data.shop_entries("pets")
+					var shop := String(pets[0].get("shop", "")) if not pets.is_empty() else ""
+					var lv := int(goal.get("level", 0))
+					if Data.building(shop).is_empty() or lv < 1 or lv > Data.pet_top():
+						bad.append(goal)
+	return t._expect("stats and home goals refer to existing buildings, bows, stats, defences and the pet's shop", bad.is_empty(), {"bad": bad})
+
+
+## H5: the Mushroom Cottage is gone from the buildings, the build menu and building_hp; the Market has one level and
+## 200 health (an old upgraded Market's health is kept through Save.market_hp_floor); the Hearthtree's level 3 and 4
+## goals ask for the built Market and the pet's level instead of the Cottage's and the Market's levels (Q4 A).
+func _check_h5_buildings() -> bool:
+	var menu_ids: Array = []
+	for e: Dictionary in Data.menu_buildings():
+		menu_ids.append(String(e.get("id", "")))
+	var ok := t._expect("H5: no Mushroom Cottage in the buildings, the build menu or building_hp (its picture stays in assets)",
+		Data.building("cottage").is_empty() and not menu_ids.has("cottage") and not (Data.b["building_hp"] as Dictionary).has("cottage")
+		and ResourceLoader.exists("res://assets/ui/buildings/cottage.png"), {"menu": menu_ids})
+	var kept_floor := Save.market_hp_floor
+	Save.market_hp_floor = 0
+	var fresh_hp := Data.building_hp("stall", 1)
+	Save.market_hp_floor = 500
+	var kept_hp := Data.building_hp("stall", 1)
+	var unbuilt_hp := Data.building_hp("stall", 0)
+	Save.market_hp_floor = kept_floor
+	ok = t._expect("H5: the Market has one level (no Upgrade) and %d health; an old upgraded Market keeps its 500 (market_hp_floor)" % MARKET_HP,
+		Data.building_levels("stall").size() == 1 and Data.level_price("stall", 2).is_empty() and is_equal_approx(fresh_hp, MARKET_HP)
+		and is_equal_approx(kept_hp, 500.0) and is_equal_approx(unbuilt_hp, 0.0),
+		{"levels": Data.building_levels("stall").size(), "fresh": fresh_hp, "kept": kept_hp}) and ok
+	var levels := Data.building_levels("home")
+	var market_levels: Array = []
+	var cottage_goals: Array = []
+	for i in levels.size():
+		for goal: Variant in (levels[i] as Dictionary).get("goals", []):
+			var g: Dictionary = goal if goal is Dictionary else {}
+			if String(g.get("id", "")) == "cottage":
+				cottage_goals.append(i + 1)
+			if String(g.get("type", "")) == "station" and String(g.get("id", "")) == "stall" and int(g.get("level", 1)) > 1:
+				market_levels.append(i + 1)
+	ok = t._expect("H5 (Q4 A): Hearthtree 3 asks for a built Market and pet level 2, Hearthtree 4 for pet level 3; no goal asks for the Cottage or a Market level",
+		cottage_goals.is_empty() and market_levels.is_empty() and _has_goals(levels, 3, HOME_3_H5) and _has_goals(levels, 4, HOME_4_H5),
+		{"cottage goals at": cottage_goals, "market levels at": market_levels}) and ok
+	return ok
+
+
+## Every goal of want is among home level n's goals (levels[n - 1]).
+func _has_goals(levels: Array, n: int, want: Array) -> bool:
+	if n < 1 or n > levels.size():
+		return false
+	var have: Array = []
+	for goal: Variant in (levels[n - 1] as Dictionary).get("goals", []):
+		have.append(_goal_key(goal))
+	for goal: Variant in want:
+		if not have.has(_goal_key(goal)):
+			return false
+	return true
+
+
+## A goal as one text, "type|id|level" (a JSON level reads as a float, one written here as a whole number).
+static func _goal_key(goal: Variant) -> String:
+	var g: Dictionary = goal if goal is Dictionary else {}
+	return "%s|%s|%d" % [String(g.get("type", "")), String(g.get("id", "")), int(g.get("level", 1))]
+
+
+## H5: the four shop kinds are indexed in order, each entry has the shared fields and a price in known currencies
+## ({} only for what comes included: the mounts with the Market, the original outfit), and an icon the HUD draws.
+func _check_shop_kinds() -> bool:
+	var hud: Variant = main.hud
+	var bad: Dictionary = {}
+	var order: Array = []
+	for kind: String in SHOP_KINDS:
+		var ids: Array = []
+		for e: Dictionary in Data.catalog(kind):
+			var id := String(e.get("id", ""))
+			ids.append(id)
+			var why := _shared_fields(e)
+			why.append_array(_price_problems(e.get("price"), true))
+			if not hud._icon_known(String(e.get("icon", ""))):
+				why.append("icon")
+			if not why.is_empty():
+				bad["%s/%s" % [kind, id]] = why
+		if ids != SHOP_KINDS[kind]:
+			order.append(kind)
+	return t._expect("H5: the mounts, pets, outfits and attachments are indexed in order with shared fields, prices and HUD icons",
+		bad.is_empty() and order.is_empty(), {"bad": bad, "out of order": order})
 
 
 # ---------------------------------------------------------------- unlock rules
 func _check_unlocked() -> bool:
 	var bad: Array = []
-	for kind: String in ["crops", "recipes", "bows", "buildings"]:
+	for kind: String in ["crops", "recipes", "bows", "buildings"] + SHOP_KINDS.keys():   # H5: the shop kinds too
 		for e: Dictionary in Data.catalog(kind):
 			var rule: Variant = e.get("unlock")
 			if not rule is Dictionary or not _unlock_form_known(rule):

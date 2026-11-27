@@ -4,6 +4,8 @@ extends RefCounted
 ## (hud.windows) and stations.use_windows plugs each into its marker.
 ## A known list of names in code (docs/ARCHITECTURE.md house rule 3): it is the one place that names the windows until
 ## the building entries (content/buildings/) say which window each one has.
+## H5 (27 Nov 2026): the Mushroom Cottage's window is gone with the Cottage (its pet is sold and trained at the Market's
+## Pets tab).
 ## Used by: ui/hud/hud.gd build().
 ## Uses: every window file below.
 
@@ -15,7 +17,6 @@ const WINDOWS := {
 	"stone": preload("res://ui/windows/stone_window.gd"),
 	"garden": preload("res://ui/windows/garden_card.gd"),
 	"stall": preload("res://ui/windows/market_window.gd"),
-	"cottage": preload("res://ui/windows/cottage_window.gd"),
 	"saddlery": preload("res://ui/windows/saddlery_window.gd"),
 	"tailor": preload("res://ui/windows/tailor_window.gd"),
 	"fishing": preload("res://ui/windows/fishing_window.gd"),

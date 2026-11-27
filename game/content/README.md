@@ -39,6 +39,13 @@ What each kind adds:
 | `outfits` | `picture` (the Tailor's card), `model` (a whole hero model; `""` for the original look, which uses the hero model). |
 | `attachments` | `shop` (`saddlery` or `stall`), `slot` (`mount` or `pet`), `scope` (`all`: works everywhere; `expedition`: the Burrows only). A Saddlery attachment has `price` for level 1 and `upgrades` for levels 2 to 5 (`needs_burrows: true` is a gate, never a payment), its effect numbers, and `model` with `{mount}` standing for the mount look's ID. Expedition gear has one price and its `mods`. |
 
+What the player owns is in the save (version 5): `owned[kind][id] = {"level": n}`
+(1 for a look or an outfit, the bought level for a Saddlery attachment), read
+through `Data.owned_level`. The pet has one shared level (`Save.pet_level`), and
+an old save's Mushroom Cottage and Market became the pet, the mount looks and the
+mount's carried tier (`core/save_upgrade_v5.gd`). The Cottage's building entry is
+gone; its picture and model stay in `assets/`.
+
 To add one: copy an entry of the same kind, give it a new folder ID, list the
 ID in `index.json`, keep it `hidden` until the owner says it goes in, and run
 `--content`.

@@ -1,5 +1,5 @@
 ## Save checks for autotest.gd (`-- --autotest --fresh --saves`).
-## Uses Save, Events, Timers, Bag and the v2, v3 and v4 fixtures. Reads and writes only a scratch save and its backup
+## Uses Save, Events, Timers, Bag and the v2, v3, v4 and v5 fixtures. Reads and writes only a scratch save and its backup
 ## during checks.
 ## H1: the v2 fixture stays a real version-2 save; loading it runs the 2 -> 3 upgrade (core/save_upgrades.gd): its
 ## amber, glowstone, heartwood and Hollow keys become leaves, only amber is left (at 0), and burrow_keys is gone.
@@ -11,10 +11,17 @@
 ## H3, the real first launch of an old save (two runs, like --resume): `--saves --startup=1` (with --fresh) puts the v3
 ## fixture in the test slot, and `--saves --startup=2` (without --fresh) checks what Save._ready made of it at launch
 ## (_check_startup). Until Stage 2's garden.gd is in, run 2 also logs the old garden's script errors (map risk 17).
+## H5 (27 Nov 2026): the save is version 5, so every older file also takes the 4 -> 5 step (core/save_upgrade_v5.gd:
+## the Mushroom Cottage goes, owned, the shared pet level, the one-level Market, the skill circles). The v2, v3 and v4
+## fixtures stay as they were; the v4 fixture is now upgraded (backed up first, its Cottage 2 and Market 3 become pet
+## level 2, both pet and mount looks, mount tier 3 and the Market's 500 health), and the v5 fixture loads as it is.
+## A file the step made is expected to be exactly the step's output (SaveUpgradeV5.upgrade, checked case by case in
+## --h5found) as Save writes it back; the v4 and v5 fixtures are also checked against fixed numbers here.
 extends Node
 
 const AutotestScript := preload("res://scripts/autotest.gd")
 const MainScript := preload("res://scripts/main.gd")
+const SaveUpgradeV5 := preload("res://core/save_upgrade_v5.gd")
 
 const SAMPLE_PATH := "res://tests/saves/v2_sample.json"
 const TEST_PATH := "user://leaf_save_test_saves.json"
@@ -28,6 +35,10 @@ const SAMPLE_V3_PATH := "res://tests/saves/v3_sample.json"
 ## H3: the frozen version-4 fixture (hand-written in the format save_game writes, fixed whole-second times): loading it
 ## must change nothing.
 const SAMPLE_V4_PATH := "res://tests/saves/v4_sample.json"
+## H5: the frozen version-5 fixture (core/save_upgrade_v5.gd's output for a mid-game v4 save): loading it changes nothing.
+const SAMPLE_V5_PATH := "res://tests/saves/v5_sample.json"
+## H5: the version before the 4 -> 5 step.
+const V4 := 4
 ## H3 (the owner's plan, 26 Nov 2026; balance.json save_upgrades.to_v4, frozen): what the 3 -> 4 step does.
 const V4_OLD_DISHES := ["berry_tart", "fernmint_tea", "honey_cake", "hearth_stew", "fish_skewers", "root_stew", "carp_feast"]
 const V4_DISH_POTION := "health_potion"
@@ -128,6 +139,8 @@ func _check_saves(sample_text: String, sample: Dictionary) -> bool:
 	DirAccess.remove_absolute(BACKUP_PATH)
 	ok = await _check_v4_sample() and ok
 	DirAccess.remove_absolute(BACKUP_PATH)
+	ok = await _check_v5_sample() and ok
+	DirAccess.remove_absolute(BACKUP_PATH)
 
 	# A file without a version goes through the v1 load path (and, H1, the 2 -> 3 step too).
 	var old := sample.duplicate(true)
@@ -218,7 +231,20 @@ func _check_upgrade_rules(sample: Dictionary) -> bool:
 		ok = t._expect("H1: %d Hollow keys give exactly %d x key_leaves" % [held_keys, V3_KEY_CAP],
 			int(capped["leaves"]) == V3_KEY_CAP * V3_KEY_LEAVES, {"got": capped}) and ok
 	ok = _check_upgrade_rules_v4(bare, odd) and ok
+	ok = _check_upgrade_rules_v5(bare) and ok
 	return ok
+
+
+## H5: the bare dictionary takes the 4 -> 5 step too and ends as a fresh v5 camp: no pet, no Market (stall 0), no
+## mount look or carried tier, no Market health, only the original outfit, three empty circles and nothing worn.
+func _check_upgrade_rules_v5(bare: Dictionary) -> bool:
+	var owned: Dictionary = bare.get("owned") if bare.get("owned") is Dictionary else {}
+	return t._expect("H5: a bare dictionary also takes the 4 -> 5 step and ends as a fresh v5 camp (no pet, no Market, the original outfit, empty circles)",
+		SaveUpgrades.CURRENT_VERSION == 5 and int(bare.get("pet_level", -1)) == 0 and int(bare.get("market_hp_floor", -1)) == 0
+		and bare.get("stations") == {"stall": 0} and owned.get("outfits") == {"original": {"level": 1}}
+		and owned.get("pets") == {} and owned.get("mounts") == {} and owned.get("attachments") == {}
+		and bare.get("attach") == {"mount": "", "pet": ""} and not bare.has("cat_skins_owned")
+		and bare.get("saddlery") == {"skills": {}, "skill_slots": ["", "", ""], "worn": "", "mount_credit": 0}, {"got": bare})
 
 
 ## H3: the 3 -> 4 step's numbers (balance.json save_upgrades.to_v4) are the frozen ones; the bare dictionary ends with an
@@ -243,7 +269,7 @@ func _check_upgrade_rules_v4(bare: Dictionary, odd: Dictionary) -> bool:
 			{"crop": "fernmint"}],
 		"burrow_run": {"v": 2, "meal": "berry_tart"}})
 	var jobs: Dictionary = (odd3.get("timers", {}) as Dictionary).get("jobs", {})
-	ok = t._expect("H3: the pantry goes into the Bag with no cap (counts above 0 only)", int(odd3.get("save_v", 0)) == 4
+	ok = t._expect("H3: the pantry goes into the Bag with no cap (counts above 0 only)", int(odd3.get("save_v", 0)) == SaveUpgrades.CURRENT_VERSION
 		and odd3.get("bag") == {"berries": 25, "health_potion": 3} and _no_old_food(odd3), {"got": odd3}) and ok
 	ok = t._expect("H3: two old dishes with room for one more potion: one Health Potion, %d leaves for the other" % V4_DISH_LEAVES,
 		int(odd3["leaves"]) == V4_DISH_LEAVES and odd3.get("burrow_run") == {"v": 2}, {"leaves": odd3["leaves"], "run": odd3.get("burrow_run")}) and ok
@@ -288,7 +314,8 @@ func _check_saved_run(sample: Dictionary) -> bool:
 ## H3: the frozen v3 fixture is upgraded to v4 (the build map, part 3.13). It is backed up first; its leaves (no 2 -> 3
 ## step), items, amber, unknown material and saved run's satchel are kept; the pantry is in the Bag and the waiting dish
 ## a Health Potion; the half-grown crops are Timers jobs (sunberry 2 of 4: len 240 from now - 120; fernmint 1 of 5: len
-## 300 from now - 60); seen is now; it saves as v4 without burrow_keys, the old food keys or the run's dish.
+## 300 from now - 60); seen is now; it saves as the current version (H5: 5, after the 4 -> 5 step too) without
+## burrow_keys, the old food keys or the run's dish.
 func _check_v3_sample() -> bool:
 	var text := FileAccess.get_file_as_string(SAMPLE_V3_PATH)
 	var s: Variant = JSON.parse_string(text)
@@ -300,8 +327,8 @@ func _check_v3_sample() -> bool:
 		DirAccess.remove_absolute(BACKUP_PATH)
 	Save.load_game()
 	await get_tree().process_frame
-	var ok := t._expect("H3: the v3 sample loads as version 3 and is upgraded to 4", Save.loaded_v == 3
-		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 4, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
+	var ok := t._expect("H3: the v3 sample loads as version 3 and is upgraded to the current version (H5: 5)", Save.loaded_v == 3
+		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 5, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
 	ok = t._expect("H3: the v3 file is backed up before it is upgraded", FileAccess.file_exists(BACKUP_PATH)
 		and FileAccess.get_file_as_string(BACKUP_PATH) == text) and ok
 	ok = t._expect("the v3 sample's leaves are not converted (one dish, and room for it)", Save.leaves == int(s["leaves"]), {"leaves": Save.leaves}) and ok
@@ -320,24 +347,29 @@ func _check_v3_sample() -> bool:
 		and Save.garden[1] == {"crop": "fernmint"} and Save.garden[5] == {"crop": ""}, {"timers": Save.timers, "garden": Save.garden}) and ok
 	Save.save_game(true)
 	var written: Variant = _read_test_save()
-	ok = t._expect("H3: the v3 sample is saved as v4 without burrow_keys, the old food keys or the run's dish", written is Dictionary
-		and int((written as Dictionary).get("save_v", 0)) == 4 and not (written as Dictionary).has("burrow_keys")
+	ok = t._expect("H3: the v3 sample is saved as the current version without burrow_keys, the old food keys or the run's dish", written is Dictionary
+		and int((written as Dictionary).get("save_v", 0)) == SaveUpgrades.CURRENT_VERSION and not (written as Dictionary).has("burrow_keys")
 		and _no_old_food(written as Dictionary), {"written": written}) and ok
 	ok = t._expect("H3: the written Bag and jobs are the upgraded ones", written is Dictionary
 		and (written as Dictionary).get("bag") == {"berries": 5.0, "herbs": 3.0, "honey": 1.0, "fish": 2.0, "health_potion": 1.0}
 		and (written as Dictionary).get("timers") == {"seen": fake_now, "jobs": want_jobs},
 		{"bag": (written as Dictionary).get("bag") if written is Dictionary else null}) and ok
+	ok = t._expect("H5: the written v3 sample is the 4 -> 5 step's output, as Save writes it back", written == _upgraded_v5(s),
+		{"written": written}) and ok
 	return ok
 
 
-## H3: the frozen v4 fixture (fixed whole-second times) loads as it is. The clock is held at the fixture's own seen, so
-## its growing job is still growing and its ripe one keeps told; there is no conversion and no backup; a check sends
-## nothing (the ripe job was told before it was saved); the written file equals the fixture field for field (seen
-## stays). The held clock goes back to fake_now afterwards.
+## H3: the frozen v4 fixture (fixed whole-second times). The clock is held at the fixture's own seen, so its growing
+## job is still growing and its ripe one keeps told; a check sends nothing (the ripe job was told before it was saved).
+## H5: it is upgraded now (4 -> 5), so it is backed up first, byte for byte. Its Mushroom Cottage 2, Market 3 and
+## Saddlery 2 become pet level 2 with Sprig and Lumi, a built Market with Thistle and Bramblewool, mount tier 3 carried
+## (the mount rides at 3), the Market's 500 health kept; its Dusk Ranger, Mossweave Saddle 2 (worn) and Stomp 2 (in the
+## first circle) stay owned; the written file has none of the old forms and is the step's output field for field. The
+## held clock goes back to fake_now afterwards.
 func _check_v4_sample() -> bool:
 	var text := FileAccess.get_file_as_string(SAMPLE_V4_PATH)
 	var s: Variant = JSON.parse_string(text)
-	if not t._expect("H3: the v4 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == 4
+	if not t._expect("H3: the v4 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == V4
 			and (s as Dictionary).get("timers") is Dictionary and _no_old_food(s as Dictionary)):
 		return false
 	if not t._expect("H3: the v4 fixture is copied to the scratch slot", _write_test_save(text)):
@@ -348,8 +380,10 @@ func _check_v4_sample() -> bool:
 	fake_now = float(s["timers"]["seen"])
 	Save.load_game()
 	await get_tree().process_frame
-	var ok := t._expect("H3: the v4 sample loads as version 4", Save.loaded_v == 4 and Save.save_v == 4, {"loaded_v": Save.loaded_v})
-	ok = t._expect("H3: a v4 save is not backed up before loading", not FileAccess.file_exists(BACKUP_PATH)) and ok
+	var ok := t._expect("H5: the v4 sample loads as version 4 and is upgraded to 5", Save.loaded_v == V4 and Save.save_v == 5
+		and SaveUpgrades.CURRENT_VERSION == 5, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
+	ok = t._expect("H5: the v4 file is backed up byte for byte before it is upgraded", FileAccess.file_exists(BACKUP_PATH)
+		and FileAccess.get_file_as_string(BACKUP_PATH) == text) and ok
 	ok = t._expect("H3: the v4 sample's Bag: food, a potion, and an unknown id kept but not counted",
 		Save.bag == {"berries": 5, "herbs": 3, "honey": 1, "fish": 2, "health_potion": 1, "future_food": 4}
 		and Bag.count("health_potion") == 1 and Bag.count("future_food") == 0, {"bag": Save.bag}) and ok
@@ -364,10 +398,91 @@ func _check_v4_sample() -> bool:
 	Timers.check()
 	Events.timer_finished.disconnect(on_finished)
 	ok = t._expect("H3: a check sends nothing for a job told before it was saved", sent.is_empty(), {"sent": sent}) and ok
+	ok = t._expect("H5: the v4 sample's Cottage 2 is pet level 2 with Sprig and Lumi, its Market 3 a built Market with both mount looks",
+		not Save.stations.has("cottage") and int(Save.stations.get("stall", -1)) == 1 and Save.pet_level == 2 and Data.pet_level() == 2
+		and Data.owned_level("pets", "sprig") == 1 and Data.owned_level("pets", "lumi") == 1
+		and Data.owned_level("mounts", "thistle") == 1 and Data.owned_level("mounts", "bramblewool") == 1,
+		{"stations": Save.stations, "pet_level": Save.pet_level, "owned": Save.owned}) and ok
+	ok = t._expect("H5: the mount keeps tier 3 with the Saddlery at 2 (mount_credit 3), and the Market keeps its 500 health",
+		int(Save.stations.get("saddlery", -1)) == 2 and int(Save.saddlery.get("mount_credit", -1)) == 3 and Data.mount_level() == 3
+		and Save.market_hp_floor == 500 and Data.building_hp("stall", 1) == 500.0,
+		{"saddlery": Save.saddlery, "floor": Save.market_hp_floor, "mount_level": Data.mount_level()}) and ok
+	ok = t._expect("H5: the Dusk Ranger is still owned and worn; the Mossweave Saddle 2 owned and worn; Stomp 2 in the first circle",
+		Save.cat_skin == "dusk_ranger" and Data.cat_skin_owned("dusk_ranger") and not Data.cat_skin_owned("nightfall_ranger")
+		and Data.attach_level("saddle") == 2 and Data.worn_attach() == "saddle" and Data.skill_level("stomp") == 2
+		and _slots_text() == "stomp,," and Data.active_skill_level("stomp") == 2,
+		{"slots": Data.skill_slots(), "owned": Save.owned}) and ok
 	Save.save_game(true)
 	var written: Variant = _read_test_save()
-	ok = t._expect("H3: the v4 sample survives load and save field for field (seen, the growing job and told stay)", written == s,
-		{"written": written}) and ok
+	var w: Dictionary = written if written is Dictionary else {}
+	ok = t._expect("H5: the written v4 sample has no old form: no cat_skins_owned, saddlery.attach, attach.owned or Cottage",
+		int(w.get("save_v", 0)) == 5 and not w.has("cat_skins_owned") and not (w.get("saddlery", {}) as Dictionary).has("attach")
+		and not (w.get("attach", {}) as Dictionary).has("owned") and not (w.get("stations", {}) as Dictionary).has("cottage")
+		and not (w.get("wear", {}) as Dictionary).has("cottage"), {"written": written}) and ok
+	ok = t._expect("H5: the written v4 sample is the 4 -> 5 step's output field for field (seen, the growing job and told stay)",
+		written == _upgraded_v5(s), {"written": written}) and ok
+	fake_now = held
+	return ok
+
+
+## H5: the frozen v5 fixture loads as it is (no conversion, no backup) and is written back field for field, with the
+## clock held at its own seen. Data reads it: pet level 2 with Lumi out, the mount at tier 2 (Saddlery 2, credit 2),
+## the Market's 340 health, Stomp and Ram in the circles, the saddle worn. Then the same file with an empty triangle
+## stays empty after a reload, and a second, bare v5 file loaded in the same run keeps nothing of the first one's
+## companions, buildings or gear.
+func _check_v5_sample() -> bool:
+	var text := FileAccess.get_file_as_string(SAMPLE_V5_PATH)
+	var s: Variant = JSON.parse_string(text)
+	if not t._expect("H5: the v5 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == 5
+			and (s as Dictionary).get("owned") is Dictionary and (s as Dictionary).get("timers") is Dictionary):
+		return false
+	if not t._expect("H5: the v5 fixture is copied to the scratch slot", _write_test_save(text)):
+		return false
+	if FileAccess.file_exists(BACKUP_PATH):
+		DirAccess.remove_absolute(BACKUP_PATH)
+	var held := fake_now
+	fake_now = float(s["timers"]["seen"])
+	Save.load_game()
+	await get_tree().process_frame
+	var ok := t._expect("H5: the v5 sample loads as version 5 and is not backed up", Save.loaded_v == 5 and Save.save_v == 5
+		and not FileAccess.file_exists(BACKUP_PATH), {"loaded_v": Save.loaded_v})
+	ok = t._expect("H5: Data reads the v5 sample: pet level 2 with Lumi out, the mount at tier 2, the Market's 340 health",
+		Data.pet_level() == 2 and Save.pet_look == "lumi" and Data.owned_level("pets", "lumi") == 1 and Save.mount_look == "bramblewool"
+		and Data.owned_level("mounts", "bramblewool") == 1 and Data.mount_level() == 2 and Data.building_hp("stall", 1) == 340.0,
+		{"pet": Data.pet_level(), "mount": Data.mount_level(), "hp": Data.building_hp("stall", 1)}) and ok
+	ok = t._expect("H5: Data reads the v5 sample: Stomp and Ram in the circles, the saddle 2 worn, the Dusk Ranger owned and worn",
+		_slots_text() == "stomp,ram," and Data.active_skill_level("ram") == 1 and Data.active_skill_level("pounce") == 0
+		and Data.worn_attach() == "saddle" and Data.attach_level("saddle") == 2 and Save.cat_skin == "dusk_ranger"
+		and Data.cat_skin_owned("dusk_ranger") and not Data.cat_skin_owned("nightfall_ranger"),
+		{"slots": Data.skill_slots(), "worn": Data.worn_attach()}) and ok
+	Save.save_game(true)
+	ok = t._expect("H5: the v5 sample survives load and save field for field", _read_test_save() == s, {"written": _read_test_save()}) and ok
+	# an empty triangle the player chose stays empty: no refill on reload, every learned level kept
+	var empty: Dictionary = (s as Dictionary).duplicate(true)
+	empty["saddlery"]["skill_slots"] = ["", "", ""]
+	if not t._expect("H5: the v5 sample with an empty triangle is written", _write_test_save(JSON.stringify(empty, "  ") + "\n")):
+		return false
+	Save.load_game()
+	await get_tree().process_frame
+	Save.save_game(true)
+	var again: Variant = _read_test_save()
+	var again_slots: Variant = (again as Dictionary).get("saddlery", {}).get("skill_slots") if again is Dictionary else null
+	ok = t._expect("H5: an empty triangle stays empty after a reload, and the learned skills keep their levels",
+		_slots_text() == ",," and Data.skill_level("stomp") == 2 and Data.skill_level("ram") == 1
+		and again_slots == ["", "", ""] and again == empty, {"written": again}) and ok
+	# a second file loaded in the same run starts from the defaults: nothing of the first one's companions or gear
+	if not t._expect("H5: a bare v5 file is written", _write_test_save(JSON.stringify({"save_v": 5, "leaves": 7}) + "\n")):
+		return false
+	Save.load_game()
+	await get_tree().process_frame
+	ok = t._expect("H5: a second, bare v5 file keeps nothing of the first: no pet, Market, mount, gear, outfit, skills or Market health",
+		Save.leaves == 7 and Save.pet_level == 0 and Data.pet_level() == 0 and Data.owned_level("pets", "lumi") == 0
+		and int(Save.stations.get("stall", -1)) == 0 and int(Save.stations.get("saddlery", -1)) == 0 and Data.mount_level() == 0
+		and Save.market_hp_floor == 0 and Data.attach_level("saddle") == 0 and Data.worn_attach() == ""
+		and not Data.cat_skin_owned("dusk_ranger") and Save.cat_skin == "original"
+		and (Save.saddlery.get("skills", {}) as Dictionary).is_empty() and int(Save.saddlery.get("mount_credit", -1)) == 0
+		and _slots_text() == ",," and Save.pet_look == "sprig",
+		{"owned": Save.owned, "stations": Save.stations, "saddlery": Save.saddlery}) and ok
 	fake_now = held
 	return ok
 
@@ -405,7 +520,7 @@ func _prepare_startup() -> bool:
 ## H3, run 2 (`-- --autotest --saves --startup=2`, without --fresh): Save._ready loaded the v3 fixture that run 1 left
 ## in the slot, at launch, before Timers was in the tree (the 3 -> 4 step reads Timers.clock then). It was backed up
 ## first, as it was; the upgrade gave the numbers of the build map part 3.13 at the real clock: the two jobs' starts
-## sit 120 s and 60 s before one moment U of this launch, and seen is U or later. It saves as v4 with no old food key,
+## sit 120 s and 60 s before one moment U of this launch, and seen is U or later. It saves as the current version (H5: 5) with no old food key,
 ## and the jobs' starts round-trip within 0.01 s (map risk 5). The old garden.gd's errors on the {crop} plots (risk 17)
 ## are not judged here.
 func _check_startup() -> bool:
@@ -418,8 +533,8 @@ func _check_startup() -> bool:
 	var launched := real_now - Time.get_ticks_msec() / 1000.0
 	var backup := Save.path.get_basename() + ".bak.json"
 	var ok := t._expect("startup 2: the save test runs in the autotest slot", Save.path == "user://leaf_save_test.json")
-	ok = t._expect("startup 2: the v3 file on disk was loaded at launch as version 3 and upgraded to 4", Save.loaded_v == 3
-		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 4,
+	ok = t._expect("startup 2: the v3 file on disk was loaded at launch as version 3 and upgraded to the current version (H5: 5)", Save.loaded_v == 3
+		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 5,
 		{"loaded_v": Save.loaded_v, "save_v": Save.save_v}) and ok
 	var bak_text := FileAccess.get_file_as_string(backup) if FileAccess.file_exists(backup) else ""
 	var bak: Variant = JSON.parse_string(bak_text) if bak_text != "" else null
@@ -451,7 +566,8 @@ func _check_startup() -> bool:
 	Save.save_game(true)
 	var written: Variant = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
 	var w: Dictionary = written if written is Dictionary else {}
-	ok = t._expect("startup 2: it saves as v4 with no pantry, snack choice, dishes or run dish", int(w.get("save_v", 0)) == 4
+	ok = t._expect("startup 2: it saves as the current version with no pantry, snack choice, dishes or run dish",
+		int(w.get("save_v", 0)) == SaveUpgrades.CURRENT_VERSION
 		and _no_old_food(w), {"written_v": w.get("save_v")}) and ok
 	ok = t._expect("startup 2: the written Bag is the upgraded one and the jobs round-trip (starts within 0.01 s)",
 		w.get("bag") == {"berries": 5.0, "herbs": 3.0, "honey": 1.0, "fish": 2.0, "health_potion": 1.0}
@@ -507,7 +623,7 @@ func _mat_worth(held: Dictionary) -> int:
 ## leaves with the conversion, mats {"amber": 0}, no burrow_keys, the current version. H3, the 3 -> 4 step: the pantry
 ## (counts above 0) in the Bag and an old dish as a Health Potion (up to the cap; an extra one as leaves); no pantry,
 ## snack choice, dishes or run dish; the plots as {crop}, with a Timers job for each known crop (its share of growth, at
-## the held clock); seen at the held clock.
+## the held clock); seen at the held clock. H5: then the 4 -> 5 step (_upgraded_v5).
 func _upgraded(d: Dictionary) -> Dictionary:
 	var out := d.duplicate(true)
 	out["mats"] = {"amber": 0.0}
@@ -543,8 +659,22 @@ func _upgraded(d: Dictionary) -> Dictionary:
 			plots[i] = {"crop": id}
 	out["bag"] = bag
 	out["timers"] = {"seen": fake_now, "jobs": jobs}
-	out["save_v"] = float(SaveUpgrades.CURRENT_VERSION)
-	return out
+	out["save_v"] = float(V4)
+	return _upgraded_v5(out)
+
+
+## H5: the file an older dictionary becomes after loading and saving from version 4 on: SaveUpgrades.upgrade runs the
+## steps still due from its own version (a v4 one: only 4 -> 5; core/save_upgrade_v5.gd, whose rules --h5found checks
+## case by case) and stamps the current version; read back the way a file is read (every number a float).
+func _upgraded_v5(d: Dictionary) -> Dictionary:
+	var out: Dictionary = SaveUpgrades.upgrade(d.duplicate(true))
+	var back: Variant = JSON.parse_string(JSON.stringify(out))
+	return back if back is Dictionary else {}
+
+
+## H5: the skill circles as one text, "stomp,ram," (Data.skill_slots: "" for an empty circle).
+func _slots_text() -> String:
+	return ",".join(PackedStringArray(Data.skill_slots()))
 
 
 ## H3: none of the old food keys is left (pantry, snack_choice, meal_ready, meal_on, and a saved run's meal).

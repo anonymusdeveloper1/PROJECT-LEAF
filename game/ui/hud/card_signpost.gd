@@ -119,9 +119,12 @@ func _reveal_signpost_control(control: Control, delay: float) -> void:
 	_start_signpost_reveal.call_deferred(control, delay)
 
 
-func _start_signpost_reveal(control: Control, delay: float) -> void:
-	if not is_instance_valid(control) or control.is_queued_for_deletion():
+## The control is passed untyped: a card drawn twice in one frame frees the first one's rows before this deferred call
+## runs, and a typed argument would fail on the freed object instead of reaching the check below.
+func _start_signpost_reveal(target: Variant, delay: float) -> void:
+	if not is_instance_valid(target) or not target is Control or (target as Control).is_queued_for_deletion():
 		return
+	var control := target as Control
 	control.pivot_offset = control.size * 0.5
 	var tween := control.create_tween().set_parallel()
 	tween.tween_property(control, "modulate:a", 1.0, 0.24).set_delay(delay)

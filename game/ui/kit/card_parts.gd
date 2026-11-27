@@ -11,6 +11,7 @@ extends RefCounted
 const ShopTiles := preload("res://ui/hud/shop_tiles.gd")   # the type of the HUD's tiles (hud.p_tiles)
 const FOOT_BTN := Vector2(150, 64)      # a footer button's least size (a thumb wide and tall)
 const TAB_ICON := 40.0                  # a tab's icon
+const TAB_ICON_ALONE := 52.0            # H5: the icon of a tab with no words (the Market's tabs): bigger, it is all it shows
 const TAB_DOT := 24.0                   # the "!" dot on a tab
 
 
@@ -26,14 +27,15 @@ static func tab_icon(hud, button: Button, icon: Variant, text: String) -> void:
 	button.add_child(box)
 	var pic := TextureRect.new()
 	pic.texture = hud.icon(icon)
-	pic.custom_minimum_size = Vector2(TAB_ICON, TAB_ICON)
+	var side := TAB_ICON if text != "" else TAB_ICON_ALONE
+	pic.custom_minimum_size = Vector2(side, side)
 	pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	pic.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(pic)
-	var w := TAB_ICON + 28.0
+	var w := side + 28.0
 	if text != "":
 		var l := Label.new()
 		l.text = text

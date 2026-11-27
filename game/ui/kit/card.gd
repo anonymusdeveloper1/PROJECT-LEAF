@@ -502,7 +502,8 @@ func _fill_card(spec: Dictionary) -> void:
 				hud.p_sign._reveal_signpost_control(child as Control, minf(index * 0.025, 0.15))
 				index += 1
 		for button in hud._card_tabs.get_children():
-			hud.p_sign._reveal_signpost_control(button as Control, 0.0)
+			if (button as Control).visible:             # the old tabs are hidden and on their way out (_fill_card_tabs)
+				hud.p_sign._reveal_signpost_control(button as Control, 0.0)
 		if foot != null and foot.visible:
 			hud.p_sign._reveal_signpost_control(foot, 0.1)
 
@@ -535,6 +536,11 @@ func _fill_card_tabs(tabs: Array) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.add_theme_font_size_override("font_size", 26)
 		button.set_meta("card_tab", true)
+		var tab_name := String(tab.get("name", text))   # H5: an icon-only tab keeps its word as its name
+		if tab_name != "":
+			button.set_meta("tab_name", tab_name)
+			if "accessibility_name" in button:
+				button.set("accessibility_name", tab_name)
 		if String(tab.get("id", "")) != "":
 			button.set_meta("tab_id", String(tab["id"]))   # H4: the tests find a tab by its id
 		var icon: Variant = tab.get("icon", "")            # an icon id or a texture

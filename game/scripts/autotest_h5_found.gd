@@ -3,10 +3,12 @@
 ## (H4's ids, names, prices and models), hidden and unknown ids, the shared pet level, the mount tiers and the skill
 ## circles, the frozen to_v5 block and SaveUpgradeV5.upgrade() on v4 dictionaries built here (run twice it grants
 ## nothing twice), Bramble's trades (scripts/market_trade.gd) and the Buy command (commands/buy.gd).
-## Stage 1 keeps the H4 game (the save is still v4): what needs the v5 save is checked to refuse until Buy.v5_ready(),
-## and checked for real once it is live (Stage 2). Save is changed in memory only, with the automatic flush held, and
-## every field is put back at the end; an entry hidden for a check is shown again at once. Only
-## CompanionShop.assign_skill saves (Stage 2 only), into the test slot.
+## Stage 1 kept the H4 game (the save was still v4): what needs the v5 save was checked to refuse until
+## Buy.v5_ready(). H5 Stage 2 (27 Nov 2026) switched the save to v5, so those purchases are checked for real: Sprig
+## and Lumi, the shared pet training, a Saddlery attachment, expedition gear, an outfit and the skill circles, and the
+## records they write read back through Save's own v5 reader. Save is changed in memory only, with the automatic flush
+## held, and every field is put back at the end; an entry hidden for a check is shown again at once. Only
+## CompanionShop.assign_skill saves, into the test slot.
 extends Node
 
 const AutotestScript := preload("res://scripts/autotest.gd")
@@ -15,6 +17,7 @@ const SaveUpgradeV5 := preload("res://core/save_upgrade_v5.gd")
 const MarketTrade := preload("res://scripts/market_trade.gd")
 const Buy := preload("res://commands/buy.gd")
 const CompanionShop := preload("res://scripts/companion_shop.gd")
+const SaveScript := preload("res://scripts/save.gd")
 
 const INDEX_PATH := "res://content/index.json"
 ## The four H5 kinds in index order (content/index.json).
@@ -70,9 +73,9 @@ const V4_BASE := {"save_v": 4, "leaves": 500, "timber": 20, "shards": 0, "camp_l
 const WORDS := ["coming_later", "already_owned", "amount", "needs", "build_ruined", "after_missions", "bag_full",
 	"have_only", "max", "max_for_now", "needs_home", "needs_missions", "opens_after_missions", "receipt_wear_here",
 	"pet_first"]
-## The Save fields these checks change (kept and put back), the v5 ones only when Save has them.
+## The Save fields these checks change (kept and put back), each only when Save has it.
 const SAVE_FIELDS := ["leaves", "timber", "shards", "camp_level", "stations", "ruined", "missions_done", "flags",
-	"saddlery", "attach", "unlocks", "mount_look", "pet_look", "mount_skin", "pet_skin", "cat_skin", "cat_skins_owned",
+	"saddlery", "attach", "unlocks", "mount_look", "pet_look", "mount_skin", "pet_skin", "cat_skin",
 	"bag", "items", "mats", "bows", "bow", "owned", "pet_level", "market_hp_floor"]
 ## The fields a refused purchase or trade must leave as they were.
 const STATE_FIELDS := ["leaves", "timber", "shards", "stations", "ruined", "saddlery", "attach", "unlocks", "bag", "items",
@@ -266,13 +269,14 @@ func _check_gear() -> bool:
 		and _same(_ids(Data.attachment_entries("stall", "pet")), ["pet_lantern", "pet_charm", "pet_bell"])
 		and _same(_ids(Data.attachment_entries("stall", "")), ["mount_shoes", "pet_lantern", "pet_charm", "pet_bell"])
 		and _same(Data.saddle_items("attach").keys(), ["fire_spitter", "saddle", "saddlebags"])) and ok
-	# the expedition gear worn reads the entries (both ownership forms are written, so this holds before and after the switch)
-	Save.attach = {"owned": ["pet_bell"], "mount": "", "pet": "pet_bell"}
-	if _has("owned"):
-		Save.set("owned", {"attachments": {"pet_bell": {"level": 1}}})
+	# the expedition gear worn reads the entries; what is owned is the v5 save's owned.attachments
+	Save.attach = {"mount": "", "pet": "pet_bell"}
+	Save.owned = {"attachments": {"pet_bell": {"level": 1}}}
 	var on: Array = Data.attachments_on()
-	ok = t._expect("Data.attachments_on gives the worn expedition gear's entry with its mods",
-		on.size() == 1 and _same(_dict(on[0]).get("mods"), {"hp": 2}), {"on": _ids(on)}) and ok
+	Save.owned = {}
+	var not_owned: Array = Data.attachments_on()
+	ok = t._expect("Data.attachments_on gives the worn expedition gear's entry with its mods, and nothing for gear worn but not owned",
+		on.size() == 1 and _same(_dict(on[0]).get("mods"), {"hp": 2}) and not_owned.is_empty(), {"on": _ids(on)}) and ok
 	# H5's power prices never ask for purple shards (only looks may)
 	var paid: Array = []
 	for e: Variant in Data.catalog("attachments"):
@@ -399,7 +403,7 @@ func _check_pet_mount_slots() -> bool:
 	ok = t._expect("the mount's level (the owner's Q2 A): 0 without a mount, else the highest of 1, the Saddlery's level and the carried tier",
 		no_mount == 0 and _same(carried, [3, 3, 3, 4, 5]) and _same(plain, [1, 2]), {"carried 3": carried, "none carried": plain}) and ok
 	# the circles: three, shared; a repeat or an unknown id is an empty circle; a skill outside keeps its learned level
-	Save.saddlery = {"skills": {"stomp": 2, "ram": 1, "bellow": 4}, "attach": {}, "worn": "", "skill_slots": ["ram", "ram", "future_skill"]}
+	Save.saddlery = {"skills": {"stomp": 2, "ram": 1, "bellow": 4}, "worn": "", "mount_credit": 0, "skill_slots": ["ram", "ram", "future_skill"]}
 	var cleaned := Data.skill_slots()
 	var cleaned_ok := _same(cleaned, ["ram", "", ""]) and Data.skill_is_slotted("ram") and not Data.skill_is_slotted("stomp") \
 		and not Data.skill_is_slotted("") and Data.active_skill_level("ram") == 1 and Data.active_skill_level("stomp") == 0 \
@@ -754,10 +758,44 @@ func _check_buy_v5() -> bool:
 	var replaced := CompanionShop.assign_skill(main, 2, "ram")
 	var after_replace := Data.skill_slots()
 	var cleared := CompanionShop.assign_skill(main, 2, "")
-	return t._expect("v5 circles: a learned skill goes in, moves (its old circle empties) and is replaced; an unlearned skill or a bad circle is refused; a circle clears",
+	ok = t._expect("v5 circles: a learned skill goes in, moves (its old circle empties) and is replaced; an unlearned skill or a bad circle is refused; a circle clears",
 		put and moved and _same(after_move, ["", "", "stomp"]) and not unlearned and not bad_index and replaced
 		and _same(after_replace, ["", "", "ram"]) and cleared and _same(Data.skill_slots(), ["", "", ""]) and Data.skill_level("stomp") == 1,
 		{"after move": after_move, "after replace": after_replace}) and ok
+	return _check_buy_v5_more() and ok
+
+
+## v5: the other purchases that write the v5 save, once each (the pet already bought above): the shared pet training
+## (with Lumi out), the first Saddlery attachment (worn at once; the mount's level follows the Saddlery), expedition
+## gear (worn at once in its slot) and an outfit (worn at once between waves). Then the records go through JSON and
+## Save's own v5 reader (save.gd _load_owned) unchanged, and the readers still agree.
+func _check_buy_v5_more() -> bool:
+	Save.leaves = 100000
+	Save.timber = 1000
+	Save.camp_level = 3
+	Save.flags["hollow_open"] = true
+	Save.pet_look = "lumi"
+	var trained := Buy.new("pet_training", "", 1, 2).run(main)
+	var stale := Buy.new("pet_training", "", 1, 2).run(main)
+	var train_ok: bool = trained and not stale and Data.pet_level() == 2 and Save.pet_level == 2 \
+		and Save.leaves == 100000 - _int(Data.pet_level_price(2).get("leaves"))
+	var saddle := Buy.new("attachments", "saddle", 1, 1).run(main)
+	var saddle_ok: bool = saddle and Data.attach_level("saddle") == 1 and Data.worn_attach() == "saddle" and Data.worn_level("saddle") == 1 \
+		and _lvl({"owned": Save.owned}, "attachments", "saddle") == 1 and Data.mount_level() == 1
+	var bell := Buy.new("attachments", "pet_bell", 1, 1).run(main)
+	var bell_ok: bool = bell and String(Save.attach.get("pet", "")) == "pet_bell" and _same(_ids(Data.attachments_on()), ["pet_bell"]) \
+		and Data.attach_level("pet_bell") == 0
+	var dusk := Buy.new("outfits", "dusk_ranger", 1, 1).run(main)
+	var dusk_ok: bool = dusk and Data.cat_skin_owned("dusk_ranger") and Save.cat_skin == "dusk_ranger" and not Data.cat_skin_owned("nightfall_ranger")
+	var ok := t._expect("v5: pet training to 2 once (a stale Train pays nothing), the first saddle worn at once, the Dew Bell worn in the pet slot, the Dusk Ranger worn",
+		train_ok and saddle_ok and bell_ok and dusk_ok, {"train": train_ok, "saddle": saddle_ok, "bell": bell_ok, "dusk": dusk_ok, "owned": Save.owned})
+	var back: Dictionary = SaveScript._load_owned(JSON.parse_string(JSON.stringify(Save.owned)))
+	var kept: Dictionary = Save.owned
+	Save.owned = back
+	var read_ok: bool = _same(back, kept) and Data.owned_level("pets", "sprig") == 1 and Data.owned_level("pets", "lumi") == 1 \
+		and Data.attach_level("saddle") == 1 and Data.owned_level("attachments", "pet_bell") == 1 and Data.cat_skin_owned("dusk_ranger")
+	return t._expect("v5: what Buy wrote goes through JSON and Save's v5 reader unchanged, and the readers agree",
+		read_ok, {"written": kept, "read": back}) and ok
 
 
 # ---------------------------------------------------------------- the save fields: kept, a clean camp, put back
@@ -788,18 +826,17 @@ func _fixture() -> void:
 	Save.ruined = []
 	Save.missions_done = []
 	Save.flags = {}
-	Save.saddlery = {"skills": {}, "attach": {}, "worn": ""}
-	Save.attach = {"owned": [], "mount": "", "pet": ""}
+	Save.saddlery = {"skills": {}, "skill_slots": ["", "", ""], "worn": "", "mount_credit": 0}
+	Save.attach = {"mount": "", "pet": ""}
 	Save.unlocks = []
 	Save.bag = {}
 	Save.items = {"tower": 0, "spikes": 0}
 	Save.mats = {"amber": 0}
 	Save.bows = {"twig": 1}
 	Save.bow = "twig"
-	if _has("owned"):
-		Save.set("owned", {})
-	if _has("pet_level"):
-		Save.set("pet_level", 0)
+	Save.owned = {}
+	Save.pet_level = 0
+	Save.market_hp_floor = 0
 
 
 ## The fields a refused purchase or trade must not change, as one value to compare.

@@ -50,9 +50,9 @@ func build(world) -> void:
 	var keep_out: Array = []
 	for id in ["campfire", "home", "bench", "target"]:
 		keep_out.append([world.station_pos(id), 1.7 if id == "campfire" else 1.3])
-	for id in world.VILLAGE:
+	for id in world.VILLAGE:                                       # H5: the Mushroom Cottage is gone, grass grows there
 		if int(Save.stations.get(id, 0)) > 0:
-			keep_out.append([world.station_pos(id), {"well": 0.95, "cottage": 1.35, "stall": 1.4}[id]])
+			keep_out.append([world.station_pos(id), {"well": 0.95, "stall": 1.4}[id]])
 	for id in ["stone", "garden", "fishing"]:                    # Phase C: a dict of its own, never the VILLAGE one
 		if int(Save.stations.get(id, 0)) > 0:
 			keep_out.append([world.station_pos(id), {"stone": 1.0, "garden": 1.5, "fishing": 0.8}[id]])

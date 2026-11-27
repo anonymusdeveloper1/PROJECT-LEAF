@@ -63,9 +63,9 @@ var ambush_ready := false                         # hidden long enough: the next
 var _hidden_for := 0.0
 var hud_note := ""                                # a message for the player once the HUD exists
 var _rebuild_t := 0.0                             # seconds the cat has stood on the ashes (Last Stand)
-var pet: Node3D                                   # Sprig, once the Mushroom Cottage is built
-var mount: Node3D                                 # Thistle, once the Market is built (it comes free with it)
-var trader: Node3D                                # Bramble the hedgehog, the Market's trader
+var pet: Node3D                                   # Sprig, once the pet is bought (H5: at the Market's Pets tab)
+var mount: Node3D                                 # Thistle, once a mount is owned (it comes free with the Market)
+var trader: Node3D                                # Bramble the hedgehog, the Market's trader (while the Market is built)
 var guardian: Node3D                              # the Moss Warden, once the Guardian Stone is there (guardian.gd)
 var garden: Node3D                                # the garden's plots and plants (garden.gd)
 var cooking: Node                                 # the cooking pot's recipes and its timer job (cooking.gd)
@@ -773,7 +773,10 @@ func _check_home_ready() -> void:
 	_home_ready = 1 if met else 0
 
 
-## Sprig comes to live in the Mushroom Cottage, Thistle waits by the Market (it comes free with it).
+## The companions who have joined the camp come out (each only once). H5 (the map's part 3.3): each follows its own
+## entitlement. The pet follows the pet's level (Data.pet_level() > 0: bought at the Market, or an old save's Mushroom
+## Cottage), even in a camp with no Market; the mount follows ownership (Data.mount_level() > 0: a mount is owned, and
+## the Market's come free with it) and waits by the Market; Bramble follows the built Market.
 func refresh_companions() -> void:
 	if pet == null and Data.pet_level() > 0:
 		pet = Node3D.new()
@@ -788,7 +791,7 @@ func refresh_companions() -> void:
 		mount.setup(self, stall_spot())
 	if mount != null:
 		mount.home = stall_spot()
-	if trader == null and Data.mount_level() > 0:
+	if trader == null and Data.station_level(StationsScript.MARKET) > 0:
 		trader = Node3D.new()
 		trader.set_script(NpcScript)
 		add_child(trader)
@@ -843,9 +846,10 @@ func on_camp_grown() -> void:
 	Fx.flower_ring(self, Vector3.ZERO, world.camp_r * 0.6)
 	shake(0.2)
 	on_purchase()
-	# Phase G2: what opens at this level (the Market with Thistle, the Mushroom Cottage), told once, after the banner
+	# Phase G2: what opens at this level (the Market with Thistle; H5: the Mushroom Cottage is gone), told once, after
+	# the banner
 	var opened: Array = []
-	for sid in ["stall", "cottage"]:
+	for sid in [StationsScript.MARKET]:
 		if int(Save.stations.get(sid, 0)) == 0 and Data.station_needs_home(sid) == Save.camp_level and Data.station_open(sid):
 			opened.append(String(Data.building(sid)["name"]))
 	if not opened.is_empty() and not Save.flag("told_market"):

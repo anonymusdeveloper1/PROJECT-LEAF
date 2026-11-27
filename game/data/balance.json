@@ -231,7 +231,11 @@
     "receipt_wear_here": "Wear it here to use it (between waves)", "receipt_wears_now": "She wears it now",
     "receipt_wear_later": "Wear it between waves", "receipt_new_look": "Same power, a new look",
     "receipt_colours": "%s colours!", "receipt_colours_note": "Earned with Gloom shards",
-    "receipt_sold": "Sold %s · %s", "receipt_leaves": "%s · leaves %d"
+    "receipt_sold": "Sold %s · %s", "receipt_leaves": "%s · leaves %d",
+    "market_sub": "Bramble's trades, and %s", "market_empty": "Nothing to trade right now",
+    "timber_name": "Timber", "timber_desc": "For building and growing", "ride_skills": "%d skills in use",
+    "saddlery_sub": "Level %d · %s uses its skills and wears one attachment while you ride",
+    "skill_in_use": "In a circle: %s uses it in fights"
   },
   "build_menu": {"_note": "H4: locked buildings show in the build menu once this many Raid Missions are won", "locked_from_missions": 1},
   "home_names": [
@@ -1024,7 +1028,7 @@
   },
   "pet": {
     "name": "Sprig",
-    "_note": "the baby leaf dragon from the Mushroom Cottage; spits seed sparks",
+    "_note": "the baby leaf dragon, bought at the Market's Pets tab (H5; before H5 it came with the Mushroom Cottage); spits seed sparks. damage_by_level and every_by_level go by the one shared pet level (Data.pet_level, Save.pet_level).",
     "damage_by_level": [
       0,
       6,
@@ -1045,7 +1049,7 @@
   "mount": {
     "name": "Thistle",
     "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission or a run, it throws the cat off and stays out until a Mount Health Potion brings it back (H3, 26 Nov 2026, the owner's Q1: the potion replaces Feed; the HUD's potion button in Ride's place, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
-    "_note_tiers": "H5 (26 Nov 2026, the owner's Q6 A): mount levels 4 and 5 (speed 1.6575x and 1.785x, base health 18 and 24) come with the Saddlery's levels 4 and 5 once the v5 save is live (Data.mount_level_at_saddlery); until then the mount's level is still the Market's (1-3).",
+    "_note_tiers": "H5 (26 Nov 2026, the owner's Q6 A): mount levels 4 and 5 (speed 1.6575x and 1.785x, base health 18 and 24) come with the Saddlery's levels 4 and 5 (Data.mount_level_at_saddlery). Since the v5 save (H5 Stage 2) the mount's level is no longer the Market's: it is the highest of 1, the Saddlery's level and the tier an old save's Market had paid for (Save.saddlery mount_credit, the owner's Q2 A), and 0 while no mount is owned (Data.mount_level). speed_by_level and hp_by_level go by that level.",
     "speed_by_level": [
       0,
       1.275,
@@ -1444,10 +1448,6 @@
         ]
       }
     ],
-    "shard_trade": {
-      "shards": 5,
-      "leaves": 100
-    },
     "alert_every_s": 10
   },
   "guardian": {
@@ -4561,7 +4561,7 @@
     }
   },
   "building_hp": {
-    "_note": "health of each building by its level (index 0 unused)",
+    "_note": "health of each building by its level (index 0 unused). H5 (27 Nov 2026, the owner's Q5 A): the Market has one level and 200 health; a Market an old save had upgraded keeps the 340 or 500 its player earned (Save.market_hp_floor, Data.building_hp). The Mushroom Cottage left the camp.",
     "home": [
       0,
       400,
@@ -4591,17 +4591,9 @@
       260,
       400
     ],
-    "cottage": [
-      0,
-      200,
-      340,
-      500
-    ],
     "stall": [
       0,
-      200,
-      340,
-      500
+      200
     ],
     "saddlery": [
       0,
@@ -5933,7 +5925,7 @@
   },
   "camp_name": "the Hearthtree",
   "market": {
-    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade. H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials. H3 (26 Nov 2026): he buys a Golden Carp for 300 leaves at any time; he does not sell Emberpeppers or Swiftroots. Food bought from him goes into the Bag.",
+    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`. H5 (27 Nov 2026, the owner): he no longer buys Gloom shards (the old gloom_raids.shard_trade is gone; scripts/market_trade.gd). H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials. H3 (26 Nov 2026): he buys a Golden Carp for 300 leaves at any time; he does not sell Emberpeppers or Swiftroots. Food bought from him goes into the Bag.",
     "sells": [
       {
         "id": "berries",

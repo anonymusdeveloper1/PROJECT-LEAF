@@ -14,8 +14,9 @@ extends RefCounted
 ##     know yet) fails closed: never free, never sold.
 ##   - A levelled entry (a Saddlery attachment) has "price" for level 1 and "upgrades" for levels 2, 3, ... in order.
 ##     A level's "needs_burrows": true is a gate (the Burrows open), never a payment.
-##   - Ownership (the v5 save, H5 Stage 2): Save.owned[kind][id] = {"level": n}. Read with Save.get(...), so this file
-##     works before and after the save switch; until then nothing is recorded there and only included entries count.
+##   - Ownership (the v5 save, live since H5 Stage 2): Save.owned[kind][id] = {"level": n} for every kind here (the
+##     Saddlery's attachments by their bought level, expedition gear and looks at 1); the pet's one level is
+##     Save.pet_level. An entry with an explicit free price ({}) whose unlock rule holds is owned without a record.
 ## Used by: scripts/data.gd. Uses: Data (the catalogue, balance.json, the unlock rules, the currencies), Save.
 
 ## A companion slot and the content kind that holds its looks. The guardian's looks stay in balance.json looks.
@@ -150,10 +151,7 @@ static func owned_level(kind: String, id: String) -> int:
 
 ## The level in Save.owned[kind][id] ({"level": n}, or a bare number), 0 when there is none or it is malformed.
 static func _record_level(kind: String, id: String) -> int:
-	var owned: Variant = Save.get("owned")
-	if not owned is Dictionary:
-		return 0
-	var shelf: Variant = (owned as Dictionary).get(kind)
+	var shelf: Variant = Save.owned.get(kind)
 	if not shelf is Dictionary:
 		return 0
 	var rec: Variant = (shelf as Dictionary).get(id)
@@ -186,11 +184,10 @@ static func look(slot: String, id: String) -> Dictionary:
 
 
 # ---------------------------------------------------------------- the pet (one shared level for every pet look)
-## The pet's v5 level (Save.pet_level: 0 before the pet is bought, then 1-3). Data.pet_level() reads this once the v5
-## save is live (H5 Stage 2); until then it reads the Mushroom Cottage's level.
-static func pet_level_v5() -> int:
-	var v: Variant = Save.get("pet_level")
-	return maxi(0, int(v)) if v is int or v is float else 0
+## The pet's level (Save.pet_level: 0 before the pet is bought, then 1-3), one for every pet look. Data.pet_level()
+## gives this (H5 Stage 2; before H5 it was the Mushroom Cottage's level).
+static func pet_level() -> int:
+	return maxi(0, Save.pet_level)
 
 
 ## What training the pet to `level` costs (balance.json pet.level_prices[level - 1]: levels 2 and 3, the old Cottage's
@@ -357,16 +354,22 @@ static func saddle_attachment(id: String) -> Dictionary:
 	return e if String(e.get("shop", "")) == SADDLERY else {}
 
 
+## The level of Saddlery attachment id the player bought (the v5 save's owned.attachments; a hidden one too), 0 when
+## it is not bought or is not a Saddlery attachment (expedition gear and old receipt ids count 0 here).
+static func saddle_attachment_level(id: String) -> int:
+	return owned_level("attachments", id) if not saddle_attachment(id).is_empty() else 0
+
+
 # ---------------------------------------------------------------- expedition gear (the Burrows only)
-## The expedition gear worn now (Save.attach "mount" and "pet", each owned in Save.attach "owned"), as their entries
-## (each has its "mods"). Data.attachments_on() gives this.
+## The expedition gear worn now (Save.attach "mount" and "pet"), each one owned (owned_level, the v5 save's
+## owned.attachments), as their entries (each has its "mods"). Data.attachments_on() gives this.
 static func expedition_worn() -> Array:
 	var out: Array = []
-	var owned: Variant = Save.attach.get("owned", [])
 	for slot: String in SLOT_KINDS:
-		var id := String(Save.attach.get(slot, ""))
+		var worn: Variant = Save.attach.get(slot, "")
+		var id: String = worn if worn is String else ""
 		var e: Dictionary = Data.item("attachments", id)
 		if id != "" and String(e.get("scope", "")) == "expedition" and String(e.get("slot", "")) == slot \
-				and owned is Array and (owned as Array).has(id):
+				and owned_level("attachments", id) >= 1:
 			out.append(e)
 	return out

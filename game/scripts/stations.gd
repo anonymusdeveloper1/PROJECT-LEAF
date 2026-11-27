@@ -15,8 +15,8 @@ extends Node3D
 ## its separate Random Raids view unlocks once every Raid Mission is finished.
 ## The buildings round the campfire (world.SPOTS; the well stands on the lake's near shore):
 ##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) buys amber; Thistle
-##                                        the hare comes free with it: ride it (mount.gd)
-##   Mushroom Cottage  (Hearthtree 2)     Sprig the leaf dragon moves in and fights beside the cat (pet.gd)
+##                                        the hare comes free with it: ride it (mount.gd). H5: one level; its Pets
+##                                        tab sells the pet (Sprig, 160 leaves) and trains it (pet.gd)
 ##   Wishing Well      (Hearthtree 3)     mends the camp by itself (well_tick): never tapped, only upgraded
 ##   Saddlery   (mission 8, Hearthtree 2) G4: teaches the mount skills and makes it attachments (saddlery_window); levels
 ##                                        1-5, never above the Hearthtree; a stand-in model until the owner's comes
@@ -31,17 +31,26 @@ extends Node3D
 ## (everything that pays, changes the save, moves a node or plays an effect) under their old names, and the windows call
 ## them (st._upgrade_station, st._build_station, ...). The signpost's, the campfire's and the cooking pot's cards stay
 ## here (they are not buildings). Every time a building's level goes up, Events.building_upgraded says so.
+## H5 (27 Nov 2026): the Mushroom Cottage has left the camp (its pet moved to the Market's Pets tab, an old save's
+## Cottage became the pet's level: core/save_upgrade_v5.gd). Every purchase here is the one Buy command
+## (commands/buy.gd) or Bramble's trade (scripts/market_trade.gd); the rules below keep only what follows a purchase
+## (saving, the live models, the effects and the receipt), as they did before. Choosing a look and the mount's skill
+## circles are scripts/companion_shop.gd's.
 
 const RingScript := preload("res://scripts/marker.gd")      # a tap on its badge or the building opens its card
 const FLAME := preload("res://shaders/flame.gdshader")
+const Buy := preload("res://commands/buy.gd")
+const MarketTrade := preload("res://scripts/market_trade.gd")
+const CompanionShop := preload("res://scripts/companion_shop.gd")
+const MARKET := "stall"  # H5: the Market's building id (the save's): Bramble's trades, the companions' shop
 
 var main
-var nodes := {}          # "home", "campfire", "target", "bench", "well", "cottage", "stall", "saddlery", "tailor" -> prop node
-var rings := {}          # "shop", "target", "bench", "sign", "well", "cottage", "stall", "saddlery", "tailor", "fire" -> marker (marker.gd)
+var nodes := {}          # "home", "campfire", "target", "bench", "well", "stall", "saddlery", "tailor" -> prop node
+var rings := {}          # "shop", "target", "bench", "sign", "well", "stall", "saddlery", "tailor", "fire" -> marker (marker.gd)
 var hp := {}             # building -> health in the current mission
-const VILLAGE := ["well", "cottage", "stall"]
-const BUILDINGS := ["home", "target", "bench", "well", "cottage", "stall", "saddlery", "tailor"]
-const FOOT := {"campfire": 0.6, "home": 1.15, "bench": 0.8, "target": 0.45, "well": 0.62, "cottage": 0.95, "stall": 0.9,
+const VILLAGE := ["well", "stall"]
+const BUILDINGS := ["home", "target", "bench", "well", "stall", "saddlery", "tailor"]
+const FOOT := {"campfire": 0.6, "home": 1.15, "bench": 0.8, "target": 0.45, "well": 0.62, "stall": 0.9,
 	"stone": 0.7, "garden": 1.1, "pot": 0.25, "fishing": 0.45, "saddlery": 0.8, "tailor": 1.35}
 ## Phase C stations: never wrecked, never in BUILDINGS or VILLAGE (the Moss Warden takes the hits for the camp).
 const CAMP_LIFE := ["stone", "garden", "pot", "fishing"]
@@ -52,7 +61,7 @@ var windows: Dictionary = {}   # H4: marker id -> its building's window (hud.win
 
 func build(m) -> void:
 	main = m
-	for id in ["shop", "target", "bench", "sign", "well", "cottage", "stall", "saddlery", "tailor", "fire"] + CAMP_LIFE:
+	for id in ["shop", "target", "bench", "sign", "well", "stall", "saddlery", "tailor", "fire"] + CAMP_LIFE:
 		var ring := Node3D.new()
 		ring.set_script(RingScript)
 		add_child(ring)
@@ -119,7 +128,6 @@ func model_name(id: String) -> String:
 		"bench": return String(BENCH_MODELS[clampi(int(Save.stations["bench"]), 1, BENCH_MODELS.size()) - 1])
 		"target": return String(TARGET_MODELS[clampi(int(Save.stations["target"]), 1, TARGET_MODELS.size()) - 1])
 		"well": return "wishing_well"
-		"cottage": return "mushroom_cottage"
 		"stall": return "market_stall"
 		"saddlery": return _saddlery_model()
 		"tailor": return _tailor_model()
@@ -168,7 +176,7 @@ func shown(id: String) -> bool:
 		"campfire", "home": return true
 		"bench": return Save.stations["bench"] >= 1
 		"target": return Save.stations["target"] >= 1
-		"well", "cottage", "stall", "saddlery", "tailor": return int(Save.stations.get(id, 0)) >= 1
+		"well", "stall", "saddlery", "tailor": return int(Save.stations.get(id, 0)) >= 1
 		"stone", "garden", "fishing": return int(Save.stations.get(id, 0)) >= 1
 		"pot": return int(Save.stations.get("garden", 0)) >= 1          # the pot comes with the garden
 	return false
@@ -177,7 +185,7 @@ func shown(id: String) -> bool:
 func ring_shown(id: String) -> bool:
 	match id:
 		"shop", "sign": return true
-		"target", "bench", "well", "cottage", "stall", "saddlery", "tailor": return shown(id)
+		"target", "bench", "well", "stall", "saddlery", "tailor": return shown(id)
 		"fire": return Save.fire_ruined
 		"stone", "garden", "fishing": return shown(id)
 		"pot": return shown("pot") and not _out and not Save.fire_ruined     # no cooking on the ashes
@@ -190,7 +198,7 @@ func ring_shown(id: String) -> bool:
 ## puff of dust and the flower ring at that moment.
 func refresh(celebrate := "", rise := false) -> void:
 	var w = main.world
-	for id in ["campfire", "home", "bench", "target", "well", "cottage", "stall", "saddlery", "tailor"] + CAMP_LIFE:
+	for id in ["campfire", "home", "bench", "target", "well", "stall", "saddlery", "tailor"] + CAMP_LIFE:
 		var want := model_name(id) if shown(id) else ""
 		var have: Node3D = nodes.get(id)
 		if have != null and String(have.get_meta("model", "")) != want:
@@ -265,7 +273,7 @@ func refresh(celebrate := "", rise := false) -> void:
 			"shop":
 				var marker: Node3D = Props.find_part(nodes["home"], "marker_ring") if nodes.has("home") else null
 				pos = marker.global_position if marker else w.station_pos("home") + Vector3(0.75, 0, 2.1)
-			"target", "bench", "well", "cottage", "stall", "saddlery", "tailor": pos = w.spot_ring(id)    # on the camera's side of each
+			"target", "bench", "well", "stall", "saddlery", "tailor": pos = w.spot_ring(id)    # on the camera's side of each
 			"sign": pos = w.station_pos("sign") + Vector3(0, 0, 0.95)
 			"fire": pos = Vector3(0, 0, maxf(1.15, foot("campfire") + 0.45))
 			"stone": pos = w.station_pos("stone") + Vector3(0, 0, 1.1)
@@ -441,7 +449,8 @@ func mend_ruin(id: String) -> void:
 
 
 # ---------------------------------------------------------------- health in a mission
-## A building's full health at its level now.
+## A building's full health at its level now. H5 (the owner's Q5 A): the one-level Market's is its level-1 health or
+## the higher health an old save's Market had earned (Data.building_hp reads Save.market_hp_floor).
 func full_hp(id: String) -> float:
 	return Data.building_hp(id, Save.camp_level if id == "home" else int(Save.stations.get(id, 1)))
 
@@ -550,10 +559,10 @@ func repair_all_free(before = null) -> void:
 
 
 ## A building given by a mission (balance.json missions[].gift: the garden, the Fishing Spot; Phase G2: the Market
-## and the Mushroom Cottage are bought at Hearthtree level 2 now, but a gift of them still works). Its banner comes
-## a moment after the "mission won" banner, so both can be read.
+## is bought at Hearthtree level 2 now, but a gift of it still works). Its banner comes a moment after the "mission
+## won" banner, so both can be read. H5: an id that is no building any more (the Mushroom Cottage) gives nothing.
 func gift(id: String) -> void:
-	if int(Save.stations.get(id, 0)) > 0:
+	if Data.building(id).is_empty() or int(Save.stations.get(id, 0)) > 0:
 		return
 	Save.stations[id] = 1
 	_gift_extras(id)
@@ -564,8 +573,6 @@ func gift(id: String) -> void:
 	match id:
 		"stall":
 			main.hud.banner_later(3.4, "%s arrives!" % Data.mount_name(), Color(1.0, 0.9, 0.55), "A Market for the camp, and a friend to ride: tap Ride")
-		"cottage":
-			main.hud.banner_later(3.4, "%s moves in!" % Data.pet_name(), Color(0.6, 1.0, 0.45), "A Mushroom Cottage, and a little friend who fights beside you")
 		"garden":
 			main.hud.banner_later(3.4, "A garden!", Color(0.6, 1.0, 0.45), "Rich soil south of the camp · and a cooking pot by the fire")
 			if not Save.flag("told_garden"):
@@ -594,7 +601,7 @@ func catch_up_gifts() -> void:
 	for i in Data.mission_count():
 		var m := Data.mission(i)
 		var g := String(m.get("gift", ""))
-		if g != "" and Save.missions_done.has(String(m["id"])) and int(Save.stations.get(g, 0)) == 0:
+		if g != "" and not Data.building(g).is_empty() and Save.missions_done.has(String(m["id"])) and int(Save.stations.get(g, 0)) == 0:
 			Save.stations[g] = 1
 			_gift_extras(g)
 			got.append(_name(g))
@@ -1059,10 +1066,12 @@ func _mend_raid() -> void:
 
 
 ## Builds a station bought in the build menu (ui/windows/build_menu_window.gd), once it is open (Data.station_open: its
-## entry's unlock rule) and its price (Data.build_price) is paid. Phase G2: the Market brings Thistle with it (the
-## mount comes with the stall's level, main.refresh_companions), as the old gift of mission 2 did.
+## entry's unlock rule) and its price (Data.build_price) is paid. Phase G2: the Market brings Thistle with it (H5: the
+## Market's mounts are owned once it is built, Data.owned_level; main.refresh_companions brings it out), as the old
+## gift of mission 2 did. An id that is no building any more (the Mushroom Cottage) builds nothing.
 func _build_station(sid: String) -> void:
-	if int(Save.stations[sid]) > 0 or not Data.station_open(sid) or not Data.pay(Data.build_price(sid)):
+	if Data.building(sid).is_empty() or int(Save.stations.get(sid, 0)) > 0 or not Data.station_open(sid) \
+			or not Data.pay(Data.build_price(sid)):
 		return
 	Save.stations[sid] = 1
 	if main.fight.active and BUILDINGS.has(sid):
@@ -1072,8 +1081,6 @@ func _build_station(sid: String) -> void:
 	refresh(sid, true)                         # H4: it rises out of the ground (the build menu's camera shows it)
 	main.on_purchase()
 	match sid:
-		"cottage":
-			main.hud.banner("%s moves in!" % Data.pet_name(), Color(0.6, 1.0, 0.45), "A little friend now fights beside the cat")
 		"stall":
 			main.hud.banner("The %s is open!" % _name("stall"), Color(1.0, 0.9, 0.55), "Bramble trades here, and %s comes free: tap Ride to hop on" % Data.mount_name())
 		"well":
@@ -1086,17 +1093,15 @@ func _build_station(sid: String) -> void:
 			main.hud.banner("%s built!" % _name(sid), Color(1.0, 0.9, 0.45))
 
 
-## Buys one tower or spikes piece into the Bag (H3: placed from the Bag or the row-2 button). The checks come before the
-## pay, so a full Bag or the tower cap never takes the leaves for nothing.
-func _buy_piece(type: String) -> void:
-	if Bag.room_for(type) <= 0 or not main.defences.room_for(type):
-		return
-	if not Data.pay({"leaves": int(Data.defence_info(type)["piece"])}):
-		return
-	Bag.add(type, 1)
+## Buys one tower or spikes piece into the Bag (H3: placed from the Bag or the row-2 button). H5: the Buy command
+## (kind "defences") checks first, so a full Bag or the tower cap never takes the leaves for nothing.
+func _buy_piece(type: String) -> bool:
+	if not Buy.new("defences", type).run(main):
+		return false
 	Save.save_game()
 	main.on_purchase()
 	main.hud.refresh_build()
+	return true
 
 
 ## What a defence level costs: leaves, and Gloom shards for level 4 (H1: level 5 is leaves only, after the Burrows open).
@@ -1217,20 +1222,18 @@ func _upgrade_bow() -> void:
 ## Buys bow bid on the Bow Shop (its price, Data.craft_cost: leaves and timber), once the shop is big enough
 ## (Data.bow_shop_level) and the bow does not wait for the Gloomwood (Data.bow_waits). Between waves it goes straight
 ## into the cat's paw; bought while a wave is on it waits (Equip after the wave). A hidden bow (22 Nov 2026) is not sold.
-func _craft(bid: String) -> void:
-	if Save.bows.has(bid) or Data.bow_hidden(bid) or int(Save.stations["bench"]) < Data.bow_shop_level(bid) \
-			or Data.bow_waits(bid) or not Data.pay(Data.craft_cost(bid)):
-		return
-	Save.bows[bid] = 1
-	var swap := not _locked()
-	if swap:
-		Save.bow = bid
+## H5: the Buy command (kind "bows") checks, pays and puts it in her paw; this does what follows.
+func _craft(bid: String) -> bool:
+	if not Buy.new("bows", bid).run(main):
+		return false
+	var swap := Save.bow == bid
 	Save.save_game()
 	Fx.flower_ring(main, main.world.station_pos("bench"), 1.4)
 	main.player.apply_bow()
 	main.on_purchase()
 	main.hud.banner("%s bought!" % Data.bow_info(bid)["name"], Color(1.0, 0.9, 0.45),
 		"In the cat's paw now" if swap else "Equip it between waves")
+	return true
 
 
 ## Puts an owned bow in the cat's paw (free), only between waves.
@@ -1271,26 +1274,23 @@ func _saddle_note(part: String, id: String, lv: int) -> String:
 	return String(info.get("text", ""))
 
 
-## Learns (level 1) or upgrades skill or attachment id at the Saddlery: built and standing, never past its level, the
-## Burrows open for levels marked needs_burrows, and the price paid. 22 Nov 2026: an attachment is upgraded only
-## while it is worn; one bought while nothing is worn is worn at once.
-func _saddle_buy(part: String, id: String) -> void:
+## Learns (level 1) or upgrades skill or attachment id at the Saddlery (part "skills" or "attach"): built and
+## standing, never past its level, the Burrows open for levels marked needs_burrows, and the price paid. 22 Nov 2026:
+## an attachment is upgraded only while it is worn; one bought while nothing is worn is worn at once. H5: the Buy
+## command (kind "skills" or "attachments") checks and pays; `expected` is the level the button showed this reaching
+## (-1: no check), so a stale button never buys a second level. A new skill goes into the grid, not a circle: the
+## player drags it in (its receipt says so). true when it was bought.
+func _saddle_buy(part: String, id: String, expected: int = -1) -> bool:
 	var info := Data.saddle_info(part, id)
-	if info.is_empty() or Data.saddle_block(part, id) != "":
-		return
-	var lv := Data.saddle_level(part, id)
-	if part == "attach" and lv > 0 and Data.worn_attach() != id:
-		return                                          # owned and not worn: its button is Wear
-	if not Data.pay(Data.saddle_price(part, id, lv + 1)):
-		return
-	var shelf: Dictionary = Save.saddlery[part]
-	shelf[id] = lv + 1
-	if part == "attach" and Data.worn_attach() == "":
-		Save.saddlery["worn"] = id
+	var attach := part != "skills"
+	var buy := Buy.new("attachments" if attach else "skills", id, 1, expected)
+	var lv := buy.next_level() - 1
+	if info.is_empty() or not buy.run(main):
+		return false
 	Save.save_game()
-	if part == "attach" and id == "saddle" and Data.worn_attach() == "saddle" and main.mount != null and main.mount.resting <= 0.0:
+	if attach and id == "saddle" and Data.worn_attach() == "saddle" and main.mount != null and main.mount.resting <= 0.0:
 		main.mount.hp = main.mount.max_hp()            # the new saddle's health comes at once
-	if part == "attach" and main.mount != null and main.mount.has_method("refresh_gear"):
+	if attach and main.mount != null and main.mount.has_method("refresh_gear"):
 		main.mount.refresh_gear()                       # 22 Nov 2026: its model on the mount, when the file exists
 	Fx.flower_ring(main, main.world.station_pos("saddlery"), 1.4 if lv == 0 else 1.0)
 	if main.mount != null:
@@ -1298,10 +1298,27 @@ func _saddle_buy(part: String, id: String) -> void:
 	main.on_purchase()
 	if lv == 0:
 		var nm := String(info.get("name", id))
-		if part == "attach" and Data.worn_attach() != id:
-			main.hud.banner("%s bought!" % nm, Color(1.0, 0.9, 0.55), "Wear it here to use it (between waves)")
+		if attach and Data.worn_attach() != id:
+			main.hud.banner(_say("receipt_bought", [nm]), Color(1.0, 0.9, 0.55), _say("receipt_wear_here"))
+		elif not attach and not Data.skill_is_slotted(id):
+			main.hud.banner(_say("receipt_learned", [nm]), Color(1.0, 0.9, 0.55), _say("skill_slot_hint"))
 		else:
-			main.hud.banner(("%s learned!" if part == "skills" else "%s ready!") % nm, Color(1.0, 0.9, 0.55), _saddle_note(part, id, 1))
+			main.hud.banner(_say("receipt_ready" if attach else "receipt_learned", [nm]), Color(1.0, 0.9, 0.55), _saddle_note(part, id, 1))
+	return true
+
+
+## A window word (balance.json windows), filled in with args when it has places for them; a missing word shows as its
+## key (scripts/market_trade.gd say, the shops' one helper).
+func _say(key: String, args: Array = []) -> String:
+	return MarketTrade.say(key, args)
+
+
+## H5: puts learned skill id in the mount's skill circle `index` (0 to 2; "" empties it). Every mount shares the three
+## circles (scripts/companion_shop.gd assign_skill: the Saddlery standing, no wave on, a known learned skill; a skill in
+## another circle moves, a filled circle is replaced). Quiet: it saves and nothing is redrawn, so a drag in the
+## Saddlery's Skills tab is never cut short; the window updates its circles itself. true when the circles changed.
+func _assign_skill(index: int, id: String) -> bool:
+	return CompanionShop.assign_skill(main, index, id)
 
 
 ## 22 Nov 2026: puts on attachment id (owned, not the one worn), free, only between waves; the one worn before comes
@@ -1322,7 +1339,8 @@ func _saddle_wear(id: String) -> void:
 	main.on_purchase()
 
 
-## G4: an old save brought over (Save.migrate_saddlery) hears once what became of its mount's moves and attachments.
+## G4: an old save brought over (Save.migrate_saddlery; H5: core/save_upgrade_v5.gd, which keeps the old Burrows gear's
+## ids in Save.owned attachments as receipts) hears once what became of its mount's moves and attachments.
 func _tell_saddlery_moves() -> void:
 	var bits: Array = []
 	if Save.flag("g4_free_stomp") and not Save.flag("told_g4_stomp"):
@@ -1334,7 +1352,7 @@ func _tell_saddlery_moves() -> void:
 		var old: Dictionary = Data.saddlery_cfg().get("old_attachments", {})
 		for oid in old:
 			var to: Array = old[oid]
-			if not to.is_empty() and (Save.attach.get("owned", []) as Array).has(String(oid)):
+			if not to.is_empty() and Data.owned_level("attachments", String(oid)) >= 1:
 				names.append(String(Data.saddle_info("attach", String(to[0])).get("name", to[0])))
 		if names.size() == 1:
 			bits.append("Your %s is a Saddlery attachment now: it works everywhere." % names[0])
@@ -1352,22 +1370,23 @@ func _tell_saddlery_moves() -> void:
 
 
 ## Buys outfit id at the Tailor's Nook (built and standing; its price in its currency). Between waves she puts it on at
-## once (as a bow bought at the Bow Shop goes into her paw); bought while a wave is on, it waits for Wear.
-func _buy_skin(id: String) -> void:
-	if Data.cat_skin(id).is_empty() or Data.cat_skin_owned(id) or int(Save.stations.get("tailor", 0)) < 1 \
-			or Save.ruined.has("tailor") or not Data.cat_skin_buyable(id) or not Data.pay(Data.cat_skin_cost(id)):
-		return
-	Save.cat_skins_owned.append(id)
-	var swap := not _locked()
-	if swap:
-		Save.cat_skin = id
+## once (as a bow bought at the Bow Shop goes into her paw); bought while a wave is on, it waits for Wear. H5: the Buy
+## command (kind "outfits") checks, pays, records it (Save.owned outfits) and puts it on; this does what follows. true
+## when it was bought.
+func _buy_skin(id: String) -> bool:
+	var before := Save.cat_skin
+	if not Buy.new("outfits", id).run(main):
+		return false
+	var swap := Save.cat_skin == id and before != id
 	Save.save_game()
 	if swap:
 		main.player.apply_skin()
 		Fx.sparkle(main, main.player.global_position + Vector3(0, 1.0, 0))
 	Fx.flower_ring(main, main.world.station_pos("tailor"), 1.4)
 	main.on_purchase()
-	main.hud.banner("%s bought!" % Data.cat_skin_name(id), Color(0.82, 0.68, 1.0), "She wears it now" if swap else "Wear it between waves")
+	main.hud.banner(_say("receipt_bought", [Data.cat_skin_name(id)]), Color(0.82, 0.68, 1.0),
+		_say("receipt_wears_now" if swap else "receipt_wear_later"))
+	return true
 
 
 ## Puts on an owned outfit (free), only between waves; the cat's model swaps in place (player.apply_skin).
@@ -1381,8 +1400,122 @@ func _wear_skin(id: String) -> void:
 	main.on_purchase()
 
 
+# ---------------------------------------------------------------- the Market: Bramble's trades and the companions (H5)
+## H5 words: the receipt line when the first pet joins the cat (the Mushroom Cottage's old line).
+const PET_JOINS := "A little friend now fights beside the cat"  # H5 words
+
+
+## H5: one of Bramble's trades by its side (MarketTrade.SELLS "sells": he sells, the player buys; MarketTrade.BUYS
+## "buys": he buys, the player sells) and exact id, `bundles` whole bundles (two of Sunberries: 4 for 60 leaves; two
+## amber: 2,000 leaves and 2 shards). The Buy command (kind "market_goods") or MarketTrade.sell makes the whole
+## exchange or nothing (the Market standing, the mission gate, the money and the Bag's room, or the stock); then, as
+## before, the save, the sparkle at the stall, the refresh and the receipt toast. true when it went through; a refused
+## trade changes nothing, and MarketTrade.quote(side, id, bundles)["reason"] says why.
+func market_trade(side: String, id: String, bundles: int = 1) -> bool:
+	if side != MarketTrade.SELLS and side != MarketTrade.BUYS:
+		return false
+	var q: Dictionary = MarketTrade.quote(side, id, bundles)
+	var ok: bool = Buy.new("market_goods", id, bundles).run(main) if side == MarketTrade.SELLS \
+		else MarketTrade.sell(main, id, bundles)
+	if not ok:
+		return false
+	Save.save_game()
+	Fx.sparkle(main, main.world.station_pos(MARKET) + Vector3(0, 1.2, 0))
+	main.on_purchase()
+	main.hud.toast(_trade_receipt(side, id, q))
+	return true
+
+
+## The toast after a trade, in the words it had before H5: timber "+5 timber · now 12 · leaves 950", a material
+## "+1 amber · now 3 · leaves 950", food "+2 Sunberries · leaves 940", a sale "Sold 1 Golden Carp · now 0 · leaves 1300".
+func _trade_receipt(side: String, id: String, q: Dictionary) -> String:
+	var n := int(q.get("units", 0))
+	if id == MarketTrade.TIMBER:
+		return "%+d timber · now %d · leaves %d" % [n if side == MarketTrade.SELLS else -n, Save.timber, Save.leaves]
+	if side == MarketTrade.SELLS:
+		if Data.MATS.has(id):
+			return "+%d %s · now %d · leaves %d" % [n, Data.mat_name(id), Data.have(id), Save.leaves]
+		return "%s · leaves %d" % [Data.food_receipt({id: n}), Save.leaves]
+	var now: Array = []
+	for k in (q.get("payout", {}) as Dictionary):
+		now.append("%s %d" % [k, Data.have(String(k))])
+	var nm := Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n)
+	return "Sold %d %s · now %d · %s" % [n, nm, _stock(id), " · ".join(now)]
+
+
+## Bramble's timber trade (balance.json trade): buying 5 for 50 leaves, or selling 5 for 30; H5: `bundles` lots of it
+## (market_trade). true when it went through.
+func _trade(buying: bool, bundles: int = 1) -> bool:
+	return market_trade(MarketTrade.SELLS if buying else MarketTrade.BUYS, MarketTrade.TIMBER, bundles)
+
+
+## Buys `bundles` bundles of what Bramble sells (market_trade, side "sells"): into the Bag (H3: a full Bag refuses it
+## before the leaves are paid), or timber into the purse. `what` is the offer's exact id (H5); an older caller's index
+## into balance.json market.sells still finds its id (_offer_id). true when it went through.
+func _market_buy(what: Variant, bundles: int = 1) -> bool:
+	return market_trade(MarketTrade.SELLS, _offer_id(MarketTrade.SELLS, what), bundles)
+
+
+## Sells `bundles` bundles to Bramble (market_trade, side "buys"): the goods are taken and he pays what the offer names
+## (H1: leaves, and a shard for each amber). `what` as _market_buy's. true when it went through.
+func _market_sell(what: Variant, bundles: int = 1) -> bool:
+	return market_trade(MarketTrade.BUYS, _offer_id(MarketTrade.BUYS, what), bundles)
+
+
+## An offer's id: `what` itself when it is an id; for an older caller's number, the id of balance.json market[side][what]
+## (the raw list, never a filtered grid); "" for anything else (no offer, so nothing is traded).
+func _offer_id(side: String, what: Variant) -> String:
+	if what is String:
+		return String(what)
+	if not what is int:
+		return ""
+	var list: Variant = (Data.b.get("market", {}) as Dictionary).get(side, [])
+	var i := int(what)
+	if not list is Array or i < 0 or i >= (list as Array).size() or not (list as Array)[i] is Dictionary:
+		return ""
+	return String(((list as Array)[i] as Dictionary).get("id", ""))
+
+
+## H5: buys a mount or pet look at the Market's Mounts or Pets tab (scripts/companion_shop.gd buy: the Buy command, then
+## the first pet joins the cat, once, and an owned look comes out). Sprig (160 leaves) gives the pet itself; Lumi (a
+## look only, 400 leaves) needs the pet first; the Market's own mounts are never bought (they come with it). `expected`
+## as Buy's (-1: no check). Then the sparkle, the flower ring at the stall, the refresh and the receipt. true when it
+## was bought.
+func _buy_companion(slot: String, id: String, expected: int = -1) -> bool:
+	var kind := String(CompanionShop.SLOT_KINDS.get(slot, ""))
+	var e: Dictionary = Data.shop_entry(kind, id) if kind != "" else {}
+	var had_pet := Data.pet_level() >= 1
+	if e.is_empty() or not CompanionShop.buy(main, slot, id, expected):
+		return false
+	var who = _companion(slot)
+	if who != null:
+		Fx.sparkle(main, who.global_position + Vector3(0, 1.0, 0))
+	Fx.flower_ring(main, main.world.station_pos(MARKET), 1.4)
+	main.on_purchase()
+	var sub := _say("mount_same")
+	if slot == "pet":
+		sub = PET_JOINS if not had_pet and Data.pet_level() >= 1 else _say("pet_same")
+	main.hud.banner(_say("receipt_bought", [String(e.get("short", e.get("name", id)))]), Color(0.6, 1.0, 0.45), sub)
+	return true
+
+
+## H5: trains the pet one level at the Market's Pets tab (the Buy command, kind "pet_training": the old Cottage's level
+## prices, never above the Hearthtree's level, the Market standing, the pet owned). Every pet look shares the level,
+## and the pet's sparks read it at once (pet.gd). `expected`: the level the button showed (-1: no check). true when done.
+func _train_pet(expected: int = -1) -> bool:
+	if not Buy.new("pet_training", "", 1, expected).run(main):
+		return false
+	Save.save_game()
+	var at: Vector3 = main.pet.global_position if main.pet != null else main.world.station_pos(MARKET)
+	Fx.sparkle(main, at + Vector3(0, 0.6, 0))
+	Fx.flower_ring(main, Vector3(at.x, 0.0, at.z), 1.0)
+	main.on_purchase()
+	main.hud.toast(_say("pet_level", [Data.pet_name(), Data.pet_level()]))
+	return true
+
+
 ## H1: what Bramble pays for a market.buys entry: every currency the entry names (Data.CURRENCIES, above 0), e.g.
-## {"leaves": 1000, "shards": 1} for amber.
+## {"leaves": 1000, "shards": 1} for amber. H5: MarketTrade.quote gives a trade's payout; this stays for older readers.
 func _market_pay(e: Dictionary) -> Dictionary:
 	var pay := {}
 	for k in Data.CURRENCIES:
@@ -1391,7 +1524,8 @@ func _market_pay(e: Dictionary) -> Dictionary:
 	return pay
 
 
-## A market entry is on offer now (after_missions: only once every mission is won).
+## A market entry is on offer now (after_missions: only once every mission is won). H5: MarketTrade.offers gives each
+## offer's "open"; this stays for older readers.
 func _market_open(e: Dictionary) -> bool:
 	return not bool(e.get("after_missions", false)) or Data.raids_open()
 
@@ -1401,79 +1535,35 @@ func _stock(id: String) -> int:
 	return Data.have(id) if Data.CURRENCIES.has(id) else Bag.count(id)
 
 
-## Buys market.sells[i] from Bramble: the item goes into the Bag or the materials. H3: a full Bag refuses it before
-## the leaves are paid.
-func _market_buy(i: int) -> void:
-	var list: Array = Data.b.get("market", {}).get("sells", [])
-	if i < 0 or i >= list.size() or Save.ruined.has("stall") or int(Save.stations.get("stall", 0)) <= 0:
-		return
-	var e: Dictionary = list[i]
-	var id := String(e["id"])
-	var n := int(e.get("amount", 1))
-	if not _market_open(e) or n <= 0:
-		return
-	var mat := Data.MATS.has(id)
-	if Bag.room_for(id) < n:
-		return
-	if not Data.pay({"leaves": int(e.get("leaves", 0))}):
-		return
-	if mat:
-		Data.give(id, n)
-	else:
-		Bag.add(id, n)
+## Buys a piece of expedition gear (content/attachments, "scope": "expedition": the Thunder Shoes, the pet's lantern,
+## charm and bell), sold at the Market once the Burrows are open; it is worn at once in its slot. H5: the Buy command
+## (kind "attachments") checks, pays and records it (Save.owned attachments); a Saddlery attachment goes through
+## _saddle_buy. true when it was bought.
+func _buy_attach(id: String) -> bool:
+	var e: Dictionary = Data.shop_entry("attachments", id)
+	if String(e.get("shop", "")) == Buy.SADDLERY:
+		return _saddle_buy("attach", id)
+	if e.is_empty() or not Buy.new("attachments", id).run(main):
+		return false
 	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
-	main.on_purchase()
-	if mat:
-		main.hud.toast("+%d %s · now %d · leaves %d" % [n, Data.mat_name(id), Data.have(id), Save.leaves])
-	else:
-		main.hud.toast("%s · leaves %d" % [Data.food_receipt({id: n}), Save.leaves])
-
-
-## Sells market.buys[i] to Bramble: the item is taken, he pays what the entry names (H1: leaves, and shards).
-func _market_sell(i: int) -> void:
-	var list: Array = Data.b.get("market", {}).get("buys", [])
-	if i < 0 or i >= list.size() or Save.ruined.has("stall") or int(Save.stations.get("stall", 0)) <= 0:
-		return
-	var e: Dictionary = list[i]
-	var id := String(e["id"])
-	var n := int(e.get("amount", 1))
-	if not _market_open(e) or n <= 0 or _stock(id) < n:
-		return
-	if Data.CURRENCIES.has(id):
-		if not Data.pay({id: n}):
-			return
-	elif not Bag.take(id, n):                       # H3: the Golden Carp and any other Bag item
-		return
-	var pay := _market_pay(e)
-	for k in pay:
-		Data.give(String(k), int(pay[k]))
-	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
-	main.on_purchase()
-	var now: Array = []
-	for k in pay:
-		now.append("%s %d" % [k, Data.have(String(k))])
-	main.hud.toast("Sold %d %s · now %d · %s" % [n, Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n), _stock(id), " · ".join(now)])
-
-
-func _buy_attach(id: String) -> void:
-	var it: Dictionary = Data.b["attachments"]["items"].get(id, {})
-	if it.is_empty() or (Save.attach["owned"] as Array).has(id) or not Data.pay(it["cost"]):
-		return
-	(Save.attach["owned"] as Array).append(id)
-	Save.attach[String(it["slot"])] = id                   # worn at once
-	Save.save_game()
-	var who = _companion(String(it["slot"]))
+	var who = _companion(String(e.get("slot", "")))
 	if who != null:
 		Fx.sparkle(main, who.global_position + Vector3(0, 1.0, 0))
-	main.hud.banner(String(it["name"]), Color(1.0, 0.9, 0.55), String(it["note"]))
+	main.hud.banner(String(e.get("name", id)), Color(1.0, 0.9, 0.55), String(e.get("desc", "")))
 	main.on_purchase()
+	return true
 
 
+## Puts on owned expedition gear id in its slot ("mount" or "pet"), or takes that slot's off (id ""). H5: owned is
+## Save.owned attachments (Data.owned_level), and it must be that slot's expedition gear.
 func _wear(slot: String, id: String) -> void:
-	if id != "" and not (Save.attach["owned"] as Array).has(id):
+	if not Save.attach.has(slot):
 		return
+	if id != "":
+		var e: Dictionary = Data.item("attachments", id)
+		if Data.owned_level("attachments", id) < 1 or String(e.get("scope", "")) != "expedition" \
+				or String(e.get("slot", "")) != slot:
+			return
 	Save.attach[slot] = id
 	Save.save_game()
 	main.on_purchase()
@@ -1532,19 +1622,22 @@ func _skin_unlock(slot: String, skin_id: String) -> String:
 	return "skin:%s:%s:%s" % [slot, _look_id(slot), skin_id]
 
 
-func _unlock_skin(slot: String, skin_id: String) -> void:
-	var sk := Data.skin(slot, _look_id(slot), skin_id)
-	if String(sk.get("id", "")) != skin_id or Save.unlocks.has(_skin_unlock(slot, skin_id)) or not Data.pay({"shards": int(sk.get("shards", 0))}):
-		return
-	Save.unlocks.append(_skin_unlock(slot, skin_id))
-	_set_skin_id(slot, skin_id)
+## Unlocks a priced colour (Gloomlit, Gloom shards: a look only) of the look out in slot now, and puts it on. H5: the Buy
+## command (kind "colour_unlock", that exact look; a mount's or pet's look must be owned) checks, pays and records it
+## (Save.unlocks); this does what follows. true when it was unlocked.
+func _unlock_skin(slot: String, skin_id: String) -> bool:
+	var look := _look_id(slot)
+	var sk := Data.skin(slot, look, skin_id)
+	if not Buy.new("colour_unlock", skin_id, 1, -1, look).run(main):
+		return false
 	var who = _companion(slot)
 	if who != null:
 		who.set_look()
 		Fx.sparkle(main, who.global_position + Vector3(0, 1.0, 0))
 	Save.save_game()
-	main.hud.banner("%s colours!" % String(sk["name"]), Color(0.8, 0.6, 1.0), "Earned with Gloom shards")
+	main.hud.banner(_say("receipt_colours", [String(sk.get("name", skin_id))]), Color(0.8, 0.6, 1.0), _say("receipt_colours_note"))
 	main.on_purchase()
+	return true
 
 
 func _next_skin(slot: String) -> void:
@@ -1564,35 +1657,22 @@ func _next_skin(slot: String) -> void:
 	main.on_purchase()
 
 
-func _use_look(slot: String, id: String) -> void:
-	_set_look_id(slot, id)
-	var who = _companion(slot)
-	if who != null:
-		who.set_look()
-	Save.save_game()
-	main.hud.banner(String(Data.look(slot, id)["name"]), Color(1.0, 0.9, 0.55), "Same power, a new look")
-	main.on_purchase()
-
-
-## Bramble's timber trade (balance.json trade): buying 5 for 50 leaves, or selling 5 for 30.
-func _trade(buying: bool) -> void:
-	if Save.ruined.has("stall"):
-		return
-	var timber_before := Save.timber
-	if buying:
-		var tb: Dictionary = Data.b["trade"].get("buy", {"timber": 5, "leaves": 50})
-		if not Data.pay({"leaves": int(tb.get("leaves", 50))}):
-			return
-		Save.timber += int(tb.get("timber", 5))
+## Puts out look id in a companion slot (free: every look has the same numbers). H5: the mount's and the pet's go
+## through scripts/companion_shop.gd choose (an owned look only, the pet owned, the Market standing); the guardian's
+## stay as before. true when it changed.
+func _use_look(slot: String, id: String) -> bool:
+	if CompanionShop.SLOT_KINDS.has(slot):
+		if not CompanionShop.choose(main, slot, id):
+			return false
 	else:
-		var ts: Dictionary = Data.b["trade"].get("sell", {"timber": 5, "leaves": 30})
-		if not Data.pay({"timber": int(ts.get("timber", 5))}):
-			return
-		Save.add_leaves(int(ts.get("leaves", 30)))
-	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
+		_set_look_id(slot, id)
+		var who = _companion(slot)
+		if who != null:
+			who.set_look()
+		Save.save_game()
+	main.hud.banner(String(Data.look(slot, id).get("name", id)), Color(1.0, 0.9, 0.55), _say("receipt_new_look"))
 	main.on_purchase()
-	main.hud.toast("%+d timber · now %d · leaves %d" % [Save.timber - timber_before, Save.timber, Save.leaves])
+	return true
 
 
 func _card_sign() -> Dictionary:

@@ -7,18 +7,16 @@
 class_name SaveUpgrades
 extends RefCounted
 
-const CURRENT_VERSION := 4
+const CURRENT_VERSION := 5
 const FIRST_STEP_VERSION := 2  # Version 1 still goes through the existing raid fix (raids.gd, by Save.loaded_v).
+const UpgradeV5 := preload("res://core/save_upgrade_v5.gd")   # the 4 -> 5 step's moves (H5)
 
 
 static func upgrade(d: Dictionary) -> Dictionary:
 	var steps: Dictionary[int, Callable] = {
 		2: _upgrade_2_to_3,
 		3: _upgrade_3_to_4,
-		# Next step (4 -> 5, H5): its moves are built in core/save_upgrade_v5.gd (Stage 1) but not switched on yet, so
-		# the game still writes v4. Stage 2's activation, together with Save's v5 reader and writer, adds this line here
-		# and sets CURRENT_VERSION (above) to 5:
-		#   4: Callable(preload("res://core/save_upgrade_v5.gd"), "upgrade"),
+		4: _upgrade_4_to_5,
 		# The legacy raid fix for v1 saves runs by Save.loaded_v (raids.gd), whatever CURRENT_VERSION is.
 	}
 	var original_version := int(d.get("save_v", 1))
@@ -148,6 +146,15 @@ static func _upgrade_3_to_4(d: Dictionary) -> Dictionary:
 	d["timers"] = {"seen": now, "jobs": jobs}
 	d["bag"] = bag
 	return d
+
+
+## 4 -> 5 (H5, 27 Nov 2026; the owner's answers Q1-Q5): the Mushroom Cottage leaves the camp and what the shops sell
+## gets one form, owned[kind][id] = {"level": n}; the pet gets one shared level, the Market one level, the mount a
+## carried tier and the Saddlery three skill circles. Its moves are in core/save_upgrade_v5.gd (frozen numbers:
+## balance.json save_upgrades.to_v5); it erases every field it converts (cat_skins_owned, saddlery.attach,
+## attach.owned, the Cottage everywhere).
+static func _upgrade_4_to_5(d: Dictionary) -> Dictionary:
+	return UpgradeV5.upgrade(d)
 
 
 ## A JSON number as a float; anything else counts as 0.

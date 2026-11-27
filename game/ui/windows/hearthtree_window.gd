@@ -16,6 +16,9 @@ extends "res://ui/windows/building_window.gd"
 ## The goals: a goal sold elsewhere has "Go" (the cat walks to that marker and its card opens); a goal sold here has
 ## "Show" (the Cat or Defences tab opens and scrolls to its row); a goal for a building not built yet (or for the bows
 ## and the Training Target's stats before their building) has "Show", which opens the build menu at that building.
+## H5: a pet-level goal (the owner's Q4 A: Hearthtree 3 asks for the pet at level 2, Hearthtree 4 at level 3): before
+## the Market is built, Show opens the build menu at the Market; once it is built, Go walks to the Market and opens its
+## Pets tab (the Market window's open_on), where the pet is bought and trained.
 ## While the Hearthtree is in ruins the whole window is its ruin card (no tabs, no footer).
 ## Used by: ui/windows/window_list.gd (hud.windows["shop"]), stations.gd (the marker's builder and "!"), the tests.
 ## Uses: Data (home_goals, home_goals_met, home_price, home_can_grow, building, buildings, menu_buildings,
@@ -25,6 +28,9 @@ extends "res://ui/windows/building_window.gd"
 
 const StatList := preload("res://ui/windows/stat_list.gd")
 const DefencesTab := preload("res://ui/windows/defences_tab.gd")
+## H5: the tab a goal's Go asks the window at the goal's marker to open on, by the goal's type (one visit: the window's
+## open_on). A pet-level goal walks to the Market and opens its Pets tab (market_window's tab id "pets").
+const GOAL_TABS := {"pet_level": "pets"}
 
 var tab := "hearthtree"                 # the tab showing: "hearthtree", "cat" or "defences"
 
@@ -322,11 +328,12 @@ func _goal_row(g: Dictionary) -> Dictionary:
 
 
 ## The building a "build" goal shows in the build menu: the goal's own building, the Bow Shop for a bow goal, the
-## stat's building for a stat goal (the Training Target).
+## stat's building for a stat goal (the Training Target). H5: a pet-level goal's id is the building that sells the pet
+## (data.gd _goal: the Market), so Show opens the build menu at the Market before it is built.
 func _menu_id(g: Dictionary) -> String:
 	var gid := String(g.get("id", ""))
 	match String(g.get("type", "")):
-		"station":
+		"station", "pet_level":
 			return gid
 		"bow", "bow_any", "bow_owned":
 			return "bench"                                # the bows are sold at the Bow Shop
@@ -348,19 +355,33 @@ func show_goal(g: Dictionary) -> void:
 
 
 ## A tap on a goal's Go: its card opens, and the cat walks there first if it is out of reach (as a tap on its marker
-## does). A goal sold on the card already open scrolls the card to its row.
+## does). A goal sold on the card already open scrolls the card to its row. H5: a goal whose type has a tab (GOAL_TABS)
+## asks the window at that marker to open on it for this one visit (open_on) before the walk: a pet-level goal opens
+## the Market on Pets.
 func _goal_go(g: Dictionary) -> void:
-	var r = st.goal_ring(String(g.get("station", "")))
+	var station := String(g.get("station", ""))
+	var r = st.goal_ring(station)
 	if r == null:
 		return
 	if r == main.hud.card_ring():
 		main.hud.scroll_card_to(_goal_find(g))
 		return
 	main.hud.hide_card()
+	_ask_tab(station, String(GOAL_TABS.get(String(g.get("type", "")), "")))
 	if main.interact != null:
 		main.interact.use(r)
 	else:
 		main.open_ring(r)
+
+
+## H5: tells the window at marker `station` (hud.windows) to open on tab `tab` at its next visit (its open_on), when
+## there is a tab and the window takes one.
+func _ask_tab(station: String, tab: String) -> void:
+	if tab == "" or hud == null or not hud.windows.has(station):
+		return
+	var w = hud.windows[station]
+	if w != null and w.has_method("open_on"):
+		w.open_on(tab)
 
 
 ## The title of the row that sells a goal (hud.scroll_card_to finds the first row or tile holding these words): a

@@ -3,7 +3,6 @@
   "name": "Deep thorns",
   "desc": "Thorns slow enemies more and the slow lasts after they leave.",
   "icon": "spikes",
-  "hidden": true,
   "kind": "spikes",
   "unlock": {"missions_won": 3},
   "effect": "deep_thorns",

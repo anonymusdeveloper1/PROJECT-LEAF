@@ -12,9 +12,10 @@ extends RefCounted
 ## Used by: main (creates it; nearest_enemy, separation), enemy.gd and its parts (add, move, remove), arrow.gd, acorn.gd,
 ## fireball.gd, mount.gd, tower.gd, defences.gd, the abilities.
 
-const MAX_CELLS := 64        # a box spanning more cells than this walks every entry instead
+const DEFAULT_MAX_CELLS := 64   # fallback for balance.json enemy_grid.max_cells: a box spanning more cells walks every entry instead
 
 var _cell_m := 4.0
+var _max_cells := DEFAULT_MAX_CELLS
 var _slack_m := 0.5
 var _cell_of := {}           # instance id -> Vector2i (the cell it is filed in)
 var _cells := {}             # Vector2i -> PackedInt64Array (instance ids in that cell)
@@ -27,6 +28,7 @@ var _refiled_frame := -1     # the physics frame the entries were last all refil
 func _init() -> void:
 	var cfg: Dictionary = Data.b.get("enemy_grid", {})
 	_cell_m = maxf(float(cfg.get("cell_m", 4.0)), 0.5)
+	_max_cells = maxi(int(cfg.get("max_cells", DEFAULT_MAX_CELLS)), 1)
 	_slack_m = float(cfg.get("slack_m", 0.5))
 
 
@@ -108,7 +110,7 @@ func candidates(min_xz: Vector2, max_xz: Vector2, group: StringName) -> Array[No
 	var hi := _cell_at(max_xz.x + grow, max_xz.y + grow)
 	var ids: Array = []
 	var span := (hi.x - lo.x + 1) * (hi.y - lo.y + 1)
-	if span > MAX_CELLS or span < 0:
+	if span > _max_cells or span < 0:
 		ids = _cell_of.keys()
 	else:
 		for x in range(lo.x, hi.x + 1):

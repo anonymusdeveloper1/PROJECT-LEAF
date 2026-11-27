@@ -80,6 +80,14 @@ func refresh() -> void:
 		_update_live()
 
 
+## Select an item by its id, using the same first stack as the Bag grid.
+func select_item(id: String) -> void:
+	for stack: Dictionary in _grid_stacks():
+		if String(stack["id"]) == id:
+			_select(_key_of(stack))
+			return
+
+
 ## The first stack's slot of an id (null when the Bag holds none or is closed). For the tests.
 func slot_of(id: String) -> Control:
 	return slots.get("%s#0" % id)
@@ -390,7 +398,8 @@ func _slot(s: Dictionary, side: float) -> Button:
 func _select(key_s: String) -> void:
 	selected = key_s
 	_reason = ""
-	hud.refresh_card()
+	if hud.card_ring() == self:
+		hud.refresh_card()
 
 
 ## Use: the Use-potion command (the same one the HUD potion buttons send). It closes the Bag when it worked; else the

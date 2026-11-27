@@ -51,7 +51,7 @@ func build(world) -> void:
 	keep_out.append([world.station_pos("campfire"), 1.7])
 	# H6: each building's grass keep-out radius is its entry's layout.grass_radius; "grass_always" ones keep it from the
 	# start (home, bench, target), the others once they are built. The saddlery has none.
-	for id in ["home", "bench", "target", "well", "stall", "stone", "garden", "fishing", "tailor"]:
+	for id in ["home", "bench", "target", "well", "stall", "stone", "garden", "fishing", "tailor", "workshop"]:
 		var lay: Dictionary = Data.building_layout(id)
 		if not lay.has("grass_radius"):
 			continue

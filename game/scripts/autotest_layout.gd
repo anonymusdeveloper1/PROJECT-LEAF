@@ -47,7 +47,7 @@ const FIRE_CLEAR := 1.9                            # open ground round the campf
 const TAN50 := 1.19                                # the camera looks down at 50 degrees
 const CAT_H := 0.35                                # a cat is hidden when its body at this height is covered
 const OLD_COTTAGE := Vector3(6.4, 0.0, 3.6)       # H5: where the Cottage stood: a fixture literal for the old-save test
-const IDS := ["target", "bench", "stall", "well", "tailor"]   # 23 Nov 2026: and the Tailor's Nook; H5: no Cottage
+const IDS := ["target", "bench", "stall", "well", "tailor", "workshop"]   # 23 Nov 2026: and the Tailor's Nook; H5: no Cottage; H6: the Defence Workshop
 
 
 func run() -> bool:
@@ -103,6 +103,7 @@ func _layout() -> void:
 	t._veteran(14)                                  # missions 1-14 won: the stall, the well, garden, fishing
 	Save.stations["saddlery"] = 1                  # 23 Nov 2026: the Saddlery and the Tailor's Nook too, so the Nook is
 	Save.stations["tailor"] = 1                    # checked against every building round it (at every home level)
+	Save.stations["workshop"] = 1                  # H6: the Defence Workshop on its own open ground is checked like the rest
 	main.stations.free_guardian()                   # the stone and its ring show
 	for id in ["target", "bench"]:
 		Save.stations[id] = 3                       # the biggest models (they are capped by the home level below)
@@ -552,8 +553,13 @@ func _layoutsave(step: int) -> void:
 		Save.placed.append({"type": "tower", "x": OLD_COTTAGE.x + 0.4, "z": OLD_COTTAGE.z, "rot": 0.0})
 		Save.placed.append({"type": "spikes", "x": w.spot_ring("stall").x, "z": w.spot_ring("stall").z, "rot": 0.0})
 		Save.placed.append({"type": "tower", "x": 6.0, "z": -6.0, "rot": 0.0})
+		# H6: an upgraded, worn tower on the Defence Workshop's ground (the overlap fixture): it must go back with its level and wear
+		Save.stations["workshop"] = 1
+		var wp: Vector3 = w.station_pos("workshop")
+		Save.placed.append({"type": "tower", "x": wp.x + 0.6, "z": wp.z - 0.4, "rot": 0.0, "level": 3, "wreck": 0.4})
 		Save.items["tower"] = 0
 		Save.items["spikes"] = 0
+		Save.defence_reserves = {}
 		Save.save_game()
 		t._log("layoutsave 1", {"placed": Save.placed})
 		return
@@ -568,11 +574,14 @@ func _layoutsave(step: int) -> void:
 				kept += 1
 	t._expect("pieces on the buildings' new ground are gone from the camp", on_ground.is_empty(), {"placed": Save.placed})
 	t._expect("the spikes on the Market's ring are back in the bag", int(Save.items.get("spikes", 0)) == 1, {"items": Save.items})
+	t._expect("H6: the worn level-3 tower on the Workshop's ground is back in the Bag carrying its level and wear, once",
+		int(Save.items.get("tower", 0)) == 1 and JSON.stringify(Save.defence_reserves) == JSON.stringify({"tower": [{"level": 3, "wreck": 0.4}]})
+		and Bag.best_held_level("tower") == 3, {"items": Save.items, "reserves": Save.defence_reserves})
 	var on_old := false
 	for sp in Save.placed:
 		if sp.has("x") and String(sp["type"]) == "tower" and absf(float(sp["x"]) - (OLD_COTTAGE.x + 0.4)) < 0.05 and absf(float(sp["z"]) - OLD_COTTAGE.z) < 0.05:
 			on_old = true
-	t._expect("the tower on the vacated Cottage ground stays placed", on_old and int(Save.items.get("tower", 0)) == 0, {"placed": Save.placed, "items": Save.items})
+	t._expect("the tower on the vacated Cottage ground stays placed", on_old and int(Save.items.get("tower", 0)) == 1, {"placed": Save.placed, "items": Save.items})
 	t._expect("the tower clear of the camp stays", kept >= 2, {"placed": Save.placed})
 	t._expect("the player is told", String(main.hud._tip.text).contains("place") or main.hud_note.contains("place"), {"tip": main.hud._tip.text})
 	var pieces_ok := true
@@ -580,6 +589,18 @@ func _layoutsave(step: int) -> void:
 		if p["type"] != "barricade" and w.in_village(p["pos"], 0.6):
 			pieces_ok = false
 	t._expect("no piece stands on the buildings' ground", pieces_ok)
+	# H6: placing it again on open ground gives the same level and wear back, and the Bag is empty of it
+	var spot: Vector3 = t.open_place_spot("tower")
+	var placed_id := -1
+	if spot.x < 1.0e8:
+		main.defences.start_placing("tower")
+		placed_id = main.defences.commit_placement("tower", spot, 0.0)
+		main.defences.stop_placing()
+	var again: Dictionary = main.defences.piece_at(placed_id) if placed_id >= 0 else {}
+	t._expect("H6: re-placed, the tower keeps its paid level 3 and its wear (record and live piece), and the Bag is empty of it",
+		not again.is_empty() and main.defences.piece_level(again) == 3 and int(Save.items.get("tower", 0)) == 0
+		and Save.defence_reserves.get("tower", []).is_empty()
+		and float((again["src"] as Dictionary).get("wreck", 0.0)) > 0.3, {"piece": again.get("level", 0), "items": Save.items, "reserves": Save.defence_reserves})
 	await t._shot("layoutsave_after")
 
 
@@ -797,7 +818,7 @@ func _hudcheck() -> void:
 			break
 		await t._wait(0.3)
 	if one != null:
-		one.hit(Vector3.FORWARD, one.hp + 1.0)
+		one.hit(Vector3.FORWARD, one.hp * 10.0 + 100.0)
 	await t._wait(0.4)
 	var fl: float = hud.p_fight.fill()
 	var share := float(f.wave_total() - f.left_in_wave()) / float(maxi(f.wave_total(), 1))
@@ -1105,7 +1126,7 @@ func _burrow_cards() -> void:
 	t._expect("the arena: the boss bar under the top bar", hud._boss_bar.visible, {"boss": r._boss != null})
 	_middle_free("the arena with the boss")
 	if r._boss != null:
-		r._boss.hit(Vector3.FORWARD, r._boss.hp + 1.0)
+		r._boss.hit(Vector3.FORWARD, r._boss.hp * 10.0 + 100.0)
 		await t._wait(1.2)
 	await _rings_near(r, m.w2(m.arena_c), "arena", 14.0)
 	if m.parts.has("end_lift_ring") and m.parts["end_lift_ring"].visible:

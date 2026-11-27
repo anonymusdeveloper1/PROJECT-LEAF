@@ -163,6 +163,9 @@ func build(m) -> void:
 	cooking_window = CookingWindowScript.new(self)
 	confirm = ConfirmWindowScript.new(self)
 	windows = WindowList.make_all(self)
+	var piece_win: Variant = windows["defence_piece"]
+	var pad_win: Variant = windows["defence_pad"]
+	main.defences.use_window_builders(piece_win.spec_for_piece, piece_win.spec_for_row, pad_win.spec_for_pad)
 	_leaf_tex = p_icons._make_leaf()
 	_log_tex = p_icons._make_log()
 	_shard_tex = p_icons._make_shard()
@@ -387,6 +390,13 @@ func open_settings() -> void:
 
 func open_inventory() -> void:
 	p_actions.open_inventory()
+
+
+func open_inventory_at(id: String) -> void:
+	if card_ring() != inventory:
+		p_actions.open_inventory()
+	if card_ring() == inventory:
+		inventory.select_item(id)
 
 
 func build_buttons() -> Array:

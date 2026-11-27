@@ -9,11 +9,11 @@ extends Node
 
 const BoltScript := preload("res://scripts/bolt.gd")
 
-var e                                     # the enemy (enemy.gd) this part belongs to; set once by bind_enemy (untyped like `main`)
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 
 
 func bind_enemy(enemy: Node3D) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 
 
 func start_action(kind: String, tgt) -> void:
@@ -33,7 +33,7 @@ func start_action(kind: String, tgt) -> void:
 			e._act_event = e._event("Grab", "grab", 0.3)
 			e._play("Grab" if e.anim and e.anim.has_animation("Grab") else "Attack", 0.08)
 		"slam":
-			var c = e._clip_or(["Slam", "Attack"])
+			var c: String = e._clip_or(["Slam", "Attack"])
 			e._act_len = maxf(e._clip_len(c, 1.4), 0.9)
 			e._act_event = e._event(c, "impact", e._event(c, "hit", 0.7))
 			e._play(c, 0.1)
@@ -50,13 +50,13 @@ func start_action(kind: String, tgt) -> void:
 			e._play("Attack", 0.06)
 			Fx.telegraph_ring(e.main, e.global_position, float(e.info["burst_range"]), e._act_event, Color(0.95, 0.6, 0.3, 0.35))
 		"drum":
-			var c0 = e._clip_or(["Drum", "Attack"])
+			var c0: String = e._clip_or(["Drum", "Attack"])
 			e._act_len = maxf(e._clip_len(c0, 1.0), 0.8) * 2.0
 			e._act_event = e._event(c0, "beat", 0.25)
 			e._play(c0, 0.1)
 			e._cd4 = float(e.info["drum_every"])
 		"heal", "cast", "orbs":
-			var c = e._clip_or(["Cast", "Attack"])
+			var c: String = e._clip_or(["Cast", "Attack"])
 			e._act_len = maxf(e._clip_len(c, 1.0), 0.7)
 			e._act_event = e._event(c, "cast", e._event(c, "hit", e._act_len * 0.5))
 			e._play(c, 0.08)
@@ -68,7 +68,7 @@ func start_action(kind: String, tgt) -> void:
 			else:
 				e._cd = float(e.info["attack_every"])
 		"hex":
-			var c = e._clip_or(["Cast", "Attack"])
+			var c: String = e._clip_or(["Cast", "Attack"])
 			e._act_len = maxf(e._clip_len(c, 1.0), 1.15)
 			e._act_event = 1.0
 			e._play(c, 0.08)
@@ -78,7 +78,7 @@ func start_action(kind: String, tgt) -> void:
 			Fx.telegraph_ring(e.main, e._hex_at, float(e.info["hex_range"]), 1.0, Color(0.8, 0.3, 1.0, 0.4))
 			Fx.text(e.main, e._hex_at + Vector3(0, 1.6, 0), "Hex!", Color(0.85, 0.5, 1.0))
 		"summon":
-			var c = e._clip_or(["Roar", "Cast", "Attack"])
+			var c: String = e._clip_or(["Roar", "Cast", "Attack"])
 			e._act_len = maxf(e._clip_len(c, 1.2), 0.9)
 			e._act_event = e._event(c, "roar", e._act_len * 0.45)
 			e._play(c, 0.1)
@@ -96,7 +96,7 @@ func start_action(kind: String, tgt) -> void:
 			e._play("Roar", 0.1)
 			e._cd3 = float(e.mods.get("roar_every", e.info.get("roar_every", 14.0))) * e._cdk()
 		"lob":
-			var c = e._clip_or(["Cast", "Attack"])
+			var c: String = e._clip_or(["Cast", "Attack"])
 			e._act_len = maxf(e._clip_len(c, 1.0), 0.8)
 			e._act_event = e._event(c, "cast", e._act_len * 0.45)
 			e._play(c, 0.08)
@@ -118,7 +118,7 @@ func do_action(delta: float) -> void:
 	if typeof(e._act_target) == TYPE_OBJECT and not is_instance_valid(e._act_target):
 		e._act_target = null
 	e._drop_pooled_grab()
-	var tgt = e._act_target
+	var tgt: Variant = e._act_target
 	if tgt is Node3D and is_instance_valid(tgt):
 		var to: Vector3 = (tgt as Node3D).global_position - e.global_position
 		to.y = 0.0
@@ -146,8 +146,8 @@ func impact() -> void:
 	if typeof(e._act_target) == TYPE_OBJECT and not is_instance_valid(e._act_target):
 		e._act_target = null
 	e._drop_pooled_grab()
-	var tgt = e._act_target
-	var reach = float(e.info["reach"]) + e.radius + 0.5
+	var tgt: Variant = e._act_target
+	var reach := float(e.info["reach"]) + e.radius + 0.5
 	var fwd := Vector3(sin(e.rotation.y), 0, cos(e.rotation.y))
 	match e.state:
 		"attack":
@@ -196,7 +196,7 @@ func impact() -> void:
 		"spit":
 			var b := BoltScript.new()
 			e.main.add_child(b)
-			var mouth = float(e.meta["mouth_height_m"]) * e._scale if e.meta.has("mouth_height_m") else float(e.info.get("height", 1.0)) * 0.75
+			var mouth := float(e.meta["mouth_height_m"]) * e._scale if e.meta.has("mouth_height_m") else float(e.info.get("height", 1.0)) * 0.75
 			var from: Vector3 = e.global_position + Vector3(0, mouth, 0) + Vector3(sin(e.rotation.y), 0, cos(e.rotation.y)) * (e.radius + 0.1)
 			if tgt == e.main.player:
 				var aim: Vector3 = e.main.player.global_position + Vector3(0, 0.55, 0)
@@ -236,7 +236,7 @@ func impact() -> void:
 			for k in int(e.info.get("summon", 3)):
 				var a := TAU * k / float(e.info.get("summon", 3)) + randf()
 				var mk := String(e.info.get("minion", "moth"))
-				var at = e.global_position + Vector3(cos(a), 0, sin(a)) * 1.5
+				var at := e.global_position + Vector3(cos(a), 0, sin(a)) * 1.5
 				if e._in_area():
 					e.main.area.spawn(mk, at, {"summon": true, "emerge": mk == "grub"})
 				else:
@@ -254,7 +254,7 @@ func impact() -> void:
 			var cp: Vector3 = e.main.player.global_position - e.global_position
 			cp.y = 0.0
 			var along := cp.dot(e._charge_dir)
-			var side = (cp - e._charge_dir * along).length()
+			var side := (cp - e._charge_dir * along).length()
 			if e.main.player.hp > 0 and along > -0.2 and along < float(e.info["reach"]) + 0.3 and side < float(e.info.get("bite_width", 0.9)) * 0.5 + 0.3:
 				e.main.player.hurt(e.global_position, e.damage)
 				e.main.shake(0.15)
@@ -266,7 +266,7 @@ func impact() -> void:
 			var nm := int(e.mods.get("roar_minions", e.info.get("roar_minions", 3)))
 			for k in nm:
 				var a := TAU * k / float(nm) + randf()
-				var at = e.global_position + Vector3(cos(a), 0, sin(a)) * 1.6
+				var at := e.global_position + Vector3(cos(a), 0, sin(a)) * 1.6
 				if e.enraged and k < int(e.mods.get("enrage_gloom_adds", 0)) and e._in_area():
 					e.main.area.spawn(String(e.info.get("minion", "thornling")), at, {"summon": true, "gloomtouched": true})
 				else:
@@ -277,7 +277,7 @@ func impact() -> void:
 ## gone.
 func burst() -> void:
 	var r := float(e.info["burst_range"])
-	var me = e.global_position
+	var me := e.global_position
 	Fx.shockwave(e.main, me, r + 0.3, Color(0.95, 0.65, 0.35))
 	Fx.spores(e.main, me, r)
 	Fx.kill(e.main, me + Vector3(0, 0.4, 0), e._color)
@@ -300,9 +300,9 @@ func burst() -> void:
 ## A Gloom bolt at the cat (Frog Shaman, Owl Witch's orbs), `turn` radians off the aim.
 func bolt(turn: float, homing: float) -> void:
 	var fwd := Vector3(sin(e.rotation.y), 0, cos(e.rotation.y))
-	var from = e.global_position + Vector3(0, float(e.info["height"]) * 0.6, 0) + fwd * (e.radius + 0.15)
+	var from := e.global_position + Vector3(0, float(e.info["height"]) * 0.6, 0) + fwd * (e.radius + 0.15)
 	var aim: Vector3 = e.main.player.global_position + Vector3(0, 0.55, 0)
-	var d = (aim - from).rotated(Vector3.UP, turn)
+	var d := (aim - from).rotated(Vector3.UP, turn)
 	var b := BoltScript.new()
 	e.main.add_child(b)
 	b.launch(e.main, from, d, float(e.info.get("bolt_speed", 5.0)), e.damage, Color(0.78, 0.35, 1.0), true, e.main.player if homing > 0.0 else null, homing, 0.13, 3.2)
@@ -312,7 +312,7 @@ func bolt(turn: float, homing: float) -> void:
 ## and hurts it by the frog's gate damage.
 func bolt_at(tgt) -> void:
 	var fwd := Vector3(sin(e.rotation.y), 0, cos(e.rotation.y))
-	var from = e.global_position + Vector3(0, float(e.info["height"]) * 0.6, 0) + fwd * (e.radius + 0.15)
+	var from := e.global_position + Vector3(0, float(e.info["height"]) * 0.6, 0) + fwd * (e.radius + 0.15)
 	var spd := maxf(float(e.info.get("bolt_speed", 5.0)), 0.5)
 	var b := BoltScript.new()
 	e.main.add_child(b)
@@ -335,6 +335,6 @@ func ring_now(at: Vector3, r: float) -> void:
 		return
 	Fx.shockwave(e.main, at, r, Color(1.0, 0.55, 0.3))
 	e.main.shake(0.3)
-	var p = e.main.player
+	var p: Node3D = e.main.player
 	if p.hp > 0 and Vector2(p.global_position.x - at.x, p.global_position.z - at.z).length() < r:
 		p.hurt(at, int(round(e.damage * float(e.mods.get("slam_mult", 1.0)))))

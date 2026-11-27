@@ -41,6 +41,7 @@ var _cat_cmd                            # ... and its Use-potion command (made o
 var _mount_cmd
 var place_button: Button
 var done_button: Button
+var undo_button: Button                 # H6: takes back the last piece placed this visit (row 1, left)
 var build_dot: Control                  # H4: the "!" dot on the build icon (meta "build_dot"; refresh_build_dot)
 
 
@@ -74,6 +75,8 @@ func build() -> void:
 	hud._place_bar.add_child(place_button)
 	done_button = _big_button("Done", STONE, _stop_placing)
 	hud._place_bar.add_child(done_button)
+	undo_button = _big_button(Data.word("undo"), STONE, _undo_place)
+	hud._place_bar.add_child(undo_button)
 	hud.bag_button = _big_button("Bag", WOOD, open_inventory)
 	hud.bag_button.custom_minimum_size = Vector2(116, 84)
 	hud.bag_button.add_theme_font_size_override("font_size", 25)
@@ -128,7 +131,7 @@ func _all() -> Array:
 	var out: Array = [ride_button, mount_potion_button, potion_button]
 	for type in DEFENCES:
 		out.append(def_buttons[type])
-	out.append_array([place_button, done_button, hud.bag_button, hud._build_icon])
+	out.append_array([place_button, done_button, undo_button, hud.bag_button, hud._build_icon])
 	return out
 
 
@@ -151,8 +154,9 @@ func refresh_build() -> void:
 		if shown:
 			_relabel(def_buttons[type], "%s\n×%d" % [DEF_NAMES[type], n], "%s ×%d" % [DEF_NAMES[type], n], AMBER)
 		Slide.show(def_buttons[type], shown, ROW2_FROM)
-	Slide.show(place_button, placing)
+	Slide.show(place_button, placing and d.ghost != null)
 	Slide.show(done_button, placing)
+	Slide.show(undo_button, placing and d.can_undo_place())
 	Slide.show(hud.bag_button, not placing)
 	Slide.show(hud._build_icon, not placing and not below and hud.main.stations != null)
 	refresh_build_dot()
@@ -202,6 +206,11 @@ func _place(type: String) -> void:
 func _place_here() -> void:
 	if hud.main.defences != null:
 		hud.main.defences.place_here()
+
+
+func _undo_place() -> void:
+	if hud.main.defences != null and not hud.main.defences.undo_place():
+		hud.toast(Data.word("undo_stale"))
 
 
 func _stop_placing() -> void:

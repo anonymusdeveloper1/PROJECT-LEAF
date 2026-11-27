@@ -13,10 +13,10 @@ const INDEX_PATH := "res://content/index.json"
 const CROPS := ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"]
 const RECIPES := ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]
 const BOWS := ["twig", "sunwood", "ember", "frost", "volley", "foxfire"]
-## H5: the Mushroom Cottage left the camp (its picture and model stay in assets/).
-const BUILDINGS := ["home", "target", "bench", "well", "stall", "stone", "garden", "fishing", "saddlery", "tailor"]
+## H5: the Mushroom Cottage left the camp (its picture and model stay in assets/). H6: the Defence Workshop is the last.
+const BUILDINGS := ["home", "target", "bench", "well", "stall", "stone", "garden", "fishing", "saddlery", "tailor", "workshop"]
 ## The buildings with a picture rendered from their model in H4 (art/scripts/buildings/pictures.py).
-const PICTURED := ["target", "bench", "well", "stall", "tailor"]
+const PICTURED := ["target", "bench", "well", "stall", "tailor", "workshop"]
 ## H5: the shop kinds (content/<kind>, read through scripts/shop_data.gd), in index order.
 const SHOP_KINDS := {"mounts": ["thistle", "bramblewool"], "pets": ["sprig", "lumi"],
 	"outfits": ["original", "dusk_ranger", "nightfall_ranger"],
@@ -269,7 +269,6 @@ func _check_buildings() -> bool:
 
 func _check_building_refs(home_levels: Array) -> bool:
 	var stats: Dictionary = Data.b["stats"]
-	var defences: Dictionary = Data.b["defences"]
 	var bad: Array = []
 	for id: String in stats:
 		if Data.building(String(Data.stat_info(id).get("station", ""))).is_empty():
@@ -288,10 +287,10 @@ func _check_building_refs(home_levels: Array) -> bool:
 					if not stats.has(id):
 						bad.append(goal)
 				"defence":
-					if not defences.has(id):
+					if Data.defence_info(id).is_empty():                  # H6: the defences are content folders
 						bad.append(goal)
 				"towers":
-					if not defences.has("tower"):
+					if Data.defence_info("tower").is_empty():
 						bad.append(goal)
 				"pet_level":
 					# H5: the pet is trained at its shop (the first pet entry's "shop", the Market), up to its top level

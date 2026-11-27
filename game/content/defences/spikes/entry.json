@@ -10,10 +10,10 @@
   "piece": 70,
   "unlock_missions": 3,
   "levels": [
-    {"dps": 6, "slow": 0.25, "upgrade": 0, "model": "thorn_spikes_1"},
-    {"dps": 12, "slow": 0.35, "upgrade": 180, "model": "thorn_spikes_2"},
-    {"dps": 22, "slow": 0.45, "upgrade": 420, "model": "thorn_spikes_3"},
-    {"dps": 34, "slow": 0.5, "upgrade": 1200, "shards": 50, "model": "thorn_spikes_4"},
-    {"dps": 42, "slow": 0.55, "upgrade": 3060, "name": "Amber Thorns", "needs_burrows": true, "model": "thorn_spikes_5"}
+    {"dps": 6, "slow": 0.25, "model": "thorn_spikes_1"},
+    {"dps": 12, "slow": 0.35, "price": {"leaves": 180}, "model": "thorn_spikes_2"},
+    {"dps": 22, "slow": 0.45, "price": {"leaves": 420}, "model": "thorn_spikes_3"},
+    {"dps": 34, "slow": 0.5, "price": {"leaves": 1200, "timber": 15}, "model": "thorn_spikes_4"},
+    {"dps": 42, "slow": 0.55, "price": {"leaves": 3060}, "name": "Amber Thorns", "needs_burrows": true, "model": "thorn_spikes_5"}
   ]
 }

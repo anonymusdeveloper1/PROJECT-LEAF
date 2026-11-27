@@ -109,7 +109,7 @@ func _start_fresh() -> void:
 	Save.bows = {"twig": 1}
 	Save.bow = "twig"
 	Save.placed = []
-	Save.def_levels = {"barricade": 1, "tower": 1, "spikes": 1}
+	Save.defence_reserves = {}
 	Save.leaves = 0
 	Save.timber = 0
 	for k in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done"]:
@@ -146,15 +146,26 @@ func _meet(level: int) -> void:
 			"bow_owned":
 				Save.bows[id] = maxi(int(Save.bows.get(id, 0)), 1)
 			"towers":
-				Save.def_levels["tower"] = maxi(int(Save.def_levels.get("tower", 1)), lv)
+				# H6: the goal reads the placed records' own levels (data only: no piece is spawned)
 				var have := 0
-				for sp in Save.placed:
+				for sp: Dictionary in Save.placed:
 					if String(sp.get("type", "")) == "tower":
 						have += 1
+						sp["level"] = maxi(int(sp.get("level", 1)), lv)
 				for k in maxi(0, int(g.get("count", 1)) - have):
-					Save.placed.append({"type": "tower", "x": 6.0 + k, "z": -6.0, "rot": 0.0})   # data only (no piece is spawned)
+					Save.placed.append({"type": "tower", "x": 6.0 + k, "z": -6.0, "rot": 0.0, "level": lv})
 			"defence":
-				Save.def_levels[id] = maxi(int(Save.def_levels.get(id, 1)), lv)
+				var found := false
+				for sp: Dictionary in Save.placed:
+					if String(sp.get("type", "")) == id:
+						sp["level"] = maxi(int(sp.get("level", 1)), lv)
+						found = true
+						break
+				if not found:
+					if id == "barricade":
+						Save.placed.append({"type": id, "slot": [0, 0], "row": 1, "level": lv})
+					else:
+						Save.placed.append({"type": id, "x": 9.0, "z": -6.0, "rot": 0.0, "level": lv})
 			"all_stats":
 				for k in Save.stats:
 					Save.stats[k] = maxi(int(Save.stats[k]), lv)
@@ -434,9 +445,8 @@ func _grow_to_2() -> void:
 	Save.leaves = 0
 	Save.timber = 0
 	main.stations.refresh()
-	var def_rows: Array = win.tab_spec("defences").get("rows", [])
-	_x("the first win opens the first defence: the Defences tab shows, its rows are list rows", win.tab_ids() == ["hearthtree", "cat", "defences"]
-		and not def_rows.is_empty() and def_rows.all(func(r): return String(r.get("kind", "")) == "list"), {"tabs": win.tab_ids(), "rows": _texts(def_rows)})
+	_x("H6: no Defences tab any more (the Workshop sells and upgrades the defences)", win.tab_ids() == ["hearthtree", "cat"] and not (win.tab_ids() as Array).has("defences"),
+		{"tabs": win.tab_ids()})
 	var f: Dictionary = win.tab_spec("hearthtree").get("footer", {})
 	var up := _first_button(f)
 	_x("goals met, the price short: the footer says 'Level 1 of %d' with the price; Upgrade is on (it opens the confirm); no '!'" % n,
@@ -594,14 +604,11 @@ func _home_card() -> void:
 	_x("no Grow tile and no building tiles: the level is the pinned footer ('Level 2 of %d', 'x of y goals met', Upgrade off while goals are left)" % n,
 		old_rows.is_empty() and String(f.get("text", "")) == _w("level_of") % [2, n] and String(f.get("note", "")) == _w("goals_met") % [met, goals.size()]
 		and String(up.get("label", "")) == _w("upgrade") and not bool(up.get("enabled", true)), {"footer": _footer_words(f), "old": _texts(old_rows)})
-	_x("three tabs now (Hearthtree, Cat, Defences); the footer is on the Hearthtree tab only", win.tab_ids() == ["hearthtree", "cat", "defences"]
-		and _tab_buttons().size() == 3 and _foot_shows() and not win.tab_spec("cat").has("footer") and not win.tab_spec("defences").has("footer"),
-		{"tabs": win.tab_ids()})
-	var pressed: bool = t._press(_w("tab_defences"))
+	_x("two tabs now (Hearthtree, Cat); the footer is on the Hearthtree tab only", win.tab_ids() == ["hearthtree", "cat"]
+		and _tab_buttons().size() == 2 and _foot_shows() and not win.tab_spec("cat").has("footer"), {"tabs": win.tab_ids()})
+	var pressed: bool = t._press(_w("tab_cat"))
 	await t._wait(0.4)
-	_x("a tap on the Defences tab shows its rows, without the footer", pressed and win.tab == "defences" and not _list_ids().is_empty() and not _foot_shows(),
-		{"ids": _list_ids()})
-	await t._shot("homegoals_defences_tab")
+	_x("a tap on the Cat tab shows its rows, without the footer", pressed and win.tab == "cat" and not _list_ids().is_empty() and not _foot_shows(), {"ids": _list_ids()})
 	pressed = t._press(_home_word())
 	await t._wait(0.4)
 	_x("back on the Hearthtree tab the footer shows again", pressed and win.tab == "hearthtree" and _foot_shows())
@@ -663,22 +670,36 @@ func _home_card() -> void:
 		await t._shot("homegoals_show")
 	else:
 		_x("home 3's list has a stat goal sold at the Hearthtree", false)
-	# a towers or defence goal: Show opens the Defences tab at its row
+	# a towers or defence goal: H6, Go or Show leads to the Workshop, the Bag, a road pad or a placed piece
 	var hd := _find_goal(goals, func(g): return String(g["station"]) == "home" and String(g["type"]) in ["towers", "defence"])
 	if hd >= 0 and main.hud.card_ring() == ring:
 		t._press(_home_word())
 		await t._wait(0.4)
 		var drows: Array = win.spec().get("rows", [])
 		var di := _goal_index(drows, hd)
-		pressed = t._press("Show", _show_count(drows, di))
-		await t._wait(0.6)
-		var dwant := String(win._goal_find(goals[hd]))
-		_x("Show on a towers goal opens the Defences tab with its row and keeps the window open", pressed and main.hud.card_ring() == ring
-			and win.tab == "defences" and dwant != "" and _list_titles().has(dwant), {"tab": win.tab, "titles": _list_titles(), "want": dwant})
+		var dkind: String = win._goal_defence_kind(goals[hd])
+		var target: Dictionary = win._defence_goal_target(dkind, goals[hd])
+		var act: Callable = drows[di].get("action", Callable()) if di >= 0 else Callable()
+		var label := String(drows[di].get("label", "")) if di >= 0 else ""
+		_x("a towers or defence goal has Go (a marker) or Show (build menu or Bag) and a live action",
+			act.is_valid() and (label == "Go") == target.has("ring") and label in ["Go", "Show"], {"label": label, "target": target.keys()})
+		if act.is_valid():
+			act.call()
+			await t._wait(0.6)
+			if target.has("build"):
+				var bmenu = main.hud.windows["build"]
+				_x("the goal's Show opens the build menu at %s" % String(target["build"]), main.hud.card_ring() == bmenu and String(bmenu._detail) == String(target["build"]),
+					{"detail": String(bmenu._detail)})
+			elif target.has("ring"):
+				var reached: bool = await t._until(func(): return main.hud.card_ring() == target["ring"], 12.0)
+				_x("the goal's Go walks to its marker and opens its card", reached, {"title": main.hud.card_title()})
 		await t._shot("homegoals_show_defences")
 	else:
 		_x("home 3's list has a towers or defence goal sold at the Hearthtree (and the window is open)", false)
-	# a building not built yet: Show opens the build menu at that building
+	if main.hud.card_ring() != ring:
+		await t._at_ring(ring)
+		await t._wait(0.4)
+		# a building not built yet: Show opens the build menu at that building
 	var hb := _find_goal(goals, func(g): return String(g["station"]) == "build")
 	if hb >= 0 and main.hud.card_ring() == ring:
 		t._press(_home_word())

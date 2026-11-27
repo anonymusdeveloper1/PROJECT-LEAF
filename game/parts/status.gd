@@ -10,11 +10,11 @@ extends Node
 var thorn_slow_strength := 0.0            # the slow it still carries from spikes (0 = none)
 var thorn_slow_left_s := 0.0              # seconds the slow lingers after it leaves the patch
 
-var e                                     # the enemy (enemy.gd) this part belongs to; set once by bind_enemy (untyped like `main`)
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 
 
 func bind_enemy(enemy: Node3D) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 
 
 ## The spikes' slow this frame. `contact_slow` is what the patch under it gives now (0 off the patch); a fresh contact
@@ -92,9 +92,9 @@ func frost_look() -> void:
 	var want := 2 if e.freeze_t > 0.0 else (1 if e.chill_t > 0.0 else 0)
 	if want == e._frost_on or e._body == null:
 		return
-	var was = e._frost_on
+	var was := e._frost_on
 	e._frost_on = want
-	var tint = e._base_tint()
+	var tint := e._base_tint()
 	Props.set_param(e._body, "tint", tint * (Fx.FROZEN_TINT if want == 2 else (Fx.CHILL_TINT if want == 1 else Color(1, 1, 1))))
 	if want > 0 and (e._frost_fx == null or not is_instance_valid(e._frost_fx)):
 		e._frost_fx = Fx.frost_motes(e, e.radius * 0.7, 6)
@@ -135,7 +135,7 @@ func do_totem(delta: float) -> void:
 	if e._scan_t > 0.0:
 		return
 	e._scan_t = 0.3
-	var cfg = e._mcfg("totem")
+	var cfg := e._mcfg("totem")
 	var r := float(cfg.get("radius", 4.0))
 	var sb := float(cfg.get("speed_buff", 0.25))
 	var ar := clampf(float(cfg.get("armor", 0.25)), 0.0, 0.9)

@@ -7,7 +7,7 @@
 class_name SaveUpgrades
 extends RefCounted
 
-const CURRENT_VERSION := 5
+const CURRENT_VERSION := 6
 const FIRST_STEP_VERSION := 2  # Version 1 still goes through the existing raid fix (raids.gd, by Save.loaded_v).
 const UpgradeV5 := preload("res://core/save_upgrade_v5.gd")   # the 4 -> 5 step's moves (H5)
 const UpgradeV6 := preload("res://core/save_upgrade_v6.gd")   # the 5 -> 6 step's moves (H6; not run while CURRENT_VERSION is 5)

@@ -248,6 +248,19 @@ static func return_defence(kind: String, record: Dictionary, notify: bool = true
 		Events.bag_changed.emit()
 
 
+## The level of the best piece of kind in the Bag: 0 when none is held; else the highest carried record's level, or 1
+## when fresh stock is held too (more pieces than records). A credit is not a piece yet and does not count.
+static func best_held_level(kind: String) -> int:
+	if kind_of(kind) != "build" or count(kind) <= 0:
+		return 0
+	_sync_reserves(kind)
+	var list: Array = _reserves(kind)
+	var best := 1 if count(kind) > list.size() else 0
+	for r: Variant in list:
+		best = maxi(best, int((r as Dictionary).get("level", 1)))
+	return maxi(1, best)
+
+
 ## The count of kind changed by something else (a command wrote it): marks the save dirty, tells the HUD.
 static func defence_changed(kind: String, amount: int) -> void:
 	Save.mark_dirty()

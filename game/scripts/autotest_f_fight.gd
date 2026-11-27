@@ -671,7 +671,7 @@ func _live_wave() -> void:
 	f._qinfo.clear()
 	var tim0: int = Save.timber
 	for e in _wave_foes():
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 	_x("left_in_wave leaves the grub out", f.left_in_wave() == 0, {"left": f.left_in_wave()})
 	var cleared: bool = await t._until(func(): return not f.in_wave, 5.0)
 	var alive: bool = grub != null and is_instance_valid(grub) and not grub.dead
@@ -720,7 +720,7 @@ func _manual_progress() -> void:
 	var foe = f.spawn("thornling", Vector3(25, 0, 12), 0)
 	var base_drop := Data.saddlebag_leaves(int(foe.info["leaves"]))
 	foe.carried = 7
-	foe.hit(Vector3.FORWARD, float(foe.hp) + 1.0)
+	foe.hit(Vector3.FORWARD, float(foe.hp) * 10.0 + 100.0)
 	var dropped := 0
 	for p in get_tree().get_nodes_in_group("pickups"):
 		dropped += int(p.value)

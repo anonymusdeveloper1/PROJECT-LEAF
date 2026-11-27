@@ -48,6 +48,7 @@ const DEF := Vector2(124, 84)           # the defence buttons (a little smaller)
 const GAP := 12.0                       # between the Bag and the build icon
 const DEF_GAP := 10.0
 const PLACE := Vector2(170, 96)         # Place and Done
+const UNDO := Vector2(150, 96)          # Undo, row 1 left while placing (x 20 to 170; Place starts at 183)
 const PLACE_Y := 106.0
 const PLACE_GAP := 14.0
 const LINE_GAP := 6.0                   # between row 2 and the hint
@@ -201,6 +202,9 @@ func _place_bottom(size: Vector2) -> void:
 	hud.p_actions.done_button.size = PLACE
 	Slide.at(hud.p_actions.place_button, Vector2(w * 0.5 - PLACE_GAP * 0.5 - PLACE.x, 0))
 	Slide.at(hud.p_actions.done_button, Vector2(w * 0.5 + PLACE_GAP * 0.5, 0))
+	hud.p_actions.undo_button.custom_minimum_size = Vector2(UNDO.x, 84)   # (the big-button default is 170 wide: it would run into Place)
+	hud.p_actions.undo_button.size = UNDO
+	Slide.at(hud.p_actions.undo_button, Vector2(SIDE, 0))
 	hud._bottom_h = ROW2 if row2 else ROW1               # the edge arrows stay above the rows that show
 	# the hint and the tip just above row 2; they never land mid-screen. While fishing, its words ("Tap!") take the
 	# hint's line.

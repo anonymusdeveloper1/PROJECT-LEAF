@@ -5,13 +5,13 @@ extends RefCounted
 ## do bookkeeping and update() always returns "", so every H5 timing and order of events is kept.
 ## No class_name: the Brain preloads the states.
 
-var e                                     # the enemy; untyped, like `main`, so its fields read straight
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 var brain                                 # the Brain (parts/enemy_brain.gd): brain.spd is the walking speed of this frame
 var entered_t := 0.0                      # bookkeeping: the enemy's _t when this state was entered
 
 
 func bind(enemy: Node3D, owner_brain: Node) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 	brain = owner_brain
 
 

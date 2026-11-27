@@ -21,6 +21,7 @@ extends "res://commands/command.gd"
 ##                  slot, mount, pet or guardian, comes from where that look is listed)
 ##   bows           a bow at the Bow Shop (the rule of stations._craft: the same gates, worn at once between waves)
 ##   defences       one tower or spikes piece into the Bag (the rule of stations._buy_piece)
+##   specialisations the Defence Workshop's Learn / Upgrade of one specialisation (H6; Save.owned.specialisations)
 ## amount is 1 for every kind but market_goods. expected_level is the level the button showed this purchase reaching
 ## (Learn = 1, an Upgrade to level 3 = 3; next_level() gives it when the button is drawn); -1 skips the check. A stale
 ## button (the level moved on since it was drawn) buys nothing, so one tap never buys two levels.
@@ -91,6 +92,8 @@ func can_run(main: Node3D) -> String:
 			why = _why_bow()
 		"defences":
 			why = _why_piece(main)
+		"specialisations":
+			why = _why_specialisation(main)
 		_:
 			why = MarketTrade.say("coming_later")
 	if why != "":
@@ -153,6 +156,10 @@ func run(main: Node3D) -> bool:
 			_gained(id)
 		"defences":
 			Bag.add(id, 1, true)                            # paid for: it always goes in (the room was checked)
+		"specialisations":
+			_set_owned("specialisations", id, next)         # H6: the Workshop's Learn / Upgrade (Save.owned, level n)
+			if next == 1:
+				_gained(id)
 	Save.mark_dirty()
 	return true
 
@@ -184,6 +191,8 @@ func price() -> Dictionary:
 			return Data.craft_cost(id)
 		"defences":
 			return _piece_price()
+		"specialisations":
+			return Data.entry_price("specialisations", id, _level_now() + 1)
 	return {}
 
 
@@ -359,12 +368,50 @@ func _why_bow() -> String:
 func _why_piece(main: Node3D) -> String:
 	if Bag.kind_of(id) != "build" or _piece_amount() < 0:
 		return MarketTrade.say("coming_later")
+	var rule: Variant = Data.defence_info(id).get("unlock", {})
+	if rule is Dictionary:
+		var missing: Array = Data.unlock_missing(rule)
+		if not missing.is_empty():
+			return _missing_words(missing[0])              # H6: the mission that opens the piece (the shelf said it before)
+	var why: String = _workshop_why(main)
+	if why != "":
+		return why
 	if Bag.room_for(id) <= 0:
 		return MarketTrade.say("bag_full")
 	var defs: Variant = main.get("defences") if main != null else null
 	if not defs is Object or not (defs as Object).has_method("room_for") or (defs as Object).call("room_for", id) != true:
 		return MarketTrade.say("max_for_now")
 	return ""
+
+
+## specialisations (H6): a shown entry, its unlock rule, the Defence Workshop standing and usable now, a level left
+## under its top, a well-formed price in currencies the shops take (never the paid currency).
+func _why_specialisation(main: Node3D) -> String:
+	var e: Dictionary = Data.shop_entry("specialisations", id)
+	if e.is_empty():
+		return MarketTrade.say("coming_later")
+	var why: String = _entry_reason(e)
+	if why != "":
+		return why
+	why = _workshop_why(main)
+	if why != "":
+		return why
+	var lv: int = _level_now()
+	if lv >= _top(e):
+		return MarketTrade.say("max")
+	var cost: Dictionary = Data.entry_price("specialisations", id, lv + 1)
+	if cost.is_empty() or not MarketTrade.price_ok(cost, false):
+		return MarketTrade.say("coming_later")
+	return ""
+
+
+## The Defence Workshop's shared refusal (stations.workshop_reason: not built, ruined, below ground, a wave); "" when it
+## serves. Without a camp (a bare test) it says nothing.
+func _workshop_why(main: Node3D) -> String:
+	var st: Variant = main.get("stations") if main != null else null
+	if st is Object and (st as Object).has_method("workshop_reason"):
+		return String((st as Object).call("workshop_reason"))
+	return MarketTrade.building_reason("workshop")
 
 
 # ---------------------------------------------------------------- inside
@@ -383,6 +430,8 @@ func _level_now() -> int:
 			return 1 if slot != "" and Save.unlocks.has(_unlock_key(slot)) else 0
 		"bows":
 			return 1 if Save.bows.has(id) else 0
+		"specialisations":
+			return Data.specialisation_level(id)
 	return 0
 
 

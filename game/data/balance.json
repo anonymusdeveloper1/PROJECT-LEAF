@@ -169,7 +169,7 @@
       ]
     }
   },
-  "_caps_note": "The home level caps every building's level and every defence level; a building's level caps what it sells. Phase F: the Training Target and Bow Shop (the Bow Bench before G3) have 5 levels, and their level caps stats and bows at 4/6/8/9/10 (Health, Move speed and Leaf magnet use the home level).",
+  "_caps_note": "The Hearthtree caps building levels. The Workshop caps each defence piece alongside the Raid Mission and Burrows gates. Phase F: the Training Target and Bow Shop (the Bow Bench before G3) have 5 levels, and their level caps stats and bows at 4/6/8/9/10 (Health, Move speed and Leaf magnet use the home level).",
   "stat_cap_by_station_level": [
     0,
     4,
@@ -189,6 +189,28 @@
   "windows": {
     "_note": "H4: the words of the building windows (ui/windows), the confirm window (ui/kit) and the build menu; %s and %d are filled in by the code",
     "place_none_held": "None left in the Bag", "place_below": "Not below ground", "place_blocked": "Can't place it here", "undo_stale": "Nothing to undo now",
+    "undo": "Undo",
+    "workshop_count_tower": "In the Bag %d · placed %d · %d of %d", "workshop_count_spikes": "In the Bag %d · placed %d · room for %d more",
+    "workshop_count_rows": "%d rows built · %d pads open", "workshop_build_row": "Build a row at an open road pad", "workshop_health": "Health %d",
+    "upgrade_title": "%s level %d", "defence_next_level": "Next: level %d", "defence_health": "Health %d/%d", "defence_wear": "Worn %d%%",
+    "defence_section_health": "Section %d: %s", "defence_cracked": "Cracked", "defence_broken": "Broken", "defence_refill": "Back to full health",
+    "defence_stat_hp": "Health %s → %s", "defence_stat_section_hp": "Health of each section %s → %s", "defence_stat_damage": "Damage %s → %s",
+    "defence_stat_every": "Shoots every %s s → %s s", "defence_stat_range": "Range %s m → %s m", "defence_stat_dps": "Thorn damage %s → %s a second",
+    "defence_stat_slow": "Slow %s%% → %s%%", "defence_pad_preview": "%d pieces across the road · %d health each", "defence_pad_title": "Road spot",
+    "goal_to_place": " · %d to place", "broken_defences": "Broken defences", "workshop_built_sub": "Buy defences, improve them, learn specialisations",
+    "tab_specialisations": "Specialisations", "repair": "Repair",
+    "workshop_needs": "Build the Defence Workshop first", "workshop_ruined": "Repair the Defence Workshop first",
+    "workshop_wave": "Between waves", "workshop_below": "Return to camp first",
+    "workshop_returned": "Returned %d to the Bag",
+    "mend_defences_own_cards": "Repair broken defences from their own cards",
+    "upgrade_stale": "The level has changed", "upgrade_gone": "This defence is gone", "upgrade_max": "Max level",
+    "upgrade_cap": "Needs Workshop lv %d",
+    "needs_raids": "Finish all Raid Missions first", "needs_burrows": "Opens with the Burrows",
+    "pad_barricades_later": "Barricades open later", "pad_opens_later": "This pad opens as the %s grows",
+    "pad_built": "A row stands here",
+    "goal_towers": "%d Acorn Towers", "goal_towers_progress": "Acorn Towers %d/%d",
+    "goal_towers_level": "Towers lv %d: %d", "goal_towers_level_progress": "Towers lv %d: %d/%d",
+    "goal_defence_level": "%s lv %d", "goal_defence_progress": "%s lv %d/%d",
     "upgrade": "Upgrade", "confirm": "Confirm", "cancel": "Cancel", "back": "Back", "equipped": "Equipped",
     "level_of": "Level %d of %d", "max": "Max level", "max_for_now": "Max level for now",
     "needs_home": "Needs %s at level %d", "needs_missions": "Finish %d Raid Missions first",
@@ -284,7 +306,10 @@
       "removed": true
     }
   },
-  "enemy_grid": {"cell_m": 4.0, "slack_m": 0.5},
+  "enemy_grid": {"cell_m": 4.0, "slack_m": 0.5, "max_cells": 64},
+  "abilities": {
+    "effects": {"default": "ffeb80", "acorn_burst": "d99e4d", "spark": "ffd966"}
+  },
   "specialisations": {
     "explosive_acorns": {"radius_m": 1.2, "share": [0.30, 0.45, 0.60]},
     "reinforced_barricades": {"hp_bonus": [0.25, 0.40, 0.55], "crack_at": 0.35},
@@ -3951,7 +3976,8 @@
     "tailor": [
       0,
       200
-    ]
+    ],
+    "workshop": [0, 200, 320, 480, 650, 850]
   },
   "looks": {
     "_note": "H5 Stage 3 (27 Nov 2026): only the guardian looks are left here. The mount and pet looks are content entries (content/mounts, content/pets). A guardian look: model, skins that recolour its `fur` colour family to `to` = [hue or -1 to keep it, saturation x, value x] (vc.gdshader); a skin with `shards` (Gloomlit) is earned with Gloom shards and never sold.",

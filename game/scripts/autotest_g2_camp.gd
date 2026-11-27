@@ -459,8 +459,9 @@ func _old_save() -> void:
 	main.refresh_companions()
 	st.refresh()
 	var hp_table: Array = (Data.b.get("save_upgrades", {}) as Dictionary).get("to_v5", {}).get("old_market_hp", [])
-	_x("an H4 (v4) save loads and is upgraded to v5", written and Save.loaded_v == 4 and SaveUpgrades.CURRENT_VERSION == 5,
-		{"loaded_v": Save.loaded_v})
+	_x("an H4 (v4) save loads and is upgraded through v5 to v6 (no Workshop yet, no held levels, nothing owed)", written and Save.loaded_v == 4
+		and SaveUpgrades.CURRENT_VERSION == 6 and Save.save_v == 6 and int(Save.stations.get("workshop", -1)) == 0
+		and Save.defence_reserves.is_empty() and Save.defence_legacy_credit.is_empty(), {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
 	_x("... its Market is built (one level) and the Cottage is gone, at Hearthtree 1", int(Save.stations["stall"]) == 1
 		and int(Save.stations.get("cottage", 0)) == 0 and Save.camp_level == 1, {"stations": Save.stations})
 	_x("... the pet at the Cottage's level 2, with Sprig and Lumi both owned (Q1)", Data.pet_level() == 2

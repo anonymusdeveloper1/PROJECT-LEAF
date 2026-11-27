@@ -7,21 +7,15 @@ extends Node
 ## Rules: no process callback of its own: enemy._physics_process calls it, so the frame order never changes. Every
 ## number still comes from the enemy's info (balance.json / its content entry). The code is the H5 code, moved.
 
-# enemy.gd's enum CampApproach { NONE, DIRECT, TRAIL, ARRIVED } as plain numbers (the enemy stores the enum; same values)
-const CAMP_NONE := 0
-const CAMP_DIRECT := 1
-const CAMP_TRAIL := 2
-const CAMP_ARRIVED := 3
-
-var e                                     # the enemy (enemy.gd) this part belongs to; set once by bind_enemy (untyped like `main`)
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 
 
 func bind_enemy(enemy: Node3D) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 
 
 func walk(delta: float, spd: float) -> void:
-	var goal = e._goal
+	var goal := e._goal
 	if not e.flyer and e._in_area():
 		# a Burrow's path bends: round the trees, not into them (checked 4 times a second; a clear line uses the live goal)
 		e._steer_t -= delta
@@ -32,41 +26,41 @@ func walk(delta: float, spd: float) -> void:
 			e._steer_to = st
 		if e._steer_on:
 			goal = e._steer_to
-	var to = goal - e.global_position
+	var to := goal - e.global_position
 	to.y = 0.0
-	var d = to.length()
+	var d := to.length()
 	var want := Vector3.ZERO
 	if d > 0.05:
-		var dir = to / d
+		var dir := to / d
 		want = dir * minf(spd * delta, d)
 		e.position += want
 		e._face(dir, delta, 8.0)
 		e._play("Run" if e.id == "raccoon" and e.anim and e.anim.has_animation("Run") else "Walk")
 	else:
 		e._play("Idle")
-	var before = e.position - want
+	var before := e.position - want
 	e.position = e.main.world.constrain(e.position, e.radius, true, e.flyer)
 	# walked into a fence piece? hit it
 	if not e.flyer and want.length() > 0.0005 and (e.position - before).length() < want.length() * 0.4 and e._cd <= 0.0 and e.main.defences:
-		var fence = e.main.defences.fence_hit(e.global_position, e.radius + 0.25)
+		var fence: Variant = e.main.defences.fence_hit(e.global_position, e.radius + 0.25)
 		if fence != null and e.info.get("digs", false):
 			e._start_dig()
 		elif fence != null:
 			e._start_action("attack", fence)
-	if e._camp_approach != CAMP_DIRECT and e._camp_approach != CAMP_TRAIL:
+	if e._camp_approach != EnemyNode.CampApproach.DIRECT and e._camp_approach != EnemyNode.CampApproach.TRAIL:
 		return
 	if e.flyer or e.state != "walk" or want == Vector3.ZERO:
 		return
 	var advance: float = (e.position - before).dot(want.normalized())
 	if advance > 0.0 and not is_zero_approx(advance):
 		return
-	if e._camp_approach == CAMP_DIRECT and e.patch >= 0 and e.patch < e.main.world.trails.size():
+	if e._camp_approach == EnemyNode.CampApproach.DIRECT and e.patch >= 0 and e.patch < e.main.world.trails.size():
 		# Rejoin this raider's own trail when the straight walk is blocked.
 		e.s = e.main.world.trail_progress(e.patch, e.global_position)
 		var on_trail: Vector3 = e.main.world.trail_point(e.patch, e.s)
 		e.global_position = e.main.world.constrain(on_trail, e.radius, true)
 		e._last_pos = e.global_position
-		e._camp_approach = CAMP_TRAIL
+		e._camp_approach = EnemyNode.CampApproach.TRAIL
 		e._think_t = 0.0
 	else:
 		# A sideways step gives the walk room to turn around a solid obstacle.
@@ -83,13 +77,13 @@ func do_flee(delta: float, spd: float) -> void:
 		e.state = "walk"                              # nowhere to flee below ground
 		return
 	var out: Vector3 = e.main.world.spawn_point(e.patch, 0.0)
-	var to = out - e.global_position
+	var to := out - e.global_position
 	to.y = 0.0
 	if to.length() < 1.0:
 		e.main.fight.on_escaped(e)
 		e.queue_free()
 		return
-	var dir = to.normalized()
+	var dir := to.normalized()
 	e.position += dir * spd * 1.15 * delta
 	e._face(dir, delta, 10.0)
 	e._play("Run")
@@ -132,7 +126,7 @@ func start_pounce(at: Vector3, max_d := 2.6, arc := 0.65, dur := 0.45) -> void:
 	e._arc = arc
 	e._dur = dur
 	e._from = e.global_position
-	var d = at - e._from
+	var d := at - e._from
 	d.y = 0.0
 	e._to = e._from + d.limit_length(max_d)
 	e._cd4 = randf_range(3.5, 5.0)
@@ -144,7 +138,7 @@ func start_pounce(at: Vector3, max_d := 2.6, arc := 0.65, dur := 0.45) -> void:
 func do_pounce(delta: float) -> void:
 	e._act_t += delta
 	var t := clampf(e._act_t / e._dur, 0.0, 1.0)
-	var p = e._from.lerp(e._to, t)
+	var p := e._from.lerp(e._to, t)
 	p.y = sin(PI * t) * e._arc
 	e.global_position = p
 	e._face((e._to - e._from).normalized(), delta, 14.0)
@@ -197,14 +191,14 @@ func do_blink(delta: float) -> void:
 
 func do_charge(delta: float) -> void:
 	e._act_t += delta
-	var step = e._charge_dir * float(e.info["charge_speed"]) * delta
-	var before = e.global_position
+	var step := e._charge_dir * float(e.info["charge_speed"]) * delta
+	var before := e.global_position
 	e.position += step
 	e._face(e._charge_dir, delta, 20.0)
 	if int(e._t * 20.0) % 2 == 0:
 		Fx.dust(e.main, e.global_position - e._charge_dir * e.radius, 3, 1.2)
 	# the cat
-	var p = e.main.player
+	var p: Node3D = e.main.player
 	if p.hp > 0 and not e.main.world.inside_camp(p.global_position) and p.global_position.distance_to(e.global_position) < e.radius + 0.4:
 		p.hurt(e.global_position, e.damage * 2)
 		Fx.shockwave(e.main, e.global_position + e._charge_dir * e.radius, 1.6, Color(1.0, 0.7, 0.4))
@@ -213,14 +207,14 @@ func do_charge(delta: float) -> void:
 		e._end_charge()
 		return
 	# the Moss Warden stands its ground: the charge stops there
-	var g = e.main.guardian
+	var g: Node3D = e.main.guardian
 	if g != null and g.up() and e.global_position.distance_to(g.global_position) < e.radius + float(g.radius) + 0.2:
 		g.hurt(e.gate_damage)
 		g.blocked(e.global_position)
 		e._end_charge(true)
 		return
 	# a fence or the gate
-	var fence = e.main.defences.fence_hit(e.global_position, e.radius + 0.3)
+	var fence: Variant = e.main.defences.fence_hit(e.global_position, e.radius + 0.3)
 	if fence != null:
 		fence.hurt(int(e.info.get("fence_damage", 100)))
 		Fx.shockwave(e.main, e.global_position + e._charge_dir * e.radius, 1.6, Color(0.8, 0.6, 0.4))
@@ -282,13 +276,13 @@ func start_dash() -> void:
 
 func do_dash(delta: float) -> void:
 	e._act_t += delta
-	var step = e._charge_dir * 9.0 * delta
-	var before = e.global_position
+	var step := e._charge_dir * 9.0 * delta
+	var before := e.global_position
 	e.position += step
 	e._face(e._charge_dir, delta, 20.0)
 	if fmod(e._act_t, 0.07) < delta:
 		Fx.dust(e.main, e.global_position - e._charge_dir * e.radius, 4, 1.6)
-	var fence = e.main.defences.fence_hit(e.global_position, e.radius + 0.3)
+	var fence: Variant = e.main.defences.fence_hit(e.global_position, e.radius + 0.3)
 	if fence != null:
 		fence.hurt(150)
 		Fx.shockwave(e.main, e.global_position + e._charge_dir * e.radius, 2.2, Color(0.8, 0.55, 1.0))
@@ -296,8 +290,8 @@ func do_dash(delta: float) -> void:
 		e._end_dash()
 		return
 	e.position = e.main.world.constrain(e.position, e.radius, true)
-	var reach = float(e.info["reach"]) + e.radius + 0.3
-	var blocked = e.global_position.distance_to(before + step) > 0.05
+	var reach := float(e.info["reach"]) + e.radius + 0.3
+	var blocked := e.global_position.distance_to(before + step) > 0.05
 	if blocked and e._in_area() and not e._cat_reachable(reach):
 		e._daze_long(float(Data.burrow_cfg()["daze_on_block_s"]))       # the Gloom Dash ends in a pillar or a wall
 		return
@@ -319,7 +313,7 @@ func do_emerge(delta: float) -> void:
 		e._play(e._clip_or(["Emerge", "Idle"]), 0.05)
 		Fx.dust(e.main, e.global_position, 10, 1.0)
 		Fx.boing(e._body, 0.3)
-		var p = e.main.player
+		var p: Node3D = e.main.player
 		if p.hp > 0 and Vector2(p.global_position.x - e._emerge_at.x, p.global_position.z - e._emerge_at.z).length() < float(e.info.get("emerge_r", 0.6)):
 			p.hurt(e._emerge_at, int(e.info.get("emerge_damage", 1)))
 	if e._act_t >= float(e.info.get("emerge_warn", 0.8)) + 0.35:
@@ -333,7 +327,7 @@ func do_emerge(delta: float) -> void:
 func do_grub(delta: float, spd: float) -> void:
 	e.state = "chase"
 	e.life_t -= delta
-	var w = e.main.world
+	var w: Node3D = e.main.world
 	var me := Vector3(e.global_position.x, 0, e.global_position.z)
 	var r := me.length()
 	if r < w.WOODS_R - 0.5:
@@ -352,11 +346,11 @@ func do_grub(delta: float, spd: float) -> void:
 		if e._run_out:
 			goal = Vector3(sin(e._run_a), 0, -cos(e._run_a)) * (w.WOODS_R + 2.0)
 		else:
-			var ca = a + e._run_dir * 0.55                            # a point a little further round the run
+			var ca := a + e._run_dir * 0.55                            # a point a little further round the run
 			goal = Vector3(sin(ca), 0, -cos(ca)) * e._run_r
 	var dir := goal - me
 	dir /= maxf(dir.length(), 0.01)
-	var p = e.main.player
+	var p: Node3D = e.main.player
 	if p.hp > 0 and not e.main.cat_hidden():
 		var off: Vector3 = me - Vector3(p.global_position.x, 0, p.global_position.z)
 		var dc := off.length()
@@ -387,17 +381,17 @@ func grub_away() -> void:
 	e.remove_from_group("foes")
 	e.remove_from_group("bonus")
 	e.main.hud.toast("The Golden Grub got away!")
-	var tw = e.create_tween()
+	var tw := e.create_tween()
 	tw.tween_property(e, "scale", Vector3.ONE * 0.02, 0.25)
 	tw.tween_callback(e.queue_free)
 
 
 func stride(delta: float) -> void:
 	# rigged walkers lean into their stride and kick up a little dust as they go
-	var moved = e.global_position - e._last_pos
+	var moved := e.global_position - e._last_pos
 	moved.y = 0.0
 	e._last_pos = e.global_position
-	var v = moved.length() / maxf(delta, 0.0001)
+	var v := moved.length() / maxf(delta, 0.0001)
 	var lean := clampf(v * 0.045, 0.0, 0.2) if e.state in ["walk", "chase", "flee", "charge", "dash"] else 0.0
 	e.model.rotation.x = lerpf(e.model.rotation.x, lean, 1.0 - exp(-8.0 * delta))
 	e._step_d += moved.length()
@@ -410,7 +404,7 @@ func stride(delta: float) -> void:
 
 func wobble() -> void:
 	# the placeholder hops and squashes as it goes
-	var moving = e.state == "walk" or e.state == "chase" or e.state == "flee" or e.state == "charge"
+	var moving := e.state == "walk" or e.state == "chase" or e.state == "flee" or e.state == "charge"
 	var f := 9.0 if e.id == "thornling" else (12.0 if e.state == "charge" else 6.0)
 	var hop := absf(sin(e._t * f)) if moving else 0.25 + 0.25 * sin(e._t * 3.0)
 	e._body.position.y = 0.06 * hop * e._scale

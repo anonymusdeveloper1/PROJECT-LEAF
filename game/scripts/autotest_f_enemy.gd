@@ -228,7 +228,7 @@ func _grub() -> void:
 	var g2 = main.fight.spawn("golden_grub", w.spawn_point(1, 0.0), 1)
 	await t._wait(0.3)
 	var before := _leaves_lying()
-	g2.hit(Vector3.FORWARD, g2.hp + 1.0)
+	g2.hit(Vector3.FORWARD, g2.hp * 10.0 + 100.0)
 	await t._wait(0.2)
 	_x("caught, it drops its %d leaves" % leaves, _leaves_lying() - before == leaves, {"dropped": _leaves_lying() - before})
 
@@ -270,7 +270,7 @@ func _totem() -> void:
 	_x("... and takes %d%% less damage" % int(round(ar * 100.0)), absf(ln - 10.0 * (1.0 - ar)) < 0.05 and absf(lf - 10.0) < 0.05, {"near": ln, "far": lf})
 	_x("the totem never moves", Vector2(tot.global_position.x - at.x, tot.global_position.z - at.z).length() < 0.05,
 		{"moved": Vector2(tot.global_position.x - at.x, tot.global_position.z - at.z).length()})
-	tot.hit(Vector3.FORWARD, tot.hp + 1.0)
+	tot.hit(Vector3.FORWARD, tot.hp * 10.0 + 100.0)
 	h0 = near.hp
 	near.hit(Vector3.FORWARD, 10.0)
 	_x("breaking the totem ends it at once", tot.dead and near.totem_t <= 0.0 and absf(near._speed_now() / near.speed - 1.0) < 0.01

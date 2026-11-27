@@ -314,11 +314,9 @@ func mission_unlocked(i: int) -> bool:
 ## worked out from the save now, in the list's order. Each is
 ##   {text: "Damage 4", progress: "Damage 3/4", have, need, done, station}
 ## `text` names the goal, `progress` is what the card shows while it is not met. `station` is the station whose card
-## sells it: "target" (damage, draw, range), "home" (the Hearthtree's own window: health, speed and magnet on its Cat
-## tab, towers and defences on its Defences tab), "build" (the build menu, H4: a building not built yet, the bows
-## before the Bow Shop, the Target's stats before the Target), "bench" (bows), "sign" (a mission, or a building a
-## mission gives),
-## "hollow" (a Gloomwood level), or the station's own id (its level). [] for level 1 or a level past the top.
+## sells it: "target" (damage, draw, range), "home" (health, speed and magnet on the Cat tab), "build" (the build
+## menu), "bench" (bows), "sign" (a mission or its gift), "hollow" (a Gloomwood level), or the building's own id.
+## The Hearthtree window finds the next action for tower and defence goals. [] for level 1 or past the top.
 func home_goals(level: int) -> Array:
 	var levels := building_levels("home")
 	if level < 2 or level > levels.size():
@@ -473,7 +471,7 @@ func gift_mission(id: String) -> int:
 	return -1
 
 
-## A defence kind as a whole, for the Hearthtree's goals and defence shelf.
+## A defence kind's group name, for the Hearthtree's goals.
 func def_kind_name(type: String) -> String:
 	return String(defence_info(type).get("group_name", type))
 
@@ -565,28 +563,25 @@ func _goal(g: Dictionary) -> Dictionary:
 			station = "bench" if int(Save.stations.get("bench", 0)) > 0 else "build"
 		"towers":
 			need = int(g.get("count", 1))
-			var placed := 0
-			for sp in Save.placed:
-				if typeof(sp) == TYPE_DICTIONARY and String(sp.get("type", "")) == "tower":
-					placed += 1
-			var tl := int(Save.def_levels.get("tower", 1))
-			have = placed if tl >= lv else 0
-			var tn := String(defence_info("tower")["name"]) + "s"
-			text = ("%d %s" % [need, tn]) if lv <= 1 else ("Towers lv %d: %d" % [lv, need])
-			if tl < lv:
-				prog = "Towers to lv %d (now %d)" % [lv, tl]
+			for sp: Variant in Save.placed:
+				if sp is Dictionary and String(sp.get("type", "")) == "tower" and int(sp.get("level", 1)) >= lv:
+					have += 1
+			if lv <= 1:
+				text = word("goal_towers") % need
+				prog = word("goal_towers_progress") % [have, need]
+				if have < need and Bag.count("tower") > 0:
+					prog += word("goal_to_place") % mini(need - have, Bag.count("tower"))
 			else:
-				prog = ("%s %d/%d" % [tn, placed, need]) if lv <= 1 else ("Towers lv %d: %d/%d" % [lv, placed, need])
-				var held := int(Save.items.get("tower", 0))
-				if held > 0 and placed < need:
-					prog += " · %d to place" % held
+				text = word("goal_towers_level") % [lv, need]
+				prog = word("goal_towers_level_progress") % [lv, have, need]
 		"defence":
-			var did := String(g.get("id", ""))
-			var dn := String(defence_info(did).get("name", did))
-			have = int(Save.def_levels.get(did, 1))
+			var dn := String(defence_info(gid).get("name", gid))
+			for sp: Variant in Save.placed:
+				if sp is Dictionary and String(sp.get("type", "")) == gid:
+					have = maxi(have, int(sp.get("level", 1)))
 			need = lv
-			text = "%s lv %d" % [dn, lv]
-			prog = "%s lv %d/%d" % [dn, have, lv]
+			text = word("goal_defence_level") % [dn, lv]
+			prog = word("goal_defence_progress") % [dn, have, lv]
 		"all_stats":
 			have = 999
 			var low := ""
@@ -780,7 +775,7 @@ func defence_level_info(kind: String, level: int) -> Dictionary:
 	return levels[level - 1]
 
 
-## The staged entry and the tuning for its effect. The Stage 1 shops leave the entries hidden.
+## A Workshop specialisation and the tuning for its effect.
 func specialisation_info(id: String) -> Dictionary:
 	var entry: Dictionary = item("specialisations", id)
 	if entry.is_empty():

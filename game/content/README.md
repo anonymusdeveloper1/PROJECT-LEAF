@@ -39,7 +39,7 @@ What each kind adds:
 | `outfits` | `picture` (the Tailor's card), `model` (a whole hero model; `""` for the original look, which uses the hero model). |
 | `attachments` | `shop` (`saddlery` or `stall`), `slot` (`mount` or `pet`), `scope` (`all`: works everywhere; `expedition`: the Burrows only). A Saddlery attachment has `price` for level 1 and `upgrades` for levels 2 to 5 (`needs_burrows: true` is a gate, never a payment), its effect numbers, and `model` with `{mount}` standing for the mount look's ID. Expedition gear has one price and its `mods`. |
 
-What the player owns is in the save (version 5): `owned[kind][id] = {"level": n}`
+The save stores ownership as `owned[kind][id] = {"level": n}`
 (1 for a look or an outfit, the bought level for a Saddlery attachment), read
 through `Data.owned_level`. The pet has one shared level (`Save.pet_level`), and
 an old save's Mushroom Cottage and Market became the pet, the mount looks and the
@@ -50,27 +50,32 @@ To add one: copy an entry of the same kind, give it a new folder ID, list the
 ID in `index.json`, keep it `hidden` until the owner says it goes in, and run
 `--content`.
 
-## H6 rebuild
+## H6 defences and enemies
 
-- An enemy entry holds its existing model ID in `assets/enemies/`, role and
-  part data. `parts.health.max` is the base HP used for wave planning.
-  `Data.enemy` presents the combat fields alongside the parts. The Gloom Totem
-  still uses its procedural prop look. The H5 entries use zero armour.
+- An enemy entry holds its model ID in `assets/enemies/`, role and part data.
+  `Data.enemy` presents the combat fields alongside the parts.
+  `parts.health.max` is the base HP used for wave planning and boss spawns.
+  `parts.armour.share` reduces starting HP, incoming damage and Frog heals by
+  the same share for ordinary spawns of the four tanks. The Gloom Totem still
+  uses its procedural prop look.
 - A squad entry lists its members in spawn order. Each member has a `kind`
   and an inclusive `n` range. `from_mission` and `elite` keep their H5 meaning.
   Add new enemies and squads to the index and run the encounter checks.
 - A defence has one `levels` row per tier, starting at level 1. Each row names
-  its prop and stats. H5 upgrade leaves and shards come from `upgrade` and
-  `shards`. `price` is for buying a piece or building a road row.
+  its prop and stats. The entry's `price` buys a fresh piece or builds a road
+  row. The tier's `price` upgrades one placed piece or row to that level.
   `from_bag` marks the pieces the Bag carries. The old fence refund stays in
-  balance data. Add new entries to the index and run the Bag and row checks.
+  balance data. The v6 save records the level of each placed piece and row.
+  Add new entries to the index and run the Bag and row checks.
 - Building `model` names a prop. `layout` holds position, collision footprint,
   ring offset, path and grass clearance where used. Points and offsets are
-  XYZ arrays in metres. `path` gives the original points, smoothing steps
-  and multiplier on the camp path half-width. The Well also has a stamp peak.
-  The Hearthtree's marker on the model has its own fallback offset.
-  Stand-ins and level variants use the same layout records.
-- Specialisation entries are staged and hidden. `price` is the cost to learn
+  XYZ arrays in metres. `path` gives the points, smoothing steps and multiplier
+  on the camp path half-width. The Well also has a stamp peak. The Workshop
+  uses `path.trunk_of` and `path.fork_at` to join the Tailor's path. Its Build
+  menu picture follows the building ID at `assets/ui/buildings/workshop.png`,
+  with the tower icon as a fallback. The Hearthtree's model marker has its own
+  fallback offset. Stand-ins and level variants use the same layout records.
+- Each specialisation opens with its defence kind. `price` is the cost to learn
   and `upgrades` gives the next two prices. `effect` names the tuning under
-  balance data's `specialisations`. Use `Data.specialisation_info` to read
-  the tuning during the foundation test.
+  balance data's `specialisations`. `Data.specialisation_info` gives the entry
+  and its tuning.

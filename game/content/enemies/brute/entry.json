@@ -12,6 +12,7 @@
   "color": "#D9443A",
   "parts": {
     "health": {"max": 120},
+    "armour": {"share": 0.20},
     "mover": {"speed": 0.7},
     "attack": {"damage": 2, "gate_damage": 14, "reach": 0.75, "attack_every": 1.6},
     "status": {},

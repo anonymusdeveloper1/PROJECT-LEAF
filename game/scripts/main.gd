@@ -78,7 +78,7 @@ var _status_mine := false                         # the Last Stand's status line
 var empowered_t := 0.0                            # Phase E: a close call (dashing through an attack): the next arrow hits double
 var _heading = null                               # the marker the cat is walking to (full size), and for how long more
 var _heading_t := 0.0
-var enemy_grid = null                             # H6: who is near where (core/enemy_grid.gd); made first in _ready
+var enemy_grid: EnemyGridScript = null                            # H6: who is near where (core/enemy_grid.gd); made first in _ready
 const RING_NEAR := 3.2                            # markers nearer than this show full size; the rest small and dim
 
 

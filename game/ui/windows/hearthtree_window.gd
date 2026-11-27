@@ -9,30 +9,27 @@ extends "res://ui/windows/building_window.gd"
 ##                the confirm window, which lists everything the next level gives (gives) and grows it (Confirm).
 ##   Cat          once the cat's own upgrades are sold (flag "home", the first mission's last wave): Health, Move speed
 ##                and Leaf magnet (stat_list.gd), each with its level, what the next level gives and its Buy.
-##   Defences     once the first defence opens (or a piece is broken): the whole old Defences shelf (defences_tab.gd).
 ## A tab gets the small "!" dot while its rows hold something that can be bought now (the owner's yes, 26 Nov 2026);
 ## the Hearthtree tab also while its Upgrade can be paid. The building tiles left for the build menu
 ## (build_menu_window.gd, the build icon next to the Bag).
-## The goals: a goal sold elsewhere has "Go" (the cat walks to that marker and its card opens); a goal sold here has
-## "Show" (the Cat or Defences tab opens and scrolls to its row); a goal for a building not built yet (or for the bows
-## and the Training Target's stats before their building) has "Show", which opens the build menu at that building.
+## Go walks to the right marker. Show opens the Cat tab, the build menu or the Bag.
+## Defence goals lead to stock, the Workshop, a road pad or a piece depending on what the camp already has.
 ## H5: a pet-level goal (the owner's Q4 A: Hearthtree 3 asks for the pet at level 2, Hearthtree 4 at level 3): before
 ## the Market is built, Show opens the build menu at the Market; once it is built, Go walks to the Market and opens its
 ## Pets tab (the Market window's open_on), where the pet is bought and trained.
 ## While the Hearthtree is in ruins the whole window is its ruin card (no tabs, no footer).
 ## Used by: ui/windows/window_list.gd (hud.windows["shop"]), stations.gd (the marker's builder and "!"), the tests.
 ## Uses: Data (home_goals, home_goals_met, home_price, home_can_grow, building, buildings, menu_buildings,
-##       building_levels, station_needs_home, unlock_missing, word, stat_info, defence_info), Save, stat_list.gd and
-##       defences_tab.gd (their tabs' rows), the confirm window (hud.confirm), the build menu (hud.windows["build"]),
+##       building_levels, station_needs_home, unlock_missing, word, stat_info, defence_info), Save, stat_list.gd,
+##       the confirm window (hud.confirm), the build menu (hud.windows["build"]),
 ##       the rules in stations.gd (_grow_camp, goal_ring), main.raids (Mend all), Quality (the graphics row).
 
 const StatList := preload("res://ui/windows/stat_list.gd")
-const DefencesTab := preload("res://ui/windows/defences_tab.gd")
 ## H5: the tab a goal's Go asks the window at the goal's marker to open on, by the goal's type (one visit: the window's
 ## open_on). A pet-level goal walks to the Market and opens its Pets tab (market_window's tab id "pets").
 const GOAL_TABS := {"pet_level": "pets"}
 
-var tab := "hearthtree"                 # the tab showing: "hearthtree", "cat" or "defences"
+var tab := "hearthtree"
 
 
 func _init(owner_hud) -> void:
@@ -62,8 +59,6 @@ func tab_ids() -> Array:
 	var out: Array = ["hearthtree"]
 	if Save.flag("home"):
 		out.append("cat")
-	if DefencesTab.shown(self):
-		out.append("defences")
 	return out
 
 
@@ -112,8 +107,6 @@ func _tab_rows(t: String) -> Array:
 	match t:
 		"cat":
 			return StatList.rows(self, _home_stats())
-		"defences":
-			return DefencesTab.rows(self)
 	return _home_rows()
 
 
@@ -124,7 +117,7 @@ func _home_rows() -> Array:
 	if Data.raids_open():
 		var cc: Dictionary = main.raids.camp_check()
 		if not (cc["items"] as Array).is_empty():
-			rows.append(main.raids.camp_row(cc))          # anything broken after a raid: Mend all at the very top
+			rows.append(main.raids.camp_row(cc))          # building Mend and the camp damage summary
 	rows.append_array(as_list(_wear_row("home")))
 	if not Save.flag("shop_open"):
 		rows.append({"text": "Nothing for sale yet", "note": "Defend the camp first: enemies drop golden leaves", "cost": {}, "label": "", "enabled": false, "action": Callable()})
@@ -150,8 +143,6 @@ func _tab_text(t: String) -> String:
 	match t:
 		"cat":
 			return _w("tab_cat")
-		"defences":
-			return _w("tab_defences")
 	return _camp_word()
 
 
@@ -231,7 +222,7 @@ func ask_upgrade() -> void:
 
 ## Everything Hearthtree `level` gives, one line each, worked out from the data (each line only when it applies):
 ## its new look's name, the campfire's health, a bigger firelight, how many Acorn Towers, the buildings' level cap, the
-## cat's upgrade cap, the defences' level cap, and the buildings it opens. Every per-level table is read clamped (some
+## cat's upgrade cap, and the buildings it opens. Every per-level table is read clamped (some
 ## have fewer entries than the Hearthtree has levels, so their line stops when the table does).
 func gives(level: int) -> Array:
 	var out: Array = []
@@ -251,8 +242,6 @@ func gives(level: int) -> Array:
 	var caps: Array = Data.b["stat_cap_by_station_level"]
 	if int(_at(caps, level)) > int(_at(caps, level - 1)):
 		out.append(_w("home_stats") % int(_at(caps, level)))
-	if level <= DefencesTab.top_shown():
-		out.append(_w("home_defences") % level)
 	var opens: Array = []
 	for e: Dictionary in Data.menu_buildings():
 		var bid := String(e.get("id", ""))
@@ -310,6 +299,14 @@ func _goal_row(g: Dictionary) -> Dictionary:
 		"enabled": false, "action": Callable(), "small": true, "done": done, "goal": g}
 	if done:
 		return row
+	var kind := _goal_defence_kind(g)
+	if kind != "":
+		var target := _defence_goal_target(kind, g)
+		if not target.is_empty():
+			row["label"] = "Go" if target.has("ring") else "Show"
+			row["enabled"] = true
+			row["action"] = _goal_go.bind(g)
+		return row
 	var station := String(g["station"])
 	if station == "build":
 		var bid := _menu_id(g)
@@ -343,14 +340,13 @@ func _menu_id(g: Dictionary) -> String:
 	return ""
 
 
-## Show on a goal sold here: its tab opens (the Cat tab for a stat, the Defences tab for towers and defence levels) and
-## scrolls to its row, which glows a moment; the window stays open.
+## Show a goal in the Cat tab or at its defence destination.
 func show_goal(g: Dictionary) -> void:
-	match String(g.get("type", "")):
-		"stat", "all_stats":
-			select("cat")
-		"towers", "defence":
-			select("defences")
+	if _goal_defence_kind(g) != "":
+		_goal_go(g)
+		return
+	if String(g.get("type", "")) in ["stat", "all_stats"]:
+		select("cat")
 	hud.scroll_card_to(_goal_find(g))
 
 
@@ -359,19 +355,73 @@ func show_goal(g: Dictionary) -> void:
 ## asks the window at that marker to open on it for this one visit (open_on) before the walk: a pet-level goal opens
 ## the Market on Pets.
 func _goal_go(g: Dictionary) -> void:
+	var kind := _goal_defence_kind(g)
+	if kind != "":
+		var target := _defence_goal_target(kind, g)
+		if target.has("build"):
+			hud.windows["build"].open_at(String(target["build"]))
+		elif target.has("bag"):
+			hud.open_inventory_at(String(target["bag"]))
+		elif target.has("ring"):
+			var shop := bool(target.get("workshop", false))
+			_walk_to_goal(target["ring"], _goal_find(g), "workshop" if shop else "", "defences" if shop else "")
+		return
 	var station := String(g.get("station", ""))
-	var r = st.goal_ring(station)
-	if r == null:
+	_walk_to_goal(st.goal_ring(station), _goal_find(g), station,
+		String(GOAL_TABS.get(String(g.get("type", "")), "")))
+
+
+func _walk_to_goal(r: Node, needle: String, station: String, target_tab: String) -> void:
+	if not is_instance_valid(r):
 		return
-	if r == main.hud.card_ring():
-		main.hud.scroll_card_to(_goal_find(g))
+	if r == hud.card_ring():
+		_ask_tab(station, target_tab)
+		hud.scroll_card_to(needle)
 		return
-	main.hud.hide_card()
-	_ask_tab(station, String(GOAL_TABS.get(String(g.get("type", "")), "")))
+	hud.hide_card()
+	_ask_tab(station, target_tab)
 	if main.interact != null:
 		main.interact.use(r)
 	else:
 		main.open_ring(r)
+
+
+func _goal_defence_kind(g: Dictionary) -> String:
+	match String(g.get("type", "")):
+		"towers":
+			return "tower"
+		"defence":
+			return String(g.get("id", ""))
+	return ""
+
+
+func _defence_goal_target(kind: String, g: Dictionary) -> Dictionary:
+	var d: Node3D = main.defences
+	var lv := int(g.get("level", 1))
+	var placed: int = d.placed_count(kind)
+	if kind == "barricade":
+		if placed == 0:
+			var pad: Node = d.empty_pad_marker()
+			return {"ring": pad} if is_instance_valid(pad) else {}
+	else:
+		var need := int(g.get("need", 1)) if String(g.get("type", "")) == "towers" else 1
+		if kind != "tower" or placed < int(d.tower_cap()):
+			if Bag.best_held_level(kind) >= lv or (placed < need and Bag.count(kind) > 0):
+				return {"bag": kind}
+			if placed < need:
+				return _workshop_goal()
+	# The piece card explains campaign gates when the Workshop is already high enough.
+	if int(d.piece_cap(kind)) < lv and (Data.station_level("workshop") < lv or Save.ruined.has("workshop")):
+		return _workshop_goal()
+	var marker: Node = d.goal_marker(kind, lv)
+	return {"ring": marker} if is_instance_valid(marker) else {}
+
+
+func _workshop_goal() -> Dictionary:
+	if Data.station_level("workshop") == 0:
+		return {"build": "workshop"}
+	var marker: Node = st.goal_ring("workshop")
+	return {"ring": marker, "workshop": true} if is_instance_valid(marker) else {}
 
 
 ## H5: tells the window at marker `station` (hud.windows) to open on tab `tab` at its next visit (its open_on), when
@@ -384,22 +434,14 @@ func _ask_tab(station: String, tab: String) -> void:
 		w.open_on(tab)
 
 
-## The title of the row that sells a goal (hud.scroll_card_to finds the first row or tile holding these words): a
-## stat's name (the Cat tab), a tower or defence row's title (the Defences tab), a building's name.
+## The row title to find when the destination is already open.
 func _goal_find(g: Dictionary) -> String:
 	var gid := String(g.get("id", ""))
 	match String(g.get("type", "")):
 		"stat", "all_stats":
 			return String(Data.stat_info(gid)["name"]) if Data.b["stats"].has(gid) else ""
-		"towers":
-			var tl: int = main.defences.level("tower")
-			if tl < int(g.get("level", 1)):
-				return DefencesTab._def_level_title("tower", tl + 1)
-			return String(Data.defence_info("tower")["name"])
-		"defence":
-			if not Data.b["defences"].has(gid):
-				return ""
-			return DefencesTab._def_level_title(gid, main.defences.level(gid) + 1)
+		"towers", "defence":
+			return String(Data.defence_info(_goal_defence_kind(g)).get("name", ""))
 		"station":
 			return String(Data.building(gid).get("name", gid))
 	return ""

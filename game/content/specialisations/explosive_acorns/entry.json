@@ -3,7 +3,6 @@
   "name": "Explosive acorns",
   "desc": "Acorns burst on a hit and hurt nearby enemies.",
   "icon": "tower",
-  "hidden": true,
   "kind": "tower",
   "unlock": {"missions_won": 2},
   "effect": "explosive_acorns",

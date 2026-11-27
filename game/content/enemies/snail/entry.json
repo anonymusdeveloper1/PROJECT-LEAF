@@ -12,6 +12,7 @@
   "color": "#A8D88A",
   "parts": {
     "health": {"max": 260},
+    "armour": {"share": 0.30},
     "mover": {"speed": 0.45},
     "attack": {"damage": 2, "gate_damage": 25, "reach": 0.8, "attack_every": 2.0, "slam_range": 1.9, "slam_every": 7.0},
     "status": {"slime_every": 0.9, "slime_life": 7.0},

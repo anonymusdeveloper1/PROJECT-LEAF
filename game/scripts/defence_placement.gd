@@ -11,7 +11,7 @@ extends RefCounted
 ## Uses: Bag (peek/take/return_defence, defence_changed), Save.placed, DefencePersistence.carried_record, and the facade's
 ## spawn_placement(record), remove_placement(id), piece_at(id), off_limits(pos), model, level, pieces and main.
 ## Never saves (the caller does) and never calls the HUD.
-## Stage 1 plays exactly like H5: no level is written to the saved record, and no Undo button is shown yet.
+## Stage 2: the saved record carries the piece's level (and wreck); the HUD shows Undo (action_buttons.gd).
 
 const AHEAD := 1.6                  # the ghost floats this far (m) in front of the cat
 const DROP_H := 0.6                 # a placed piece drops in from this high (m) ...
@@ -53,9 +53,14 @@ func _on_save_loaded() -> void:
 
 
 ## Nothing placed so far can be undone any more (a wave, leaving the camp, a load, Done/Cancel, a new visit).
-func invalidate() -> void:
+## Tells the HUD when a non-empty receipt goes (a wave, a load or leaving the camp send no bag_changed, so a stale Undo
+## button would stay up). `announce` is false for stop_placing, which emits placing_changed itself.
+func invalidate(announce := true) -> void:
+	var had := not _receipt.is_empty()
 	_receipt = {}
 	_visit += 1
+	if had and announce:
+		Events.placing_changed.emit(placing)
 
 
 # ---------------------------------------------------------------- the ghost
@@ -77,7 +82,7 @@ func stop_placing() -> void:
 		ghost.queue_free()
 	ghost = null
 	placing = ""
-	invalidate()
+	invalidate(false)
 	if was_placing:
 		Events.placing_changed.emit(placing)
 
@@ -85,7 +90,7 @@ func stop_placing() -> void:
 func _make_ghost() -> void:
 	if ghost:
 		ghost.queue_free()
-	ghost = Props.instance(defences.model(placing, defences.level(placing)))
+	ghost = Props.instance(defences.model(placing, int(Bag.peek_defence(placing).get("level", 1))))
 	defences.add_child(ghost)
 
 
@@ -151,7 +156,10 @@ func commit(kind: String, at: Vector3, yaw: float) -> int:
 	var carried: Dictionary = Bag.take_defence(kind, false)
 	if carried.is_empty():
 		return -1
-	var sp := {"type": kind, "x": at.x, "z": at.z, "rot": yaw}      # Stage 1: no "level", the v5 file keeps its shape
+	var top: int = (Data.defence_info(kind).get("levels", [1]) as Array).size()
+	var sp := {"type": kind, "x": at.x, "z": at.z, "rot": yaw, "level": clampi(int(carried.get("level", 1)), 1, maxi(1, top))}
+	if carried.has("wreck"):
+		sp["wreck"] = carried["wreck"]                      # never "credit": that is only a Bag thing
 	var p: Dictionary = defences.spawn_placement(sp)
 	if p.is_empty():
 		Bag.return_defence(kind, carried, false)
@@ -178,7 +186,12 @@ func place_here() -> void:
 	if not p.is_empty():
 		_drop_in(p["node"], at)
 	if Bag.peek_defence(kind).is_empty():
-		stop_placing()
+		# the last piece: no ghost, but the visit, the receipt and Done stay so Undo still works
+		if ghost:
+			ghost.queue_free()
+		ghost = null
+		ghost_ok = false
+		Events.placing_changed.emit(placing)
 	elif ghost:
 		_make_ghost()                                   # same visit: the receipt stays, so no stop/start here
 
@@ -243,6 +256,9 @@ func revert(id: int) -> bool:
 	Bag.return_defence(kind, carried, false)
 	Save.mark_dirty()
 	Bag.defence_changed(kind, 1)
+	if placing != "" and ghost == null and Bag.count(placing) > 0:
+		_make_ghost()
+		Events.placing_changed.emit(placing)
 	return true
 
 

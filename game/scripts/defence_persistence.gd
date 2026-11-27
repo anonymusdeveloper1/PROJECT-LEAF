@@ -42,6 +42,7 @@ static func write_wrecks(pieces: Array, rows: Array) -> void:
 		var sp: Variant = _row_src(row)
 		if sp == null:
 			continue
+		sp["level"] = int(row.get("level", sp.get("level", 1)))
 		var worst := 2.0
 		for p: Dictionary in row["pieces"]:
 			if p["wrecked"]:
@@ -61,6 +62,7 @@ static func write_wrecks(pieces: Array, rows: Array) -> void:
 		var sp2: Variant = p.get("src")
 		if sp2 == null:
 			continue
+		sp2["level"] = int(p.get("level", sp2.get("level", 1)))
 		if p["wrecked"]:
 			sp2["wreck"] = float(p["hp"]) / float(p["max_hp"])
 		else:

@@ -34,7 +34,7 @@ const ACTION_NAMES: Array[String] = ["attack", "slam", "roar", "grab", "spores",
 const OWN_NAMES: Array[String] = ["blink", "dig", "pounce", "dash_windup", "dash", "emerge", "windup", "charge", "daze",
 	"flee"]
 
-var e                                     # the enemy; set once by bind_enemy
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 var spd := 0.0                            # this frame's walking speed (the Roam state's squad steering may change it)
 var _states: Dictionary = {}              # state key -> state object, made lazily
 var _cur: StateBase                      # the state running now
@@ -42,7 +42,7 @@ var _down := false                        # the enemy has died
 
 
 func bind_enemy(enemy: Node3D) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 
 
 ## Sets the enemy's state word (the H5 code still assigns `state` directly in many places; both ways work).

@@ -5,11 +5,11 @@ extends Node
 ## Used by: connected to the enemy's Health `died` signal (enemy.setup). enemy._die emits it right after
 ## fight.on_enemy_died and right before Events.enemy_died, so the order of events is H5's.
 
-var e                                     # the enemy; set once by bind_enemy (untyped like `main`)
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 
 
 func bind_enemy(enemy: Node3D) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 
 
 func on_died() -> void:

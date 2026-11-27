@@ -149,7 +149,7 @@ func _tap(ring) -> bool:
 	var vis: Rect2 = get_viewport().get_visible_rect().grow(-8.0)
 	var spots: Array = []
 	var bp: Vector3 = ring.badge_pos()
-	if not cam.is_position_behind(bp):
+	if not cam.is_position_behind(bp) and (not ring.has_method("badge_is_visible") or ring.badge_is_visible()):
 		spots.append(cam.unproject_position(bp))
 	var body: Array = ring.body_px(cam)
 	if not body.is_empty():
@@ -585,10 +585,7 @@ func _grow() -> void:
 		Save.stations["target"] = lv
 		Save.stations["bench"] = lv
 		Save.camp_level = lv
-		Save.def_levels = {"barricade": lv, "tower": lv, "spikes": lv}
 		main.on_camp_grown()
-		for t in ["barricade", "tower", "spikes"]:
-			main.defences.relevel(t)
 		if lv == 1:
 			var e0: Vector3 = main.world.edge_point(0)
 			var side := Vector3(-e0.z, 0, e0.x).normalized()
@@ -597,12 +594,72 @@ func _grow() -> void:
 					main.defences._spawn("barricade", sl[0], sl[1], [int(sl[2]), int(sl[3])])
 			main.defences._spawn("tower", e0 * 1.9 + side * 3.2 + e0.normalized() * -0.8, 0.0)
 			main.defences._spawn("spikes", e0 * 1.45, atan2(e0.x, e0.z))
+		for t in ["barricade", "tower", "spikes"]:       # H6: each piece has its own level (the fixture sets them all alike)
+			level_pieces(t, lv)
 		main.player.global_position = Vector3(0.8, 0, 1.6)
 		await _wait(1.6)
 		await _shot("grow_level%d_camp" % lv)
 		main.player.global_position = main.world.edge_point(0) * 1.6
 		await _wait(1.2)
 		await _shot("grow_level%d_defences" % lv)
+
+
+## H6: what the Defences tab's Mend row did, now one broken piece at a time through the cards' own Repair
+## (defences.repair_placed): a downed tower, and a row with a broken section. Standing wear is the Well's job.
+func repair_broken_defences() -> int:
+	var d = main.defences
+	var done := 0
+	for p in d.pieces.duplicate():
+		if String(p["type"]) == "tower" and float(p["hp"]) <= 0.0 and d.repair_placed("tower", int(p["id"]), Vector2i(-1, -1)):
+			done += 1
+	for row in d.rows.duplicate():
+		var slot: Array = row["slot"]
+		if d.row_broken(row) and d.repair_placed("barricade", -1, Vector2i(int(slot[0]), int(slot[1]))):
+			done += 1
+	return done
+
+
+## H6 fixture: builds a barricade row on the first open empty pad (money topped up) and returns its slot (lane, pad).
+func build_any_row() -> Vector2i:
+	var d = main.defences
+	for cur in d.row_cost():
+		if Save.get(cur) != null and int(Save.get(cur)) < int(d.row_cost()[cur]):
+			Save.set(cur, int(d.row_cost()[cur]))
+	for sl in main.world.barricade_slots():
+		var lane_k := int(sl[2])
+		var idx := int(sl[3])
+		if d.pad_open(lane_k, idx) and d.row_at(lane_k, idx).is_empty() and d.build_row(lane_k, idx):
+			return Vector2i(lane_k, idx)
+	return Vector2i(-1, -1)
+
+
+## H6 fixture: a legal open spot for a piece of this kind (the same rule the ghost uses: defences.placement_reason), or
+## Vector3(1.0e9, 0, 0) when none is found. Used by the placement and layout checks.
+func open_place_spot(kind: String) -> Vector3:
+	var d = main.defences
+	for radius: float in [6.0, 8.0, 10.0, 12.0, 14.0]:
+		for i: int in 16:
+			var yaw: float = TAU * float(i) / 16.0
+			var at: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw)) * radius
+			if d.placement_reason(kind, at) == "":
+				return at
+	return Vector3(1.0e9, 0.0, 0.0)
+
+
+## H6 fixture: every placed piece (and row) of a kind goes to one level, whole and in its model. Live play upgrades one
+## piece at a time (defences.upgrade_placed); a test that only needs levelled stock uses this.
+func level_pieces(kind: String, lv: int) -> void:
+	var d = main.defences
+	if kind == "barricade":
+		for row in d.rows:
+			d._apply_level(row, lv)
+			for p in row["pieces"]:
+				d._restat(p)
+		return
+	for p in d.pieces:
+		if String(p["type"]) == kind:
+			d._apply_level(p, lv)
+			d._restat(p)
 
 
 ## Roads, grass, flowers, bushes and hiding.
@@ -1034,9 +1091,7 @@ func _laststand() -> void:
 	await _wait(0.8)
 	await _use(main.stations.rings["shop"], 0.25, 15.0)
 	await _wait(0.8)
-	_press("Defences")                       # H4: "Mend the defences" is on the Hearthtree's Defences tab
-	await _wait(0.3)
-	_press("Mend")
+	repair_broken_defences()                 # H6: no Defences tab and no Mend row: each broken piece is repaired from its own card
 	await _wait(0.5)
 	_log("restored", {"ruined": Save.ruined, "fire_ruined": Save.fire_ruined, "fire_out": main.world.fire_out, "wrecked": main.defences.wrecked_count(), "leaves": Save.leaves, "timber": Save.timber})
 	await _shot("laststand_08_restored")
@@ -2042,7 +2097,7 @@ func _kill_foes(leader := false) -> int:
 	for e in get_tree().get_nodes_in_group("foes"):
 		if e.dead or (e.has_meta("leader") and not leader):
 			continue
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 		n += 1
 	return n
 
@@ -2098,7 +2153,7 @@ func _raid() -> void:
 			await _shot("raid_02_leader")
 			_expect("the leader has the boss bar", main.hud.boss == leader)
 			var others := get_tree().get_nodes_in_group("foes").size() - 1
-			leader.hit(Vector3.FORWARD, leader.hp + 1.0)
+			leader.hit(Vector3.FORWARD, leader.hp * 10.0 + 100.0)
 			leader_down = leader.dead
 			var left: int = f._wave_foe_count()
 			_expect("the leader falls and the other raiders stay in the fight", leader_down and others > 0 and left == others and f.in_wave,
@@ -2496,7 +2551,7 @@ func _raidshots() -> void:
 			break
 		await _wait(0.3)
 	if one != null:
-		one.hit(Vector3.FORWARD, one.hp + 1.0)
+		one.hit(Vector3.FORWARD, one.hp * 10.0 + 100.0)
 	await _wait(0.4)
 	var run_d: Array = Save.raids.get("run", {}).get("defeated", [])
 	var fl: float = main.hud.p_fight.fill()
@@ -2728,10 +2783,9 @@ func _wear() -> void:
 	await _at_ring(st.rings["sign"])
 	await _wait(0.8)
 	await _shot("wear_watch_card")
-	# Mend some: leaves for the ruin and the wreck only
+	# Mend some: leaves for the ruin only (H6: the Hearthtree's price holds ruins and wear, a wreck is the Well's or its card's)
 	var c_ruin := int(cc["items"][0]["cost"]["leaves"])
-	var c_wreck := int(cc["items"][1]["cost"]["leaves"])
-	Save.leaves = c_ruin + c_wreck + 2
+	Save.leaves = c_ruin + 2
 	var row: Dictionary = rd.camp_row(cc)
 	_expect("the row reads Mend some", String(row["label"]) == "Mend some", {"row": row["label"], "note": row["note"]})
 	main.hud.refresh_card()
@@ -2739,9 +2793,12 @@ func _wear() -> void:
 	await _shot("wear_mend_some_card")
 	rd.mend_all()
 	await _wait(0.8)
-	_expect("Mend some mended the ruin and the wreck first", not Save.ruined.has("well") and not bar["wrecked"] and Save.wear.has("stall") and Save.wear.has("home")
+	_expect("Mend some mended the ruin first and left the wreck to the Well", not Save.ruined.has("well") and bar["wrecked"] and Save.wear.has("stall") and Save.wear.has("home")
 		and Save.leaves == 2, {"ruined": Save.ruined, "wear": Save.wear, "leaves": Save.leaves})
 	await _shot("wear_mend_some")
+	for i in 40:                                              # the Wishing Well mends the standing wear in the background
+		main.defences.well_mend(0.1, 1.0, 1.0)
+	_expect("the Well mended the wreck", not bar["wrecked"], {"hp": bar["hp"], "max": bar["max_hp"]})
 	Save.leaves = 5000
 	main.hud.refresh_card()
 	await _wait(0.3)
@@ -2763,8 +2820,9 @@ func _wear() -> void:
 	_expect("Patch on the Market's card", ok and not Save.wear.has("stall"))
 
 
-## What Gloom shards buy (the rest of --shards): defence level 4 (hidden before every mission is won, blocked below
-## home level 4, then bought), Lookout and Tracker, Gloomlit colours, no shard trade (H5), Shardfire.
+## What Gloom shards buy (the rest of --shards): Lookout and Tracker, Gloomlit colours, no shard trade (H5), Shardfire.
+## H6: the three defence tier, price and model checks moved to --workshop (autotest_workshop.gd): the pieces are upgraded
+## one by one from their own cards and level 4 costs timber, not shards.
 func _shard_goods() -> void:
 	main.player.invincible = true
 	_veteran(14)
@@ -2773,58 +2831,12 @@ func _shard_goods() -> void:
 	Save.shards = 1000
 	Save.leaves = 20000
 	Save.timber = 500
-	for t in ["barricade", "tower", "spikes"]:
-		Save.def_levels[t] = 3
-		d.relevel(t)
-	d._spawn("spikes", Vector3(2.6, 0, -6.2), 0.0)
-	var w = main.hud.windows["shop"]                         # H4: the Defences shelf is the Hearthtree's Defences tab
-	_expect("the Hearthtree has its Defences tab", (w.tab_ids() as Array).has("defences"), {"tabs": w.tab_ids()})
-	var texts := func() -> Array: return (w.tab_spec("defences")["rows"] as Array).map(func(rw): return String(rw.get("title", "")) + " " + String(rw.get("text", "")))
-	_expect("level 4 is hidden before every raid is won", not " ".join(texts.call()).contains("Shardstone"), {"rows": texts.call()})
-	Save.missions_done.append(String(Data.mission(Data.mission_count() - 1)["id"]))
-	main.raids.refresh_open()
-	main.world.swap_sign()
-	var row4: Dictionary = {}
-	for rw in w.tab_spec("defences")["rows"]:
-		if String(rw.get("title", "")) == "Barricades: Shardstone":
-			row4 = rw
-	_expect("level 4 shows once raids are open, blocked below Hearthtree level 4", not row4.is_empty() and not bool(row4["enabled"]) and String(row4.get("text", "")).contains("Hearthtree at level 4")
-		and int(row4["cost"].get("shards", 0)) == 60, {"row": row4})
-	Save.camp_level = 4
-	main.on_camp_grown()
-	await _wait(0.5)
-	var leaves0 := Save.leaves
 	var shards0 := Save.shards
-	for t in ["barricade", "tower", "spikes"]:
-		st._upgrade_defence(t)
-	_expect("all three bought at level 4 (leaves and shards taken)", d.level("barricade") == 4 and d.level("tower") == 4 and d.level("spikes") == 4
-		and Save.leaves == leaves0 - 1500 - 2400 - 1200 and Save.shards == shards0 - 60 - 90 - 50,
-		{"levels": Save.def_levels, "leaves": [leaves0, Save.leaves], "shards": [shards0, Save.shards]})
-	var bar: Dictionary = {}
-	var tower: Dictionary = {}
-	var spikes: Dictionary = {}
-	for pc in d.pieces:
-		if pc["type"] == "barricade" and bar.is_empty():
-			bar = pc
-		elif pc["type"] == "tower" and tower.is_empty():
-			tower = pc
-		elif pc["type"] == "spikes" and spikes.is_empty():
-			spikes = pc
-	_expect("a Shardstone barricade has 1,400 health", absf(float(bar["max_hp"]) - 1400.0) < 0.5 and String((bar["node"] as Node3D).name) == "barricade_shard", {"max": bar["max_hp"], "model": (bar["node"] as Node3D).name})
-	_expect("the level 4 tower and spikes models", String((tower["node"] as Node3D).name) == "acorn_tower_4" and String((spikes["node"] as Node3D).name) == "thorn_spikes_4")
-	main.player.global_position = Vector3(0, 0, 1.6)
-	for pc in [bar, tower, spikes]:
-		main.closeup_at = pc["node"]
-		main.closeup = Vector3(1.4, 2.2, 3.4)
-		await _wait(0.4)
-		await _shot("shards_level4_%s" % String(pc["type"]))
-	main.closeup = Vector3.ZERO
-	main.closeup_at = null
 	# the Watch's Lookout and Tracker
 	var rd = main.raids
 	rd.buy_watch("lookout")
 	_expect("Lookout: a normal warning is 60 s (not 75), a called one 45", rd.has_unlock("watch:lookout") and rd.warn_seconds({"type": "siege"}, false) == 60.0
-		and rd.warn_seconds({"type": "siege"}, true) == 45.0 and Save.shards == shards0 - 200 - 25)
+		and rd.warn_seconds({"type": "siege"}, true) == 45.0 and Save.shards == shards0 - 25)
 	rd.buy_watch("tracker")
 	_expect("Tracker: sneak raids can't hide", rd.has_unlock("watch:tracker") and not rd.hidden_kind({"type": "sneak"}))
 	# Gloomlit colours
@@ -2863,7 +2875,7 @@ func _shard_goods() -> void:
 	await _at_ring(st.rings["stall"])
 	await _wait(0.8)
 	await _shot("shards_stall_card")
-	_log("shard goods", {"shards": Save.shards, "unlocks": Save.unlocks, "def_levels": Save.def_levels})
+	_log("shard goods", {"shards": Save.shards, "unlocks": Save.unlocks})
 
 
 ## Frame cost of a big Gloom Raid (--raidperf, with --quality=low|medium|high): a level 23 siege on two trails, the cat

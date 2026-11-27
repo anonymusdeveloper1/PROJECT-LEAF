@@ -5,17 +5,17 @@ extends Node
 ## enemy; no class_name (preload it).
 ## Rules: the foes near it come from the enemy grid (candidates, group "foes"); the exact distance checks stay here.
 
-var e                                     # the enemy (enemy.gd) this part belongs to; set once by bind_enemy (untyped like `main`)
+var e: EnemyNode                           # the enemy (enemy.gd) this part belongs to; set once by bind_enemy
 
 
 func bind_enemy(enemy: Node3D) -> void:
-	e = enemy
+	e = enemy as EnemyNode
 
 
 ## The foes that may be within `range_m` of the enemy: the grid's superset (registration order), or the whole group
 ## when there is no grid. Callers keep their exact distance checks.
 func foes_near(range_m: float) -> Array:
-	var grid = e._the_grid()
+	var grid := e._the_grid()
 	if grid == null:
 		return e.get_tree().get_nodes_in_group("foes")
 	var c := Vector2(e.global_position.x, e.global_position.z)
@@ -36,7 +36,7 @@ func impact_drum() -> void:
 ## The Frog's heal lands: every wounded foe within heal_range gets heal x the Frog's strength (heal_raw: the same
 ## max-health clamp; a foe's armour scales what it takes in).
 func impact_heal() -> void:
-	var amt = float(e.info["heal"]) * e.mult
+	var amt := float(e.info["heal"]) * e.mult
 	Fx.shockwave(e.main, e.global_position, float(e.info["heal_range"]), Color(0.5, 1.0, 0.45))
 	for f in foes_near(float(e.info["heal_range"])):
 		if f.dead or f.global_position.distance_to(e.global_position) > float(e.info["heal_range"]):

@@ -10,7 +10,6 @@ extends Node
 
 const POTIONS_TEST := "res://scripts/autotest_potions.gd"
 const USE_POTION := "res://commands/use_potion.gd"
-const DefencesTab := preload("res://ui/windows/defences_tab.gd")   # H4: the Defences shelf's rows (the Hearthtree's tab)
 const COLUMNS := 6                                   # the Bag window's columns (inventory.gd)
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _tap_at, _tap_outside, _at_ring ...)
@@ -237,11 +236,13 @@ func _full_bag() -> void:
 		Bag.used_slots() == Bag.slots() and Bag.free_slots() == 0 and Bag.room_for("herbs") == 0 and Bag.add("herbs", 1) == 0
 		and Bag.room_for("tower") == 0 and Bag.room_for("mount_potion") == 0, {"used": Bag.used_slots()})
 	var price := int(Data.defence_info("tower")["piece"])
+	Save.stations["workshop"] = 1                       # H6: pieces are sold at the Defence Workshop
+	main.stations.refresh("all")
 	var leaves0 := Save.leaves
 	main.stations._buy_piece("tower")
 	_x("buying a tower with a full Bag is refused, before paying", Save.leaves == leaves0 and Bag.count("tower") == 0)
 	var tile := _tower_tile()
-	_x("the Hearthtree's tower tile says Bag full and is off", not tile.is_empty() and String(tile.get("text", "")) == "Bag full"
+	_x("the Workshop's tower row says Bag full and is off", not tile.is_empty() and String(tile.get("text", "")).ends_with(Data.word("bag_full"))
 		and not bool(tile.get("enabled", true)), {"tile": str(tile.get("text", ""))})
 	# a piece already paid for goes back even into the full Bag (the start-up check)
 	var home: Vector3 = main.world.HOME_SPOT
@@ -268,10 +269,10 @@ func _full_bag() -> void:
 	_x("with room, a tower is bought into the Bag", Bag.count("tower") == 1 and Save.leaves == leaves1 - price)
 
 
-## The Hearthtree's Buy tile for towers ({} when there is none).
+## The Defence Workshop's Buy row for towers ({} when there is none): the live window's Defences tab.
 func _tower_tile() -> Dictionary:
-	for tile in DefencesTab.rows(main.hud.windows["shop"]):
-		if String(tile.get("icon", "")) == "tower" and String(tile.get("label", "")) == "Buy":
+	for tile in main.hud.windows["workshop"].tab_spec("defences").get("rows", []):
+		if String(tile.get("id", "")) == "tower":
 			return tile
 	return {}
 

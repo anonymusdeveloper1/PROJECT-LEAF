@@ -683,7 +683,7 @@ func finish(won: bool, perfect: bool, held: int) -> void:
 		main.hud.tip_after("Mend the camp before the next raid.", main.stations.rings.get("sign"))
 	if first_shards:
 		Save.set_flag("told_shards")
-		main.hud.tip_after("Gloom shards! Spend them on Shardstone defences at %s, or on the Watch's Lookout and Tracker." % Data.camp_name(), main.stations.rings.get("shop"))
+		main.hud.tip_after("Gloom shards! Spend them on the Watch's Lookout and Tracker.", main.stations.rings.get("shop"))
 
 
 # ---------------------------------------------------------------- nothing happens while the game is closed
@@ -795,8 +795,12 @@ func camp_check() -> Dictionary:
 	for id in worn:
 		wear[id] = float(Save.wear[id])
 		items.append({"kind": "wear", "id": id, "cost": st.patch_cost(id)})
+	# H6: `items` is everything broken (wrecks too: the counts, run.ready, the tips and the burrow warning read it); `pay` is
+	# what Mend all and Mend some can pay: ruins and wear only. A broken defence is repaired on its own card (the Well mends
+	# the standing ones), so it never joins the price.
+	var pay: Array = items.filter(func(it): return String(it["kind"]) != "wreck")
 	var cost := {"leaves": 0, "timber": 0}
-	for it in items:
+	for it in pay:
 		cost["leaves"] += int(it["cost"].get("leaves", 0))
 		cost["timber"] += int(it["cost"].get("timber", 0))
 	# the camp's condition: the home weighs 2, every other building 1, each barricade and tower 0.5
@@ -813,7 +817,7 @@ func camp_check() -> Dictionary:
 			continue
 		weight += 0.5
 		sum += 0.5 * (clampf(float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0) if p["wrecked"] else 1.0)
-	return {"ruins": ruins, "wrecks": wrecks, "wear": wear, "cost": cost, "items": items,
+	return {"ruins": ruins, "wrecks": wrecks, "wear": wear, "cost": cost, "items": items, "pay": pay,
 		"condition": sum / weight if weight > 0.0 else 1.0}
 
 
@@ -994,7 +998,7 @@ func _mend_plan(cc: Dictionary) -> Dictionary:
 	var timber := Save.timber
 	var fix: Array = []
 	var cost := {"leaves": 0, "timber": 0}
-	for it in cc["items"]:
+	for it in cc["pay"]:
 		var l := int(it["cost"].get("leaves", 0))
 		var t := int(it["cost"].get("timber", 0))
 		if l <= leaves and t <= timber:
@@ -1032,11 +1036,14 @@ func camp_row(cc: Dictionary) -> Dictionary:
 		return _row("The camp is in good shape", "Nothing to mend · camp %d%%" % int(round(float(cc["condition"]) * 100.0)))
 	var wave_on: bool = main.fight.active and main.fight.in_wave
 	var note := damage_text(cc)
+	if (cc["pay"] as Array).is_empty():
+		# only broken defences are left: no button here, each is repaired on its own card (the Well mends the standing ones)
+		return _row(Data.word("broken_defences"), note + " · " + Data.word("mend_defences_own_cards"))
 	var all: Dictionary = cc["cost"]
 	if Data.can_afford(all):
 		return {"text": "Mend all", "note": note, "cost": _clean(all), "label": "Mend all", "enabled": not wave_on, "action": mend_all}
 	var mp := _mend_plan(cc)
-	var left := (cc["items"] as Array).size() - (mp["items"] as Array).size()
+	var left := (cc["pay"] as Array).size() - (mp["items"] as Array).size()
 	if (mp["items"] as Array).is_empty():
 		return {"text": "Mend the camp", "note": note + " · not enough to mend any of it yet", "cost": _clean(all), "label": "Mend all", "enabled": false, "action": mend_all}
 	return {"text": "Mend some", "note": note + " · %d thing%s left after" % [left, "" if left == 1 else "s"], "cost": _clean(mp["cost"]),
@@ -1070,9 +1077,6 @@ func mend_all() -> void:
 			"ruin":
 				st.mend_ruin(String(it["id"]))
 				spots.append([st.nodes.get(String(it["id"])), main.world.station_pos(String(it["id"])), 1.4])
-			"wreck":
-				main.defences.mend_piece(it["piece"], true, false)
-				spots.append([it["piece"]["node"], it["piece"]["pos"], 0.9])
 			"wear":
 				st.mend_wear(String(it["id"]))
 				spots.append([st.nodes.get(String(it["id"])), main.world.station_pos(String(it["id"])), 1.2])
@@ -1086,11 +1090,13 @@ func mend_all() -> void:
 			if sp[0] != null and is_instance_valid(sp[0]):
 				Fx.boing(sp[0], 0.3)
 			Fx.flower_ring(main, sp[1], float(sp[2])))
-	var left := (cc["items"] as Array).size() - done.size()
-	if left == 0:
+	var left := (cc["pay"] as Array).size() - done.size()
+	if left == 0 and (cc["wrecks"] as Array).is_empty():
 		main.hud.banner("The camp is mended!", Color(1.0, 0.9, 0.5), "Ready for the next raid")
+	elif left == 0:
+		main.hud.banner("Buildings mended!", Color(1.0, 0.9, 0.5), Data.word("mend_defences_own_cards"))
 	else:
-		main.hud.banner("Mended %d of %d" % [done.size(), (cc["items"] as Array).size()], Color(1.0, 0.9, 0.5), "Gather more leaves for the rest")
+		main.hud.banner("Mended %d of %d" % [done.size(), (cc["pay"] as Array).size()], Color(1.0, 0.9, 0.5), "Gather more leaves for the rest")
 	main.on_purchase()
 
 

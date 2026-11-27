@@ -422,7 +422,7 @@ func _dungeon() -> void:
 			await t._shot("dungeon_15_boss_fight")
 	var fell: bool = r._boss_down
 	if not fell:
-		r._boss.hit(Vector3.FORWARD, r._boss.hp + 1.0)
+		r._boss.hit(Vector3.FORWARD, r._boss.hp * 10.0 + 100.0)
 		await t._wait(1.0)
 	_x("the boss (about %d health) falls in a long but sane time (40-160 s): %.1f s" % [int(hp_was), bt], fell and bt >= 40.0 and bt <= 160.0, {"secs": bt, "hp": hp_was})
 	_x("the cat stayed in the arena while the roots were closed", gate_held)
@@ -547,7 +547,7 @@ func _dungeonshots() -> void:
 		main.hud.hide_card()
 	# the boss down: the seal at the north edge
 	if r._boss != null and is_instance_valid(r._boss):
-		r._boss.hit(Vector3.FORWARD, r._boss.hp + 1.0)
+		r._boss.hit(Vector3.FORWARD, r._boss.hp * 10.0 + 100.0)
 		await t._wait(1.2)
 	if m.parts.has("seal_ring"):
 		main.player.global_position = m.parts["seal_ring"].global_position + Vector3(0, 0, 1.6)
@@ -747,7 +747,7 @@ func _boss() -> void:
 	_x("its adds are in the arena, at most %d" % cap, mins.size() <= cap and mins.size() >= 3 and mins.all(func(e): return m.in_arena(e.global_position, -0.5)), {"adds": mins.size()})
 	await t._shot("boss_03_adds")
 	for e in mins:
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 	await t._wait(0.4)
 	# the Gloom Dash into a standing stone
 	var st: Array = Data.dungeon("old_hollow")["stones"][1]
@@ -781,7 +781,7 @@ func _boss() -> void:
 		if is_instance_valid(bo) and bo.enraged:
 			enraged = true
 	if not r._boss_down:
-		bo.hit(Vector3.FORWARD, bo.hp + 1.0)
+		bo.hit(Vector3.FORWARD, bo.hp * 10.0 + 100.0)
 		await t._wait(0.8)
 	t._log("boss_time", {"secs": bt, "hp": full, "arrow": Data.arrow_damage()})
 	_x("Mossback (%d health at level 1) falls in 40-160 s: %.1f s" % [int(full), bt], bt >= 40.0 and bt <= 160.0, {"secs": bt})
@@ -1067,13 +1067,22 @@ func _topup() -> void:
 	# test was written when level 3 allowed 10, so both are at their top level here.
 	Save.stations["bench"] = Data.building_levels("bench").size()
 	Save.stations["target"] = Data.building_levels("target").size()
-	Save.def_levels = {"barricade": 4, "tower": 4, "spikes": 4}
 	main.stations.free_guardian()
 	Save.stations["stone"] = 3
 	Save.leaves = 60000
 	Save.timber = 500
 	await t._wait(0.5)
 	var st = main.stations
+	# H6: levels live on the placed pieces. A tower and a row stand at level 4; the Workshop (level 4) lets them get there.
+	Save.stations["workshop"] = 4
+	st.refresh("all")
+	var d = main.defences
+	var e0: Vector3 = main.world.edge_point(0)
+	var tw: Dictionary = d._spawn("tower", e0 * 1.9 + Vector3(-e0.z, 0, e0.x).normalized() * 3.2, 0.0, [], 4)
+	var tid := int(tw["id"])
+	var none := Vector2i(-1, -1)
+	var pad: Vector2i = t.build_any_row()
+	t.level_pieces("barricade", 4)
 	var hw = main.hud.windows["shop"]                 # H4: the Hearthtree (tabs), the Bow Shop, the Target, the stone and the Market are windows
 	var bw = main.hud.windows["bench"]
 	_x("before the Burrows: stats capped at 10", Data.stat_cap("damage") == 10 and Data.stat_cap("health") == 10)
@@ -1082,8 +1091,8 @@ func _topup() -> void:
 	var stone_foot: Dictionary = main.hud.windows["stone"].spec().get("footer", {})
 	_x("before the Burrows: the stone's level 4 shows max (its footer's note, no button)", String(stone_foot.get("note", "")) == String(Data.word("max_for_now"))
 		and (stone_foot.get("buttons", []) as Array).is_empty(), {"stone": stone_foot})
-	st._upgrade_defence("tower")
-	_x("level 5 refused before the Burrows open", main.defences.level("tower") == 4)
+	_x("level 5 refused before the Burrows open", not d.upgrade_placed("tower", tid, none, 4) and d.piece_level(d.piece_at(tid)) == 4
+		and d.upgrade_quote("tower", tid, none, 4)["reason"] != "")
 	main.burrows.open_hollow(false)
 	Save.mats = {"amber": 400}
 	Save.leaves += 400 * 60 + 250 * 120 + 40 * 400       # H1: the glowstone and heartwood (and amber) this test gave, as leaves
@@ -1112,15 +1121,17 @@ func _topup() -> void:
 	_x("the Foxfire Bow is hidden from the Bow Shop for now (22 Nov 2026): not on the card, not sold", not Save.bows.has("foxfire") and Save.bow == "sunwood"
 		and not _row_texts(bw.spec()).contains("Foxfire"))
 	Save.camp_level = 4
-	st._upgrade_defence("tower")
-	_x("tower level 5 refused at home level 4", main.defences.level("tower") == 4)
+	_x("Burrows open, but a level-4 Workshop caps pieces at 4: the tower stays", d.piece_cap("tower") == 4 and not d.upgrade_placed("tower", tid, none, 4)
+		and d.piece_level(d.piece_at(tid)) == 4, {"cap": d.piece_cap("tower")})
 	Save.camp_level = 5
-	var shop := _row_texts(hw.tab_spec("defences"))
-	_x("the Hearthtree's Defences tab offers the Amber Tower", (hw.tab_ids() as Array).has("defences") and shop.contains("Towers: Amber"), {"shop": shop, "tabs": hw.tab_ids()})
-	st._upgrade_defence("tower")
-	st._upgrade_defence("barricade")
-	_x("tower and barricade at level 5 with their models", main.defences.level("tower") == 5 and main.defences.model("tower", 5) == "acorn_tower_5"
-		and main.defences.model("barricade", 5) == "barricade_heartwood")
+	var wl := Data.station_level("workshop")
+	_x("the Workshop to level 5 (the Burrows are open)", st.upgrade_workshop(wl) and Data.station_level("workshop") == 5 and d.piece_cap("tower") == 5)
+	var row5: Dictionary = d.row_at(pad.x, pad.y)
+	_x("level 5 is a leaves-only price (no timber, no shards)", (d.upgrade_quote("tower", tid, none, 4)["price"] as Dictionary).keys() == ["leaves"], {"q": d.upgrade_quote("tower", tid, none, 4)})
+	var up_t: bool = d.upgrade_placed("tower", tid, none, 4)
+	var up_b: bool = d.upgrade_placed("barricade", -1, pad, d.row_level(row5))
+	_x("tower and barricade at level 5 with their models", up_t and up_b and d.piece_level(d.piece_at(tid)) == 5 and d.row_level(d.row_at(pad.x, pad.y)) == 5
+		and main.defences.model("tower", 5) == "acorn_tower_5" and main.defences.model("barricade", 5) == "barricade_heartwood")
 	var l0 := Save.leaves
 	st._upgrade_station("stone")
 	_x("the Warden to level 4 (paid in leaves and timber)", int(Save.stations["stone"]) == 4 and l0 - Save.leaves == 2500 and absf(Data.guardian_max_hp() - 1800.0 * Data.guardian_power()) < 1.0,

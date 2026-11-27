@@ -318,7 +318,7 @@ func _geo(id: String) -> Dictionary:
 	var lay: Dictionary = Data.building_layout(id)
 	var g := {"has": not lay.is_empty(), "pos": Vector3.ZERO, "ring": Vector3.ZERO,
 		"village_r": -1.0, "village_ring_r": -1.0, "reserved_c": Vector3.ZERO, "reserved_r": -1.0,
-		"path": PackedVector3Array(), "smooth": 6, "half_mult": 0.85, "peak": -1.0}
+		"path": PackedVector3Array(), "smooth": 6, "half_mult": 0.85, "peak": -1.0, "trunk_of": "", "fork_at": Vector3.ZERO}
 	if not lay.is_empty():
 		g["pos"] = _v3(lay.get("position", [0, 0, 0]))
 		if lay.has("ring_offset"):
@@ -339,6 +339,9 @@ func _geo(id: String) -> Dictionary:
 			for q in pl.get("points", []):
 				pts.append(_v3(q))
 			g["path"] = pts
+			g["trunk_of"] = String(pl.get("trunk_of", ""))      # H6: a branch path forks off another building's path (the Workshop's off the Tailor's)
+			if pl.has("fork_at"):
+				g["fork_at"] = _v3(pl["fork_at"])
 			g["smooth"] = int(pl.get("smooth", 6))
 			g["half_mult"] = float(pl.get("half_mult", 0.85))
 			if pl.has("peak"):       # a number, or true for the worn-trail peak (WALK_PEAK, the well's path)
@@ -404,7 +407,7 @@ const OLD_HOME := [Vector3.ZERO, Vector3(-2.1, 0, -0.9), Vector3(-2.6, 0, -1.1),
 	Vector3(-3.4, 0, -1.8), Vector3(-3.7, 0, -2.0), Vector3(-4.0, 0, -2.2)]
 ## The buildings that can keep village ground and a path from the fire, in the order the paths are laid (H6: only the
 ## ids; the rest is each entry's layout, and a building takes part only where its layout says "village" / "path").
-const CAMP_ORDER := ["target", "bench", "stall", "well", "saddlery", "tailor"]
+const CAMP_ORDER := ["target", "bench", "stall", "well", "saddlery", "tailor", "workshop"]
 ## The village as it stood before, right south of the campfire, and the bench and the target (they grew outward with the
 ## home). Only the hide spots' seeded sequence still reads them (with their old paths in path_img_base), so the tall
 ## grass and the bushes stay where they were. H5: the Cottage stays in this old map only (no marker, path, collision or
@@ -555,8 +558,8 @@ func _build_trails() -> void:
 func rebuild_paths(force := false) -> void:
 	var key := "%d|%d|%d|%d|%d|%d" % [Save.camp_level, int(Save.stations.get("target", 0)), int(Save.stations.get("bench", 0)),
 		int(Save.stations.get("well", 0)), int(_legacy_built("cottage")), int(Save.stations.get("stall", 0))]
-	key += "|%d|%d|%d|%d|%d" % [int(Save.stations.get("stone", 0)), int(Save.stations.get("garden", 0)), int(Save.stations.get("fishing", 0)),
-		int(Save.stations.get("saddlery", 0)), int(Save.stations.get("tailor", 0))]
+	key += "|%d|%d|%d|%d|%d|%d" % [int(Save.stations.get("stone", 0)), int(Save.stations.get("garden", 0)), int(Save.stations.get("fishing", 0)),
+		int(Save.stations.get("saddlery", 0)), int(Save.stations.get("tailor", 0)), int(Save.stations.get("workshop", 0))]
 	if key == _path_key and not force:
 		return
 	_path_key = key
@@ -683,11 +686,39 @@ func _station_lines() -> Array:
 		var pts: PackedVector3Array = g["path"]
 		if pts.is_empty():
 			continue
+		if String(g["trunk_of"]) != "":
+			# H6: a branch (the Workshop's) forks off its trunk building's path. When that building stands, its whole line is
+			# stamped already (it comes earlier in CAMP_ORDER); when it does not, the trunk is stamped up to the fork.
+			var tg: Dictionary = _geo(String(g["trunk_of"]))
+			if int(Save.stations.get(String(g["trunk_of"]), 0)) <= 0:
+				var cut := _trunk_to_fork(tg, g["fork_at"])
+				if cut.size() >= 2:
+					out.append([cut, CAMP_PATH_HALF * float(tg["half_mult"])])
+			if pts[0].distance_to(g["fork_at"]) > 0.05:
+				var from_fork := PackedVector3Array([g["fork_at"]])
+				from_fork.append_array(pts)
+				pts = from_fork
 		if float(g["peak"]) >= 0.0:
 			out.append([_smooth(pts, int(g["smooth"])), CAMP_PATH_HALF * float(g["half_mult"]), float(g["peak"])])
 		else:
 			out.append([_smooth(pts, int(g["smooth"])), CAMP_PATH_HALF * float(g["half_mult"])])
 	return out
+
+
+## A trunk building's smoothed path from the fire up to the fork point (up to the point of the smoothed line nearest it).
+func _trunk_to_fork(trunk_geo: Dictionary, fork: Vector3) -> PackedVector3Array:
+	var pts: PackedVector3Array = trunk_geo["path"]
+	if pts.size() < 2:
+		return PackedVector3Array()
+	var sm := _smooth(pts, int(trunk_geo["smooth"]))
+	var best := 0
+	var best_d := INF
+	for k in sm.size():
+		var d := sm[k].distance_to(fork)
+		if d < best_d:
+			best_d = d
+			best = k
+	return sm.slice(0, best + 1)
 
 
 var _stones: MultiMeshInstance3D

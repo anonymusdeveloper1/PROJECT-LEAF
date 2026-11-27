@@ -37,6 +37,8 @@ const SAMPLE_V3_PATH := "res://tests/saves/v3_sample.json"
 const SAMPLE_V4_PATH := "res://tests/saves/v4_sample.json"
 ## H5: the frozen version-5 fixture (core/save_upgrade_v5.gd's output for a mid-game v4 save): loading it changes nothing.
 const SAMPLE_V5_PATH := "res://tests/saves/v5_sample.json"
+## H6: the frozen version-6 fixture (levels on the pieces, held stock levels, a credit, the Defence Workshop): loading it changes nothing.
+const SAMPLE_V6_PATH := "res://tests/saves/v6_sample.json"
 ## H5: the version before the 4 -> 5 step.
 const V4 := 4
 ## H3 (the owner's plan, 26 Nov 2026; balance.json save_upgrades.to_v4, frozen): what the 3 -> 4 step does.
@@ -141,6 +143,8 @@ func _check_saves(sample_text: String, sample: Dictionary) -> bool:
 	DirAccess.remove_absolute(BACKUP_PATH)
 	ok = await _check_v5_sample() and ok
 	DirAccess.remove_absolute(BACKUP_PATH)
+	ok = await _check_v6_sample() and ok
+	DirAccess.remove_absolute(BACKUP_PATH)
 
 	# A file without a version goes through the v1 load path (and, H1, the 2 -> 3 step too).
 	var old := sample.duplicate(true)
@@ -240,7 +244,7 @@ func _check_upgrade_rules(sample: Dictionary) -> bool:
 func _check_upgrade_rules_v5(bare: Dictionary) -> bool:
 	var owned: Dictionary = bare.get("owned") if bare.get("owned") is Dictionary else {}
 	return t._expect("H5: a bare dictionary also takes the 4 -> 5 step and ends as a fresh v5 camp (no pet, no Market, the original outfit, empty circles)",
-		SaveUpgrades.CURRENT_VERSION == 5 and int(bare.get("pet_level", -1)) == 0 and int(bare.get("market_hp_floor", -1)) == 0
+		SaveUpgrades.CURRENT_VERSION == 6 and bare.get("defence_reserves") == {} and bare.get("defence_legacy_credit") == {} and int(bare.get("pet_level", -1)) == 0 and int(bare.get("market_hp_floor", -1)) == 0
 		and bare.get("stations") == {"stall": 0} and owned.get("outfits") == {"original": {"level": 1}}
 		and owned.get("pets") == {} and owned.get("mounts") == {} and owned.get("attachments") == {}
 		and bare.get("attach") == {"mount": "", "pet": ""} and not bare.has("cat_skins_owned")
@@ -328,7 +332,7 @@ func _check_v3_sample() -> bool:
 	Save.load_game()
 	await get_tree().process_frame
 	var ok := t._expect("H3: the v3 sample loads as version 3 and is upgraded to the current version (H5: 5)", Save.loaded_v == 3
-		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 5, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
+		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 6, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
 	ok = t._expect("H3: the v3 file is backed up before it is upgraded", FileAccess.file_exists(BACKUP_PATH)
 		and FileAccess.get_file_as_string(BACKUP_PATH) == text) and ok
 	ok = t._expect("the v3 sample's leaves are not converted (one dish, and room for it)", Save.leaves == int(s["leaves"]), {"leaves": Save.leaves}) and ok
@@ -380,8 +384,8 @@ func _check_v4_sample() -> bool:
 	fake_now = float(s["timers"]["seen"])
 	Save.load_game()
 	await get_tree().process_frame
-	var ok := t._expect("H5: the v4 sample loads as version 4 and is upgraded to 5", Save.loaded_v == V4 and Save.save_v == 5
-		and SaveUpgrades.CURRENT_VERSION == 5, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
+	var ok := t._expect("H5: the v4 sample loads as version 4 and is upgraded to the current version (H6: 6)", Save.loaded_v == V4 and Save.save_v == 6
+		and SaveUpgrades.CURRENT_VERSION == 6, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
 	ok = t._expect("H5: the v4 file is backed up byte for byte before it is upgraded", FileAccess.file_exists(BACKUP_PATH)
 		and FileAccess.get_file_as_string(BACKUP_PATH) == text) and ok
 	ok = t._expect("H3: the v4 sample's Bag: food, a potion, and an unknown id kept but not counted",
@@ -416,7 +420,7 @@ func _check_v4_sample() -> bool:
 	var written: Variant = _read_test_save()
 	var w: Dictionary = written if written is Dictionary else {}
 	ok = t._expect("H5: the written v4 sample has no old form: no cat_skins_owned, saddlery.attach, attach.owned or Cottage",
-		int(w.get("save_v", 0)) == 5 and not w.has("cat_skins_owned") and not (w.get("saddlery", {}) as Dictionary).has("attach")
+		int(w.get("save_v", 0)) == 6 and not w.has("cat_skins_owned") and not (w.get("saddlery", {}) as Dictionary).has("attach")
 		and not (w.get("attach", {}) as Dictionary).has("owned") and not (w.get("stations", {}) as Dictionary).has("cottage")
 		and not (w.get("wear", {}) as Dictionary).has("cottage"), {"written": written}) and ok
 	ok = t._expect("H5: the written v4 sample is the 4 -> 5 step's output field for field (seen, the growing job and told stay)",
@@ -425,18 +429,16 @@ func _check_v4_sample() -> bool:
 	return ok
 
 
-## H5: the frozen v5 fixture loads as it is (no conversion, no backup) and is written back field for field, with the
-## clock held at its own seen. Data reads it: pet level 2 with Lumi out, the mount at tier 2 (Saddlery 2, credit 2),
-## the Market's 340 health, Stomp and Ram in the circles, the saddle worn. Then the same file with an empty triangle
-## stays empty after a reload, and a second, bare v5 file loaded in the same run keeps nothing of the first one's
-## companions, buildings or gear.
+## H6: the frozen v5 fixture is backed up byte for byte and takes the 5 -> 6 step: the placed pieces carry their kind's old
+## level, the file has no def_levels, and a mixed-level v5 camp (towers held, a worn tower, a row with uneven wear, a paid
+## kind with nothing to carry it) keeps every paid level and its wear, and gives its credit once.
 func _check_v5_sample() -> bool:
 	var text := FileAccess.get_file_as_string(SAMPLE_V5_PATH)
 	var s: Variant = JSON.parse_string(text)
-	if not t._expect("H5: the v5 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == 5
-			and (s as Dictionary).get("owned") is Dictionary and (s as Dictionary).get("timers") is Dictionary):
+	if not t._expect("H6: the v5 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == 5
+			and (s as Dictionary).get("def_levels") is Dictionary):
 		return false
-	if not t._expect("H5: the v5 fixture is copied to the scratch slot", _write_test_save(text)):
+	if not t._expect("H6: the v5 fixture is copied to the scratch slot", _write_test_save(text)):
 		return false
 	if FileAccess.file_exists(BACKUP_PATH):
 		DirAccess.remove_absolute(BACKUP_PATH)
@@ -444,23 +446,97 @@ func _check_v5_sample() -> bool:
 	fake_now = float(s["timers"]["seen"])
 	Save.load_game()
 	await get_tree().process_frame
-	var ok := t._expect("H5: the v5 sample loads as version 5 and is not backed up", Save.loaded_v == 5 and Save.save_v == 5
+	var ok := t._expect("H6: the v5 sample loads as version 5, is upgraded to 6 and is backed up byte for byte", Save.loaded_v == 5 and Save.save_v == 6
+		and FileAccess.file_exists(BACKUP_PATH) and FileAccess.get_file_as_string(BACKUP_PATH) == text, {"loaded_v": Save.loaded_v, "save_v": Save.save_v})
+	Save.save_game(true)
+	var written: Variant = _read_test_save()
+	var w: Dictionary = written if written is Dictionary else {}
+	ok = t._expect("H6: the written v5 sample is the 5 -> 6 step's output field for field, without def_levels",
+		written == _upgraded_v5(s) and not w.has("def_levels") and int(w.get("save_v", 0)) == 6, {"written": written}) and ok
+	var placed: Array = w.get("placed", [])
+	ok = t._expect("H6: the v5 sample's row keeps its old level 2 and its tower level 1 on the pieces, and nothing is held or owed",
+		placed.size() == 2 and int(placed[0].get("level", 0)) == 2 and int(placed[1].get("level", 0)) == 1
+		and w.get("defence_reserves") == {} and w.get("defence_legacy_credit") == {}, {"placed": placed}) and ok
+	# a mixed-level v5 camp (a second file in the same run)
+	var mixed: Dictionary = (s as Dictionary).duplicate(true)
+	mixed["def_levels"] = {"barricade": 3, "tower": 4, "spikes": 5}
+	mixed["items"] = {"tower": 2, "spikes": 0}
+	mixed["placed"] = [
+		{"type": "tower", "x": -8.25, "z": 11.5, "rot": 0.4, "wreck": 0.35},
+		{"type": "barricade", "slot": [0, 2], "row": 3, "wrecks": [-1.0, 0.0, 0.65], "wreck": 0.0},
+	]
+	var mixed_text := JSON.stringify(mixed, "  ") + "\n"
+	if not t._expect("H6: the mixed-level v5 file is written", _write_test_save(mixed_text)):
+		return false
+	DirAccess.remove_absolute(BACKUP_PATH)
+	Save.load_game()
+	await get_tree().process_frame
+	Save.save_game(true)
+	var mw: Variant = _read_test_save()
+	var m: Dictionary = mw if mw is Dictionary else {}
+	var mp: Array = m.get("placed", [])
+	ok = t._expect("H6: a mixed-level v5 camp: every placed piece takes its kind's level and keeps its wear, held towers keep their level, a paid kind with no piece becomes a credit",
+		mp.size() == 2 and int(mp[0].get("level", 0)) == 4 and is_equal_approx(float(mp[0].get("wreck", 0.0)), 0.35)
+		and int(mp[1].get("level", 0)) == 3 and JSON.stringify(mp[1].get("wrecks", [])) == JSON.stringify([-1.0, 0.0, 0.65])
+		and JSON.stringify(m.get("defence_reserves")) == JSON.stringify(JSON.parse_string("{\"tower\": [{\"level\": 4}, {\"level\": 4}]}"))
+		and JSON.stringify(m.get("defence_legacy_credit")) == JSON.stringify(JSON.parse_string("{\"spikes\": 5}"))
+		and not m.has("def_levels") and FileAccess.get_file_as_string(BACKUP_PATH) == mixed_text, {"written": mw}) and ok
+	Save.load_game()
+	await get_tree().process_frame
+	Save.save_game(true)
+	ok = t._expect("H6: loading the written file again keeps the reserves and the credit exactly (no second conversion)", _read_test_save() == mw, {"written": _read_test_save()}) and ok
+	fake_now = held
+	return ok
+
+
+## H6: the frozen v6 fixture loads as it is (no conversion, no backup) and is written back field for field, with the
+## clock held at its own seen. Data reads it: pet level 2 with Lumi out, the mount at tier 2 (Saddlery 2, credit 2),
+## the Market's 340 health, Stomp and Ram in the circles, the saddle worn. Then the same file with an empty triangle
+## stays empty after a reload, and a second, bare v5 file loaded in the same run keeps nothing of the first one's
+## companions, buildings or gear.
+func _check_v6_sample() -> bool:
+	var text := FileAccess.get_file_as_string(SAMPLE_V6_PATH)
+	var s: Variant = JSON.parse_string(text)
+	if not t._expect("H6: the v6 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == 6
+			and (s as Dictionary).get("owned") is Dictionary and (s as Dictionary).get("timers") is Dictionary):
+		return false
+	if not t._expect("H6: the v6 fixture is copied to the scratch slot", _write_test_save(text)):
+		return false
+	if FileAccess.file_exists(BACKUP_PATH):
+		DirAccess.remove_absolute(BACKUP_PATH)
+	var held := fake_now
+	fake_now = float(s["timers"]["seen"])
+	Save.load_game()
+	await get_tree().process_frame
+	var ok := t._expect("H6: the v6 sample loads as version 6 and is not backed up", Save.loaded_v == 6 and Save.save_v == 6
 		and not FileAccess.file_exists(BACKUP_PATH), {"loaded_v": Save.loaded_v})
-	ok = t._expect("H5: Data reads the v5 sample: pet level 2 with Lumi out, the mount at tier 2, the Market's 340 health",
+	ok = t._expect("H6: Data reads the v6 sample: pet level 2 with Lumi out, the mount at tier 2, the Market's 340 health",
 		Data.pet_level() == 2 and Save.pet_look == "lumi" and Data.owned_level("pets", "lumi") == 1 and Save.mount_look == "bramblewool"
 		and Data.owned_level("mounts", "bramblewool") == 1 and Data.mount_level() == 2 and Data.building_hp("stall", 1) == 340.0,
 		{"pet": Data.pet_level(), "mount": Data.mount_level(), "hp": Data.building_hp("stall", 1)}) and ok
-	ok = t._expect("H5: Data reads the v5 sample: Stomp and Ram in the circles, the saddle 2 worn, the Dusk Ranger owned and worn",
+	ok = t._expect("H6: Data reads the v6 sample: Stomp and Ram in the circles, the saddle 2 worn, the Dusk Ranger owned and worn",
 		_slots_text() == "stomp,ram," and Data.active_skill_level("ram") == 1 and Data.active_skill_level("pounce") == 0
 		and Data.worn_attach() == "saddle" and Data.attach_level("saddle") == 2 and Save.cat_skin == "dusk_ranger"
 		and Data.cat_skin_owned("dusk_ranger") and not Data.cat_skin_owned("nightfall_ranger"),
 		{"slots": Data.skill_slots(), "worn": Data.worn_attach()}) and ok
+	var rows_ok: bool = Save.placed.size() == 2 and int(Save.placed[0].get("level", 0)) == 2 and int(Save.placed[1].get("level", 0)) == 3 \
+		and is_equal_approx(float(Save.placed[1].get("wreck", 0.0)), 0.35) and (Save.placed[0].get("wrecks", []) as Array).size() == 3
+	ok = t._expect("H6: the v6 sample keeps each piece's own level and wear, the held stock's levels and the unused credit, and no def_levels",
+		rows_ok and JSON.stringify(Save.defence_reserves) == JSON.stringify({"tower": [{"level": 3}, {"level": 2, "wreck": 0.25}]})
+		and JSON.stringify(Save.defence_legacy_credit) == JSON.stringify({"spikes": 2})
+		and int(Save.stations.get("workshop", 0)) == 2 and Data.station_level("workshop") == 2,
+		{"placed": Save.placed, "reserves": Save.defence_reserves, "credit": Save.defence_legacy_credit}) and ok
 	Save.save_game(true)
-	ok = t._expect("H5: the v5 sample survives load and save field for field", _read_test_save() == s, {"written": _read_test_save()}) and ok
+	ok = t._expect("H6: the v6 sample survives load and save field for field", _read_test_save() == s, {"written": _read_test_save()}) and ok
+	Save.load_game()
+	await get_tree().process_frame
+	Save.save_game(true)
+	ok = t._expect("H6: a second load and save of the v6 sample changes nothing (reserves and credit are not used up or repeated)",
+		_read_test_save() == s and not FileAccess.file_exists(BACKUP_PATH), {"written": _read_test_save()}) and ok
 	# an empty triangle the player chose stays empty: no refill on reload, every learned level kept
 	var empty: Dictionary = (s as Dictionary).duplicate(true)
 	empty["saddlery"]["skill_slots"] = ["", "", ""]
-	if not t._expect("H5: the v5 sample with an empty triangle is written", _write_test_save(JSON.stringify(empty, "  ") + "\n")):
+	if not t._expect("H6: the v6 sample with an empty triangle is written", _write_test_save(JSON.stringify(empty, "  ") + "\n")):
 		return false
 	Save.load_game()
 	await get_tree().process_frame
@@ -471,14 +547,14 @@ func _check_v5_sample() -> bool:
 		_slots_text() == ",," and Data.skill_level("stomp") == 2 and Data.skill_level("ram") == 1
 		and again_slots == ["", "", ""] and again == empty, {"written": again}) and ok
 	# a second file loaded in the same run starts from the defaults: nothing of the first one's companions or gear
-	if not t._expect("H5: a bare v5 file is written", _write_test_save(JSON.stringify({"save_v": 5, "leaves": 7}) + "\n")):
+	if not t._expect("H6: a bare v6 file is written", _write_test_save(JSON.stringify({"save_v": 6, "leaves": 7}) + "\n")):
 		return false
 	Save.load_game()
 	await get_tree().process_frame
-	ok = t._expect("H5: a second, bare v5 file keeps nothing of the first: no pet, Market, mount, gear, outfit, skills or Market health",
+	ok = t._expect("H6: a second, bare v6 file keeps nothing of the first: no levels, reserves, credit, pet, Market, mount, gear, outfit, skills or Market health",
 		Save.leaves == 7 and Save.pet_level == 0 and Data.pet_level() == 0 and Data.owned_level("pets", "lumi") == 0
 		and int(Save.stations.get("stall", -1)) == 0 and int(Save.stations.get("saddlery", -1)) == 0 and Data.mount_level() == 0
-		and Save.market_hp_floor == 0 and Data.attach_level("saddle") == 0 and Data.worn_attach() == ""
+		and Save.market_hp_floor == 0 and Save.defence_reserves.is_empty() and Save.defence_legacy_credit.is_empty() and Save.placed.is_empty() and int(Save.stations.get("workshop", -1)) == 0 and Data.attach_level("saddle") == 0 and Data.worn_attach() == ""
 		and not Data.cat_skin_owned("dusk_ranger") and Save.cat_skin == "original"
 		and (Save.saddlery.get("skills", {}) as Dictionary).is_empty() and int(Save.saddlery.get("mount_credit", -1)) == 0
 		and _slots_text() == ",," and Save.pet_look == "sprig",
@@ -534,7 +610,7 @@ func _check_startup() -> bool:
 	var backup := Save.path.get_basename() + ".bak.json"
 	var ok := t._expect("startup 2: the save test runs in the autotest slot", Save.path == "user://leaf_save_test.json")
 	ok = t._expect("startup 2: the v3 file on disk was loaded at launch as version 3 and upgraded to the current version (H5: 5)", Save.loaded_v == 3
-		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 5,
+		and Save.save_v == SaveUpgrades.CURRENT_VERSION and SaveUpgrades.CURRENT_VERSION == 6,
 		{"loaded_v": Save.loaded_v, "save_v": Save.save_v}) and ok
 	var bak_text := FileAccess.get_file_as_string(backup) if FileAccess.file_exists(backup) else ""
 	var bak: Variant = JSON.parse_string(bak_text) if bak_text != "" else null
@@ -623,7 +699,7 @@ func _mat_worth(held: Dictionary) -> int:
 ## leaves with the conversion, mats {"amber": 0}, no burrow_keys, the current version. H3, the 3 -> 4 step: the pantry
 ## (counts above 0) in the Bag and an old dish as a Health Potion (up to the cap; an extra one as leaves); no pantry,
 ## snack choice, dishes or run dish; the plots as {crop}, with a Timers job for each known crop (its share of growth, at
-## the held clock); seen at the held clock. H5: then the 4 -> 5 step (_upgraded_v5).
+## the held clock); seen at the held clock. H5: then the later steps (_upgraded_v5).
 func _upgraded(d: Dictionary) -> Dictionary:
 	var out := d.duplicate(true)
 	out["mats"] = {"amber": 0.0}
@@ -668,6 +744,8 @@ func _upgraded(d: Dictionary) -> Dictionary:
 ## case by case) and stamps the current version; read back the way a file is read (every number a float).
 func _upgraded_v5(d: Dictionary) -> Dictionary:
 	var out: Dictionary = SaveUpgrades.upgrade(d.duplicate(true))
+	if out.get("stations") is Dictionary and not (out["stations"] as Dictionary).has("workshop"):
+		(out["stations"] as Dictionary)["workshop"] = 0       # H6: the loader gives a missing Workshop station its default (0)
 	var back: Variant = JSON.parse_string(JSON.stringify(out))
 	return back if back is Dictionary else {}
 

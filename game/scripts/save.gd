@@ -46,7 +46,7 @@ var camp_level := 1
 ## 0 = not there yet (23 Nov 2026: the Tailor's Nook, "tailor"). H5: the Market ("stall") is 0 or 1 (one level), and the
 ## Mushroom Cottage is gone. load_game starts from these every time, then puts the file's levels over them.
 const STATIONS_DEFAULT := {"target": 0, "bench": 0, "well": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0,
-	"saddlery": 0, "tailor": 0}
+	"saddlery": 0, "tailor": 0, "workshop": 0}
 var stations := STATIONS_DEFAULT.duplicate()
 var stats := {"damage": 0, "draw": 0, "range": 0, "health": 0, "speed": 0, "magnet": 0}
 var bows := {"twig": 1}                             # bows owned and their level
@@ -245,6 +245,7 @@ func load_game() -> void:
 	camp_level = int(d.get("camp_level", 1))
 	# H5: from the defaults every time, so a second file loaded in this run never keeps the first one's buildings
 	stations = STATIONS_DEFAULT.duplicate()
+	items = {"tower": 0, "spikes": 0}                # H6: a second file loaded in this run never keeps the first one's Bag
 	var std: Variant = d.get("stations", {})
 	if std is Dictionary:
 		for k: Variant in std:
@@ -275,8 +276,8 @@ func load_game() -> void:
 		for sp in pl:
 			if typeof(sp) == TYPE_DICTIONARY and sp.has("type"):
 				placed.append(sp)                      # each kind's fields are read with defaults (defences.gd)
-	for k in d.get("def_levels", {}):
-		def_levels[k] = int(d["def_levels"][k])
+	_loaded_fields.erase("def_levels")                # H6: the old shared levels are never kept (a v5 file was converted)
+	_load_defence_levels(d)
 	flags = d.get("flags", {})
 	best_night = int(d.get("best_night", 0))
 	stages_won = int(d.get("stages_won", 0))
@@ -479,6 +480,49 @@ static func _load_owned(v: Variant) -> Dictionary:
 	return out
 
 
+## H6: the defence levels after a load (a v6 file never meets the converter, so the loader checks them): every placed
+## record's level is a whole number in 1..cap (the same dictionary, since live pieces point at it); the carried records
+## and the credits are read through the same rules.
+func _load_defence_levels(d: Dictionary) -> void:
+	var cfg: Dictionary = {}
+	var su: Variant = Data.b.get("save_upgrades", {})
+	if su is Dictionary and (su as Dictionary).get("to_v6") is Dictionary:
+		cfg = (su as Dictionary)["to_v6"]
+	var caps: Dictionary = cfg.get("level_cap", {}) if cfg.get("level_cap") is Dictionary else {}
+	var bag_kinds: Array = cfg.get("bag_kinds", ["tower", "spikes"]) if cfg.get("bag_kinds") is Array else ["tower", "spikes"]
+	for sp: Variant in placed:
+		var rec: Dictionary = sp
+		if caps.has(String(rec.get("type", ""))):
+			rec["level"] = clampi(_whole(rec.get("level", 1)), 1, maxi(1, _whole(caps.get(String(rec.get("type", "")), 5))))
+	defence_reserves = {}
+	var rv: Variant = d.get("defence_reserves", {})
+	if rv is Dictionary:
+		for k: Variant in bag_kinds:
+			var kind := String(k)
+			var src: Variant = (rv as Dictionary).get(kind)
+			if not src is Array:
+				continue
+			var cap := maxi(1, _whole(caps.get(kind, 5)))
+			var list: Array = []
+			for r: Variant in src:
+				if not r is Dictionary or list.size() >= maxi(0, int(items.get(kind, 0))):
+					continue
+				var one: Dictionary = {"level": clampi(_whole((r as Dictionary).get("level", 1)), 1, cap)}
+				var w: Variant = (r as Dictionary).get("wreck")
+				if _is_num(w) and is_finite(float(w)):
+					one["wreck"] = clampf(float(w), 0.0, 1.0)
+				list.append(one)
+			if not list.is_empty():
+				defence_reserves[kind] = list
+	defence_legacy_credit = {}
+	var cd: Variant = d.get("defence_legacy_credit", {})
+	if cd is Dictionary:
+		for kind: String in ["barricade", "tower", "spikes"]:
+			var c := _whole((cd as Dictionary).get(kind, 0))
+			if c > 0:
+				defence_legacy_credit[kind] = clampi(c, 1, maxi(1, _whole(caps.get(kind, 5))))
+
+
 ## A JSON number as a whole number (cut like int()); anything else, or a number that is not finite, is 0.
 static func _whole(v: Variant) -> int:
 	if v is int:
@@ -505,7 +549,7 @@ func _endgame_seed() -> void:
 	stations = STATIONS_DEFAULT.duplicate()
 	stations["fishing"] = 1
 	# G4: the Saddlery built, nothing learned; 23 Nov 2026: the Tailor's Nook built, only the original outfit owned
-	for id in ["target", "bench", "well", "stall", "garden", "saddlery", "tailor"]:
+	for id in ["target", "bench", "well", "stall", "garden", "saddlery", "tailor", "workshop"]:
 		stations[id] = mini(camp_level, Data.building_levels(id).size())
 	var to: Dictionary = (Data.b.get("save_upgrades", {}) as Dictionary).get("to_v5", {})
 	owned = {"mounts": {}, "pets": {}, "outfits": {Data.CAT_SKIN_DEFAULT: {"level": 1}}, "attachments": {}}
@@ -520,12 +564,13 @@ func _endgame_seed() -> void:
 	bow = "sunwood"
 	claimed = [0, 1, 2, 3]
 	items = {"tower": 3, "spikes": 2}
+	defence_reserves = {"tower": [{"level": 3}, {"level": 3}, {"level": 3}], "spikes": [{"level": 3}, {"level": 3}]}
+	defence_legacy_credit = {}
 	placed = []
 	var bar: Dictionary = Data.defence_info("barricade")
 	var per := int(bar.get("row", {}).get("pieces", 3))
 	for ln in 4:                                     # Phase G2: a barricade row on every road (was 4 pieces to place)
-		placed.append({"type": "barricade", "slot": [ln, 2], "row": per})
-	def_levels = {"barricade": 3, "tower": 3, "spikes": 3}
+		placed.append({"type": "barricade", "slot": [ln, 2], "row": per, "level": 3})
 	missions_done = []
 	for i in Data.mission_count():
 		missions_done.append(String(Data.mission(i)["id"]))
@@ -708,7 +753,7 @@ func _notification(what: int) -> void:
 func save_game(quiet := false) -> void:
 	var d := {
 		"leaves": leaves, "timber": timber, "camp_level": camp_level, "stations": stations, "stats": stats,
-		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "def_levels": def_levels, "flags": flags, "best_night": best_night,
+		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "defence_reserves": _reserves_to_write(), "defence_legacy_credit": defence_legacy_credit, "flags": flags, "best_night": best_night,
 		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
 		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,
 		"bag": bag, "timers": timers, "fish_log": fish_log, "fish_dry": fish_dry,
@@ -764,3 +809,13 @@ func flag(k: String) -> bool:
 
 func set_flag(k: String) -> void:
 	flags[k] = true
+
+
+## H6: the reserves as they go into the file: a kind whose list is empty is left out, so a save is the same after a reload.
+func _reserves_to_write() -> Dictionary:
+	var out: Dictionary = {}
+	for kind: Variant in defence_reserves:
+		var list: Variant = defence_reserves[kind]
+		if typeof(list) == TYPE_ARRAY and not (list as Array).is_empty():
+			out[kind] = list
+	return out

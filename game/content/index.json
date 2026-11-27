@@ -2,7 +2,7 @@
            "crops": ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"],
            "recipes": ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"],
            "bows": ["twig", "sunwood", "ember", "frost", "volley", "foxfire"],
-           "buildings": ["home", "target", "bench", "well", "stall", "stone", "garden", "fishing", "saddlery", "tailor"],
+           "buildings": ["home", "target", "bench", "well", "stall", "stone", "garden", "fishing", "saddlery", "tailor", "workshop"],
            "mounts": ["thistle", "bramblewool"],
            "pets": ["sprig", "lumi"],
            "outfits": ["original", "dusk_ranger", "nightfall_ranger"],

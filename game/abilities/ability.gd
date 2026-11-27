@@ -4,10 +4,11 @@ extends RefCounted
 ## Used by: explosive_acorns.gd, the tests.
 ## Uses: main (main.enemy_grid), the foes (hit, dead, radius, aim_height), Fx.
 
-const EFFECTS := {                                     # effect id -> [Fx hit colour]
-	"acorn_burst": Color(0.85, 0.62, 0.3),
-	"spark": Color(1.0, 0.85, 0.4),
+const DEFAULT_EFFECTS := {                             # effect id -> html colour; balance.json abilities.effects wins
+	"acorn_burst": "d99e4d",
+	"spark": "ffd966",
 }
+const DEFAULT_COLOUR := "ffeb80"
 
 
 ## Hurts every foe within `radius` of `centre` for `damage`, once each, except the nodes in `excluded`. Same rule as the
@@ -43,5 +44,6 @@ static func damage_circle(main: Node3D, centre: Vector3, radius: float, damage: 
 static func play_effect(main: Node3D, at: Vector3, effect_id: String) -> void:
 	if main == null or not is_instance_valid(main):
 		return
-	var col: Color = EFFECTS.get(effect_id, Color(1.0, 0.92, 0.5))
+	var table: Dictionary = Data.b.get("abilities", {}).get("effects", DEFAULT_EFFECTS)
+	var col := Color.html(String(table.get(effect_id, table.get("default", DEFAULT_COLOUR))))
 	Fx.hit(main, at, col)

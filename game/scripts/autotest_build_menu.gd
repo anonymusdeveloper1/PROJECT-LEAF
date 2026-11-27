@@ -229,17 +229,25 @@ func _check_entries() -> bool:
 		{"entries": _w().entries()}) and ok
 	_state(1, 1, ["shop_open", "shop_target", "shop_bench"])
 	var ids := _ids(_w().entries())
-	ok = _x("after the first win: Target and Bow Shop open, Well, Market, Saddlery and Tailor locked (H5: no Cottage)",
-		ids == ["target", "bench", "well", "stall", "saddlery", "tailor"]
+	ok = _x("after the first win: Target and Bow Shop open, Well, Market, Saddlery, Tailor and the Defence Workshop locked (H5: no Cottage; H6: the Workshop is last)",
+		ids == ["target", "bench", "well", "stall", "saddlery", "tailor", "workshop"]
 		and String(_entry("target")["state"]) == "open" and String(_entry("bench")["state"]) == "open"
-		and ["well", "stall", "saddlery", "tailor"].all(func(i): return String(_entry(i)["state"]) == "locked"),
+		and ["well", "stall", "saddlery", "tailor", "workshop"].all(func(i): return String(_entry(i)["state"]) == "locked"),
 		{"ids": ids}) and ok
 	ok = _x("the locked ones say what they need, in today's words", String(_entry("well")["needs"]) == _needs_home(3)
 		and not ids.has("cottage") and String(_entry("stall")["needs"]) == _needs_home(2)
 		and String(_entry("tailor")["needs"]) == _needs_home(3)
 		and String(_entry("saddlery")["needs"]) == _needs_home(2) + " · " + _needs_missions(8)
+		and String(_entry("workshop")["needs"]) == _needs_missions(2)
 		and String(_entry("target")["needs"]) == "",
 		{"well": _entry("well").get("needs"), "saddlery": _entry("saddlery").get("needs")}) and ok
+	_state(2, 1, ["shop_open", "shop_target", "shop_bench"])
+	var w2 := _entry("workshop")
+	ok = _x("after Mission 2 the Defence Workshop is open with its price (250 leaves, 10 timber) and its picture",
+		String(w2.get("state", "")) == "open" and (w2["price"] as Dictionary) == Data.build_price("workshop")
+		and int(Data.build_price("workshop").get("leaves", 0)) == 250 and int(Data.build_price("workshop").get("timber", 0)) == 10
+		and String(w2.get("picture", "")) != "" and load(String(w2["picture"])) is Texture2D, {"entry": w2}) and ok
+	_state(1, 1, ["shop_open", "shop_target", "shop_bench"])
 	Save.camp_level = 2
 	ok = _x("at Hearthtree 2 the Market is open (the Well and the Tailor not yet)",
 		String(_entry("stall")["state"]) == "open"
@@ -271,7 +279,7 @@ func _check_window() -> bool:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var cells := _cells()
-	ok = _x("the grid holds a cell per entry, each with its picture", cells.size() == _w().entries().size() and cells.size() == 6
+	ok = _x("the grid holds a cell per entry, each with its picture", cells.size() == _w().entries().size() and cells.size() == 7
 		and cells.all(func(c): return (c as Control).find_children("*", "Panel", true, false).any(func(p): return p.has_meta("cell_pic"))),
 		{"cells": cells.size()}) and ok
 	var last: Control = cells.back() if not cells.is_empty() else null

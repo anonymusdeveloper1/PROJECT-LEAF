@@ -128,7 +128,7 @@ static func icon_for(k: String) -> String:
 		return "shrine"
 	if k.begins_with("road_"):
 		return "barricade"
-	if k.begins_with("tower_"):
+	if k.begins_with("tower_") or k.begins_with("spikes_"):
 		return "repair"
 	return "dot"
 
@@ -226,6 +226,11 @@ func set_badge_visible(on: bool) -> void:
 
 func badge_is_visible() -> bool:
 	return _badge_on
+
+
+## Has a body proxy (a built row, a tower, a patch): such a marker counts as a piece for taps.
+func has_body_proxy() -> bool:
+	return _proxy.is_valid()
 
 
 ## H6: the thing's tap area comes from a world box instead of the badge's own height. `source` returns an AABB (a

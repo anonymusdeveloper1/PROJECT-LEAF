@@ -3,14 +3,6 @@ extends "res://states/enemy/enemy_state.gd"
 ## Totem breathes and looks round for foes, anything else thinks five times a second (think: who to go for) and walks to
 ## its goal (a squad member to its spot in the formation first).
 
-
-# enemy.gd's enum CampApproach { NONE, DIRECT, TRAIL, ARRIVED } as plain numbers (the enemy stores the enum; same values)
-const CAMP_NONE := 0
-const CAMP_DIRECT := 1
-const CAMP_TRAIL := 2
-const CAMP_ARRIVED := 3
-
-
 func update(delta: float) -> String:
 	if e._ai == "golden_grub":
 		e._mover.do_grub(delta, brain.spd)
@@ -33,18 +25,18 @@ func think() -> void:
 		e.s = e.main.world.trail_progress(e.patch, e.global_position)
 	if not e.awake:
 		return
-	if e._camp_approach == CAMP_DIRECT or e._camp_approach == CAMP_TRAIL:
+	if e._camp_approach == EnemyNode.CampApproach.DIRECT or e._camp_approach == EnemyNode.CampApproach.TRAIL:
 		var fire: Vector3 = e.main.world.station_pos("campfire")
 		var touch: float = float(e.main.stations.foot("campfire")) + e.radius + float(e.info["reach"])
 		if e.global_position.distance_to(fire) > touch:
 			e.state = "walk"
 			e._goal = fire
-			if e._camp_approach == CAMP_TRAIL and e.s + e.radius < float(e.main.world.trail_length(e.patch)):
+			if e._camp_approach == EnemyNode.CampApproach.TRAIL and e.s + e.radius < float(e.main.world.trail_length(e.patch)):
 				e._goal = e._trail_goal()
 			return
-		e._camp_approach = CAMP_ARRIVED
-	var p = e.main.player
-	var reach = float(e.info["reach"]) + e.radius + 0.3
+		e._camp_approach = EnemyNode.CampApproach.ARRIVED
+	var p: Node3D = e.main.player
+	var reach := float(e.info["reach"]) + e.radius + 0.3
 	# Phase G1b: a squad member on the march keeps formation (a Frog Shaman still heals, a Crow Drummer still drums)
 	e._sq_on = e._keep_formation()
 	if e._sq_on:
@@ -272,7 +264,7 @@ func think() -> void:
 		e._hunt(p, reach)                             # below ground there is no camp to siege: they hunt the cat
 		return
 	# the Moss Warden is in the way: fight it (every kind still tries the cat first, in its own branch above)
-	var g = e.main.guardian
+	var g: Node3D = e.main.guardian
 	if g != null and e.gate_damage > 0 and not e.flyer and not e.main.fight.last_stand and g.taunts(e):
 		e._fight_guardian(g)
 		return

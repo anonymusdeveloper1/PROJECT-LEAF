@@ -17,7 +17,7 @@ var _model: Node3D
 
 
 static func make(lv: int) -> Node3D:
-	var data: Dictionary = Data.defence_info("tower")["levels"][lv - 1]
+	var data: Dictionary = _level_data(lv)
 	var model := ArrowScript.make("twig")
 	model.scale = Vector3.ONE * float(data["arrow_scale"])
 	if not _materials.has(lv):
@@ -32,6 +32,12 @@ static func make(lv: int) -> Node3D:
 	return model
 
 
+## The tower level's row, level clamped to 1..levels (a bad level from an old save must not crash a shot).
+static func _level_data(lv: int) -> Dictionary:
+	var count: int = (Data.defence_info("tower").get("levels", []) as Array).size()
+	return Data.defence_level_info("tower", clampi(lv, 1, maxi(count, 1)))
+
+
 static func _apply(node: Node, mat: Material) -> void:
 	if node is MeshInstance3D:
 		(node as MeshInstance3D).material_override = mat
@@ -41,9 +47,9 @@ static func _apply(node: Node, mat: Material) -> void:
 
 func launch(game, start: Vector3, aim: Vector3, lv: int) -> void:
 	main = game
-	level = lv
 	var cfg := Data.defence_info("tower")
-	var data: Dictionary = cfg["levels"][level - 1]
+	level = clampi(lv, 1, maxi((cfg.get("levels", []) as Array).size(), 1))
+	var data: Dictionary = _level_data(level)
 	direction = aim.normalized()
 	damage = float(data["damage"])
 	speed = float(cfg["projectile_speed"])
@@ -92,14 +98,15 @@ func _physics_process(delta: float) -> void:
 	if first != null:
 		_spent = true
 		var impact := global_position.lerp(end, closest)
+		var lv := Data.specialisation_level("explosive_acorns")
 		first.hit(direction, damage)
 		# H6: the blast is worked out from what the hit did (last_raw is set inside hit, even when it kills). A miss or an
 		# absorbed hit (a blink) gives raw 0 and so no blast. The acorn is spent, so the blast never chains.
 		var raw = first.get("last_raw")
 		var raw_damage := float(raw) if raw != null else 0.0
 		Fx.hit_burst(main, impact, direction, Data.bow_fx("twig"))
-		if raw_damage > 0.0 and Data.specialisation_level("explosive_acorns") > 0:
-			ExplosiveAcorns.burst(main, impact, first, raw_damage, Data.specialisation_level("explosive_acorns"))
+		if raw_damage > 0.0 and lv > 0:
+			ExplosiveAcorns.burst(main, impact, first, raw_damage, lv)
 		_gone()
 		return
 	global_position += direction * step

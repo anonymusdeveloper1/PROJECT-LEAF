@@ -1,4 +1,5 @@
 extends Node3D
+class_name EnemyNode
 ## One enemy. It walks its patch's trail from the woods to the camp gate and fights whatever is in the way.
 ## The model is res://assets/enemies/<id>/<id>.glb with its <id>.json (clips, events, speeds, spring chains); until
 ## that exists a faceted placeholder stands in. Behaviour by kind:
@@ -52,6 +53,7 @@ const SlimeScript := preload("res://scripts/slime.gd")
 # order is unchanged). Their old private functions below are one-line forwarders, so tests keep their names.
 const HealthPart := preload("res://parts/health.gd")
 const ArmourPart := preload("res://parts/armour.gd")
+const EnemyGridScript := preload("res://core/enemy_grid.gd")
 const MoverPart := preload("res://parts/enemy_mover.gd")
 const AttackPart := preload("res://parts/enemy_attack.gd")
 const HealPart := preload("res://parts/enemy_heal.gd")
@@ -98,7 +100,7 @@ var _status: StatusPart
 var _loot: LootPart
 var _bar: HealthBarPart
 var _brain: BrainPart
-var _grid                                     # main.enemy_grid, found by _the_grid()
+var _grid: EnemyGridScript                   # main.enemy_grid, found by _the_grid()
 var speed := 1.0
 var damage := 1
 var gate_damage := 1
@@ -631,7 +633,7 @@ func _tick(delta: float) -> void:
 		_brain.sleep_step(delta)                        # the Sleep state: _sleep_tick
 		return
 	var contact_slow: float = main.defences.slow_at(global_position) if main.defences else 0.0
-	_slow = _status.step_thorn_slow(contact_slow, frame_dt, _thorn_linger())
+	_slow = _status.step_thorn_slow(contact_slow, minf(frame_dt, 0.1), _thorn_linger())
 	buff_t = maxf(0.0, buff_t - delta)
 	totem_t = maxf(0.0, totem_t - delta)
 	if (totem_t > 0.0) != _totem_on:
@@ -678,9 +680,9 @@ func _tick(delta: float) -> void:
 
 ## Seconds a thorn slow lingers after it steps off the patch: only once Deep thorns is learned (0 before, as in H5).
 func _thorn_linger() -> float:
-	if not Data.has_method("specialisation_level") or int(Data.specialisation_level("deep_thorns")) <= 0:
+	if Data.specialisation_level("deep_thorns") <= 0:
 		return 0.0
-	return float((Data.b.get("specialisations", {}) as Dictionary).get("deep_thorns", {}).get("linger_s", 0.0))
+	return float(((Data.specialisation_info("deep_thorns") as Dictionary).get("tuning", {}) as Dictionary).get("linger_s", 0.0))
 
 
 ## How fast it walks now: spikes slow it; a Raccoon's smoke sprint, a Crow Drummer's beat and a Gloom Totem nearby
@@ -1484,9 +1486,9 @@ func _grid_remove() -> void:
 
 
 ## main.enemy_grid (core/enemy_grid.gd), looked up once and kept; null when main has none (a bare test scene).
-func _the_grid():
+func _the_grid() -> EnemyGridScript:
 	if _grid == null or not is_instance_valid(_grid):
-		_grid = main.get("enemy_grid") if main != null and is_instance_valid(main) else null
+		_grid = main.get("enemy_grid") as EnemyGridScript if main != null and is_instance_valid(main) else null
 	return _grid
 
 

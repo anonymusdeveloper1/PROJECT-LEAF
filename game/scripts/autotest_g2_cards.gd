@@ -11,7 +11,7 @@ extends Node
 ##       is grey and does nothing; a free one runs; the plain row's button still works
 ##   (c) the real cards opened by a tap, one by one, with screenshots (a veteran save with them all built): the
 ##       Hearthtree, the Training Target, the Bow Shop, the Market and the Wishing Well; each fits the phone. H4 (26 Nov
-##       2026, the windows' new shape): the Market still shows its wares as tiles, the same size and 2 a row, their
+##       2026, the windows' new shape): H5 (27 Nov): the Market shows its wares as a grid of picture cells (the same size, 2 a row, no button), Buys pays a neutral amount, four round icon tabs sit at its bottom and it has no footer; the old tiles remain in the synthetic card; their
 ##       buttons a thumb wide; the Hearthtree's tab shows no tiles, its Cat and Defences tabs, the Target and the Bow
 ##       Shop show list rows, as wide as the list, their buttons a thumb wide; the Well is only its footer (no rows);
 ##       each footer's Upgrade sits inside the dialog and the screen, out of the list that scrolls. Then the confirm
@@ -340,18 +340,19 @@ func _buttons() -> void:
 
 
 # ---------------------------------------------------------------- (c) the real cards
-## H4: each real card's marker, its name in the checks and its shape: "tiles" (the Market's wares), "plain" (the
+## H4: each real card's marker, its name in the checks and its shape: "grid" (H5: the Market's picture cells, bottom icon
+## tabs and no footer), "plain" (the
 ## Hearthtree's own tab: its goals and the Graphics row, no tiles; its Cat and Defences tabs are "list"), "list" (list
 ## rows: the Training Target, the Bow Shop) or "footer" (the Wishing Well: no rows, only its pinned Upgrade).
 const REAL := [["shop", "hearthtree", "plain"], ["target", "target", "list"], ["bench", "bench", "list"],
-	["stall", "market", "tiles"], ["well", "well", "footer"]]
+	["stall", "market", "grid"], ["well", "well", "footer"]]
 
 
 func _real_cards() -> void:
 	var hud = main.hud
 	hud.hide_card()
 	t._veteran(6)
-	for id in ["target", "bench", "well", "stall", "cottage", "garden"]:
+	for id in ["target", "bench", "well", "stall", "garden"]:
 		Save.stations[id] = maxi(int(Save.stations.get(id, 0)), 1)
 	Save.leaves = 3000
 	Save.timber = 60
@@ -371,7 +372,10 @@ func _real_cards() -> void:
 		await t._shot("cards_" + pair[1])
 		_lay._card_fits(pair[1])
 		_card_shape(pair[1], pair[2])
-		_footer_inside(pair[1])
+		if pair[2] == "grid":
+			await _market_grid(pair[1])                  # H5: Sells, the Buys tab's neutral payout, the bottom icon tabs, no footer
+		else:
+			_footer_inside(pair[1])
 		var sc: ScrollContainer = hud._card_scroll
 		if sc != null and hud._card_list != null and hud._card_list.size.y > sc.size.y + 40.0:
 			sc.scroll_vertical = int(sc.size.y * 0.85)    # a long card: one more shot further down
@@ -402,6 +406,11 @@ func _card_shape(what: String, shape: String) -> void:
 			_x("the %s card shows its wares as tiles" % what, tiles > 0, {"title": hud.card_title(), "tiles": tiles})
 			var probs := _tile_problems()
 			_x("the %s card's tiles: the same size, 2 a row, buttons a thumb wide" % what, probs.is_empty(), {"bad": probs.slice(0, 5)})
+		"grid":
+			var cells := _cells()
+			_x("the %s card shows its wares as picture cells (a grid)" % what, cells.size() > 0, {"title": hud.card_title(), "cells": cells.size()})
+			var cp := _cell_problems()
+			_x("the %s card's cells: the same size, inside the dialog, no buttons" % what, cp.is_empty(), {"bad": cp.slice(0, 5)})
 		"plain":
 			_x("the %s card shows its rows and no tiles" % what, tiles == 0 and hud._card_list.get_child_count() > 0,
 				{"tiles": tiles, "children": hud._card_list.get_child_count()})
@@ -415,6 +424,107 @@ func _card_shape(what: String, shape: String) -> void:
 		var lp := _list_problems()
 		_x("the %s card's list rows: as wide as the list, buttons a thumb wide" % what, lp.is_empty(),
 			{"rows": rows.size(), "bad": lp.slice(0, 5)})
+
+
+## H5: the picture cells of the open card's grids (ui/kit/icon_grid.gd marks each with "cell").
+func _cells() -> Array:
+	var out: Array = []
+	for g in _grids():
+		out.append_array(g.get_children().filter(func(c): return c.has_meta("cell") and not c.is_queued_for_deletion()))
+	return out
+
+
+## H5: the cells of the open card: [all the same size, at most 3 a row, inside the dialog, a thumb big, no button in a cell]
+## -> the problems. A cell is tapped as a whole (its popup or detail view).
+func _cell_problems() -> Array:
+	var bad: Array = []
+	var cr: Rect2 = main.hud._card.get_global_rect() if main.hud._card != null else Rect2()
+	for g in _grids():
+		var cl: Array = g.get_children().filter(func(c): return c.has_meta("cell") and not c.is_queued_for_deletion())
+		if cl.is_empty():
+			continue
+		if _view().x < 800.0 and (g as GridContainer).columns > 3:
+			bad.append("%d a row" % (g as GridContainer).columns)
+		for x in cl:
+			if ((x as Control).size - (cl[0] as Control).size).length() > 1.5:   # a column is a whole pixel wider when the width does not divide
+				bad.append("%s is %s, not %s" % [x.get_meta("title", "?"), (x as Control).size, (cl[0] as Control).size])
+			var r: Rect2 = (x as Control).get_global_rect()
+			if r.position.x < cr.position.x - 0.5 or r.end.x > cr.end.x + 0.5:
+				bad.append("%s sticks out of the dialog" % x.get_meta("title", "?"))
+			if r.size.x < 44.0 or r.size.y < 44.0:
+				bad.append("%s is too small to tap %s" % [x.get_meta("title", "?"), r.size])
+			if not _buttons_in(x).is_empty():
+				bad.append("%s holds a button" % x.get_meta("title", "?"))
+		if cl.size() >= 2 and int(g.columns) >= 2 and absf((cl[0] as Control).position.y - (cl[1] as Control).position.y) > 0.5:
+			bad.append("the first two cells are not side by side")
+	return bad
+
+
+## H5: the Market's own shape. Sells' prices are checked amounts; Buys pays a neutral amount (never red, never a check);
+## four round icon tabs sit under the grid, each with its word as its name and its tab id; and no footer.
+func _market_grid(what: String) -> void:
+	var hud = main.hud
+	var win = hud.windows["stall"]
+	var tabs: Array = _tab_buttons_of_card()
+	var want: Array = win.tab_ids()
+	var ids: Array = tabs.map(func(b): return String(b.get_meta("tab_id", "")))
+	_x("the %s has four bottom tabs: Sells, Buys, Mounts, Pets" % what, tabs.size() == 4 and ids == want, {"tabs": ids, "want": want})
+	var icon_only := not tabs.is_empty()
+	var named := not tabs.is_empty()
+	var thumb := not tabs.is_empty()
+	for b in tabs:
+		icon_only = icon_only and String((b as Button).text) == ""
+		named = named and String(b.get_meta("tab_name", "")) != ""
+		thumb = thumb and (b as Control).size.y >= 44.0 and (b as Control).size.x >= 44.0
+	_x("the %s's tabs are icons only, each with its word as its name, a thumb big" % what, icon_only and named and thumb)
+	var sc: ScrollContainer = hud._card_scroll
+	var under: bool = hud._card_tabs != null and sc != null and hud._card_tabs.get_global_rect().position.y >= sc.get_global_rect().end.y - 1.0
+	_x("the %s's tabs sit under the grid, inside the dialog and the screen" % what, under and _on_card_and_screen(hud._card_tabs), {"tabs": hud._card_tabs.get_global_rect()})
+	var ft = hud.p_card.foot
+	var has_foot: bool = ft != null and is_instance_valid(ft) and (ft as Control).visible
+	_x("the %s has no footer and no Upgrade" % what, not has_foot and hud.p_card.footer_button(Data.word("upgrade")) == null and not win.spec().has("footer"),
+		{"foot": has_foot})
+	# Sells' cells carry the price as shop_tiles' checked price line (red when short, no amount_line meta); a neutral
+	# amount_line is a payout and belongs to Buys only.
+	var price_cells := 0
+	var neutral_on_sells := false
+	for cell in _cells():
+		var has_price := false
+		for l in (cell as Node).find_children("*", "HBoxContainer", true, false):
+			if l.has_meta("amount_line"):
+				if bool(l.get_meta("neutral", false)):
+					neutral_on_sells = true
+			elif not (l as Node).find_children("*", "Label", true, false).is_empty():
+				has_price = true
+		if has_price:
+			price_cells += 1
+	_x("Sells shows its prices as checked price lines, no neutral payout", price_cells > 0 and not neutral_on_sells, {"price cells": price_cells, "neutral": neutral_on_sells})
+	win.select("buys")
+	await t._wait(0.4)
+	await t._shot("cards_market_buys")
+	_lay._card_fits("market, Buys tab")
+	var lines: Array = []
+	var red := false
+	for l in hud._card.find_children("*", "HBoxContainer", true, false):
+		if l.has_meta("amount_line"):
+			lines.append(l)
+			for lb in (l as Node).find_children("*", "Label", true, false):
+				if not bool(lb.get_meta("afford", true)):
+					red = true
+	var neutral: bool = not lines.is_empty() and lines.all(func(l): return bool(l.get_meta("neutral", false)))
+	_x("Buys pays a neutral amount: no check, never red", neutral and not red, {"lines": lines.size(), "red": red})
+	var cp := _cell_problems()
+	_x("Buys' cells: the same size, inside the dialog, no buttons", _cells().size() > 0 and cp.is_empty(), {"cells": _cells().size(), "bad": cp.slice(0, 5)})
+	win.select("sells")
+	await t._wait(0.2)
+
+
+## The tab buttons of the open card (marked "card_tab").
+func _tab_buttons_of_card() -> Array:
+	var tabs = main.hud._card_tabs
+	if main.hud._card == null or tabs == null or not is_instance_valid(tabs):
+		return []
+	return tabs.get_children().filter(func(b): return b.has_meta("card_tab") and not b.is_queued_for_deletion())
 
 
 ## The open card's pinned footer shows, out of the list that scrolls, with its Upgrade inside the dialog and the screen

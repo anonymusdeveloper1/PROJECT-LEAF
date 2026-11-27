@@ -205,6 +205,23 @@ build icon's dot, the camera shot and the rise. `--bowshop`'s window checks are 
 and `--cards`' window-kit checks in `scripts/autotest_g2_cards_kit.gd` (each loaded by its main test file). Tests reach
 a building's window through `main.hud.windows[<id>]`, never through `stations`.
 
+**H5 (27 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines):**
+- `--h5found` (`scripts/autotest_h5_found.gd`, new, 60 checks): the four new content kinds (mounts, pets, outfits,
+  attachments), the Buy command's rules (quantity, caps, a stale level, a failed purchase), Bramble's trade rules and the
+  4 to 5 save step case by case, against the frozen `balance.json save_upgrades.to_v5`.
+- `--campg` (`scripts/autotest_g2_camp.gd`, with the Market's checks in `scripts/autotest_g2_market.gd`, new): the camp
+  without the Cottage, the Market's four tabs by real taps, trade amounts and refusals, no shard trade, Sprig, Lumi,
+  pet training and the Hearthtree's cap, the pet goals' Show and Go, and a real v4 save upgraded.
+- `--saddlery` (`scripts/autotest_g4_saddle.gd`, with the window checks in `scripts/autotest_saddle_window.gd`, new):
+  the Attachments and Skills tabs, the turning detail view, the triangle with a real drag (never four), the Upgrade
+  confirm, and the mount firing only the skills in the circles.
+- `--tailor` (`scripts/autotest_cat_skins.gd`): the Nook's window: grey cards, the try-on, one button, Back.
+- `--cards` also checks the Market's grid, neutral payouts, bottom icon tabs and no footer (`autotest_g2_cards.gd`).
+- `--saves` loads `tests/saves/v5_sample.json` too (v2 to v5 samples); `--content` checks the four new kinds, that the
+  Cottage is gone and the one-level Market.
+- Moved to the new windows: `--layout`, `--hudcheck`, `--taps`, `--bag`, `--topup`, `--burrowsave`, `--homegoals`,
+  `--buildmenu`, `--village`, `--wear` and `--shards`. Run them one after another, never in parallel.
+
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
 bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Current PC result: 77 pass,
@@ -231,7 +248,7 @@ mid-shot. The Saddlery mode passed 94 checks, including flame-ball splash, upgra
 The raids and the Burrows open only after all 15 raids are won. To play them at once, start a debug build with
 `--endgame` (on the PC: `... -- --endgame`; on the phone: a line `--endgame` in the app's `files/test_args.txt`, as
 for the other phone test arguments). It opens a **separate save** (`user://leaf_save_endgame.json`), never the real
-one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well, Cottage, Stall and Garden at 3; an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, no Hollow keys (they are gone), food in
+one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well and Garden at 3, the Market built, the pet at level 3 and the Saddlery at 5 (H5); an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, no Hollow keys (they are gone), food in
 the Bag and the Burrows open (the Moss Warden is not there yet: it is found in the first Burrow). The HUD says
 "Endgame test save" at the top left. The slot stays on at every launch until a launch with `--endgame-off`; then the
 real save is back, untouched. `--endgame --fresh` starts the endgame save over. Release builds ignore both.

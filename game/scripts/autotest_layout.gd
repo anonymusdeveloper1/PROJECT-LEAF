@@ -46,7 +46,8 @@ const CLEAR_ZONE := Rect2(-1.5, 0.8, 3.0, 5.2)     # the ground just south of th
 const FIRE_CLEAR := 1.9                            # open ground round the campfire: no footprint nearer than this
 const TAN50 := 1.19                                # the camera looks down at 50 degrees
 const CAT_H := 0.35                                # a cat is hidden when its body at this height is covered
-const IDS := ["target", "bench", "cottage", "stall", "well", "tailor"]   # 23 Nov 2026: and the Tailor's Nook
+const OLD_COTTAGE := Vector3(6.4, 0.0, 3.6)       # H5: where the Cottage stood: a fixture literal for the old-save test
+const IDS := ["target", "bench", "stall", "well", "tailor"]   # 23 Nov 2026: and the Tailor's Nook; H5: no Cottage
 
 
 func run() -> bool:
@@ -99,7 +100,7 @@ func _input(event: InputEvent) -> void:
 # ---------------------------------------------------------------- --layout
 func _layout() -> void:
 	main.player.invincible = true
-	t._veteran(14)                                  # missions 1-14 won: the stall, the cottage, the well, garden, fishing
+	t._veteran(14)                                  # missions 1-14 won: the stall, the well, garden, fishing
 	Save.stations["saddlery"] = 1                  # 23 Nov 2026: the Saddlery and the Tailor's Nook too, so the Nook is
 	Save.stations["tailor"] = 1                    # checked against every building round it (at every home level)
 	main.stations.free_guardian()                   # the stone and its ring show
@@ -540,13 +541,15 @@ func _cat_rect(p: Vector3) -> Rect2:
 
 
 # ---------------------------------------------------------------- --layoutsave
-## 1 (with --fresh): a veteran save with a tower on the cottage's ground and spikes on the stall's ring, as an old save
-## could have them, and one tower well clear of the camp. 2: on start they are back in the bag; the clear one stays.
+## 1 (with --fresh): a veteran save with a tower on the old Cottage's ground and spikes on the stall's ring, as an old save
+## could have them, and one tower well clear of the camp. 2: on start the spikes on the Market's ring are back in the bag;
+## the towers stay. H5: the Cottage is gone, so its old spot is a fixture literal (never station_pos("cottage")); that
+## ground is clear of every remaining exclusion, so a piece there stays placed.
 func _layoutsave(step: int) -> void:
 	var w = main.world
 	if step == 1:
 		t._veteran(6)
-		Save.placed.append({"type": "tower", "x": w.station_pos("cottage").x + 0.4, "z": w.station_pos("cottage").z, "rot": 0.0})
+		Save.placed.append({"type": "tower", "x": OLD_COTTAGE.x + 0.4, "z": OLD_COTTAGE.z, "rot": 0.0})
 		Save.placed.append({"type": "spikes", "x": w.spot_ring("stall").x, "z": w.spot_ring("stall").z, "rot": 0.0})
 		Save.placed.append({"type": "tower", "x": 6.0, "z": -6.0, "rot": 0.0})
 		Save.items["tower"] = 0
@@ -564,8 +567,13 @@ func _layoutsave(step: int) -> void:
 			elif String(sp["type"]) == "tower":
 				kept += 1
 	t._expect("pieces on the buildings' new ground are gone from the camp", on_ground.is_empty(), {"placed": Save.placed})
-	t._expect("they are back in the bag", int(Save.items.get("tower", 0)) == 1 and int(Save.items.get("spikes", 0)) == 1, {"items": Save.items})
-	t._expect("the tower clear of the camp stays", kept >= 1, {"placed": Save.placed})
+	t._expect("the spikes on the Market's ring are back in the bag", int(Save.items.get("spikes", 0)) == 1, {"items": Save.items})
+	var on_old := false
+	for sp in Save.placed:
+		if sp.has("x") and String(sp["type"]) == "tower" and absf(float(sp["x"]) - (OLD_COTTAGE.x + 0.4)) < 0.05 and absf(float(sp["z"]) - OLD_COTTAGE.z) < 0.05:
+			on_old = true
+	t._expect("the tower on the vacated Cottage ground stays placed", on_old and int(Save.items.get("tower", 0)) == 0, {"placed": Save.placed, "items": Save.items})
+	t._expect("the tower clear of the camp stays", kept >= 2, {"placed": Save.placed})
 	t._expect("the player is told", String(main.hud._tip.text).contains("place") or main.hud_note.contains("place"), {"tip": main.hud._tip.text})
 	var pieces_ok := true
 	for p in main.defences.pieces:
@@ -633,21 +641,27 @@ func _hudcheck() -> void:
 	_middle_free("camp, endgame")
 	await t._shot("hud_camp_endgame")
 	await _hud_taps()
-	for id in ["shop", "target", "bench", "well", "cottage", "stall", "sign", "stone", "garden", "pot", "fishing"]:
+	for id in ["shop", "target", "bench", "well", "stall", "sign", "stone", "garden", "pot", "fishing"]:
 		await _card_at(main.stations.rings[id], id)
 		if id == "target":
 			await _confirm_at("target")                  # H4: its pinned Upgrade opens the confirm window
-		if id == "stall" or id == "cottage":
-			_expect_rows("the %s card has its colours" % id, ["Colours"])
-			var att := false
-			for b in hud.card_buttons():
-				if String(b.get_meta("label", "")) in ["Buy", "Wear", "Take off"]:
-					att = true
-			t._expect("the %s card has attachment rows" % id, att)
-			if t._press("Next"):
+		if id == "stall":
+			# H5: the colours and the gear are on the Market's two companion tabs (Mounts, Pets), under their grids
+			for tb in ["mounts", "pets"]:
+				hud.windows["stall"].select(tb)
 				await t._wait(0.4)
-				await t._shot("hud_card_%s_next" % id)
-				_card_fits(id + " after Next")
+				_expect_rows("the Market's %s tab has its colours" % tb, ["Colours"])
+				var att := false
+				for b in hud.card_buttons():
+					if String(b.get_meta("label", "")) in ["Buy", "Wear", "Take off"]:
+						att = true
+				t._expect("the Market's %s tab has attachment rows" % tb, att)
+				if t._press("Next"):
+					await t._wait(0.4)
+					await t._shot("hud_card_stall_%s_next" % tb)
+					_card_fits("stall %s after Next" % tb)
+			hud.windows["stall"].select("sells")
+			await t._wait(0.3)
 	await _card_at(main.burrows.ring(), "hollow")
 	await _close_dialog("hollow")
 	# 3. a raid: the meter in the top bar, then its warning and the raid card
@@ -1228,7 +1242,7 @@ func _taps() -> void:
 	await t._wait(1.5)
 	t._expect("a drag stops the walk: no card", ia.walking == null and hud._card == null and not stall.in_reach(main.player.global_position))
 	# 8. a tap on the thing itself, not its badge
-	var cot = st.rings["cottage"]
+	var cot = st.rings["bench"]            # H5: the Cottage is gone; the Bow Shop is the building tapped
 	main.player.global_position = cot.global_position
 	main.snap_camera()
 	await t._wait(0.6)
@@ -1236,11 +1250,11 @@ func _taps() -> void:
 	var hit := Vector2.ZERO
 	if not body.is_empty():
 		hit = (body[0] as Vector2).lerp(body[1], 0.35)
-	t._expect("the cottage's body is away from its badge", not body.is_empty() and hit.distance_to(main.cam.unproject_position(cot.badge_pos())) > cot.half_px(main.cam) * 1.4,
+	t._expect("the Bow Shop's body is away from its badge", not body.is_empty() and hit.distance_to(main.cam.unproject_position(cot.badge_pos())) > cot.half_px(main.cam) * 1.4,
 		{"hit": hit})
 	await t._tap_at(hit)
 	await t._wait(0.3)
-	t._expect("a tap on the cottage itself opens its card", hud.card_ring() == cot)
+	t._expect("a tap on the Bow Shop itself opens its card", hud.card_ring() == cot)
 	await t._tap_close()
 	# 9. a badge over the cat fades (the cat comes first)
 	var sb: Vector3 = stall.badge_pos()

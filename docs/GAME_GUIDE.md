@@ -1,6 +1,6 @@
 # Project LEAF: the game guide
 
-23 November 2026. This is the one place that describes the game as it is now. Parts 1 to 10 are for the owner, in
+27 November 2026. This is the one place that describes the game as it is now. Parts 1 to 10 are for the owner, in
 plain words. Part 11 is for whoever works on the code next. Part 12 lists the other documents.
 
 The code (`game/scripts/`) and the numbers (`game/data/balance.json`) win when they disagree with this guide. If you
@@ -14,6 +14,11 @@ is `docs/PHASE_F_PLAN.md`.
 **New (20 Nov 2026, G1b and G2).** Raid waves now come as **squads** (small teams with roles), and the camp is
 called **the Hearthtree**: its shop is a set of tiles, barricades are built in rows on the road spots, and the Wishing
 Well works by itself. Those parts are marked **(G1b)** or **(G2)**. The plan is `docs/PHASE_G_PLAN.md`.
+
+**New (26 and 27 Nov 2026, H4 and H5).** The building windows were rebuilt: one shared window style with a pinned
+Upgrade, the build menu, and new windows for the Market, the Saddlery and the Tailor's Nook. **The Mushroom Cottage is
+gone**; the pet is bought and trained at the Market. They are described in part 3 ("The building windows") and part 5,
+and marked **(H4)** or **(H5)**. The plan is `docs/PHASE_H_PLAN.md`.
 
 ---
 
@@ -35,7 +40,8 @@ itself. You move her, pick where to stand, and spend what you earn to grow the c
    list for each level.** It grows only when every goal is met and its price is paid. Its level caps upgrades;
    Raid Missions open sequentially without requiring a larger home.
    **New (20 Nov 2026, G2): the tree home is called the Hearthtree.** Its level names stay (Shed, Hut, Treehouse...).
-   The Market (with Thistle, free) and the Mushroom Cottage (with Sprig) come at Hearthtree level 2.
+   The Market (with Thistle and Bramblewool, free) comes at Hearthtree level 2. (New, H5: the Mushroom Cottage is gone;
+   Sprig is bought at the Market's Pets tab.)
 3. **After Raid Mission 15** the game goes on two ways, side by side:
    - **Gloom Raids**: short attacks on the camp. A meter fills while you play; when it is full, a raid comes.
    - **The Gloomwood**: a dungeon at night. The cat walks a road past fights to a boss and brings home rare
@@ -140,8 +146,9 @@ the Bag is full: part 6. Picking, cooking, fishing and trading say what you got 
 - **Bottom, first row**: the **Bag** (left), the **build icon** (a house) next to it, and at the right the **Health
   Potion** button (New, H3): it shows only when the cat is hurt and the Bag holds one, with the potion's picture and
   "×N". It turns grey while it cannot work now (for example while a potion is still healing). The build icon opens
-  the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below ground, and in a wave it
-  gives the usual "A wave is on!". (H4 swaps in the real build menu.)
+  the build menu from anywhere in the camp. It is hidden below ground, and in a wave it
+  gives the usual "A wave is on!". **New (H4):** it opens the build menu (part 3). A small dot on it shows when a
+  building can be built and paid for.
 - **Bottom, second row**: the defences to place (smaller buttons) just above the Bag, and **Ride** or **Walk** at the
   right. **New (H3):** while the mount is knocked out, the **Mount Health Potion** button takes Ride's place (only when
   the Bag holds one).
@@ -180,10 +187,11 @@ it and straight south of it.
   **Fishing Spot** on its south shore. Lily pads, a little dock, fireflies, now and then a jumping fish.
 - **East**: the **Training Target** close to the fire, then the **Bow Shop** (New, 21 Nov 2026, G3: it was the Bow Bench). Further east, past the firelight, the
   **Guardian Stone**.
-- **South-east**: the **Mushroom Cottage** and the **Market** (Bramble the hedgehog trader stands by it). **New (G2):**
-  the Market is called the Market, not the Market Stall, and both come at Hearthtree level 2. **New (21 Nov 2026, G4):**
+- **South-east**: the **Market** (Bramble the hedgehog trader stands by it). **New (G2):**
+  the Market is called the Market, not the Market Stall, and it comes at Hearthtree level 2. **New (21 Nov 2026, G4):**
   the **Saddlery** stands south-east past the Market, on its own path.
-  The **Tailor's Nook** stands farther east, past the Mushroom Cottage.
+  The **Tailor's Nook** stands farther east. **New (H5):** the Mushroom Cottage is gone; its old spot is open ground,
+  and a tower or spikes placed there stay where they are.
 - **South**: the **garden**. Further south, at the woods' edge, **the Old Hollow**, the way into the Gloomwood.
 - On the campfire's north-east rim: the **cooking pot**.
 
@@ -209,6 +217,13 @@ The home's counter is the **shop**. It sells: the Training Target and the Bow Sh
 and Leaf magnet; acorn towers and thorn spikes, and their levels; "Mend the defences"; growing the home (see the goals
 above); and the **Graphics** setting (Auto, Low, Medium, High). After the raids, "Mend all" sits at the top when
 anything is damaged.
+
+**New (H4, 26 Nov 2026): the shop is a window with tabs.** It has **Hearthtree**, **Cat** and **Defences** tabs along
+the top. A tab shows once it has something, and there is no tab bar while only one tab shows. The window always opens
+on the Hearthtree tab, and a tab gets a small "!" when something on it can be bought. Mend all, Patch it up and
+"Nothing for sale yet" stay at the top of the Hearthtree tab, and Graphics at the bottom. The Cat tab lists Health,
+Move speed and Leaf magnet, each with its level, what the next level gives, and its own button. The Defences tab holds
+the old defences shelf until a later step (H6) gives it its own place. See "The building windows" below.
 
 > **New (20 Nov 2026, G2): what changed at the shop.**
 > - **Barricades** are no longer sold here. Build them as rows on the road markers (part 2). The barricade's level
@@ -247,8 +262,8 @@ The goals (all of them must be met). The raid that ends each step is the first g
 | Home | Goals | Raids usually played at this level (not required since 21 Nov 2026) |
 |---|---|---|
 | 2 | Raid 1 won (First Embers). Training Target and Bow Shop built. Damage 4, Draw speed 2, Health 3. Twig Bow level 4. | Raids 3 to 6 |
-| 3 | Raid 5 won (Bandit Night). Target, Bow Shop, Cottage and Market at 2. (New, H1, 25 Nov 2026: this list no longer asks for the Wishing Well, which opens at Hearthtree 3; Hearthtree 4 still asks for Well level 2.) Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Raids 7 to 10 |
-| 4 | Raid 9 won (Croaking Choir). Target, Bow Shop, Cottage and Market at 3; Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Raids 11 to 13 |
+| 3 | Raid 5 won (Bandit Night). Target and Bow Shop at 2; the Market built and the pet at level 2 (New, H5, the owner's answer: this was "Cottage and Market at 2"). (New, H1, 25 Nov 2026: this list no longer asks for the Wishing Well, which opens at Hearthtree 3; Hearthtree 4 still asks for Well level 2.) Damage 6, Draw speed 5, Range 3, Health 5, Move speed 3. Sunwood Longbow level 4. 3 towers; Barricades level 2. | Raids 7 to 10 |
+| 4 | Raid 9 won (Croaking Choir). Target and Bow Shop at 3; the pet at level 3 (New, H5: this was "Cottage and Market at 3"; the Market has no levels any more); Well 2; Garden 2. Damage 8, Draw speed 7, Range 5, Health 7, Move speed 5. A bow at level 7. 4 towers, 2 of them at level 3; Barricades level 3; Thorn Spikes level 2. | Raids 11 to 13 |
 | 5 | Raid 12 won (Two Fronts). Target and Bow Shop at 4; Well 3; Garden 3. Damage 9, Draw speed 9, Range 7, Health 9, Move speed 7. A bow at level 9. (New, 22 Nov 2026: Thorn Volley is hidden, so it is no longer a goal here.) 5 towers at level 3; Thorn Spikes level 3. | Raids 14 and 15 |
 | 6 | All 15 raids won. The Gloomwood cleared once. Target and Bow Shop at 5. Every stat at 10. A bow at level 10. Own the Frost Bow (New, 22 Nov 2026: moved here from Hearthtree 5; Frost needs Bow Shop 5). | The raids and the expeditions go on |
 | 7 | Gloomwood level 2 beaten | |
@@ -261,12 +276,14 @@ homes 7 and 8 are unchanged. So a player stuck on an act's last raid (a boss) ca
 **No raid gates (the owner, 21 Nov 2026).** Raids never wait for a Hearthtree upgrade: the next raid opens as
 soon as the one before it is won, whatever the Hearthtree's level. Before this change, the owner reached raid
 11 without enough leaves for Hearthtree 4 and could not play the next raid to earn more. Growing the Hearthtree
-still needs its goals and its price, and still opens the Market, the Cottage and more barricade rows.
+still needs its goals and its price, and still opens the Market and more barricade rows.
 
 Levels 4 to 6 each have their own campfire: a stone hearth, a great bonfire, a crystal brazier. Levels 7 and 8 show
 level 6's home and campfire until their own models are made.
 
-**Rows and the Market.** The Mushroom Cottage (Sprig) and the Market (Thistle) can be built at Hearthtree level 2.
+**Rows and the Market.** The Market (with Thistle and Bramblewool) can be built at Hearthtree level 2. (New, H5: the
+pet's level goals ask for the Market. **Show** on one opens the build menu at the Market until it is built, and **Go**
+opens the Market on its Pets tab.)
 Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each road's layout.
 
 ### The buildings
@@ -276,9 +293,8 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 | Signpost | **Raid Missions:** 15 down to 1 in spacious animated cards; To finish / Completed, Start / Replay, and saved-run resume. **Random Raids:** unlocks after all 15 Raid Missions, retaining Watch controls (part 7). | From the start |
 | Training Target | Damage, Draw speed and Range for the cat (Range from level 2). 5 levels. | Shop, after raid 1's first wave |
 | Bow Shop | **New (21 Nov 2026, G3): the Bow Bench is now the Bow Shop** (same place, same model). One card with a tile per bow, one button each: **Upgrade** for the equipped bow, **Equip** for an owned bow (between waves only; during a wave it says "Between waves"), **Buy** for a bow not owned yet (or "Needs Bow Shop level N"). Buying equips the bow if no wave is on. Each bow keeps its own level. Bow levels; 5 levels. See part 11 for the bows' data. **New (22 Nov 2026):** the shop has four bows, in the table below the buildings. | Shop, after raid 1 is won |
-| Market | Bramble the hedgehog trader. Thistle lives here, and the **Stable** (mount looks, colours, Thunder Shoes) is on the Market's card. (New, 21 Nov 2026, G4: the mount's skills and attachments are at the Saddlery.) **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25. Food goes into the Bag; with no room the tile says "Bag full" and nothing is paid (New, H3). He does not sell Emberpeppers or Swiftroots. Bramble sells no materials (New, H1, 25 Nov 2026). **Buys:** timber (5 for 30 leaves), Gloom shards (5 for 100 leaves), a Golden Carp for 300 leaves at any time (New, H3, 26 Nov 2026), and after the missions amber: 1 amber for 1,000 leaves and 1 Gloom shard. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle comes free with it. |
-| Mushroom Cottage | Sprig lives here. The **Nest** (pet looks, colours, attachments). | Hearthtree level 2, New (G2). It was a gift for raid 3. |
-| Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
+| Market | Bramble the hedgehog trader. **New (H5): the Market is one window with four icon tabs at the bottom: Sells, Buys, Mounts and Pets** (see "The building windows" below). It has no levels and no Upgrade. **Sells:** 5 timber for 50 leaves, 2 Sunberries for 30, 2 Fernmint for 30, 1 honey for 40, 1 fish for 25. Food goes into the Bag; with no room the picture says "Bag full" and nothing is paid (New, H3). He does not sell Emberpeppers or Swiftroots. Bramble sells no materials (New, H1, 25 Nov 2026). **Buys:** timber (5 for 30 leaves), a Golden Carp for 300 leaves at any time (New, H3, 26 Nov 2026), and after the missions amber: 1 amber for 1,000 leaves and 1 Gloom shard. **New (H5, the owner's rule): Bramble no longer buys Gloom shards** (5 for 100 leaves is gone). **Mounts and Pets:** Thistle and Bramblewool (free with the Market), Sprig (160 leaves) and Lumi (400 leaves), the pet's training, colours and the Gloomwood gear. A new Market has 200 health; one an old save already upgraded keeps its 340 or 500. (**New, G2:** the Market Stall is now called the Market.) | Hearthtree level 2 (New, G2). Thistle and Bramblewool come free with it. |
+| Tailor's Nook | **New (23 Nov 2026).** Outfits for the cat (part 9). **New (H5):** its window shows the cat turning on a stand, with the outfits as cards below. It has one level. If its own model file is missing, a purple Market Stall stands in for it. | Build from the Hearthtree's card at Hearthtree level 3 for 1,500 leaves and 40 timber. |
 | Saddlery | **New (21 Nov 2026, G4).** The mount's **Skills** (Stomp, Ram, Pounce, Bellow) and **Attachments** (Fire-spitter, Mossweave Saddle, Saddlebags), each bought (level 1) and upgraded to level 5, capped by the Saddlery's level. Skill and attachment levels 4 and 5 open after the Raid Missions (New, H1, 25 Nov 2026: they cost leaves and timber only, no materials). Earned only, never paid with money. Its spot is south-east past the Market. Stand-in model: the Bow Bench, tinted brown. It can be attacked and ruined like other buildings. | Built from the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (New, 22 Nov 2026, loop fixes: at Hearthtree 1 its tile says "Needs the Hearthtree at level 2"; before that a Locked tile says "Win 8 raids first"). Build 900 leaves and 30 timber. Levels 2 to 5 cost 1,500/50, 3,000/80, 5,000/120 and 8,000/160 (leaves/timber), never above the Hearthtree's level. |
 | Wishing Well | **New (20 Nov 2026, G2): automatic, no wishes.** Once built, it mends the campfire, the buildings, the barricade pieces and the towers that are not broken: **New (22 Nov 2026): it mends everything that isn't broken back to full, by itself**: the campfire, the Hearthtree and buildings, barricade pieces and towers. Between waves 3%, 6% or 10% of max health a second (Well level 1, 2 or 3); in waves 0.5%, 1% or 2% a second. Broken things (0 health), ruins and the ashes still need the player's repair. Card text: "Mends everything that isn't broken back to full · 6% a second between waves, 1% in waves · broken things need a repair". Its card shows this and its upgrade. **New (H1, 25 Nov 2026):** it is built at **Hearthtree 3** (it used to need 4 raids won; a save that already has it keeps it). Its card has only its Upgrade row, and the card's subtitle shows its rates. In waves it mends **1%, 1.5% or 2.5%** of max health a second (it was 0.5, 1 and 2); between waves 3%, 6% and 10% as before. It also mends the standing Moss Warden; a downed golem gets up by its own rules. A worn Well is still repaired from the signpost's Mend list. | Shop, at Hearthtree 3 |
 | Garden and cooking pot | Grow food in real time and cook potions (part 6; New, H3). Garden levels 2 and 3 cost 400 and 1,000 leaves. | Gift for winning raid 1, with 4 Sunberries |
@@ -287,10 +303,63 @@ Barricade pads open at Hearthtree levels 1, 3, 4 and 5. See Defences for each ro
 | The Old Hollow | The way into the Gloomwood (part 8) | Sealed with Gloom crystals from the first raid won; opens with raid 15's first win |
 
 Most buildings have levels 1 to 3 (bought on their own card, never above the home level). **New (Phase F):** the
-Training Target and the Bow Shop have **5 levels**. The station level caps what it sells: Target (or Bow Shop) level
+Training Target and the Bow Shop have **5 levels** (the Market has none since H5; the pet's own level goes up at the Market, part 5, and the mount's by the Saddlery). The station level caps what it sells: Target (or Bow Shop) level
 1 to 5 lets each stat (or bow) reach level 4, 6, 8, 9 or 10. Health, Move speed and Leaf magnet use the home level
 instead. Target levels 3 to 5 show the second Target model, and Bow Shop levels 4 and 5 the third Bow Shop model, until the
 owner decides how new models are made. Range now grows 0.2 m per level (it was 0.3).
+
+### The building windows (New, H4 26 Nov and H5 27 Nov 2026)
+
+Every building opens a window in the same style: the centred dialog with an X, the building's name, and its content.
+**Buildings with levels end in an Upgrade button that never scrolls away** (the Hearthtree, the Training Target, the Bow
+Shop, the Well, the Guardian Stone once it is awake, the garden and the Saddlery). **Upgrade always opens a confirm
+window** (the owner's answer, H4): it lists what the next level gives, with the price in red and Confirm grey when you
+can't pay. Cancel and Confirm go back to the building's window. Buy, Equip and Build stay one tap. A ruined building
+shows only its repair card.
+
+- **The Bow Shop (H4).** One row per bow. The bow in the paw shows Upgrade with its price, then a grey **Equipped** when
+  it can't level now; another owned bow shows Equip (between waves); a bow not owned shows Buy, or Locked with what it
+  needs. **Tap a bow's picture** to inspect it: the bow turns in 3D with its arrow, with its numbers and "Each arrow
+  hits for N", the real damage with the cat's Damage upgrades and any running potion.
+- **The build menu (H4).** The build icon next to the Bag opens a grid of building pictures that fade in one after
+  another. Each open one has its own **Build** button. A locked one is greyed with what it needs. Tap a picture for its
+  detail view (its picture, what it does, its price). A building you have built leaves the menu. Nothing can be built
+  while the Hearthtree is in ruins. When you build, the camera glides to the new building for about 2 seconds while it
+  rises out of the ground with dust and the flower ring. Touching the joystick, a wave, or going below ground ends the
+  shot at once. The tips say "tap the build icon next to the Bag".
+- **The Market (H5).** It opens on **Sells**. The four tabs at the bottom are pictures only: Sells, Buys, Mounts, Pets
+  (each tab still has its name for screen readers). It has no footer and no Upgrade.
+  - **Sells and Buys:** a grid of big pictures with one bundle's price under each. On Buys the number under the picture
+    is what Bramble **pays you**, in a neutral colour, never red. **Tap a picture** and a small popup opens with the
+    name, what it is, an amount (+ and -), "You pay" or "You get", and one Buy or Sell button. Amber shows only after
+    all the Raid Missions are won. A picture is grey when one bundle can't be traded, for a reason other than money
+    (the Bag is full, or Bramble has none left).
+  - **Mounts:** Ride or Walk, then the whole of Thistle and Bramblewool. A mount shows Equipped, or Use if it is owned.
+    Tap a picture for a bigger view with its description. Below the grid: the colours (**Next** cycles them), the
+    Gloomlit colour (60 Gloom shards per look), and Thunder Shoes once the Gloomwood is open. Both mounts ride, fight
+    and wear gear the same.
+  - **Pets:** a training row (the pet's level, its next damage and time between sparks, and the price), then Sprig
+    and Lumi. **Sprig costs 160 leaves** and joins the cat. **Lumi costs 400 leaves** and is a look only: she fights
+    exactly like Sprig, at the same level (the owner's answer, H5). Lumi's picture says "Buy Sprig first" until the pet
+    is owned. Switching between them keeps the level. The colours, the Gloomlit colour and the Gloomwood gear show once
+    the pet is owned.
+  - A "!" dot on a tab, and on the Market's marker, shows when something there can be bought.
+- **The Saddlery (H5).** Two icon tabs at the bottom, **Attachments** then **Skills**; a fresh visit opens on
+  Attachments.
+  - **Attachments:** Patch it up (when raids wore it), then the three attachments as big pictures. Tap one to see it
+    turning in 3D, fitted to the mount that is out, with what it does, its level and the next level, its price, and
+    one button: Buy, Wear, Upgrade, or a grey Worn. One attachment is worn at a time, as before.
+  - **Skills:** three circles joined in a triangle sit at the top, over a grid of round skill icons, at least three
+    across. **Tap a skill** for its detail and Learn or Upgrade. **Drag a learned skill into a circle** to use it; tap
+    a filled circle to empty it. **The mount uses only the skills in the circles** (the owner's answer, H5: up to 3,
+    never 4), and the circles are shared by every mount. A fourth learned skill stays in the grid.
+  - **The Saddlery's Upgrade** is pinned on the Skills tab only. Its confirm lists the next level's skill cap and the
+    **mount's speed and health**, because the mount's level now comes from the Saddlery (part 5). A player short of
+    leaves can still open it and see the price in red.
+- **The Tailor's Nook (H5).** The cat stands large on a low stand and turns slowly, with the outfit cards below. An
+  outfit you don't own is grey and can still be tried on. **Tap a card to dress the preview** (it changes only the
+  picture, never what the cat wears). One button shows Buy, Wear or Wearing, under the same rules as before (part 9).
+  Back closes the Nook.
 
 ### The bows (New, 22 Nov 2026)
 
@@ -531,7 +600,7 @@ mended free when a raid is won; after a camp fall or a raid they stay broken unt
 |---|---|---|---|---|---|---|---|
 | 1 | First Embers | 15 | 1 | Fernwood | Thornlings (the tutorial) | Thornling Chief (a mini-boss) | Garden and pot, Bow Shop in the shop, 60 leaves (New, G1b: "+60 leaves for your first barricades"; it was 2 barricade pieces) |
 | 2 | Bramble Pack | 15 | 1 | Toadstool Dell | Bramble Boars | 2 boars | None (New, G2: the Market and Thistle come at Hearthtree level 2) |
-| 3 | Toadstool March | 15 | 2 | Bandit Thicket | Toadstool Brutes | 3 brutes | None (New, G2: the Cottage and Sprig come at Hearthtree level 2) |
+| 3 | Toadstool March | 15 | 2 | Bandit Thicket | Toadstool Brutes | 3 brutes | None (New, G2: the Market comes at Hearthtree level 2; H5: Sprig is bought there) |
 | 4 | Stumps at Dusk | 15 | 2 | Mossback's Den | Stump Golems | 3 stumps | |
 | 5 | Bandit Night | 15 | 2 | Fernwood, Dell | Raccoon Bandits | 2 brutes, 4 raccoons | |
 | 6 | Mossback Wakes | 20 | 2 | Mossback's Den | | **Mossback** (boss) | Fishing Spot |
@@ -582,12 +651,16 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 ### Thistle, the mount
 
 - Comes free with the Market (New, G2: at Hearthtree level 2). Tap **Ride** and it bounds over; the cat hops into the leaf saddle.
-- Riding: the cat runs 27.5%, 40.25% or 53% faster (by Market level; all tiers reduced 15% on 23 Nov). She sways and leans with the mount and carries her
+- Riding: the cat runs 27.5%, 40.25%, 53%, 65.75% or 78.5% faster. **New (H5):** this is the **mount's level**, which
+  comes from the **Saddlery's level** (the Market has no levels now); it is level 1 until the Saddlery is built. Base
+  health goes 6, 9, 13, 18 and 24 with the same levels (the owner's answer: levels 4 and 5 are 1.6575x speed with 18
+  health, and 1.785x with 24). An old save keeps the level its Market had earned until the Saddlery catches up, and the
+  Skills confirm says so (the owner's answer). (All tiers were reduced 15% on 23 Nov.) She sways and leans with the mount and carries her
   bow upright and tilted toward her. **Updated 23 Nov 2026, after phone play** · the mount faces joystick travel and
   runs forward. The cat shoots up to 140 degrees either side, a 280-degree arc with an 80-degree rear gap.
   It releases held targets outside that arc. Dedicated left/right rear-quarter shooting animations turn
   her torso, shoulders, arms and head above a seat that stays aligned with the mount. Turn the mount for enemies directly behind.
-  She can't hide while riding. The mount uses the skills it learned at the Saddlery.
+  She can't hide while riding. The mount uses the skills in the Saddlery's circles.
 - **Thistle takes the hits** while the cat rides. Its health is the thin amber bar under the cat's.
 - **Knocked out**, it throws the cat off. **New (H3, 26 Nov 2026, the owner's answer): the Mount Health Potion
   replaces Feed.** In a fight it stays out until a **Mount Health Potion** brings it back, or until the next chapter
@@ -602,11 +675,14 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 
 ### The Saddlery: the mount's skills and attachments (New, 21 Nov 2026, G4)
 
-- Build it on the Hearthtree's card once 8 raids are won and the Hearthtree is at level 2 (part 3).
+- **New (H5):** the Saddlery has its own window with Attachments and Skills tabs, and its Upgrade also raises the mount's
+  speed and health (part 3, "The building windows").
+- Build it from the build menu once 8 raids are won and the Hearthtree is at level 2 (part 3).
   Buy skills and attachments with leaves and timber. Levels 4 and 5 open after the Raid Missions (until then the tile says "Level 4 opens after the Raid Missions", or "Level 5 ..." for an item at level 4). Item levels are
   capped by the Saddlery's level.
 - **Skills.** The mount uses them by itself while the cat rides in a fight, each on its own timer. Never two at once: a
-  shared gap of 0.6 s.
+  shared gap of 0.6 s. **New (H5): only a skill in one of the three circles fires.** The order they are tried in does
+  not follow the circles; it stays Bellow, Pounce, Ram, Stomp.
 
   | Skill | What it does (level 1) | Per level |
   |---|---|---|
@@ -636,7 +712,9 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
   only its firing unit swivels, with the harness fixed and joystick steering preserved.
 - **The mounts have no built-in move any more.** A mount carries the cat faster and takes the hits. Its fighting comes
   from the Saddlery.
-- **Old saves.** A pre-G4 save with raid 8 won gets Stomp level 1. An old Mossweave Saddle becomes saddle level 3.
+- **Old saves.** A save from before H5 that learned skills keeps them all, and they fill the circles in the old shop
+  order: **Stomp, Ram, Pounce** (Bellow stays learned, in the grid). Fewer learned skills fill fewer circles.
+  A pre-G4 save with raid 8 won gets Stomp level 1 (and it goes into a circle). An old Mossweave Saddle becomes saddle level 3.
   Old Saddlebags become level 5. If there is no worn choice in the save, the highest-level owned attachment goes on.
   Ties go to Saddlebags, then Mossweave Saddle, then Fire-spitter.
 - **Animations** (Claude made them in Blender, on the owner's mount rigs; besides Idle, Run and Thump, which are
@@ -645,16 +723,21 @@ The Gloom Herald leads the raids (part 7); the Gloomwood has its own creatures (
 
 ### Sprig, the pet
 
-- Comes with the Mushroom Cottage (New, G2: at Hearthtree level 2). It flutters at the cat's shoulder and spits seed sparks at the nearest
-  enemy, harder and faster with each cottage level.
+- **New (H5): bought at the Market's Pets tab for 160 leaves.** (It came with the Mushroom Cottage before; the Cottage
+  is gone.) It flutters at the cat's shoulder and spits seed sparks at the nearest enemy, harder and faster with each
+  **pet level**. The levels are trained on the Pets tab: level 2 costs 350 leaves, level 3 costs 900 leaves and 30
+  timber, never above the Hearthtree's level. Sparks: 6, 10 or 16 damage, every 1.3, 1.1 or 0.9 seconds.
+- The pet stays with the cat even if the Market is ruined or was never built (an old save's pet comes along).
+- **Old saves (H5):** the Cottage's level becomes the pet's level, and a player who had the Cottage (any level) owns
+  **both Sprig and Lumi** for free. A fresh save owns neither.
 - **The pet is never knocked out.** While the cat hides, Sprig only spits at enemies right next to it, so it never
   gives the cat away. In the Gloomwood it glows like a little lantern.
 
 ### Looks (same strength)
 
-- **The Stable** (Market card): Thistle the hare or **Bramblewool** the ram. **The Nest** (cottage card): Sprig
-  the leaf dragon or **Lumi** the fox kit. Every look does exactly the same: only the model, its move and its colours
-  differ (the model and its animations).
+- **The Mounts tab** (Market): Thistle the hare or **Bramblewool** the ram. **The Pets tab** (Market, H5; it was the
+  Nest on the Cottage's card): Sprig the leaf dragon or **Lumi** the fox kit. Every look does exactly the same: only
+  the model, its move and its colours differ (the model and its animations). Lumi costs 400 leaves.
 - **Colours** row: Natural, Snow, Midnight, Autumn, Golden and more, per look. All free while testing; sold later.
 - **Gloomlit** colours cost 60 Gloom shards per look. They are earned only, never sold.
 - **Attachments** (after the raids): see part 8. **New (21 Nov 2026, G4):** the mount's Mossweave Saddle, Saddlebags
@@ -886,7 +969,7 @@ Raids start with the first win of raid 15. They come only while you are playing 
 Defence level 4 (Shardstone barricades, level 4 towers and spikes; 50 to 90 shards plus leaves, needs home level 4);
 **Lookout** (25: +15 s to get ready before every raid); **Tracker** (40: see the next raid at 75%, and sneak raids
 can't hide); **Gloomlit** colours (60 per mount or pet look); **Shardfire** (100: the campfire burns blue-violet).
-Bramble buys 5 shards for 100 leaves.
+(New, H5, the owner's rule: Bramble no longer buys shards for leaves.)
 
 ---
 
@@ -1006,8 +1089,9 @@ Everything that used to ask for materials now asks for leaves (timber is unchang
 - **The Foxfire Bow** (Bow Shop level 3; 5,120 leaves): goes through two enemies. (New, 22 Nov 2026: hidden, not sold; see the bows in part 3.)
 - **Level-5 defences**: Heartwood barricades, Amber towers, Amber Thorns (tower level 5 is 5,760 leaves). They still open only after the expeditions do.
 - **Home levels 6 to 8** (part 3): 17,160, 33,480 and 54,400 leaves, with 110, 150 and 200 timber.
-- **Gloomwood attachments** are bought and worn on the Stable and Nest cards, one per companion. At the Stable,
-  **Thunder Shoes** make Stomp 60% stronger in the Gloomwood. At the Nest, the Glowworm Lantern makes traps and
+- **Gloomwood attachments** are bought and worn on the Market's Mounts and Pets tabs (H5; they were on the Stable and
+  Nest cards), one per companion. On the Mounts tab,
+  **Thunder Shoes** make Stomp 60% stronger in the Gloomwood. On the Pets tab, the Glowworm Lantern makes traps and
   spore bombs glow 0.3 s earlier, the Ember Charm makes sparks 60% harder, and the Dew Bell gives the cat +2 health.
   The Mossweave Saddle and Saddlebags are Saddlery gear and work wherever the mount wears them.
 
@@ -1028,7 +1112,7 @@ boss: a map can end in a **treasure clearing** instead, and the owner wants some
 |---|---|---|
 | Golden leaves | Kills, waves, bonuses, chests, raid rewards, raids, the Gloomwood. **New (H1, 25 Nov 2026):** the leaves that defeated enemies drop in Raid Missions, Random Raids and the Gloomwood are 30% more (`kill_leaf_bonus` 1.3, applied after the mission's 1.5). Stolen leaves, chests, wave pay and raid pay are not raised. | Almost everything |
 | Timber | Raid waves held (G1), chapter chests, raid rewards, driftwood, raids, the Gloomwood | Buildings, home levels, rebuilding the campfire; buy 5 for 50 leaves, sell 5 for 30 leaves (G1) |
-| Gloom shards | Raids, Gloomwood boss chests | Part 7's list; sell 5 for 100 leaves |
+| Gloom shards | Raids, Gloomwood boss chests | Part 7's list; never sold for leaves (H5) |
 | Root Amber | The Gloomwood only (rare) | Nothing: sell it to Bramble for 1,000 leaves and 1 shard |
 
 ### The chain (New, 19 Nov 2026, Phase F)
@@ -1066,6 +1150,10 @@ existing owners keep it. Both preserve the cat's orange fur, face and gear.
 
 Buy an outfit between waves and the cat puts it on at once. If you buy during a wave, tap **Wear** between waves
 to put it on. Switching is free between waves, and the game saves what she wears.
+
+**New (H5): the Nook's window.** The cat stands on a stand and turns. Tap an outfit card to **try it on** (only the
+picture changes; the cat's real outfit does not). An outfit you don't own is grey but can still be tried on. The one
+button reads Buy, Wear or Wearing. The window opens on the outfit she wears.
 
 Paid outfits will use premium currency later. If the game cannot take an outfit's currency yet, its tile says
 **Coming later**.
@@ -1285,7 +1373,7 @@ The design is `docs/PHASE_G_PLAN.md` (steps G1b and G2). The numbers are in `bal
   - Raid 1's first win gives 60 leaves, not barricade pieces.
 - **G2, the Hearthtree.**
   - `camp_name` in `balance.json`, and `Data.camp_name(cap)` for the name. Level names are unchanged.
-  - The Mushroom Cottage and the Market have `needs_home` 2. The `market` block holds its sells, buys and prices. Thistle
+  - The Mushroom Cottage and the Market have `needs_home` 2 (H5: the Cottage's entry is gone). The `market` block holds its sells, buys and prices. Thistle
     comes free with the Market. Old saves keep their buildings and pets.
   - Barricades are rows on the 12 road spots (3 per road). Each piece cracks below 50% health and breaks at 0.
     Old placed barricades became rows and bag pieces were refunded as leaves. The session's later pad and repair
@@ -1459,12 +1547,55 @@ The indices are 2 for the gate, 1 for the middle and 0 for the far pad. A road c
   pad spacing and positions at every Hearthtree level.
   `--layout` passed 118 checks through the game's own Hearthtree growth path. `--smoke` completed cleanly.
 
+### The Market, the pets, the Saddlery and the Tailor's Nook (New, H5, 27 Nov 2026)
+
+Step H5. The game side is parts 3 and 5. The owner's answers are in `docs/PHASE_H_PLAN.md`, H5. The change list is in
+`docs/CHANGES.md`.
+
+- **Content kinds** (`content/`, listed in `content/index.json`, read through `Data.shop_entries`, `Data.item`,
+  `Data.owned_level`, `Data.companion_model`, `Data.shop_picture`): `mounts` (thistle, bramblewool), `pets` (sprig,
+  lumi), `outfits` (original, dusk_ranger, nightfall_ranger) and `attachments` (fire_spitter, saddle, saddlebags,
+  mount_shoes, pet_lantern, pet_charm, pet_bell). The rules are in `scripts/shop_data.gd` (static functions, preloaded
+  by `data.gd`). `content/README.md` says how to add one.
+- **Buying:** one **Buy** command (`commands/buy.gd`: `Buy.new(kind, id, amount, expected_level, look_id)`, `can_run`,
+  `run`) is used by every shop window. `expected_level` is the level the button showed, so a stale tap buys nothing.
+  `scripts/market_trade.gd` holds Bramble's offers and prices (`offers`, `quote`, `sell`) and `scripts/companion_shop.gd`
+  the looks and the circles (`choose`, `assign_skill`). The command never saves; `stations.gd` saves and shows the
+  receipt (`market_trade(side, id, bundles)`, `_buy_companion`, `_train_pet`, `_saddle_buy`, `_buy_skin`, ...).
+- **Windows** (`ui/windows/`): `market_window.gd` with `market_trade_tab.gd`, `market_companions.gd` and
+  `market_words.gd`; `saddlery_window.gd` with `saddlery_skills.gd` and `attachment_inspect.gd`; `tailor_window.gd`
+  with `outfit_preview.gd`. Kit: `ui/kit/item_popup.gd` (the amount popup) and `skill_triangle.gd`. Tests reach them as
+  `hud.windows["stall"]` (`select(t)`, `tab_ids()`, `tab_spec(t)`, `entries(t)`, `inspect(id)`, `back()`, `open_on(t)`,
+  `.trade`), `hud.windows["saddlery"]` and `hud.windows["tailor"]` (`entries()`, `try_on(id)`, `selected_id()`).
+- **The save is version 5** (`core/save_upgrade_v5.gd`, frozen numbers in `balance.json save_upgrades.to_v5`). What a
+  player owns is `owned[kind][id] = {"level": n}`. New fields: `owned`, `pet_level`, `market_hp_floor`;
+  `saddlery` is `{skills, skill_slots, worn, mount_credit}`; `attach` is `{mount, pet}` (the worn ones). The 4 to 5 step:
+  the Cottage's level becomes `pet_level` and Sprig and Lumi are owned; the Market becomes level 1, its old level is
+  the mount's `mount_credit` and its earned health is `market_hp_floor`; outfits and both attachment families move into
+  `owned`; the learned skills fill `skill_slots` as Stomp, Ram, Pounce.
+- **Levels now come from other places:** `Data.pet_level()` (the shared pet level), `Data.mount_level()` = the highest
+  of 1, the Saddlery's level and `mount_credit`, or 0 while no mount is owned. A new home goal type is `pet_level`.
+  `mount.speed_by_level` and `hp_by_level` have six entries (0 to 5). `raids.camp_score` counts the pet's level and the
+  mount's level (capped by `camp_score.mount_level_cap`), so an old save's raid strength stays the same.
+- **Gone:** the Cottage's window, entry, marker badge and `Raids.trade_shards` (and `gloom_raids.shard_trade`); the old
+  balance blocks `looks.mount`, `looks.pet`, `cat_skins`, `attachments` and `mount_attachments` (only `looks.guardian`
+  is left in `looks`). The Cottage's asset and its prop stay in `assets/`. `Data.word` reads the new words
+  (`pet_joins`, `head_outfits`, and the Market's in `balance.json windows`).
+- **Camp:** `world.gd` keeps the Cottage only in the legacy hide-spot map (`OLD_VILLAGE`, `OLD_DOOR`, `_legacy_built`),
+  so an old player's tall grass stays where it was. `main.refresh_companions` brings the pet out when `pet_level() > 0`,
+  the mount when one is owned, and Bramble when the Market is built.
+- **Tests:** `--campg`, `--saddlery`, `--tailor`, `--cards`, `--content` and `--saves` were rewritten or extended, and
+  `--layout`, `--hudcheck`, `--taps`, `--bag`, `--topup`, `--homegoals`, `--buildmenu`, `--village`, `--wear` and
+  `--shards` were moved to the new windows. New `--h5found`. Results are in `docs/STATUS.md`.
+
 ### Tailor's Nook and cat outfits (23 Nov 2026)
 
 - `balance.json` holds the building price and unlock in `stations.tailor` and the outfit prices in `cat_skins`.
   The outfit IDs are `original`, `dusk_ranger` and `nightfall_ranger`.
   The last ID now displays **Ember Ranger**; it stays unchanged internally to preserve old saves and purchases.
-- `stations.gd` builds the outfit card with `_card_tailor` and `_skin_tile` and handles buying and wearing with
+- (Before H5. Since H5 the card is `tailor_window.gd` with `outfit_preview.gd`, see "The Market, the pets, the
+  Saddlery and the Tailor's Nook" above, and `balance.json cat_skins` is gone: the outfits are `content/outfits/`.)
+  `stations.gd` builds the outfit card with `_card_tailor` and `_skin_tile` and handles buying and wearing with
   `_buy_skin` and `_wear_skin`. `data.gd` has the `cat_skin_*` helpers. `save.gd` stores `cat_skin` and
   `cat_skins_owned`. `settle_cat_skin` defaults older saves to Original Ranger and resets an invalid choice.
 - `player.gd` picks and checks the model with `hero_base` and `_hero_ok` and swaps it with `apply_skin`. A missing
@@ -1628,7 +1759,8 @@ On the phone `user://` is the app's `files/` folder (package `com.projectleaf.ga
 (`Save.mission_run`) and every raid end. Raids save quietly (`Save.save_game(true)`) every 10 meter points, at stir,
 at full, at each wave held, and on pause, focus-out or close (`main._notification` calls `raids.persist()` and
 `burrows.persist()`). A Burrows run saves at checkpoints, when hurt (throttled) and on pause. Old saves load field by
-field with defaults (`d.get`); `save_v` is 4 (the 2 to 3 step turns old amber, glowstone, heartwood and keys into
+field with defaults (`d.get`); `save_v` is 5 (H5, 27 Nov 2026: the 4 to 5 step is in "The Market, the pets, the
+Saddlery and the Tailor's Nook" above); before it, 4 (the 2 to 3 step turns old amber, glowstone, heartwood and keys into
 leaves; the 3 to 4 step, H3, moves the pantry into the Bag, turns old dishes into Health Potions and old crop growth
 into Timers jobs). Since H3 the save holds `bag` (the Bag's food, fish and potions) and `timers` (the real-time jobs:
 the crops and the pot); there is no `pantry`, dish or snack field any more.
@@ -1640,13 +1772,13 @@ the crops and the pot); there is no `pantry`, dish or snack field any more.
   by force-closing the game.
 - Writes are atomic, through a `.tmp` file. If the main save cannot be read, the `.bak` copy is loaded. A backup is
   written before an upgrade.
-- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (2→3, and 3→4 since H3).
+- `Save.loaded_v` holds the version the file had. `save_upgrades.gd` runs the versioned steps (2→3, 3→4 since H3, and 4→5 since H5).
 - Currency changes send `Events.currency_changed`. `Events.save_loaded` is sent after a load.
 
 ### The debug endgame start
 
 Debug builds only. `--endgame` opens a **separate save** as if all 15 raids were won: home level 5, a grown cat
-(Training Target and Bow Shop at 5; Well, Cottage, Stall and Garden at 3; Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, no Hollow keys, food in the Bag (8 Sunberries, 4 Fernmint, 2 honey, 3 fish; H3), an empty garden, the Gloomwood open (the Warden still to be found). The HUD
+(Training Target and Bow Shop at 5; Well and Garden at 3; the Market built, the pet at level 3 and the Saddlery at 5, so the mount rides at level 5 (H5); Guardian Stone at 0), 8,000 leaves, 300 timber, 60 shards, no Hollow keys, food in the Bag (8 Sunberries, 4 Fernmint, 2 honey, 3 fish; H3), an empty garden, the Gloomwood open (the Warden still to be found). The HUD
 says "Endgame test save". It stays on at every launch until one launch with `--endgame-off`; then the real save is
 back, untouched. `--endgame --fresh` starts it over (an older endgame save keeps its old levels until then). On the phone, put the argument on a line in `files/test_args.txt`.
 Release builds ignore both.
@@ -1678,7 +1810,9 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | G1b and G2 | `autotest_g2_def.gd`, `autotest_towers.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (168 checks: pads, repair, the Well, five tower levels, full-circle arrows and loading cycles), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
 | G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, late damage and leaf budgets, upgrades, equipping, pierce, burn, frost, models and shot effects; 78 passes, 25 Nov 2026) |
 | G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 111 passes, 25 Nov 2026); add `--rideclear` for the clearance sweep |
-| Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
+| Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes; since H5 also the window's try-on, grey cards, one button and Back; 76 passes) |
+| H4 (New, 26 Nov 2026) | `autotest_build_menu.gd`, `autotest_g3_bow_windows.gd`, `autotest_g2_cards_kit.gd` | `--buildmenu` (47 checks: the menu, its Build buttons, the dot, the camera shot and the rise); the window checks of `--bowshop` and `--cards` |
+| H5 (New, 27 Nov 2026) | `autotest_g2_market.gd` (from `autotest_g2_camp.gd`), `autotest_saddle_window.gd` (from `autotest_g4_saddle.gd`), `autotest_h5_found.gd` | `--campg` (110: the Market's tabs by real taps, trades, Sprig and Lumi, training, the pet goals, a real v4 save upgraded), `--saddlery` (156: the tabs, the triangle, a real drag), `--h5found` (60: the content kinds, the Buy command, the 4 to 5 save step) |
 | H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/`, `v2_sample.json`, `v3_sample.json` and since H3 `v4_sample.json`, load, upgrade and save, with the clock held still) |
 | H2 (New, 26 Nov 2026) | `autotest_settings.gd` | `--settings` (40 checks: the settings file, Graphics Auto/Low/Medium/High, sound on/off, the gear window, nothing written during autotests) |
 | H3 (New, 26 Nov 2026) | `autotest_timers.gd`, `autotest_content.gd`, `autotest_bag.gd`, `autotest_potions.gd`, `autotest_garden.gd`, `autotest_cook.gd`, `autotest_saves.gd` | `--timers` (jobs with a pretend clock: they follow it, end "while the game is closed", wait when the clock is set back; resume checks; `seen` alone never marks the save dirty), `--content` (the crop and recipe folders and `index.json`), `--bag` (also `--inventory`, the old name; `autotest_inventory.gd` is now `autotest_bag.gd`: the Bag window, stacks, "Bag full", Use and Place, the drop-in, the Golden Carp sale; at its end it runs the potions checks of `autotest_potions.gd`), `--feed` (the potions checks only: every effect, the HUD potion buttons, the mount), `--garden` (the window, a real drag, real-time growth, watering, "grows while closed", picking, the Gloom bump per visit, the ring), `--cook` (the window, a real drag, Cook, the timer, Collect, a full Bag, the fire out), and `--saves --startup=1` (with `--fresh`) then `--saves --startup=2` (without `--fresh`): a real first launch with a v3 save on disk |
@@ -1754,7 +1888,7 @@ and `game\build\phone_save_backup\`; per-step copies in `D:\DevCache\tmp\<work>\
   in H3: the crops and the pot); camp, not village; looks-only selling, with purple shards the paid currency for looks only and Bramble never
   buying shards; nothing tall between the camera and where the cat can walk; nothing of the HUD in the middle third of
   the screen. Numbers live in data (`game/data/`, and `game/content/` as Phase H moves content there).
-- **Phase H removes the Mushroom Cottage** (H5): the pet's upgrades move to the Market's Pets tab.
+- **Phase H removed the Mushroom Cottage** (H5, built 27 Nov 2026): the pet's upgrades are on the Market's Pets tab.
 - The owner tests on the phone: build complete and playable, keep testing light, and back up first.
 
 ---

@@ -29,8 +29,6 @@ const STAND_WIDER := 0.85               # the stand's width, against the cat's w
 const STAND_MAX_H := 0.1                # and no taller than this share of the cat
 const SELECT_RING := Color(0.95, 0.72, 0.2)   # the card of the outfit shown: a gold ring
 const IDLE := "Idle"                    # the clip the cat stands in
-# H5 words (balance.json "windows" has no heading for the outfit grid yet)
-const HEAD_OUTFITS := "Outfits"
 
 var hud                                 # the HUD node (untyped on purpose, as in the HUD's parts)
 var main
@@ -67,7 +65,7 @@ func content() -> Control:
 	act.set_meta("outfit_action", true)
 	act.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(act)
-	box.add_child(_label(HEAD_OUTFITS, 24, true, hud.TILE_INK))
+	box.add_child(_label(Data.word("head_outfits"), 24, true, hud.TILE_INK))
 	var grid: GridContainer = IconGrid.make(hud, win.entries(), win.try_on)
 	for c in grid.get_children():
 		if c.has_meta("cell") and String(c.get_meta("cell")) == sel:

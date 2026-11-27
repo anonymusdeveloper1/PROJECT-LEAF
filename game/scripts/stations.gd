@@ -1401,9 +1401,6 @@ func _wear_skin(id: String) -> void:
 
 
 # ---------------------------------------------------------------- the Market: Bramble's trades and the companions (H5)
-## H5 words: the receipt line when the first pet joins the cat (the Mushroom Cottage's old line).
-const PET_JOINS := "A little friend now fights beside the cat"  # H5 words
-
 
 ## H5: one of Bramble's trades by its side (MarketTrade.SELLS "sells": he sells, the player buys; MarketTrade.BUYS
 ## "buys": he buys, the player sells) and exact id, `bundles` whole bundles (two of Sunberries: 4 for 60 leaves; two
@@ -1494,7 +1491,7 @@ func _buy_companion(slot: String, id: String, expected: int = -1) -> bool:
 	main.on_purchase()
 	var sub := _say("mount_same")
 	if slot == "pet":
-		sub = PET_JOINS if not had_pet and Data.pet_level() >= 1 else _say("pet_same")
+		sub = Data.word("pet_joins") if not had_pet and Data.pet_level() >= 1 else _say("pet_same")
 	main.hud.banner(_say("receipt_bought", [String(e.get("short", e.get("name", id)))]), Color(0.6, 1.0, 0.45), sub)
 	return true
 

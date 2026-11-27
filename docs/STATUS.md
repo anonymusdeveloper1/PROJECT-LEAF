@@ -1,4 +1,4 @@
-# Project LEAF: where we are (26 November 2026)
+# Project LEAF: where we are (27 November 2026)
 
 **The full description of the game as it is now: `docs/GAME_GUIDE.md`.**
 
@@ -6,7 +6,7 @@
 `docs/ARCHITECTURE.md`. The four rule changes are now in `CLAUDE.md` and `docs/GAME_GUIDE.md`:
 - only timers keep running while the game is closed (from H3; built 26 Nov 2026);
 - purple shards are the paid currency and buy looks only, and Bramble never buys shards;
-- the Mushroom Cottage leaves the camp (H5);
+- the Mushroom Cottage leaves the camp (H5, built 27 Nov 2026);
 - numbers live in `game/data/` and `game/content/`.
 
 **H0:**
@@ -86,10 +86,39 @@ not pushed. Backup: `D:\DevCache\backup\pre_h4_2026-11-26`.
   `--layout` 132, `--hudcheck` 132 (also at 480x1040 with the safe bars; the old tap flake did not come back in 6
   runs), `--saddlery` 111, `--tailor` 63, `--bag` 110, `--garden` 63, `--guardian` 31, `--content` 44, `--taps` 22,
   `--topup` 23, `--shards` 21, plus the default run, `--village` and `--laststand`.
-- **Known points:** `docs/GAME_GUIDE.md` still describes the windows as they were in H3 (it gets the H4 windows at the
-  merge). `--dungeoncareful` still loses at the boss in about 2 runs of 3 (from H3; retuned in H8/H11). Phone speed
-  numbers are still to be measured.
-- **Next:** the owner's phone test of H4, then the merges (H2, then H3, then H4) on the owner's yes.
+- **Known points:** `docs/GAME_GUIDE.md` did not describe the H4 windows when H4 was built; since H5's docs it does
+  (part 3, "The building windows"). `--dungeoncareful` still loses at the boss in about 2 runs of 3 (from H3; retuned in
+  H8/H11). Phone speed numbers are still to be measured.
+- **Next:** the owner's phone test of H4, then the merges (H2, then H3, then H4) on the owner's yes. H5 is built on top
+  of H4 (below).
+
+**H5** (the Market, the Saddlery and the Tailor's Nook) is built on `feature/h5-market-saddlery-tailor` in three stages
+(`098b04f`, `b24159d` and the stage 3 clean-up; 27 Nov 2026). The branch starts from `feature/h4-building-windows`, so
+it merges after H4. Local only, not pushed. Backup: `D:\DevCache\backup\pre_h5_2026-11-26`. The owner's answers to the
+map's six questions (`docs/PHASE_H_PLAN.md`, H5) are built as given.
+- **The Market** has four icon tabs at the bottom: Sells, Buys, Mounts, Pets. No levels, no Upgrade. A tap on a picture
+  opens a popup with an amount and one Buy or Sell button. **Bramble no longer buys Gloom shards.**
+- **The Cottage is gone.** Sprig is bought at the Market's Pets tab for 160 leaves; **Lumi is a looks-only pet and costs
+  400 leaves** (the owner's Q1 B). The pet's levels are trained there. An old save that had the Cottage owns both pets
+  free, at its old level.
+- **The Saddlery** has an Attachments tab (pictures; a tap shows the turning attachment) and a Skills tab with **three
+  circles** (the mount fires only those, 0 to 3 skills; the owner's Q3). Its Upgrade also raises the mount's speed and
+  health (mount levels 4 and 5 are new; the owner's Q2 A, Q6 A).
+- **The Tailor's Nook** shows the cat turning on a stand, with grey cards for outfits not owned, which can still be
+  tried on.
+- **Home goals:** Hearthtree 3 asks for a built Market and pet level 2, Hearthtree 4 for pet level 3 (the owner's Q4 A).
+- **Save version 5** (new `owned` list, `pet_level`, `market_hp_floor`); a fifth sample save, `v5_sample.json`.
+- Tests (all pass on the PC): `--h5found` 60 (new), `--campg` 110, `--saddlery` 156, `--tailor` 76, `--cards` 147,
+  `--saves` 85, `--content` 48, `--layout` 118, `--hudcheck` 130 (also at 480x1040 with the safe bars), `--taps` 22,
+  `--bag` 110, `--topup` 23, `--homegoals` 92, `--buildmenu` 47, `--shards` 21, `--wear` 10, plus `--smoke`,
+  `--village` and the default run. `--dungeoncareful` was not run (its H3 point stands).
+- **Known points:** nothing of H5 has been tried on the phone yet. The Nook's stand size (`STAND_WIDER`, `STAND_MAX_H`
+  in `outfit_preview.gd`) may need tuning after the owner looks. `--village` logs "no button Walk" (harmless, the mode
+  has no checks). Two unused word fallbacks (`H5_WORDS`) remain in the Saddlery's files. Phone speed numbers are still
+  to be measured.
+- **Next:** the owner's phone test of H5 (taps on the Market's tabs and popup, a drag into the Saddlery's circles, the
+  Nook's try-on, an old save's pets and mount), then the merges in order H2, H3, H4, H5 on the owner's yes. After that H6
+  (the Defence Workshop), as `docs/PHASE_H_PLAN.md` sets out.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin

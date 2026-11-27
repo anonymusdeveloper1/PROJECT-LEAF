@@ -27,7 +27,10 @@ extends Node
 ##       homegoals_show, homegoals_show_defences, homegoals_build_show
 ##   (g) the confirm for Hearthtree levels 6-8 opens and lists what each gives (some tables are shorter than the
 ##       levels), and the footer says "Max level" at the top; screenshot homegoals_confirm_top
-##   (f) the debug endgame start: Training Target and Bow Bench at 5
+##   (f) the debug endgame start: Training Target and Bow Bench at 5; the pet (Data.pet_level 3), the one-level Market (1), the
+##       mount (Data.mount_level 5) and no Cottage
+##   (h) H5 (the owner's Q4 A): the pet-level goals (2 and 3) and the built Market; Show opens the build menu, Go the Market on its
+##       Pets tab; the goal ticks from Data.pet_level()
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _at_ring, _press, _log)
 var main
@@ -44,6 +47,7 @@ func run() -> bool:
 	_replays()
 	_caps()
 	await _home_card()
+	await _pet_goals()
 	await _confirm_levels()
 	_endgame()
 	return true
@@ -731,7 +735,70 @@ func _endgame() -> void:
 	Save._endgame_seed()
 	_x("the endgame start: home 5, Training Target and Bow Bench at 5", Save.camp_level == 5 and int(Save.stations["target"]) == 5
 		and int(Save.stations["bench"]) == 5, {"stations": Save.stations})
-	_x("the endgame start: the other buildings at their top for home 5", int(Save.stations["well"]) == 3 and int(Save.stations["cottage"]) == 3
-		and int(Save.stations["stall"]) == 3 and int(Save.stations["garden"]) == 3)
+	_x("the endgame start: the other buildings at their top for home 5", int(Save.stations["well"]) == 3 and int(Save.stations["garden"]) == 3)
+	_x("H5: the endgame start: the one-level Market, the pet at 3, the mount at 5, and no Cottage", int(Save.stations["stall"]) == 1 and Data.pet_level() == 3
+		and Data.mount_level() == 5 and not Save.stations.has("cottage"), {"stations": Save.stations, "pet": Data.pet_level(), "mount": Data.mount_level()})
 	_x("the endgame cat can reach 10 in every stat and bow", Data.stat_cap("damage") >= 10 and Data.stat_cap("range") >= 10 and Data.bow_cap() >= 10,
 		{"damage": Data.stat_cap("damage"), "bow": Data.bow_cap()})
+
+
+# ---------------------------------------------------------------- (h) H5, the owner's Q4 A: the pet goals and the Market
+## The Cottage left the camp: Hearthtree levels ask for a built Market and the pet trained (pet_level goals at 2 and 3).
+## Unbuilt, the pet goal's Show opens the build menu at the Market; built, its Go walks to the Market, which opens on its
+## Pets tab; the goal reads Data.pet_level() and ticks when Train gets there.
+func _pet_goals() -> void:
+	var keep_stall := int(Save.stations.get("stall", 0))
+	var keep_pet := Save.pet_level
+	var want_levels: Array = []
+	var stall_goals := 0
+	var cottage_goals := 0
+	var pet_goal: Dictionary = {}
+	for lv in range(2, Data.building_levels("home").size() + 1):
+		for g: Dictionary in Data.home_goals(lv):
+			if String(g["type"]) == "pet_level":
+				want_levels.append(int(g.get("level", 0)))
+				if pet_goal.is_empty() and int(g.get("level", 0)) == 2:
+					pet_goal = g
+			if String(g["type"]) == "station" and String(g.get("id", "")) == "stall":
+				stall_goals += 1
+			if String(g.get("id", "")) == "cottage":
+				cottage_goals += 1
+	_x("the goals: the pet trained to 2 and to 3, a built Market, and no goal names the Cottage", 2 in want_levels and 3 in want_levels
+		and stall_goals >= 1 and cottage_goals == 0, {"pet": want_levels, "stall": stall_goals, "cottage": cottage_goals})
+	if pet_goal.is_empty():
+		return
+	Save.stations["stall"] = 0
+	Save.pet_level = 0
+	main.stations.refresh()
+	var unbuilt: Dictionary = _goal_of("pet_level", 2)
+	_x("the Market not built: the pet goal's Show leads to the build menu", String(unbuilt.get("station", "")) == "build", {"goal": unbuilt.get("station", "")})
+	Save.stations["stall"] = 1
+	main.stations.refresh()
+	var built: Dictionary = _goal_of("pet_level", 2)
+	_x("the Market built: the pet goal's Go leads to the Market", String(built.get("station", "")) == "stall" and int(built.get("have", Data.pet_level())) == Data.pet_level(),
+		{"goal": built.get("station", "")})
+	await t._at_ring(main.stations.rings["shop"])
+	await t._wait(0.3)
+	main.hud.hide_card()
+	await t._wait(0.2)
+	var win = main.hud.windows["shop"]
+	win._goal_go(built)
+	var market = main.hud.windows["stall"]
+	var ok: bool = await t._until(func(): return main.hud.card_ring() == market.ring() and market.tab == "pets", 12.0)
+	_x("the pet goal's Go opens the Market on its Pets tab", ok, {"ring": main.hud.card_ring() == market.ring(), "tab": market.tab})
+	main.hud.hide_card()
+	Save.pet_level = 2
+	_x("trained to level 2, the pet goal ticks (it reads Data.pet_level)", bool(_goal_of("pet_level", 2).get("done", false)) and not bool(_goal_of("pet_level", 3).get("done", true)))
+	Save.stations["stall"] = keep_stall
+	Save.pet_level = keep_pet
+	main.stations.refresh()
+	await t._wait(0.2)
+
+
+## The goal of `type` and `level` from any Hearthtree level's list, {} when none.
+func _goal_of(type: String, level: int) -> Dictionary:
+	for lv in range(2, Data.building_levels("home").size() + 1):
+		for g: Dictionary in Data.home_goals(lv):
+			if String(g["type"]) == type and int(g.get("level", 0)) == level:
+				return g
+	return {}

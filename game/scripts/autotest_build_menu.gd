@@ -6,8 +6,8 @@ extends Node
 ## draw (meta "cell", "locked", "detail", button meta "label"), never through the stations forwarders.
 ## Checks:
 ##   (a) entries() at a fresh save (empty), after wave 1 of mission 1 (the Target "open"), after the first win (Target and Bow
-##       Shop "open"; Well, Cottage, Market, Saddlery, Tailor "locked" with today's needs words), at Hearthtree 2 (Market and
-##       Cottage open)
+##       Shop "open"; Well, Market, Saddlery, Tailor "locked" with today's needs words), at Hearthtree 2 (the Market
+##       open)
 ##   (b) a real tap on the build icon opens the window, a second tap closes it; it fits at 480x1040 and 540x960; the empty
 ##       menu says W.build_empty; the cells fade in one after another and reach alpha 1; a locked cell has no Build button
 ##   (c) a real tap on a cell opens its detail (name, desc with the names filled in, price, Build, Back); Back returns;
@@ -229,20 +229,20 @@ func _check_entries() -> bool:
 		{"entries": _w().entries()}) and ok
 	_state(1, 1, ["shop_open", "shop_target", "shop_bench"])
 	var ids := _ids(_w().entries())
-	ok = _x("after the first win: Target and Bow Shop open, Well, Cottage, Market, Saddlery and Tailor locked",
-		ids == ["target", "bench", "well", "cottage", "stall", "saddlery", "tailor"]
+	ok = _x("after the first win: Target and Bow Shop open, Well, Market, Saddlery and Tailor locked (H5: no Cottage)",
+		ids == ["target", "bench", "well", "stall", "saddlery", "tailor"]
 		and String(_entry("target")["state"]) == "open" and String(_entry("bench")["state"]) == "open"
-		and ["well", "cottage", "stall", "saddlery", "tailor"].all(func(i): return String(_entry(i)["state"]) == "locked"),
+		and ["well", "stall", "saddlery", "tailor"].all(func(i): return String(_entry(i)["state"]) == "locked"),
 		{"ids": ids}) and ok
 	ok = _x("the locked ones say what they need, in today's words", String(_entry("well")["needs"]) == _needs_home(3)
-		and String(_entry("cottage")["needs"]) == _needs_home(2) and String(_entry("stall")["needs"]) == _needs_home(2)
+		and not ids.has("cottage") and String(_entry("stall")["needs"]) == _needs_home(2)
 		and String(_entry("tailor")["needs"]) == _needs_home(3)
 		and String(_entry("saddlery")["needs"]) == _needs_home(2) + " · " + _needs_missions(8)
 		and String(_entry("target")["needs"]) == "",
 		{"well": _entry("well").get("needs"), "saddlery": _entry("saddlery").get("needs")}) and ok
 	Save.camp_level = 2
-	ok = _x("at Hearthtree 2 the Market and the Cottage are open (the Well and the Tailor not yet)",
-		String(_entry("stall")["state"]) == "open" and String(_entry("cottage")["state"]) == "open"
+	ok = _x("at Hearthtree 2 the Market is open (the Well and the Tailor not yet)",
+		String(_entry("stall")["state"]) == "open"
 		and String(_entry("well")["state"]) == "locked" and String(_entry("saddlery")["needs"]) == _needs_missions(8)) and ok
 	Save.camp_level = 1
 	_state(0, 1, ["shop_open"])
@@ -271,7 +271,7 @@ func _check_window() -> bool:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var cells := _cells()
-	ok = _x("the grid holds a cell per entry, each with its picture", cells.size() == _w().entries().size() and cells.size() == 7
+	ok = _x("the grid holds a cell per entry, each with its picture", cells.size() == _w().entries().size() and cells.size() == 6
 		and cells.all(func(c): return (c as Control).find_children("*", "Panel", true, false).any(func(p): return p.has_meta("cell_pic"))),
 		{"cells": cells.size()}) and ok
 	var last: Control = cells.back() if not cells.is_empty() else null
@@ -348,11 +348,11 @@ func _check_detail() -> bool:
 	_w().open_at("bench")
 	await t._wait(0.5)
 	ok = _x("open_at(id) on the open menu shows that detail", _detail_box() != null and String(_detail_box().get_meta("detail")) == "bench") and ok
-	_w().open_at("cottage")
+	_w().open_at("stall")
 	await t._wait(0.5)
 	var cd := _detail_box()
-	var desc_ok := cd != null and _texts().has(Data.building_desc("cottage")) and not Data.building_desc("cottage").contains("{")
-	ok = _x("the Cottage's desc has the pet's name filled in", desc_ok, {"desc": Data.building_desc("cottage")}) and ok
+	var desc_ok := cd != null and _texts().has(Data.building_desc("stall")) and not Data.building_desc("stall").contains("{")
+	ok = _x("the Market's desc has the mount look's name filled in", desc_ok, {"desc": Data.building_desc("stall")}) and ok
 	_w().open_at("well")
 	await t._wait(0.5)
 	cd = _detail_box()

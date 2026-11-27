@@ -454,6 +454,12 @@ marked **As built**, then the owner's answers and the defaults that were built.
 
 ### H4: building windows, part 1 (the shared window, the Hearthtree, the Target, the Bow Shop, the build menu)
 
+**Built (26 Nov 2026) on `feature/h4-building-windows`** (commits `e3fd019`, `63059eb` and `f72b03f`, the stage 3
+clean-up). The branch starts from `feature/h3-food-bag`, so it merges after H3. It is pushed to GitHub but not merged,
+and waits for the owner's phone test. The game as built is in `docs/GAME_GUIDE.md` part 3 ("The building windows") and
+part 11 for developers; the change list is in `docs/CHANGES.md`. Below: the plan, then **As built** and the owner's
+answers.
+
 **What you'll see:** every building opens the same tidy window, with one Upgrade button that never scrolls away, and a
 build menu.
 
@@ -498,9 +504,34 @@ build menu.
   - Sonnet: the build menu, in a new file.
 - **Tests:** `--smoke`, `--homegoals`, `--bowshop` and `--layout`.
 
+**As built (H4):**
+- **The Hearthtree** has three tabs at the top: Hearthtree, Cat and Defences. A tab shows once it has something (no tab
+  bar with one tab), the window opens on the Hearthtree tab, and a tab gets a "!" when something on it can be bought
+  (the owner's yes). Mend all, Patch it up and "Nothing for sale yet" stay at the top and Graphics at the bottom. A goal
+  has Go (walks the cat) or Show (opens the tab, or the build menu at a building not built yet).
+- **The pinned Upgrade** (the owner's Q1 (c) and Q2 (a)): the Hearthtree, the Target, the Bow Shop, the Well, the
+  Guardian Stone (awake), the garden, the Market, the Cottage and the Saddlery end in an Upgrade that never scrolls
+  away. It always opens a confirm window; the price is red and Confirm grey when you can't pay. Buy, Equip and Build
+  stay one tap. (H5 later took the Market's and the Cottage's Upgrade away with their levels.)
+- **The Bow Shop** (Q10 (a), Q11): one row per bow (Upgrade, then a grey Equipped for the bow in the paw; Equip; Buy;
+  Locked). A tap on a bow's picture opens its inspect view with its real arrow damage.
+- **The build menu** (Q12 to Q16): the build icon opens a grid of building pictures that fade in one by one, each open
+  one with its own Build; locked ones are greyed with their needs; a detail view; nothing can be built while the
+  Hearthtree is in ruins. A dot on the icon replaces the Hearthtree marker's "!" for buildings. The camera glides to a
+  new building for about 2 s while it rises out of the ground.
+- **Tips** (Q17 (a)): both building tips say "tap the build icon next to the Bag".
+- **Code:** one window file per building in `ui/windows/`, the kit in `ui/kit/`, bows (6) and buildings (11) as content
+  folders; `stations.gd` went from 2,672 to 1,723 lines. New `--buildmenu`; `--homegoals`, `--bowshop` and `--cards`
+  rewritten.
+
 ---
 
 ### H5: building windows, part 2 (the Market and pets, the Saddlery, the Tailor's Nook)
+
+**Built (27 Nov 2026) on `feature/h5-market-saddlery-tailor`** (commits `098b04f` and `b24159d`, then a stage 3
+clean-up). The branch starts from `feature/h4-building-windows`, so it merges after H4. It is local, not pushed, and
+waits for the owner's phone test. The game as built is in `docs/GAME_GUIDE.md` parts 3 and 5 (and part 11 for
+developers). Below: the plan, then **As built** and the owner's answers.
 
 **What you'll see:**
 - the Market looks like the owner's pictures 2 and 3, and sells mounts and pets;
@@ -557,6 +588,49 @@ build menu.
 
   Each agent owns its own window file. `save.gd` and `balance.json` have one owner at a time.
 - **Tests:** `--smoke`, `--saddlery`, `--tailor` and `--layout`.
+
+**The owner's answers (26 Nov 2026):**
+- **Q1 (B):** Sprig costs 160 leaves and gives the pet. **Lumi is a looks-only pet look with her own Buy at 400 leaves**,
+  and fights exactly like Sprig at the shared pet level. Her Buy shows only once the pet is owned. An old save that had
+  the Cottage (any level) owns **both** for free; a fresh save owns neither.
+- **Q2 (A):** the mount keeps the tier an old Market had paid for (`saddlery.mount_credit`). The Saddlery stays at its
+  real level. `Data.mount_level()` is the highest of 1, the Saddlery's level and that credit, and 0 while no mount is
+  owned. The Skills confirm says when the building is catching up.
+- **Q3:** the triangle holds **0 to 3** skills, never 4. An old save that learned all four fills it in the old shop
+  order (**Stomp, Ram, Pounce**); Bellow stays learned in the grid.
+- **Q4 (A):** Hearthtree 3 asks for a **built Market** and **pet level 2**; Hearthtree 4 asks for **pet level 3**.
+  Every other goal stays.
+- **Q5 (A):** a new Market has **200** health. An old Market keeps the 200, 340 or 500 its player earned.
+- **Q6 (A):** mount level 4 is **1.6575x** walking speed and **18** base health; level 5 is **1.785x** and **24**.
+- Everything in the build map's second list of defaults stood.
+
+**As built (H5):**
+- **The Market:** four icon tabs at the bottom (Sells, Buys, Mounts, Pets); no levels, no footer, no Upgrade.
+  Sells and Buys are grids of big pictures with the price; a tap opens a popup (amount, You pay or You get, Buy or Sell).
+  On Buys the price is what Bramble pays you, shown neutral. **Bramble no longer buys Gloom shards.** Amber shows after
+  the Raid Missions. The "Shards" tab is H10's.
+- **Mounts and Pets tabs:** the whole of each mount and pet; colours, Gloomlit and the Gloomwood gear moved here. Sprig
+  costs the Cottage's old 160 leaves; the pet's training (350; 900 and 30 timber) is on the Pets tab, capped by the
+  Hearthtree.
+- **The Cottage** is gone from the camp, the build menu, the marker and the code; the pet stays with the cat. The old
+  Cottage ground is open.
+- **The Saddlery:** two tabs; Attachments as pictures with a turning detail view; Skills with the triangle of three
+  circles and a round icon grid; the pinned Upgrade is on Skills, and its confirm shows the mount's speed and health.
+  The mount fires only the skills in the circles.
+- **The Tailor's Nook:** the cat turning on a stand with the outfit cards below; unowned cards grey and still
+  tryable; one Buy, Wear or Wearing button.
+- **Save version 5** (`owned`, `pet_level`, `market_hp_floor`, the circles); a Buy command (`commands/buy.gd`) used by
+  every shop window; mounts, pets, outfits and attachments as content folders (the plan's step H5 in
+  `docs/ARCHITECTURE.md` part 13).
+- **Built in** three stages by agents as Part F sets out: the foundations (stage 1), the live switch and the windows
+  (stage 2), then the older tests, the clean-up and the docs (stage 3).
+- **Tests (all pass on the PC):** `--h5found` (new, 60), `--campg` 110, `--saddlery` 156, `--tailor` 76, `--cards` 147,
+  `--saves` 85, `--content` 48, `--layout` 118, `--hudcheck` 130, `--taps` 22, `--bag` 110, `--topup` 23, `--homegoals`
+  92, `--buildmenu` 47, `--shards` 21, `--wear` 10, `--smoke`, `--village` and the default run. `--dungeoncareful`
+  was not run (its H3 point stands).
+- **Known points (noted, not fixed now):** nothing of H5 has been tried on the phone; the Nook's stand size may need
+  tuning; two unused word fallbacks (`H5_WORDS`) remain in the Saddlery's files; `--village` logs "no button Walk"
+  (no checks in that mode).
 
 ---
 

@@ -2,6 +2,65 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 27 Nov 2026 · H5: the Market, the Saddlery and the Tailor's Nook (on `feature/h5-market-saddlery-tailor`, waiting for the owner's phone test)
+
+Built in three stages: `098b04f` (stage 1: the shop catalogue, the Buy command and the save converter; nothing visible
+changed), `b24159d` (stage 2: the new windows, the Cottage gone, save version 5) and stage 3 (the older tests moved to
+the new windows, the last words and old blocks cleaned out, these docs). The branch starts from
+`feature/h4-building-windows`, so it merges after H4. Local only, not pushed. Backup:
+`D:\DevCache\backup\pre_h5_2026-11-26`.
+
+- **The Market (the owner's pictures 2 and 3):** four icon tabs along the bottom: Sells, Buys, Mounts, Pets. It has no
+  levels, no footer and no Upgrade. Sells and Buys are grids of big pictures with a price; a tap opens a small popup
+  with the name, what it is, an amount, "You pay" or "You get", and one Buy or Sell. On Buys the number is what Bramble
+  pays you, never red. A new Market has 200 health; an old Market keeps the 340 or 500 it earned (the owner's Q5).
+- **Bramble no longer buys Gloom shards** (rule change 2). The trade, its balance block and `Raids.trade_shards` are
+  gone. Amber, timber and the Golden Carp stay on Buys.
+- **Mounts and Pets tabs:** the whole of Thistle and Bramblewool (free with the Market) and of Sprig and Lumi. Tap one
+  for a bigger view. The colours, the Gloomlit colour and the Gloomwood gear (Thunder Shoes, the pet's three) moved
+  here from the old Stable and Nest.
+- **The pet (the owner's Q1, B):** Sprig costs 160 leaves (the Cottage's old price) and joins the cat. **Lumi is a look
+  only and costs 400 leaves**; she fights exactly like Sprig at the one shared pet level. Her Buy shows only once the
+  pet is owned. The pet's levels (350 leaves; 900 leaves and 30 timber) are trained on the Pets tab, never above the
+  Hearthtree's level. The pet stays with the cat even if the Market is ruined or was never built.
+- **The Mushroom Cottage is gone:** its window, build-menu card, marker, path and ground. Its old spot is open ground,
+  and a tower there stays. The build menu has 6 entries now (it had 7).
+- **Home goals (the owner's Q4, A):** Hearthtree 3 asks for a built Market and pet level 2, Hearthtree 4 for pet level
+  3. No goal asks for Market level 2 or 3. Show on a pet goal opens the build menu at the Market until it is built;
+  Go opens the Market on its Pets tab.
+- **The Saddlery:** two icon tabs, Attachments and Skills. Attachments are big pictures; a tap shows the attachment
+  turning in 3D, fitted to the mount that is out, with Buy, Wear, Upgrade or a grey Worn. Skills has **three circles
+  joined in a triangle** over a grid of round skill icons (at least 3 across). Drag a learned skill into a circle; the
+  mount fires **only** the skills in the circles, shared by every mount (the owner's Q3: 0 to 3, never 4). The pinned
+  Upgrade is on Skills and its confirm shows the next skill cap and the mount's speed and health.
+- **The mount's level comes from the Saddlery (the owner's Q2, A):** the highest of 1, the Saddlery's level and the
+  tier an old save's Market had paid for. Mount levels 4 and 5 are 1.6575x speed with 18 health and 1.785x with 24
+  (the owner's Q6, A). An old save's Market tier is kept until the Saddlery catches up, and the confirm says so.
+- **The Tailor's Nook (the owner's picture 1):** the cat on a low stand, turning, with the outfit cards below. An outfit
+  you don't own is grey and can still be tried on; the try-on changes only the picture. One Buy, Wear or Wearing button.
+- **Save version 5:** `owned[kind][id]` holds mounts, pets, outfits and attachments; new `pet_level` and
+  `market_hp_floor`. The step turns the Cottage's level into the pet level (Sprig and Lumi both owned, free), the
+  Market into level 1 (its old level is the mount's carried tier), moves outfits and attachments into `owned`, and puts
+  the learned skills in the circles (Stomp, Ram, Pounce). A fifth sample, `v5_sample.json`.
+- **Code:** the Buy command (`commands/buy.gd`), `scripts/shop_data.gd`, `market_trade.gd` and `companion_shop.gd`, four
+  new content kinds (`content/mounts/`, `pets/`, `outfits/`, `attachments/`: 14 entries), new window files (the Market's
+  `market_trade_tab.gd`, `market_companions.gd`, `market_words.gd`; the Saddlery's `saddlery_skills.gd`,
+  `attachment_inspect.gd`; the Tailor's `outfit_preview.gd`), `ui/kit/item_popup.gd` and `skill_triangle.gd`. The icon-only
+  tabs get a `tab_name` in `card.gd`. `balance.json` lost `looks.mount`, `looks.pet`, `cat_skins`, `attachments` and
+  `mount_attachments`; the last two code words (`PET_JOINS`, `HEAD_OUTFITS`) moved into `windows`. `stations.gd` is
+  1,800 lines.
+- **Tests (all pass on the PC):** new `--h5found` (60) and `autotest_g2_market.gd` (inside `--campg`, 110);
+  `--saddlery` 156, `--tailor` 76, `--cards` 147, `--saves` 85, `--content` 48 were rewritten or extended. Moved to the new
+  windows: `--layout` 118, `--hudcheck` 130 (also at 480x1040 with the safe bars), `--taps` 22, `--bag` 110, `--topup` 23,
+  `--homegoals` 92, `--buildmenu` 47, `--shards` 21, `--wear` 10, `--village`, `--smoke` and the default run. Four checks
+  needed a fix in stage 3: three in `--cards` (a one-pixel grid rounding now allowed, the Sells price lines and the
+  Buys "never red" check read the wrong labels) and `--buildmenu`'s cell count (7 to 6). Not run: `--dungeoncareful`
+  (known since H3).
+- **Known points:** `--village` logs "no button Walk" because the rider is already off the mount at that point; the
+  mode has no checks, so it stays. Two dead word fallbacks (`H5_WORDS` in `saddlery_skills.gd` and
+  `saddlery_window.gd`) are left in; they are harmless. The H4 docs gap is closed: `docs/GAME_GUIDE.md` now describes
+  the H4 and H5 windows.
+
 ## 26 Nov 2026 · H4: building windows, part 1 (on `feature/h4-building-windows`, waiting for the owner's phone test)
 
 Built in three stages: `e3fd019` (stage 1: the window kit, bows and buildings as content folders, one window file per

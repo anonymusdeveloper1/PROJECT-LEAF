@@ -1147,17 +1147,24 @@ func _topup() -> void:
 	main.player.global_position = Vector3(0.0, 0, 2.6)
 	await t._wait(1.2)
 	await t._shot("topup_home8")
-	var stall := _row_texts(main.hud.windows["stall"].spec())
-	_x("the Stable sells attachments (G4: the Thunder Shoes; the saddle and bags moved to the Saddlery)", stall.contains("Thunder Shoes") and not stall.contains("Saddle"), {"rows": stall})
+	# H5: the Market's Mounts and Pets tabs sell the expedition gear (the old Stable card is gone); the Pets tab needs Sprig.
+	var mw = main.hud.windows["stall"]
+	st._buy_companion("pet", "sprig")
+	var mounts_tab := _row_texts(mw.tab_spec("mounts"))
+	var pets_tab := _row_texts(mw.tab_spec("pets"))
+	_x("the Market's Mounts tab sells the Thunder Shoes and its Pets tab the Dew Bell (G4: the saddle and bags are the Saddlery's)",
+		mounts_tab.contains("Thunder Shoes") and pets_tab.contains("Dew Bell") and not mounts_tab.contains("Saddle") and not pets_tab.contains("Saddle"),
+		{"mounts": mounts_tab, "pets": pets_tab})
 	st._buy_attach("mount_shoes")
 	st._buy_attach("pet_bell")
-	_x("bought and worn", Save.attach["mount"] == "mount_shoes" and Save.attach["pet"] == "pet_bell")
+	_x("bought and worn", Save.attach["mount"] == "mount_shoes" and Save.attach["pet"] == "pet_bell"
+		and Data.owned_level("attachments", "mount_shoes") == 1 and Data.owned_level("attachments", "pet_bell") == 1)
 	# G4: the Mossweave Saddle is a Saddlery attachment (+15% a level) and works everywhere, camp and runs alike.
 	# 22 Nov 2026 (the owner's rule): the mount wears one attachment at a time and only the worn one acts, so it is worn here.
 	var mmax: int = main.mount.max_hp()
 	var cmax: int = Data.cat_max_hp()
 	var worn0: Variant = Save.saddlery.get("worn", "")
-	Save.saddlery["attach"]["saddle"] = 2
+	Save.owned.get_or_add("attachments", {})["saddle"] = {"level": 2}
 	Save.saddlery["worn"] = "saddle"
 	var hm := 1.0 + float(Data.saddle_info("attach", "saddle")["hp_per_level"]) * 2.0
 	var msaddle: int = main.mount.max_hp()
@@ -1170,7 +1177,7 @@ func _topup() -> void:
 	await r._leave("back")
 	await t._wait(0.4)
 	_x("back at camp: no Burrows help (the saddle stays: it is the Saddlery's)", main.mount.max_hp() == msaddle and Data.cat_max_hp() == cmax)
-	Save.saddlery["attach"].erase("saddle")
+	(Save.owned.get("attachments", {}) as Dictionary).erase("saddle")
 	Save.saddlery["worn"] = worn0
 	await t._shot("topup_stall_card")
 
@@ -1632,7 +1639,8 @@ func _burrowsave() -> void:
 	Save.mats = {"amber": 7}
 	Save.burrow_stats("old_hollow")["depth"] = 2
 	Save.burrow_stats("old_hollow")["runs"] = 5
-	Save.attach = {"owned": ["mount_saddle"], "mount": "mount_saddle", "pet": ""}
+	Save.attach = {"mount": "mount_shoes", "pet": ""}      # H5: owned gear is Save.owned.attachments; attach is only what is worn
+	Save.owned.get_or_add("attachments", {})["mount_shoes"] = {"level": 1}
 	Save.burrow_run = {"v": 2, "burrow": "old_hollow", "level": 2, "checkpoint": "moonwell"}
 	Save.save_game()
 	Save.mats = {}
@@ -1641,7 +1649,7 @@ func _burrowsave() -> void:
 	Save.burrow_run = {}
 	Save.load_game()
 	_x("fields kept through save and load", int(Save.mats["amber"]) == 7 and Data.burrow_depth("old_hollow") == 2 and int(Save.burrow_stats("old_hollow")["runs"]) == 5
-		and Save.attach["mount"] == "mount_saddle" and String(Save.burrow_run.get("checkpoint", "")) == "moonwell",
+		and Save.attach["mount"] == "mount_shoes" and Data.owned_level("attachments", "mount_shoes") == 1 and String(Save.burrow_run.get("checkpoint", "")) == "moonwell",
 		{"mats": Save.mats, "burrows": Save.burrows, "attach": Save.attach, "run": Save.burrow_run})
 	var d = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
 	for k in ["mats", "burrows", "burrow_run", "attach"]:
@@ -1651,7 +1659,7 @@ func _burrowsave() -> void:
 	f.close()
 	Save.load_game()
 	_x("an old save loads with the defaults", int(Save.mats["amber"]) == 0 and Data.burrow_depth("old_hollow") == 0 and Save.burrow_run.is_empty()
-		and (Save.attach["owned"] as Array).is_empty(), {"mats": Save.mats})
+		and String(Save.attach.get("mount", "x")) == "" and String(Save.attach.get("pet", "x")) == "", {"mats": Save.mats})
 	Save.save_game()
 	await _burrowsave_open()
 
@@ -1704,12 +1712,14 @@ func _burrowsave_open() -> void:
 
 # ---------------------------------------------------------------- how hard (19 Nov 2026): the standing and the careful cat
 ## The cat the debug endgame save gives (Save._endgame_seed): mission-15 stats, the Sunwood Longbow at 9, Sprig and
-## Thistle at level 3 (the Mushroom Cottage and the Market Stall at 3), its Bag (H3: the food Save._endgame_seed gives,
+## Thistle at level 3 (H5: the pet at level 3 and the one-level Market), its Bag (H3: the food Save._endgame_seed gives,
 ## no potion). No key, no dish.
 func _endgame_cat() -> void:
 	_strong_cat()
-	Save.stations["stall"] = 3
-	Save.stations["cottage"] = 3
+	Save.stations["stall"] = 1                      # H5: the Market has one level; the pet's level is Save.pet_level
+	Save.pet_level = 3
+	Save.owned.get_or_add("mounts", {})["thistle"] = {"level": 1}
+	Save.owned.get_or_add("pets", {})["sprig"] = {"level": 1}
 	Save.bag = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3}
 	Events.bag_changed.emit()
 	main.player.hp = Data.cat_max_hp()

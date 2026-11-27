@@ -354,29 +354,3 @@ func _gloomlit_row(slot: String) -> Array:
 			return [_tile("shard", "%s colours" % String(s["name"]), "Earned with Gloom shards, never sold", {"shards": int(s["shards"])}, "Unlock",
 				true, st._unlock_skin.bind(slot, String(s["id"])), "New")]
 	return []
-
-
-## Phase E: attachments for the mount or the pet: Burrows-only help, bought once for its price (leaves today), one worn
-## at a time. Shown once the Burrows are open. Card-only for now (no model on the companion). H5: they are content
-## entries (content/attachments, "shop": "stall", "scope": "expedition"; Data.attachment_entries), owned in Save.owned
-## (Data.owned_level); Buy is stations._buy_attach (the Buy command), Wear and Take off stations._wear.
-func _attach_rows(slot: String) -> Array:
-	var rows: Array = []
-	if not Data.burrows_open():
-		return rows
-	for it: Dictionary in Data.attachment_entries(String(st.MARKET), slot):    # the Market sells it (its entries' "shop")
-		if String(it.get("scope", "")) != "expedition":
-			continue
-		var aid := String(it["id"])
-		var nm := String(it.get("name", aid))
-		var says := String(it.get("desc", ""))
-		var worn: bool = String(Save.attach.get(slot, "")) == aid
-		if worn:
-			rows.append(_tile(slot, nm, says, {}, "Take off", true, st._wear.bind(slot, ""), "Equipped"))
-		elif Data.owned_level("attachments", aid) >= 1:
-			rows.append(_tile(slot, nm, says, {}, "Wear", true, st._wear.bind(slot, aid), "Owned"))
-		else:
-			var c: Dictionary = Data.entry_price("attachments", aid, 1)
-			rows.append(_tile(slot, nm, says + Data.mats_line(c), c, "Buy", Data.entry_price_ok("attachments", aid, 1),
-				st._buy_attach.bind(aid), "New"))
-	return rows

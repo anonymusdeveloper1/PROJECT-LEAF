@@ -483,13 +483,17 @@ func _market_carp() -> void:
 	_set_bag({"goldfish": 1}, 0, 0, 0)
 	var pay := int((buys[i] as Dictionary).get("leaves", 0))
 	var leaves0 := Save.leaves
-	var tiles: Array = main.hud.windows["stall"]._market_buys()
+	# H5: the Market's Buys tab (a picture and what Bramble pays), its popup, then one Sell through the trade
+	var mw = main.hud.windows["stall"]
+	mw.select("buys")
 	var sell := {}
-	for tile in tiles:
-		if String(tile.get("icon", "")) == "goldfish":
-			sell = tile
-	_x("Bramble's tile offers to buy the carp", not sell.is_empty() and bool(sell.get("enabled", false)) and String(sell.get("label", "")) == "Sell")
-	main.stations._market_sell(i)
+	for cell: Dictionary in mw.entries("buys"):
+		if String(cell.get("id", "")) == "goldfish":
+			sell = cell
+	_x("Bramble's Buys tab offers to buy the carp", not sell.is_empty() and mw.inspect("goldfish") and mw.trade.is_open()
+		and mw.trade.popup.item_id() == "goldfish")
+	mw.back()
+	main.stations.market_trade("buys", "goldfish", 1)
 	_x("Bramble buys a Golden Carp for %d leaves" % pay, pay > 0 and Save.leaves == leaves0 + pay and Bag.count("goldfish") == 0,
 		{"pay": pay, "leaves": [leaves0, Save.leaves]})
 

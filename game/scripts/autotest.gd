@@ -3,7 +3,7 @@ extends Node
 ## the gate, picks Fernwood, fights each wave, buys an upgrade at the Training Target after wave 1, calls the next
 ## waves with the horn, and saves screenshots and report.json to --shots=<folder>.
 ##   --smoke   just a few screenshots of the camp, then quit
-##   --village  the Wishing Well, Mushroom Cottage and Market Stall, Sprig, riding Thistle, the Well mending between waves
+##   --village  the Wishing Well and the Market (H5: Sprig comes from its Pets tab), riding Thistle, the Well mending between waves
 ##   --newfoes  the five later enemies close up, then each one's specials
 ##   --laststand  the campfire goes out mid-stage, the enemies hunt the cat, the cat falls: the Gloom Raid, then
 ##               clearing the crusted building and mending the defences
@@ -553,7 +553,7 @@ func _veteran(n: int) -> void:
 	if n >= 2:
 		Save.stations["stall"] = 1
 	if n >= 3:
-		Save.stations["cottage"] = 1
+		Save.pet_level = 1                              # H5: the Cottage is gone; the pet (Sprig, level 1) is the shared Save.pet_level
 	if n >= 4:
 		Save.stations["well"] = 1
 	if n >= 6:                                          # Phase C: mission 6 gives the Fishing Spot
@@ -700,6 +700,16 @@ func _gallery() -> void:
 	main.closeup = Vector3.ZERO
 
 
+## H5: calls the action of cell `cell_id` on the Market's tab `tab` (a tap on that picture or its Use), then the card refreshes.
+func _market_cell_act(tab: String, cell_id: String) -> void:
+	for c: Dictionary in main.hud.windows["stall"].entries(tab):
+		if String(c["id"]) == cell_id:
+			var a: Variant = c.get("action", Callable())
+			if a is Callable and (a as Callable).is_valid():
+				(a as Callable).call()
+	main.hud.refresh_card()
+
+
 ## The village: build all three, look at their cards, ride Thistle out with Sprig, fight a wave of Moonmoth Hollow,
 ## then watch the Well mend a hurt campfire.
 func _village() -> void:
@@ -712,8 +722,7 @@ func _village() -> void:
 	Save.missions_done = ["embers", "bramble", "toadstool", "stumps"]
 	Save.camp_level = 3
 	main.on_camp_grown()
-	main.stations.gift("stall")
-	main.stations.gift("cottage")
+	main.stations.gift("stall")                              # H5: Thistle comes with the Market; Sprig is bought on its Pets tab below
 	await _use(main.stations.rings["shop"])
 	await _wait(0.8)
 	await _shot("village_00_shop")
@@ -737,15 +746,22 @@ func _village() -> void:
 		await _shot("village_02b_trader")
 		main.closeup_at = null
 	main.closeup = Vector3.ZERO
-	for id in ["well", "cottage", "stall"]:
+	for id in ["well", "stall"]:
 		await _use(main.stations.rings[id], 0.25, 12.0)
 		await _wait(0.9)
 		await _shot("village_card_" + id)
-		if id == "cottage":
-			_press("Use")
-			await _wait(0.6)
-			_log("pet look", {"look": Save.pet_look})
-	_press("Use")
+	# H5: the pet is Sprig bought on the Market's Pets tab (160 leaves), then Lumi is picked there; the mount look on Mounts
+	var mw = main.hud.windows["stall"]
+	Save.leaves = maxi(Save.leaves, 500)
+	main.stations._buy_companion("pet", "sprig")
+	mw.select("pets")
+	await _wait(0.6)
+	await _shot("village_card_pets")
+	_market_cell_act("pets", "lumi")
+	await _wait(0.6)
+	_log("pet look", {"look": Save.pet_look, "pet": main.pet != null, "pet_level": Data.pet_level()})
+	mw.select("mounts")
+	_market_cell_act("mounts", "bramblewool")
 	await _wait(0.6)
 	_log("mount look", {"look": Save.mount_look})
 	await _shot("village_card_stall_ram")
@@ -793,7 +809,8 @@ func _village() -> void:
 	await _shot("village_07_after_well_mend")
 	await _use(main.stations.rings["stall"], 0.25, 12.0)
 	await _wait(0.6)
-	_press("Sell")
+	main.stations.market_trade("buys", "timber", 1)          # H5: the old Sell tile is Bramble's Buys tab, timber's offer
+	main.hud.windows["stall"].select("mounts")
 	_press("Walk")
 	await _wait(1.5)
 	_log("walk again", {"riding": main.player.riding, "timber": Save.timber})
@@ -2736,18 +2753,18 @@ func _wear() -> void:
 		{"cc": cc["condition"], "wear": Save.wear})
 	await _shot("wear_mended")
 	# the Patch row on a building's own card
-	Save.wear["cottage"] = 0.4
+	Save.wear["stall"] = 0.4                                  # H5: the Cottage is gone; the Market's Sells tab carries the Patch row
 	st.refresh()
-	await _at_ring(st.rings["cottage"])
+	await _at_ring(st.rings["stall"])
 	await _wait(0.8)
 	await _shot("wear_patch_row")
 	var ok: bool = _press("Patch")
 	await _wait(0.3)
-	_expect("Patch on the cottage's card", ok and not Save.wear.has("cottage"))
+	_expect("Patch on the Market's card", ok and not Save.wear.has("stall"))
 
 
 ## What Gloom shards buy (the rest of --shards): defence level 4 (hidden before every mission is won, blocked below
-## home level 4, then bought), Lookout and Tracker, Gloomlit colours, the shard trade, Shardfire.
+## home level 4, then bought), Lookout and Tracker, Gloomlit colours, no shard trade (H5), Shardfire.
 func _shard_goods() -> void:
 	main.player.invincible = true
 	_veteran(14)
@@ -2823,11 +2840,13 @@ func _shard_goods() -> void:
 		await _shot("shards_gloomlit_mount")
 		main.closeup = Vector3.ZERO
 		main.closeup_at = null
-	# the shard trade
+	# H5: Bramble no longer buys shards: no shard offer on his Buys tab, a shard sale is refused and nothing moves
 	var l0 := Save.leaves
 	sh = Save.shards
-	rd.trade_shards()
-	_expect("Bramble pays 100 leaves for 5 shards", Save.leaves == l0 + 100 and Save.shards == sh - 5)
+	var buys_ids: Array = main.hud.windows["stall"].entries("buys").map(func(c): return String(c["id"]))
+	var refused: bool = not main.stations.market_trade("buys", "shards", 5) and not rd.has_method("trade_shards")
+	_expect("Bramble buys no shards: no offer, a sale is refused, leaves and shards unchanged", not buys_ids.has("shards") and refused
+		and Save.leaves == l0 and Save.shards == sh, {"offers": buys_ids, "leaves": [l0, Save.leaves], "shards": [sh, Save.shards]})
 	# Shardfire
 	rd.unlock_fire("shardfire")
 	var tint = st._flame_mat.get_shader_parameter("tint") if st._flame_mat != null else null

@@ -11,12 +11,16 @@ extends Node
 ##   --dungeontreasure  a map that ends in a treasure clearing (data/dungeons/test_glade.json)
 ##   --dungeonlevels    what each level fills the fights with (pools, sizes, snappers, elites, the boss)
 ##   --dungeonstand     how hard (19 Nov 2026): the endgame cat walks level 1 and just stands and shoots (no dodging,
-##                      lunches or mount): it must be knocked out before the end; =god gives it 1,000 extra health to
-##                      measure the health each fight takes and Mossback's time to kill; =items: it also rides Thistle,
-##                      feeds it and eats its lunches, but still never dodges
-##   --dungeoncareful   the same cat played with care: it rides Thistle and feeds it, eats lunches, steps out of the
-##                      telegraphs and dashes through them, backs away from melee: it must win, with effort
+##                      potions or mount): it must be knocked out before the end; =god gives it 1,000 extra health to
+##                      measure the health each fight takes and Mossback's time to kill; =items: it also rides Thistle
+##                      and uses its potions (H3: 3 Health and 3 Mount Health Potions), but still never dodges
+##   --dungeoncareful   the same cat played with care: it rides Thistle, uses its potions (a Mount Health Potion when
+##                      Thistle is knocked out, a Health Potion at half health), steps out of the telegraphs and dashes
+##                      through them, backs away from melee: it must win, with effort (H3, the owner's Q2: no food is
+##                      eaten below ground any more, so this may fail on balance; that is reported, not retuned)
 ##   kept from Phase E: --burrowsave, --hollow, --dash, --traps, --burrowfoes, --topup, --burrowhooks
+
+const UsePotion := preload("res://commands/use_potion.gd")
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _veteran, _go_straight, _press, _log)
 var main
@@ -931,8 +935,10 @@ func _dungeonlevels() -> void:
 
 # ---------------------------------------------------------------- Phase E modes, on the dungeon map
 ## Phase D: a pending raid blocks the Hollow; the meter never moves during a run; a finished run adds 15 points (never
-## past 95); a raid held pays its leaves (H1: no Hollow key any more). Phase C: a dish in the pot goes
-## down with the cat (its boost applies), is used up when the run ends, and is back in the pot after a quit mid-run.
+## past 95); a raid held pays its leaves (H1: no Hollow key any more). H3 (the owner's Q1 and Q2): no dish goes down
+## with the cat any more and no food is eaten below ground. In a Burrow a knocked-out mount stays out, the Mount Health
+## Potion button shows (no Feed), and the potion brings it back with its share of health (full); a Health Potion (its
+## button shows while the cat is hurt) heals the cat there.
 func _burrowhooks() -> void:
 	await _endgame_camp()
 	main.raids.test_awake = true
@@ -947,25 +953,14 @@ func _burrowhooks() -> void:
 	Save.raids["pending"] = false
 	main.raids.manual = false
 	Save.raids["meter"] = 40.0
-	Save.pantry["berries"] = 6
-	Save.meal_ready = String(Data.b["cooking"]["recipes"][0]["id"])
-	var dish := Save.meal_ready
+	Bag.add("berries", 6, true)
 	await b.enter("old_hollow", 1)
 	await t._wait(0.5)
-	_x("the dish went down with the cat and is eaten", Save.meal_on == dish and Save.meal_ready == "" and String(r.run["meal"]) == dish, {"on": Save.meal_on})
 	var m0 := float(Save.raids["meter"])
 	await t._wait(3.0)
 	_x("the meter does not fill during a run", absf(float(Save.raids["meter"]) - m0) < 0.01, {"meter": Save.raids["meter"]})
-	b.persist()
-	Save.load_game()
-	_x("after a quit mid-run the dish is back in the pot", Save.meal_ready == dish and Save.meal_on == "")
-	Data.set_meal("")
-	Save.meal_on = dish
-	Save.meal_ready = ""
-	Data.set_meal(dish)
 	await r._leave("back")
 	await t._wait(0.4)
-	_x("the run's end uses the dish up", Save.meal_on == "" and Save.meal_ready == "")
 	_x("a finished run adds 15 to the meter", absf(float(Save.raids["meter"]) - (m0 + 15.0)) < 0.5, {"meter": Save.raids["meter"], "was": m0})
 	Save.raids["meter"] = 90.0
 	main.raids.add_gloom("burrow_run")
@@ -981,24 +976,61 @@ func _burrowhooks() -> void:
 	var sf: Variant = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
 	var no_key: bool = sf is Dictionary and not (sf as Dictionary).has("burrow_keys") and not "burrow_keys" in Save and not pay.has("keys")
 	_x("H1: a raid held pays its leaves, and no Hollow key", Save.leaves - l0 == raid_leaves and no_key, {"got": Save.leaves - l0, "raid": raid_leaves, "pay": pay})
-	Save.pantry = {"berries": 4, "herbs": 0, "honey": 0, "fish": 1, "goldfish": 0}
+	# H3: the potions below ground (the owner's Q1: the Mount Health Potion replaces Feed; Q2: Health Potions only)
+	var hp_id := Effects.hud_potion("cat")
+	var mp_id := Effects.hud_potion("mount")
+	_bag_to(hp_id, 1)
+	_bag_to(mp_id, 1)
+	_bag_to("fish", 1)
+	_bag_to("berries", 4)
 	await b.enter("old_hollow", 1)
 	await t._wait(0.5)
 	var mt = main.mount
+	var acts = main.hud.p_actions
 	mt.hurt(99999, mt.global_position)
 	await t._wait(2.0)
 	var feed_btn := false
 	for bt in main.hud.build_buttons():
 		if String(bt.get_meta("label", "")).begins_with("Feed"):
 			feed_btn = true
-	_x("in a Burrow a knocked-out mount stays out, and the Feed button shows", mt.resting > 0.0 and feed_btn, {"resting": mt.resting})
-	main.feed_mount()
+	_x("in a Burrow a knocked-out mount stays out, and the Mount Health Potion button shows (no Feed)", mt.resting > 0.0
+		and main.hud.build_buttons().has(acts.mount_potion_button) and not feed_btn and not main.has_method("feed_mount"),
+		{"resting": mt.resting, "label": acts.mount_potion_button.get_meta("label", "")})
+	var share := _share(mp_id, "revive")
+	var ok: bool = UsePotion.new(mp_id).run(main)
 	await t._wait(0.3)
-	_x("fed (2 Sunberries): it is up and whole", mt.resting <= 0.0 and mt.hp == mt.max_hp() and int(Save.pantry["berries"]) == 2)
+	var want_mt := clampi(roundi(float(mt.max_hp()) * share), 1, maxi(1, mt.max_hp()))
+	_x("the Mount Health Potion brings it back with its share of health (%.0f%%), one potion used" % (share * 100.0), ok and mt.resting <= 0.0
+		and mt.hp == want_mt and Bag.count(mp_id) == 0 and not main.hud.build_buttons().has(acts.mount_potion_button),
+		{"hp": mt.hp, "want": want_mt, "left": Bag.count(mp_id)})
 	main.player.hp = 2
-	main.eat_snack()
-	_x("a snack (the fish first) heals the cat", main.player.hp == mini(6, Data.cat_max_hp()) and int(Save.pantry["fish"]) == 0, {"hp": main.player.hp})
+	await t._wait(0.4)
+	_x("no food is eaten below ground: the cat stays hurt, the Bag keeps its fish and berries, and the Health Potion button shows",
+		main.player.hp == 2 and Bag.count("fish") == 1 and Bag.count("berries") == 4 and not main.has_method("eat_snack")
+		and main.hud.build_buttons().has(acts.potion_button), {"hp": main.player.hp, "fish": Bag.count("fish")})
+	var total := maxi(1, roundi(float(Data.cat_max_hp()) * _share(hp_id, "heal_over_time")))
+	ok = UsePotion.new(hp_id).run(main)
+	main.player.effects.step(10.0)                         # the potion's whole time at once (synchronous: nothing else moves)
+	_x("a Health Potion heals the cat below ground (its share over time), one potion used", ok
+		and main.player.hp == mini(2 + total, Data.cat_max_hp()) and Bag.count(hp_id) == 0, {"hp": main.player.hp, "total": total})
 	await r._leave("back")
+
+
+## The Bag holds exactly n of id (taken out or put in by force).
+func _bag_to(id: String, n: int) -> void:
+	var have := Bag.count(id)
+	if have > n:
+		Bag.take(id, have - n)
+	elif have < n:
+		Bag.add(id, n - have, true)
+
+
+## The share of id's first effect of the given type (its entry in content or balance.json bag.use), 0 when none.
+func _share(id: String, type: String) -> float:
+	for e: Variant in Bag.effects(id):
+		if e is Dictionary and String((e as Dictionary).get("type", "")) == type:
+			return float((e as Dictionary).get("share", 0.0))
+	return 0.0
 
 
 # ---------------------------------------------------------------- rewards and the top upgrades
@@ -1659,21 +1691,26 @@ func _burrowsave_open() -> void:
 
 # ---------------------------------------------------------------- how hard (19 Nov 2026): the standing and the careful cat
 ## The cat the debug endgame save gives (Save._endgame_seed): mission-15 stats, the Sunwood Longbow at 9, Sprig and
-## Thistle at level 3 (the Mushroom Cottage and the Market Stall at 3), its pantry. No key, no dish.
+## Thistle at level 3 (the Mushroom Cottage and the Market Stall at 3), its Bag (H3: the food Save._endgame_seed gives,
+## no potion). No key, no dish.
 func _endgame_cat() -> void:
 	_strong_cat()
 	Save.stations["stall"] = 3
 	Save.stations["cottage"] = 3
-	Save.pantry = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3, "goldfish": 0}
-	Save.meal_ready = ""
+	Save.bag = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3}
+	Events.bag_changed.emit()
 	main.player.hp = Data.cat_max_hp()
+
+
+## H3: the careful cat's (and =items') potions: 3 Health and 3 Mount Health Potions (the owner's Q2: no food below ground).
+const STAND_POTIONS := 3
 
 
 var _seg := "walk"                   # where the health went: a fight's id, "logs", "boss", "walk"
 var _rep := {}
 var _last_hp := 0
 var _careful := false
-var _items := false                  # rides, feeds and snacks (the careful cat, and --dungeonstand=items)
+var _items := false                  # rides and uses potions (the careful cat, and --dungeonstand=items)
 var _mount_last := 0
 var _strike_seen := 0
 
@@ -1698,19 +1735,22 @@ func _alive() -> bool:
 	return _r().active and not _r().leaving and main.player.hp > 0
 
 
-## The careful cat, every tenth of a second: lunches and the mount, then the telegraphs (dash out of a slam ring, a
-## charge's line or a spore bomb), then backing away from what is about to bite.
+## The careful cat, every tenth of a second: its potions and the mount (H3: a Health Potion at half health, a Mount
+## Health Potion when Thistle is knocked out, through the Use-potion command as the HUD's buttons send it), then the
+## telegraphs (dash out of a slam ring, a charge's line or a spore bomb), then backing away from what is about to bite.
 func _careful_tick() -> void:
 	var p = main.player
 	var r = _r()
-	if p.hp <= int(Data.cat_max_hp() * 0.5) and not main.snack_pick().is_empty():
-		var before: int = p.hp
-		main.eat_snack()
-		if p.hp > before:
-			_rep["snacks"] = int(_rep.get("snacks", 0)) + 1
-	if main.mount != null and main.mount.resting > 0.0 and Data.has_items(Data.b["mount"].get("revive_food", {"berries": 2})):
-		main.feed_mount()
-		_rep["feeds"] = int(_rep.get("feeds", 0)) + 1
+	var hp_id := Effects.hud_potion("cat")
+	var mp_id := Effects.hud_potion("mount")
+	if p.hp <= int(Data.cat_max_hp() * 0.5) and UsePotion.new(hp_id).can_run(main) == "":
+		if UsePotion.new(hp_id).run(main):
+			_rep["potions"] = int(_rep.get("potions", 0)) + 1
+			_rep["heals"] = int(_rep.get("heals", 0)) + 1
+	if main.mount != null and main.mount.resting > 0.0 and UsePotion.new(mp_id).can_run(main) == "":
+		if UsePotion.new(mp_id).run(main):
+			_rep["potions"] = int(_rep.get("potions", 0)) + 1
+			_rep["revives"] = int(_rep.get("revives", 0)) + 1
 	elif main.mount != null and main.mount.resting <= 0.0 and not p.riding:
 		main.set_riding(true, false)
 	if not _careful:
@@ -1818,6 +1858,9 @@ func _dungeonstand(mode: String) -> void:
 	var r = _r()
 	_careful = mode == "careful"
 	_items = mode in ["careful", "items"]
+	if _items:                                            # H3: the potions it brings (by force: the Bag's room is not the test)
+		Bag.add(Effects.hud_potion("cat"), STAND_POTIONS, true)
+		Bag.add(Effects.hud_potion("mount"), STAND_POTIONS, true)
 	main.set_riding(false, false)
 	await main.burrows.enter("old_hollow", 1)
 	await t._wait(0.8)
@@ -1893,7 +1936,8 @@ func _dungeonstand(mode: String) -> void:
 	_rep["boss_down"] = boss_down
 	_rep["boss_enraged_at_s"] = snappedf(enraged_at, 0.1)
 	_rep["hp_at_boss"] = hp_at_boss - (1000 if mode == "god" else 0)
-	_rep["pantry_left"] = Save.pantry.duplicate()
+	_rep["potions_left"] = {"cat": Bag.count(Effects.hud_potion("cat")), "mount": Bag.count(Effects.hud_potion("mount"))}
+	_rep["bag_left"] = Save.bag.duplicate()
 	var total := 0
 	for k in _rep["lost"]:
 		total += int(_rep["lost"][k])
@@ -1904,7 +1948,7 @@ func _dungeonstand(mode: String) -> void:
 		f.store_string(JSON.stringify(_rep, "  "))
 	match mode:
 		"real":
-			_x("the standing cat (no dodging, lunches or mount) is knocked out before the end of level 1", out and not boss_down,
+			_x("the standing cat (no dodging, potions or mount) is knocked out before the end of level 1", out and not boss_down,
 				{"out_at": _rep["out_at"], "lost": _rep["lost"]})
 		"god":
 			_x("standing, it takes more health than the cat has (%d) before the boss is down" % int(_rep["max_hp"]),
@@ -1912,11 +1956,12 @@ func _dungeonstand(mode: String) -> void:
 			_x("Mossback takes 55-150 s to fall to a standing endgame cat: %.1f s" % boss_t, boss_down and boss_t >= 55.0 and boss_t <= 150.0,
 				{"secs": boss_t, "hp": boss_hp0})
 		"careful":
-			_x("the careful cat (mount, lunches, dodging) beats level 1", boss_down and not out, {"out_at": _rep["out_at"], "lost": _rep["lost"]})
-			_x("... with effort: Thistle was knocked out and fed, or lunches were eaten", int(_rep.get("feeds", 0)) + int(_rep.get("snacks", 0)) > 0,
-				{"feeds": _rep.get("feeds", 0), "snacks": _rep.get("snacks", 0), "mount_lost": _rep.get("mount_lost", 0)})
+			_x("the careful cat (mount, potions, dodging) beats level 1", boss_down and not out, {"out_at": _rep["out_at"], "lost": _rep["lost"],
+				"potions_left": _rep["potions_left"]})
+			_x("... with effort: potions were used (a Health Potion, or a Mount Health Potion for a knocked-out Thistle)", int(_rep.get("potions", 0)) > 0,
+				{"heals": _rep.get("heals", 0), "revives": _rep.get("revives", 0), "mount_lost": _rep.get("mount_lost", 0)})
 		"items":
-			_x("standing on Thistle with its lunches but never dodging, it still falls before the end", out and not boss_down,
+			_x("standing on Thistle with its potions but never dodging, it still falls before the end", out and not boss_down,
 				{"out_at": _rep["out_at"], "lost": _rep["lost"], "mount_lost": _rep.get("mount_lost", 0)})
 	await t._wait(0.5)
 	if r.active:

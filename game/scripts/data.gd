@@ -599,11 +599,12 @@ func _lv(id: String) -> int:
 
 
 func cat_max_hp() -> int:
-	return int(b["cat"]["hp"]) + int(stat_info("health")["per_level"]) * _lv("health") + int(meal_boost("hp")) + int(run_mods.get("hp", 0))
+	return int(b["cat"]["hp"]) + int(stat_info("health")["per_level"]) * _lv("health") + int(run_mods.get("hp", 0))
 
 
+## H3: x (1 + the Speed Potion's share) while one runs (Data.effect_mult; riding multiplies this by the mount's speed).
 func cat_speed() -> float:
-	return float(b["cat"]["speed"]) * (1.0 + float(stat_info("speed")["per_level"]) * _lv("speed"))
+	return float(b["cat"]["speed"]) * (1.0 + float(stat_info("speed")["per_level"]) * _lv("speed")) * (1.0 + effect_mult("speed"))
 
 
 func cat_range() -> float:
@@ -618,19 +619,34 @@ func bow_draw_mult(id: String) -> float:
 
 
 func cat_draw() -> float:
-	return float(b["cat"]["draw"]) * (1.0 + float(stat_info("draw")["per_level"]) * _lv("draw")) * (1.0 + meal_boost("draw"))
+	return float(b["cat"]["draw"]) * (1.0 + float(stat_info("draw")["per_level"]) * _lv("draw"))
 
 
 func cat_magnet() -> float:
 	return float(b["cat"]["magnet"]) + float(stat_info("magnet")["per_level"]) * _lv("magnet")
 
 
+## H3: x (1 + the Damage Potion's share) while one runs (Data.effect_mult; arrows only).
 func arrow_damage() -> float:
 	var bow := bow_info(Save.bow)
 	var bow_lv := int(Save.bows.get(Save.bow, 1))
 	return float(b["cat"]["damage"]) * (1.0 + float(stat_info("damage")["per_level"]) * _lv("damage")) \
-		* float(bow["damage"]) * bow_level_mult(Save.bow, bow_lv) * (1.0 + meal_boost("damage")) \
+		* float(bow["damage"]) * bow_level_mult(Save.bow, bow_lv) * (1.0 + effect_mult("damage")) \
 		* (1.0 + float(run_mods.get("damage", 0.0)))
+
+
+var _effect_mults := {}              # H3: the cat's running potion effects, stat -> share (the Effects holder sets it)
+
+
+## H3: the cat's Effects holder (parts/effects_holder.gd) hands over the full map of every stat with a running
+## stat_mult effect ({"damage": 0.25, "speed": 0.25}, or {} when none): it replaces the whole map (a copy is kept).
+func set_effect_mults(d: Dictionary) -> void:
+	_effect_mults = d.duplicate()
+
+
+## H3: a running potion's share for a stat (the stat becomes x (1 + this)); 0.0 when none runs.
+func effect_mult(stat: String) -> float:
+	return float(_effect_mults.get(stat, 0.0))
 
 
 # ---------------------------------------------------------------- Phase C: the Moss Warden, the garden, the pantry
@@ -652,20 +668,19 @@ func guardian_power() -> float:
 
 
 func guardian_max_hp() -> float:
-	return pick("guardian", "hp_by_level", guardian_level()) * guardian_power() * (1.0 + meal_boost("guardian_hp"))
+	return pick("guardian", "hp_by_level", guardian_level()) * guardian_power()
 
 
 func guardian_fist() -> float:
-	return pick("guardian", "fist_damage_by_level", guardian_level()) * guardian_power() * (1.0 + meal_boost("friends"))
+	return pick("guardian", "fist_damage_by_level", guardian_level()) * guardian_power()
 
 
 func guardian_slam() -> float:
-	return pick("guardian", "slam_damage_by_level", guardian_level()) * guardian_power() * (1.0 + meal_boost("friends"))
+	return pick("guardian", "slam_damage_by_level", guardian_level()) * guardian_power()
 
 
 func guardian_revive_s() -> float:
-	var m := meal_boost("guardian_revive_s")
-	return m if m > 0.0 else float(b["guardian"]["revive_s"])
+	return float(b["guardian"]["revive_s"])
 
 
 func garden_level() -> int:
@@ -683,26 +698,50 @@ func _by_id(list: Array, id: String) -> Dictionary:
 	return {}
 
 
+## H3: a crop's content entry (content/crops/<id>/entry.json: name, desc, icon, model, gives, yield, grow_s, price,
+## unlock), or {} for "" or an unknown id.
 func crop(id: String) -> Dictionary:
-	return _by_id(b["garden"]["crops"], id) if id != "" else {}
+	return item("crops", id) if id != "" else {}
 
 
+## H3: a recipe's content entry (content/recipes/<id>/entry.json: the recipe is its result's type, and its id is the
+## Bag item's id: name, plural, desc, icon, color, needs, cook_s, limit, unlock, effects), or {}.
 func recipe(id: String) -> Dictionary:
-	return _by_id(b["cooking"]["recipes"], id) if id != "" else {}
+	return item("recipes", id) if id != "" else {}
+
+
+## H3: an entry's unlock rule (ARCHITECTURE part 5). {} is always open; {"building": [id, level]} is open once that
+## building (Save.stations, or the home) has reached level. Any other form warns and stays shut.
+func unlocked(rule: Dictionary) -> bool:
+	if rule.is_empty():
+		return true
+	var bld: Variant = rule.get("building")
+	if rule.size() == 1 and bld is Array and (bld as Array).size() == 2 and (bld as Array)[0] is String:
+		return station_level(String(bld[0])) >= int(bld[1])
+	push_warning("Data.unlocked: an unlock rule of a form it does not know: %s" % JSON.stringify(rule))
+	return false
 
 
 func catch_info(id: String) -> Dictionary:
 	return _by_id(b["fishing"]["catches"], id) if id != "" else {}
 
 
-## "Sunberry" or "Sunberries" (balance.json ingredients).
+## "Sunberry" or "Sunberries" (balance.json ingredients); H3: a potion's "name" or "plural" (content/recipes); else
+## the id itself.
 func item_name(id: String, n: int) -> String:
-	var names: Array = b["ingredients"].get(id, [id, id])
-	return String(names[0] if n == 1 else names[1])
+	var names: Variant = (b["ingredients"] as Dictionary).get(id)
+	if names is Array and (names as Array).size() >= 2:
+		return String(names[0] if n == 1 else names[1])
+	var r := recipe(id)
+	if not r.is_empty():
+		var one := String(r.get("name", id))
+		return one if n == 1 else String(r.get("plural", one))
+	return id
 
 
+## H2 legacy: nothing calls it since H3 (kept; removing it was not part of H3).
 func food_known(id: String) -> bool:
-	if int(Save.pantry.get(id, 0)) > 0:
+	if Bag.count(id) > 0:
 		return true
 	match id:
 		"goldfish": return int(Save.fish_log.get("carp", 0)) > 0
@@ -710,72 +749,29 @@ func food_known(id: String) -> bool:
 	return b["ingredients"].has(id)
 
 
-func snack(id: String) -> Dictionary:
-	for entry in burrow_cfg().get("lunch", []):
-		if String(entry["item"]) == id:
-			return entry
-	return {}
-
-
-## Completed food changes and their resulting stock, shared by gathering, cooking and trading.
+## Completed Bag changes and what the Bag holds now, shared by gathering, cooking and trading: "+3 Sunberries · now 8"
+## (H3: no cap any more; the Bag's room is Bag.room_for).
 func food_receipt(changes: Dictionary) -> String:
 	var bits: Array = []
-	var cap := int(b["cooking"]["pantry_cap"])
-	for id in changes:
+	for id: Variant in changes:
 		var n := int(changes[id])
-		bits.append("%+d %s · now %d/%d" % [n, item_name(String(id), absi(n)), int(Save.pantry.get(id, 0)), cap])
+		bits.append("%+d %s · now %d" % [n, Bag.name_of(String(id), absi(n)), Bag.count(String(id))])
 	return " · ".join(bits)
 
 
+## H3: the Bag holds at least needs[id] of every id (Bag.has_all).
 func has_items(needs: Dictionary) -> bool:
-	for k in needs:
-		if int(Save.pantry.get(k, 0)) < int(needs[k]):
-			return false
-	return true
+	return Bag.has_all(needs)
 
 
-func take_items(needs: Dictionary) -> void:
-	var changed := false
-	for k: String in needs:
-		var have := int(Save.pantry.get(k, 0))
-		var remaining := maxi(0, have - int(needs[k]))
-		Save.pantry[k] = remaining
-		changed = changed or remaining != have
-	if changed:
-		Save.mark_dirty()
-		Events.bag_changed.emit()
+## H3: takes every needs[id] from the Bag, all or nothing (Bag.take_all).
+func take_items(needs: Dictionary) -> bool:
+	return Bag.take_all(needs)
 
 
-## Puts ingredients in the pantry, each up to the pantry's cap. Returns what did not fit.
+## H3: puts things in the Bag, each as far as it has room (Bag.add_all). Returns what did not fit.
 func add_items(d: Dictionary) -> Dictionary:
-	var cap := int(b["cooking"]["pantry_cap"])
-	var left: Dictionary = {}
-	var gained: Dictionary = {}
-	for k: String in d:
-		var have := int(Save.pantry.get(k, 0))
-		var put := clampi(int(d[k]), 0, maxi(0, cap - have))
-		Save.pantry[k] = have + put
-		if put > 0:
-			gained[k] = put
-		if int(d[k]) - put > 0:
-			left[k] = int(d[k]) - put
-	if not gained.is_empty():
-		Save.mark_dirty()
-		for k: String in gained:
-			Events.item_gained.emit("food", k, int(gained[k]))
-		Events.bag_changed.emit()
-	return left
-
-
-var _boost := {}                     # the eaten dish's boost, cached (the stat getters run every frame)
-
-
-func set_meal(id: String) -> void:
-	_boost = recipe(id).get("boost", {}) if id != "" else {}
-
-
-func meal_boost(k: String) -> float:
-	return float(_boost.get(k, 0.0))
+	return Bag.add_all(d)
 
 
 # ---------------------------------------------------------------- money

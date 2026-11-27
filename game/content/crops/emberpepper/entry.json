@@ -1,0 +1,12 @@
+{
+  "id": "emberpepper",
+  "name": "Emberpeppers",
+  "desc": "Hot peppers for the Damage Potion.",
+  "icon": "peppers",
+  "model": "emberpepper",
+  "gives": "peppers",
+  "yield": 2,
+  "grow_s": 480,
+  "price": {"leaves": 20},
+  "unlock": {}
+}

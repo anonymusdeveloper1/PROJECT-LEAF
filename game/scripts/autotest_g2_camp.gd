@@ -194,19 +194,23 @@ func _market() -> void:
 		Save.timber == int(tb["timber"]) and Save.leaves == 1000 - int(tb["leaves"]), {"timber": Save.timber, "leaves": Save.leaves})
 	var bi := _index_of("sells", "berries")
 	var be: Dictionary = Data.b["market"]["sells"][bi] if bi >= 0 else {}
-	Save.pantry["berries"] = 0
+	if Bag.count("berries") > 0:                    # H3: food lives in the Bag
+		Bag.take("berries", Bag.count("berries"))
 	var l0 := Save.leaves
 	st._market_buy(bi)
-	_x("buying Sunberries: they go to the pantry, the leaves are paid", bi >= 0 and int(Save.pantry["berries"]) == int(be.get("amount", 0))
-		and Save.leaves == l0 - int(be.get("leaves", 0)), {"pantry": Save.pantry, "leaves": Save.leaves})
-	var cap := int(Data.b["cooking"]["pantry_cap"])
-	Save.pantry["berries"] = cap - 1
+	_x("buying Sunberries: they go into the Bag, the leaves are paid", bi >= 0 and Bag.count("berries") == int(be.get("amount", 0))
+		and Save.leaves == l0 - int(be.get("leaves", 0)), {"berries": Bag.count("berries"), "leaves": Save.leaves})
+	# a full Bag: berries fill every stack and slot the rest of the Bag leaves free
+	Bag.add("berries", Bag.room_for("berries"))
+	var held := Bag.count("berries")
 	var full: Dictionary = st._market_sells().filter(func(r): return String(r.get("icon", "")) == "berries")[0]
 	l0 = Save.leaves
 	st._market_buy(bi)
-	_x("a full pantry: the berries tile is off and nothing is bought", not bool(full["enabled"]) and int(Save.pantry["berries"]) == cap - 1
-		and Save.leaves == l0, {"tile": full.get("text", "")})
-	Save.pantry["berries"] = 2
+	_x("a full Bag: the berries tile is off with Bag full and nothing is bought", Bag.room_for("berries") == 0 and not bool(full["enabled"])
+		and String(full.get("text", "")).begins_with("Bag full") and Bag.count("berries") == held and Save.leaves == l0,
+		{"tile": full.get("text", ""), "berries": Bag.count("berries"), "slots": Bag.used_slots()})
+	if Bag.count("berries") > 2:
+		Bag.take("berries", Bag.count("berries") - 2)   # back to a few, as before
 	# H1: Bramble sells no amber; he buys it (after the missions) for leaves and a Gloom shard
 	var shown_sells: bool = st._market_sells().any(func(r): return String(r.get("icon", "")) == "amber")
 	_x("H1: Bramble sells no amber, glowstone or heartwood", _index_of("sells", "amber") < 0 and _index_of("sells", "glowstone") < 0

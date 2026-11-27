@@ -558,7 +558,7 @@ func gift(id: String) -> void:
 			main.hud.banner_later(3.4, "A garden!", Color(0.6, 1.0, 0.45), "Rich soil south of the camp · and a cooking pot by the fire")
 			if not Save.flag("told_garden"):
 				Save.set_flag("told_garden")
-				main.hud.tip_after("Plant seeds, water them, pick them when ripe. They grow a step for every wave you hold.", rings.get("garden"))
+				main.hud.tip_after("Plant seeds, water them, pick them when ripe. They grow while you play, and while the game is closed.", rings.get("garden"))
 		"fishing":
 			main.hud.banner_later(3.4, "Gone fishing!", Color(0.6, 0.85, 1.0), "Bramble left you a rod by the lake")
 			if not Save.flag("told_fish"):
@@ -566,10 +566,11 @@ func gift(id: String) -> void:
 				main.hud.tip_after("Tap the Fishing Spot to cast a line between waves. Tap again when the float dips!", rings.get("fishing"))
 
 
-## What comes with a gift besides the building (the garden brings a few berries, so the pantry is never empty).
+## What comes with a gift besides the building (the garden brings a few berries, so the Bag is never empty). H3: the
+## berries are a gift already given, so they always go in (forced), even into a full Bag.
 func _gift_extras(id: String) -> void:
 	if id == "garden":
-		Save.pantry["berries"] = int(Save.pantry.get("berries", 0)) + 4
+		Bag.add("berries", 4, true)
 
 
 ## An older save that won a mission before its gift existed (or missed one) gets it now. Called once at the end of
@@ -775,152 +776,43 @@ func _next_post() -> void:
 	main.hud.refresh_card()
 
 # ---------------------------------------------------------------- the garden (Phase C, mission 1's gift)
+## H3: the garden's card is its window (ui/windows/garden_window.gd: the plots as on the bed, the seeds, Water) above
+## its Upgrade shelf. The window holds no rules: planting, watering and picking are garden.gd's, and the crops grow in
+## real time (Timers). The stable view_id keeps a leaf pickup or a save from rebuilding the window under a drag; the
+## ring pulses through the window row's "pulse" (garden.wants_pulse). A wave blanks it, as every station card (card.gd
+## _spec).
 func _card_garden() -> Dictionary:
 	var anchor := _anchor("garden", 1.2)
 	var lv := Data.garden_level()
+	var sub := "Level %d · %d plots" % [lv, Data.garden_plots()]
 	var g = main.garden
-	var sub := "Level %d · %d plots · a step for every wave the camp holds" % [lv, Data.garden_plots()]
-	if g == null:
+	if g == null or main.hud == null or main.hud.garden_window == null:
 		return {"title": "Garden", "sub": sub, "rows": [], "anchor": anchor}
-	var rows: Array = []
-	var cnt: Dictionary = g.counts()
-	rows.append({"kind": "pantry"})
-	if int(cnt["ripe"]) > 0:
-		var pv: Dictionary = g.pick_preview()
-		var bits: Array = []
-		var add: Dictionary = pv["add"]
-		for k in add:
-			bits.append("+%d %s → %d/%d" % [int(add[k]), Data.item_name(String(k), int(add[k])),
-				int(Save.pantry.get(k, 0)) + int(add[k]), int(Data.b["cooking"]["pantry_cap"])])
-		var note := ", ".join(bits)
-		for k in pv["full"]:
-			note += (" · " if note != "" else "") + "pantry full of %s" % Data.item_name(String(k), 2)
-		rows.append({"text": "Pick what is ripe", "note": note, "cost": {}, "label": "Pick", "enabled": not add.is_empty(), "pulse": true, "action": _garden_pick})
-	else:
-		rows.append({"text": "Nothing ripe yet", "note": g.summary(), "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	if int(cnt["growing"]) > 0:
-		var w: int = g.wet_waves()
-		var least := w
-		for i in g.plots():
-			if g._growing(i):
-				least = mini(least, int(g.plot(i)["wet"]))
-		if least < w:
-			rows.append({"text": "Water the garden", "note": "Watered plants grow twice as fast for %d waves" % w, "cost": {}, "label": "Water",
-				"enabled": true, "pulse": int(cnt["dry"]) > 0, "action": _garden_water})
-		else:
-			rows.append({"text": "Watered", "note": "%d more waves of water" % least, "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	var empty := int(cnt["empty"])
-	var extra := int(Data.pick("garden", "extra_by_level", lv))
-	var wet := int(Data.b["garden"]["grow_wet"])
-	var dry := int(Data.b["garden"]["grow_dry"])
-	var seeds: Array = []
-	for c in Data.b["garden"]["crops"]:
-		var grow := int(c["grow"])
-		var note2 := "Ripe in %d waves with water, %d without · gives %d" % [int(ceil(float(grow) / wet)), int(ceil(float(grow) / dry)),
-			int(c["yield"]) + extra] if empty > 0 else "No empty plot"
-		seeds.append(_tile(String(c.get("gives", "garden")), "Plant %s" % String(c["name"]), note2, c["seed"], "Plant", empty > 0,
-			_garden_plant.bind(String(c["id"])), "%d empty" % empty if empty > 0 else "Full"))
-	_add_section(rows, "Plant", seeds)
+	var pulse: bool = bool(g.wants_pulse())
+	var rows: Array = [{"kind": "window", "window": main.hud.garden_window, "enabled": true, "pulse": pulse}]
 	_add_section(rows, "Upgrade", [_station_upgrade_row("garden")])
-	return {"title": "Garden", "sub": sub, "rows": rows, "anchor": anchor}
-
-
-func _garden_plant(crop_id: String) -> void:
-	if _locked() or main.garden == null:
-		return
-	var c := Data.crop(crop_id)
-	if c.is_empty() or main.garden.first_empty() < 0 or not Data.can_afford(c["seed"]):
-		return
-	var i: int = main.garden.first_empty()
-	Data.pay(c["seed"])
-	main.garden.plant(crop_id)
-	var at: Vector3 = main.garden.plot_pos(i)
-	Fx.dust(main, at, 6, 0.7)
-	main.garden.pop()
-	Sfx.play("pop", -6.0)
-	Save.save_game()
-	main.on_purchase()
-
-
-func _garden_water() -> void:
-	if _locked() or main.garden == null:
-		return
-	if main.garden.water() <= 0:
-		return
-	Fx.puff(main, main.world.station_pos("garden") + Vector3(0, 0.6, 0), Color(0.55, 0.8, 1.0), 12)
-	Sfx.play("water", -6.0)
-	Save.save_game()
-	main.on_purchase()
-
-
-func _garden_pick() -> void:
-	if _locked() or main.garden == null:
-		return
-	var got: Dictionary = main.garden.pick()
-	if got.is_empty():
-		return
-	var at: Vector3 = main.world.station_pos("garden")
-	var k := 0
-	for g in got:
-		Fx.text(main, at + Vector3(0, 1.0 + 0.4 * k, 0), "+%d %s" % [int(got[g]), Data.item_name(String(g), int(got[g]))], Color(0.75, 1.0, 0.5))
-		k += 1
-	Fx.flower_ring(main, at, 1.0)
-	Sfx.play("pluck", -4.0)
-	main.raids.add_gloom("harvest")
-	Save.save_game()
-	main.on_purchase()
-	main.hud.toast(Data.food_receipt(got))
-	if not Save.flag("told_cook"):
-		Save.set_flag("told_cook")
-		main.hud.tip("Cook what you pick at the pot by the campfire. A dish is eaten when the next chapter starts.", rings.get("pot"))
+	return {"title": "Garden", "sub": sub, "rows": rows, "anchor": anchor, "view_id": "garden"}
 
 
 # ---------------------------------------------------------------- the cooking pot (comes with the garden)
+## H3: the pot's card is its window (ui/windows/cooking_window.gd: the slots, Cook, the bar, Collect). The window holds
+## no rules: cooking and collecting are cooking.gd's, and the pot cooks in real time (Timers). Its ring hides while the
+## fire is out (ring_shown), and a wave blanks the card (card.gd _spec).
 func _card_pot() -> Dictionary:
 	var anchor: Vector3 = main.world.station_pos("pot") + Vector3(0, 1.4, 0)
 	var ck = main.cooking
-	if ck == null:
+	if ck == null or main.hud == null or main.hud.cooking_window == null:
 		return {"title": "Cooking Pot", "sub": "", "rows": [], "anchor": anchor}
-	var subs: Array = []
-	if Save.meal_on != "":
-		var ron := Data.recipe(Save.meal_on)
-		subs.append("Active dish · %s · %s" % [String(ron.get("name", "")), String(ron.get("says", ""))])
-	if Save.meal_ready != "":
-		var waiting_dish := Data.recipe(Save.meal_ready)
-		subs.append("Waiting dish · %s · %s · next chapter or dungeon run" % [String(waiting_dish.get("name", "")), String(waiting_dish.get("says", ""))])
-	var sub := "\n".join(subs) if not subs.is_empty() else "One waiting dish · activates next chapter or dungeon run"
-	var rows: Array = []
-	rows.append({"kind": "section", "text": "Your food"})
-	rows.append({"kind": "pantry"})
-	var known: Array = ck.known()
-	var ready: Array = known.filter(func(r): return ck.can_cook(r))
-	var not_yet: Array = known.filter(func(r): return not ck.can_cook(r))
-	var order: Array = ready + not_yet                 # what can be cooked now comes first
-	var waiting := String(Data.recipe(Save.meal_ready).get("name", "")) if Save.meal_ready != "" else ""
-	for r in order:
-		var ok: bool = ck.can_cook(r)
-		var note := "%s\n%s · next chapter or dungeon run" % [ck.needs_text(r), String(r.get("says", ""))]
-		if not ok:
-			note = "%s · %s" % [ck.why_not(r), note]
-		elif waiting != "":
-			note += "\nReplaces %s and uses these ingredients" % waiting
-		rows.append({"text": "Cook %s" % String(r["name"]), "note": note, "cost": {}, "label": "Replace" if waiting != "" else "Cook", "enabled": ok,
-			"pulse": ok and Save.meal_ready == "", "action": _cook_dish.bind(String(r["id"]))})
-	return {"title": "Cooking Pot", "sub": sub, "rows": rows, "anchor": anchor}
-
-
-## Cook a dish: it waits in the pot and is eaten when the next chapter starts. Between waves only, never on the ashes.
-func _cook_dish(id: String) -> void:
-	if _locked() or _out or Save.fire_ruined or main.cooking == null:
-		return
-	main.cooking.cook(id)
+	var pulse: bool = bool(ck.wants_pulse())
+	return {"title": "Cooking Pot", "sub": "", "rows": [{"kind": "window", "window": main.hud.cooking_window, "enabled": true, "pulse": pulse}],
+		"anchor": anchor, "view_id": "pot"}
 
 
 # ---------------------------------------------------------------- the Fishing Spot (Phase C, mission 6's gift)
 func _card_fishing() -> Dictionary:
 	var anchor := _anchor("fishing", 1.6)
 	var fsh = main.fishing
-	var sub := "Calm water · fish for the cooking pot · %d fish in the pantry" % int(Save.pantry.get("fish", 0))
+	var sub := "Calm water · fish for the pot and the mount · %d fish in the Bag" % Bag.count("fish")
 	if fsh == null:
 		return {"title": "Fishing Spot", "sub": sub, "rows": [], "anchor": anchor}
 	var rows: Array = []
@@ -1342,12 +1234,15 @@ func _defence_tiles() -> Array:
 		if not main.defences.unlocked(type):
 			continue
 		if type != "barricade":
-			var have := int(Save.items.get(type, 0))
-			var note := "You have %d to place · tap the build button" % have if have > 0 else _def_note(type)
+			var have := Bag.count(type)
+			var note := "%d in the Bag · place it from the Bag" % have if have > 0 else _def_note(type)
 			var room: bool = main.defences.room_for(type)
+			var bag_room := Bag.room_for(type) > 0              # H3: a piece bought goes into the Bag (refused when full)
 			if not room:
 				note = main.defences.room_note(type)
-			out.append(_tile(type, String(di["name"]), note, {"leaves": int(di["piece"])}, "Buy", room, _buy_piece.bind(type),
+			elif not bag_room:
+				note = "Bag full"
+			out.append(_tile(type, String(di["name"]), note, {"leaves": int(di["piece"])}, "Buy", room and bag_room, _buy_piece.bind(type),
 				("%d to place" % have) if have > 0 else ""))
 		var dl: int = main.defences.level(type)
 		var dlevels: Array = di["levels"]
@@ -1468,10 +1363,14 @@ func _build_station(sid: String) -> void:
 			main.hud.banner("%s built!" % Data.b["stations"][sid]["name"], Color(1.0, 0.9, 0.45))
 
 
+## Buys one tower or spikes piece into the Bag (H3: placed from the Bag or the row-2 button). The checks come before the
+## pay, so a full Bag or the tower cap never takes the leaves for nothing.
 func _buy_piece(type: String) -> void:
+	if Bag.room_for(type) <= 0 or not main.defences.room_for(type):
+		return
 	if not Data.pay({"leaves": int(Data.defence_info(type)["piece"])}):
 		return
-	Save.items[type] = int(Save.items.get(type, 0)) + 1
+	Bag.add(type, 1)
 	Save.save_game()
 	main.on_purchase()
 	main.hud.refresh_build()
@@ -1730,7 +1629,8 @@ func _station_upgrade_row(id: String) -> Dictionary:
 		gives = "%s: %s health, fists %d, slam %d" % [Data.guardian_name(), _thousands(int(round(Data.pick("guardian", "hp_by_level", lv + 1) * pw))),
 			int(round(Data.pick("guardian", "fist_damage_by_level", lv + 1) * pw)), int(round(Data.pick("guardian", "slam_damage_by_level", lv + 1) * pw))]
 	elif id == "garden":
-		gives = "%d plots, water lasts %d waves" % [int(Data.pick("garden", "plots_by_level", lv + 1)), int(Data.pick("garden", "wet_waves_by_level", lv + 1))]
+		# H3: watering is timed (balance.json garden.water_s_by_level, seconds)
+		gives = "%d plots, water lasts %s min" % [int(Data.pick("garden", "plots_by_level", lv + 1)), _short_num(Data.pick("garden", "water_s_by_level", lv + 1) / 60.0)]
 		if int(Data.pick("garden", "extra_by_level", lv + 1)) > 0:
 			gives += ", +%d on every harvest" % int(Data.pick("garden", "extra_by_level", lv + 1))
 	else:
@@ -2302,15 +2202,15 @@ func _card_stall() -> Dictionary:
 	return {"title": title, "sub": "Level %d · Bramble's trades, and %s" % [lv, mn], "rows": rows, "anchor": _anchor("stall", 2.4)}
 
 
-## What Bramble sells: timber (balance.json trade.buy), then each market.sells entry (food goes to the pantry, up to its
-## cap; an expedition material, if one is ever listed, to the materials. H1: he sells no amber).
+## What Bramble sells: timber (balance.json trade.buy), then each market.sells entry (H3: food goes into the Bag, and
+## the tile is off with "Bag full" when it would not fit; an expedition material, if one is ever listed, to the
+## materials, which take Bag room too. H1: he sells no amber).
 func _market_sells() -> Array:
 	var out: Array = []
 	var tb: Dictionary = Data.b["trade"].get("buy", {"timber": 5, "leaves": 50})
 	out.append(_quiet(_tile("timber", "%d timber" % int(tb.get("timber", 5)), "For building and growing · you have %d" % Save.timber,
 		{"leaves": int(tb.get("leaves", 50))}, "Buy", true, _trade.bind(true))))
 	var list: Array = Data.b.get("market", {}).get("sells", [])
-	var cap := int(Data.b["cooking"].get("pantry_cap", 20))
 	for i in list.size():
 		var e: Dictionary = list[i]
 		if not _market_open(e):
@@ -2319,20 +2219,21 @@ func _market_sells() -> Array:
 		var n := int(e.get("amount", 1))
 		var mat := Data.MATS.has(id)
 		var title := "%d %s" % [n, Data.mat_name(id) if mat else Data.item_name(id, n)]
-		var room := mat or int(Save.pantry.get(id, 0)) + n <= cap
+		var room := Bag.room_for(id) >= n
 		var text := ""
-		if mat:
+		if not room:
+			text = "Bag full · you have %d" % _stock(id)
+		elif mat:
 			text = "An expedition material · you have %d" % Data.have(id)
-		elif room:
-			text = "Food for cooking and dungeon healing · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
 		else:
-			text = "Pantry full · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
+			text = "Food for cooking · you have %d" % _stock(id)
 		out.append(_quiet(_tile(id, title, text, {"leaves": int(e.get("leaves", 0))}, "Buy", room, _market_buy.bind(i))))
 	return out
 
 
 ## What Bramble buys: timber (trade.sell), Gloom shards once there are enough (as before), and each market.buys entry
-## (H1: amber, once every mission is won), for what the entry pays (_market_pay: leaves, and shards).
+## (H1: amber, once every mission is won; H3: the Golden Carp, from the Bag), for what the entry pays (_market_pay:
+## leaves, and shards).
 func _market_buys() -> Array:
 	var out: Array = []
 	var ts: Dictionary = Data.b["trade"].get("sell", {"timber": 5, "leaves": 30})
@@ -2376,12 +2277,13 @@ func _market_open(e: Dictionary) -> bool:
 	return not bool(e.get("after_missions", false)) or Data.raids_open()
 
 
-## How many of a market item the player has: a currency or material (Data.have), else the pantry.
+## How many of a market item the player has: a currency or material (Data.have), else the Bag's count (H3).
 func _stock(id: String) -> int:
-	return Data.have(id) if Data.CURRENCIES.has(id) else int(Save.pantry.get(id, 0))
+	return Data.have(id) if Data.CURRENCIES.has(id) else Bag.count(id)
 
 
-## Buys market.sells[i] from Bramble: the leaves are paid, the item goes to the pantry or the materials.
+## Buys market.sells[i] from Bramble: the item goes into the Bag or the materials. H3: a full Bag refuses it before
+## the leaves are paid.
 func _market_buy(i: int) -> void:
 	var list: Array = Data.b.get("market", {}).get("sells", [])
 	if i < 0 or i >= list.size() or Save.ruined.has("stall") or int(Save.stations.get("stall", 0)) <= 0:
@@ -2392,14 +2294,14 @@ func _market_buy(i: int) -> void:
 	if not _market_open(e) or n <= 0:
 		return
 	var mat := Data.MATS.has(id)
-	if not mat and int(Save.pantry.get(id, 0)) + n > int(Data.b["cooking"].get("pantry_cap", 20)):
+	if Bag.room_for(id) < n:
 		return
 	if not Data.pay({"leaves": int(e.get("leaves", 0))}):
 		return
 	if mat:
 		Data.give(id, n)
 	else:
-		Data.add_items({id: n})
+		Bag.add(id, n)
 	Save.save_game()
 	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
 	main.on_purchase()
@@ -2422,8 +2324,8 @@ func _market_sell(i: int) -> void:
 	if Data.CURRENCIES.has(id):
 		if not Data.pay({id: n}):
 			return
-	else:
-		Data.take_items({id: n})
+	elif not Bag.take(id, n):                       # H3: the Golden Carp and any other Bag item
+		return
 	var pay := _market_pay(e)
 	for k in pay:
 		Data.give(String(k), int(pay[k]))

@@ -1,1 +1,3 @@
-{"kinds": {}}
+{"kinds": {"settings": ["graphics", "sound"],
+           "crops": ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"],
+           "recipes": ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]}}

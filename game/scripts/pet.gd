@@ -222,5 +222,5 @@ func _spit(tgt) -> void:
 	var aim: Vector3 = tgt.global_position + Vector3(0, float(tgt.aim_height), 0)
 	var b := BoltScript.new()
 	main.add_child(b)
-	b.launch(main, from, aim - from, float(Data.b["pet"]["bolt_speed"]), Data.pick("pet", "damage_by_level", lv) * (1.0 + Data.meal_boost("friends")) * (1.0 + float(Data.run_mods.get("pet_dmg", 0.0))),
+	b.launch(main, from, aim - from, float(Data.b["pet"]["bolt_speed"]), Data.pick("pet", "damage_by_level", lv) * (1.0 + float(Data.run_mods.get("pet_dmg", 0.0))),
 		_spark_color(), false, tgt, 3.0, 0.07, 1.4)

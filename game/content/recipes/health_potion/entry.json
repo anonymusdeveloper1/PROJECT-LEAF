@@ -1,0 +1,15 @@
+{
+  "id": "health_potion",
+  "name": "Health Potion",
+  "plural": "Health Potions",
+  "desc": "Heals the cat by 40% of its health over 5 s.",
+  "icon": "health_potion",
+  "color": "#d9483b",
+  "needs": {"herbs": 2, "honey": 1},
+  "cook_s": 40,
+  "limit": 3,
+  "unlock": {},
+  "effects": [
+    {"type": "heal_over_time", "target": "cat", "share": 0.4, "seconds": 5}
+  ]
+}

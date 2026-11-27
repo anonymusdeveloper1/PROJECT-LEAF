@@ -1,0 +1,15 @@
+{
+  "id": "speed_potion",
+  "name": "Speed Potion",
+  "plural": "Speed Potions",
+  "desc": "The cat moves 25% faster for 20 s.",
+  "icon": "speed_potion",
+  "color": "#7fcf6a",
+  "needs": {"roots": 2, "honey": 1},
+  "cook_s": 50,
+  "limit": 2,
+  "unlock": {},
+  "effects": [
+    {"type": "stat_mult", "target": "cat", "stat": "speed", "mult": 0.25, "seconds": 20}
+  ]
+}

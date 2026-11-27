@@ -1,0 +1,9 @@
+{
+  "id": "sound",
+  "name": "Sound",
+  "desc": "Every sound in the game.",
+  "on_note": "Sound is on",
+  "off_note": "Sound is off",
+  "turn_off": "Turn off",
+  "turn_on": "Turn on"
+}

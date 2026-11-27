@@ -214,8 +214,6 @@ func card(id: String) -> Dictionary:
 	if not Save.burrow_run.is_empty() and String(Save.burrow_run.get("burrow", id)) == id:
 		return {"title": nm, "sub": "Your run is waiting", "anchor": anchor, "rows": runner.run_card_rows(id, why)}
 	var sub := "The way into %s" % String(bd["name"])
-	if Save.meal_ready != "" and bool(cfg().get("meals_in_runs", true)):
-		sub += " · your %s goes down with you" % String(Data.recipe(Save.meal_ready).get("name", "dish"))
 	if why != "":
 		rows.append({"text": why, "note": "", "cost": {}, "label": "", "enabled": false, "action": Callable()})
 		return {"title": nm, "sub": sub, "anchor": anchor, "rows": rows}

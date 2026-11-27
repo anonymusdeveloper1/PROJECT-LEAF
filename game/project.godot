@@ -22,6 +22,7 @@ config/icon="res://icon.png"
 Events="*res://core/events.gd"
 Data="*res://scripts/data.gd"
 Save="*res://scripts/save.gd"
+Timers="*res://core/timers.gd"
 Quality="*res://scripts/quality.gd"
 Pools="*res://core/pools.gd"
 

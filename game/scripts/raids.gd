@@ -541,7 +541,7 @@ func on_wave_begins(_w: int, _last: bool) -> void:
 
 
 func on_leader(e) -> void:
-	main.hud.boss = e
+	Events.boss_changed.emit(e)
 	var id := String(e.id)
 	main.hud.banner("%s!" % leader_name(id), Color(0.85, 0.55, 1.0), "Defeat every raider to hold the camp")
 

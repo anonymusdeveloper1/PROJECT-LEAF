@@ -13,7 +13,7 @@ const WorldScript := preload("res://scripts/world.gd")
 const StationsScript := preload("res://scripts/stations.gd")
 const DefencesScript := preload("res://scripts/defences.gd")
 const FightScript := preload("res://scripts/fight.gd")
-const HudScript := preload("res://scripts/hud.gd")
+const HudScript := preload("res://ui/hud/hud.gd")
 const PickupScript := preload("res://scripts/pickup.gd")
 const AutotestScript := preload("res://scripts/autotest.gd")
 const PetScript := preload("res://scripts/pet.gd")
@@ -27,6 +27,7 @@ const RaidsScript := preload("res://scripts/raids.gd")
 const BurrowScript := preload("res://scripts/burrow.gd")
 const MarkerScript := preload("res://scripts/marker.gd")
 const InteractScript := preload("res://scripts/interact.gd")
+const RideCommand := preload("res://commands/ride.gd")
 
 const CAM_PITCH := 0.8727                         # 50 degrees down, as in the prototype
 const CAM_FOV := 20.0                             # narrow lens across the short side of the screen
@@ -65,7 +66,7 @@ var mount: Node3D                                 # Thistle, once the Market is 
 var trader: Node3D                                # Bramble the hedgehog, the Market's trader
 var guardian: Node3D                              # the Moss Warden, once the Guardian Stone is there (guardian.gd)
 var garden: Node3D                                # the garden's plots and plants (garden.gd)
-var cooking: Node                                 # the pot's dishes and their boosts (cooking.gd)
+var cooking: Node                                 # the cooking pot's recipes and its timer job (cooking.gd)
 var fishing: Node3D                               # fishing at the lake (fishing.gd)
 var raids                                         # the Gloom Raids after every mission is won (raids.gd, Phase D)
 var burrows: Node3D                               # the Burrows (burrow.gd, Phase E): the hollows in the camp, and the run
@@ -637,8 +638,6 @@ func on_stage_start() -> void:
 	if fishing:
 		fishing.stop("")                                    # a mission starts: the line comes in
 	var c: int = fight.chapter_of(fight.wave + 1)
-	if cooking and fight.wave % fight.chapter_waves() != 0 and Save.meal_on == "":
-		cooking.eat()                                   # a resumed wave keeps the retry's prepared dish useful
 	if c > 0:
 		hud.banner(fight.title(), Color(1.0, 0.9, 0.5), "Raid %d · wave %d of %d" % [fight.mission + 1, fight.wave + 1, fight.waves()])
 	else:
@@ -650,15 +649,11 @@ func on_stage_start() -> void:
 
 ## A wave starts: a banner for the first wave of a chapter, an elite wave and the last wave, a toast otherwise.
 func on_wave_start(n: int, elite := false, last := false) -> void:
-	if cooking and (n - 1) % fight.chapter_waves() == 0 and Save.meal_on == "":
-		cooking.eat()                                       # a chapter (or a raid) starts: the dish in the pot is eaten
 	if guardian:
 		guardian.on_wave_start()
 	if fishing:
 		fishing.stop("")
 	stations.refresh()
-	hud.refresh()
-	hud.refresh_card()
 	if fight.mode == "raid":
 		raids.on_wave_begins(n, last)                       # the raid's own banners ("They're here!", "Final push!")
 		return
@@ -679,19 +674,10 @@ func on_wave_cleared() -> void:
 	if guardian:
 		guardian.refill()                                   # the Moss Warden is back up and whole
 	stations.refresh()
-	hud.refresh()
-	hud.refresh_card()
 	Save.save_game()
 	if fight.wave == 1 and not Save.flag("told_horn"):
 		Save.set_flag("told_horn")
 		hud.tip("Wave saved! Spend your golden leaves, then tap Start wave at the signpost. The next wave waits for you.", stations.rings["sign"])
-
-
-## A wave was held (a breather, a chapter break or the mission's last wave): the garden grows a step.
-func on_wave_held() -> void:
-	if garden:
-		garden.grow_wave()
-	hud.refresh()
 
 
 ## A chapter is held: the camp rests until the player goes on from the signpost (fight.gd saved the run).
@@ -722,7 +708,6 @@ func on_stage_end(_won: bool) -> void:
 		mount.refill()
 	stations.refresh()
 	Save.save_game()
-	hud.refresh()
 	if not raid:
 		burrows.check_open()                            # the last mission's first win: the Old Hollow opens after the banners
 	if _won and not raid and Data.progress() == 1 and not Save.flag("told_barricade"):
@@ -742,9 +727,7 @@ func on_stage_end(_won: bool) -> void:
 func on_raid_start(_spec: Dictionary) -> void:
 	player.hp = Data.cat_max_hp()
 	hud.refresh_hp()
-	hud.refresh()
 	stations.refresh()
-	hud.refresh_card()
 
 
 func on_purchase() -> void:
@@ -807,136 +790,26 @@ func stall_spot() -> Vector3:
 
 ## Up on Thistle, or back on the cat's own paws.
 func set_riding(on: bool, show := true) -> void:
-	if mount == null or Save.ruined.has("stall"):
-		on = false
-	if on and mount.resting > 0.0:
-		if show:
-			if fight.active or area != null:
-				hud.toast("%s is knocked out: feed it (%s)" % [Data.mount_name(), feed_text()])
-			else:
-				hud.toast("%s is resting: %d s" % [Data.mount_name(), int(ceil(mount.resting))])
-		on = false
-	if on == player.riding:
-		return
-	player.riding = on
-	Save.riding = on
-	Save.save_game()
-	if on:
-		mount.come_to(player.global_position)
-		if show and not Save.flag("told_ride"):
-			Save.set_flag("told_ride")
-			hud.tip("Riding %s: faster, and it takes the hits for you. Drag to steer. The cat shoots around you; turn for enemies directly behind." % Data.mount_name(), null)
-	else:
-		Fx.dust(self, player.global_position, 6, 1.0)
-	hud.refresh_build()
-	stations.refresh()
-	hud.refresh_card()
+	if RideCommand.new(int(on), not show).run(self):
+		stations.refresh()
 
 
 func toggle_ride() -> void:
-	set_riding(not player.riding)
+	if RideCommand.new().run(self):
+		stations.refresh()
 
 
-## What a knocked-out mount eats to get up again (balance.json mount.revive_food), as text: "2 Sunberries".
-func feed_text() -> String:
-	var food: Dictionary = Data.b["mount"].get("revive_food", {"berries": 2})
-	var bits: Array = []
-	for k in food:
-		bits.append("%d %s" % [int(food[k]), Data.item_name(String(k), int(food[k]))])
-	return ", ".join(bits)
-
-
-func can_feed() -> bool:
-	return mount != null and mount.resting > 0.0 and Data.has_items(Data.b["mount"].get("revive_food", {"berries": 2}))
-
-
-## The HUD's Feed button: food from the pantry brings the knocked-out mount back, whole, at any time (a wave too).
-func feed_mount() -> void:
-	if mount == null or mount.resting <= 0.0:
-		return
-	var food: Dictionary = Data.b["mount"].get("revive_food", {"berries": 2})
-	if not Data.has_items(food):
-		hud.toast("No food for %s: pick %s in the garden" % [Data.mount_name(), feed_text()])
-		return
-	Data.take_items(food)
-	mount.refill()
-	Fx.hearts(self, mount.global_position + Vector3(0, 1.0, 0))
-	Fx.sparkle(self, player.global_position + Vector3(0, 1.0, 0))
-	Sfx.play("pluck", -4.0)
-	hud.toast("%s munches and jumps up!" % Data.mount_name())
-	Save.save_game()
-	if not Save.ruined.has("stall"):
-		set_riding(true, false)                             # it bounds over (mount.come_to) and the cat hops on
-	else:
-		mount.come_to(player.global_position)
-	hud.refresh_build()
+# H3 (26 Nov 2026, the owner's Q1 and Q2): Feed (2 Sunberries) and the food snacks below ground are gone. A Mount
+# Health Potion brings a knocked-out mount back and Health Potions heal the cat; the HUD's potion buttons, the Bag's
+# Use and the tests send the Use-potion command (commands/use_potion.gd, core/effects.gd).
 
 
 ## Back from the Burrows (burrow_run.gd _leave): the camp's cards and HUD, and a little Gloom on the meter (Phase D).
 func on_area_left(_result: String) -> void:
-	hud.refresh()
-	hud.refresh_build()
+	Events.area_changed.emit(false)
 	stations.refresh()
 	if raids != null:
 		raids.add_gloom("burrow_run")
-
-
-## A packed lunch below ground (Phase E): the first food the pantry has, in balance.json burrows.lunch order (berries
-## last, so the mount's food lasts). {} when there is nothing to eat.
-func snack_pick(item := "") -> Dictionary:
-	var choice := Save.snack_choice if item == "" else item
-	if choice != "auto":
-		return Data.snack(choice) if int(Save.pantry.get(choice, 0)) > 0 else {}
-	for e in Data.burrow_cfg().get("lunch", []):
-		if int(Save.pantry.get(String(e["item"]), 0)) > 0:
-			return e
-	return {}
-
-
-var _snack_t := -1
-
-
-func snack_left() -> float:
-	if _snack_t < 0:
-		return 0.0
-	return maxf(0.0, float(Data.burrow_cfg()["snack_every_s"]) - (Time.get_ticks_msec() - _snack_t) / 1000.0)
-
-
-func snack_reason(item := "") -> String:
-	if area == null:
-		return "Eat in a dungeon"
-	if frozen or player.frozen or area.leaving:
-		return "Wait for the dungeon"
-	if player.hp <= 0:
-		return "The cat is down"
-	if snack_pick(item).is_empty():
-		return "No food"
-	if player.hp >= Data.cat_max_hp():
-		return "Full health"
-	if snack_left() > 0.0:
-		return "Ready in %ds" % int(ceil(snack_left()))
-	return ""
-
-
-## The HUD's Snack button below ground: one piece of food heals the cat.
-func eat_snack(item := "") -> bool:
-	if snack_reason(item) != "":
-		return false
-	var sn := snack_pick(item)
-	_snack_t = Time.get_ticks_msec()
-	var before: int = player.hp
-	Data.take_items({String(sn["item"]): 1})
-	player.hp = mini(player.hp + int(sn["heal"]), Data.cat_max_hp())
-	var healed: int = player.hp - before
-	Fx.hearts(self, player.global_position + Vector3(0, 1.2, 0))
-	Fx.text(self, player.global_position + Vector3(0, 1.6, 0), "+%d" % healed, Color(0.5, 1.0, 0.5))
-	Sfx.play("pluck", -4.0)
-	area.persist()
-	hud.toast("Healed %d · %s" % [healed, Data.food_receipt({String(sn["item"]): -1})])
-	hud.refresh_hp()
-	hud.refresh_build()
-	hud.refresh_card()
-	return true
 
 
 func on_camp_grown() -> void:

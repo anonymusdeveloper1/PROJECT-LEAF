@@ -17,8 +17,8 @@ were written on 24 November 2026 and are on the Desktop:
 - `Game Progression and Addictiveness.docx`;
 - `UX and some mechanics overhaul.docx`.
 
-**Nothing in this plan is built yet.** When the owner says yes, the plan is built from, and the rule changes in Part A
-go into `CLAUDE.md`, `docs/STATUS.md` and `docs/GAME_GUIDE.md` part 11.
+**H1 is merged; H2 and H3 are built on their branches (see each step).** The rest is built from this plan, and the
+rule changes in Part A go into `CLAUDE.md`, `docs/STATUS.md` and `docs/GAME_GUIDE.md` part 11.
 
 - **Order:** 12 steps, H0 to H11. Each step that changes the game ends with an APK on the owner's phone.
 - **Numbers:** every number is a first guess, kept in `game/data/balance.json` and tuned by play.
@@ -250,46 +250,67 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 
 ### H2: the new HUD and Settings
 
-**What you'll see** (from the owner's sketch):
+**Built (26 Nov 2026) on `feature/h2-hud`** (commits `c030041`, `1d0377c` and `042d78c`). It waits for the owner's phone
+review before it merges into `development`. What was decided and built (the owner's sketch and answers, 26 Nov 2026):
 
 | Where | What |
 |---|---|
-| Top-left | The cat's health bar, and the mount's while riding. Under them, the three currencies, small, with no dark strip behind them. |
-| Top-centre | The raid bar. The next wave's roads still show next to it. |
+| Top-left | The three currencies only (leaves, timber, shards), small, no dark strip, always all three. Below ground the satchel follows them. |
+| Top-centre | The raid bar, with no words and no numbers. Under it, only in fights, a thin campfire bar (gold to red, flashes when the fire is hit). Under that, the words line: the next wave's roads, the wave, the raid's name, the Gloom words or the Gloomwood level. It never counts enemies left. |
 | Top-right | The Settings gear. |
-| Bottom-left | The Bag, and the build menu icon next to it (the menu itself comes in H4). |
-| Bottom-right | The potion buttons (H3), with Ride/Walk above them. |
+| Over the cat | The health bar (and the mount's while riding). The Bag shows health as bars too, with the currencies packed under them. |
+| Bottom, row 1 | The Bag (left), the build icon (a house) next to it, the snack or potion slot at the right. |
+| Bottom, row 2 | The defence buttons (smaller) just above the Bag; Ride/Walk (or Feed while the mount is knocked out) at the right, above the snack slot. |
+| While placing | Place and Done, centred at the bottom; the Bag group slides out. |
 
-- Nothing goes in the middle third of the screen. The floating joystick stays as it is, and "Start wave" stays,
-  placed to fit the new layout.
+- Nothing goes in the middle third of the screen. The floating joystick stays as it is.
+- **Start wave stays on the signpost's card only.** There is no Start wave button on the screen.
+- **The build icon** opens the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below
+  ground, and in a wave it gives the usual "A wave is on!". H4 swaps in the real build menu.
 
-**1. Health as bars,** with no numbers.
+**1. Health as bars,** with no numbers: over the cat's head, and in the Bag.
 
-**2. All three currencies** are always shown.
+**2. All three currencies** are always shown, top-left.
 
-**3. The raid bar** fills as enemies are defeated:
-- in Raid Missions it covers one wave;
-- in Random Raids it covers the whole attack;
-- it shows no numbers.
+**3. The raid bar** fills as the fight is beaten, with no numbers:
+- in a Raid Mission it is the share of this wave beaten, and an empty track between waves;
+- in a Random Raid it is the Gloom meter (violet), then the warning countdown (gold to red), then the share of the
+  whole attack beaten;
+- in the Gloomwood the same place holds the fight pips.
 
 **4. Settings** (the gear):
-- the graphics level (Low / Medium / High, today's quality setting);
-- sound on/off;
-- room for more later.
+- Graphics: Auto, Low, Medium or High;
+- Sound on or off;
+- saved in their own small file (`user://settings.json`), not in the game save, and never written during autotests;
+- the texts come from `game/content/settings/graphics/entry.json` and `.../sound/entry.json`; room for more later.
 
-**5. Buttons slide in and out** with a short fade (about 0.2 s) instead of popping.
+**5. Buttons slide in and out** with a short fade (0.2 s) instead of popping. A button that is sliding out stops
+taking touches at once.
 
-**Technical:**
-- `hud.gd`, which is one big file with one owner;
-- `quality.gd`;
-- `save.gd`, for the settings;
-- **Who:** one Opus agent.
-- **Tests:** `--smoke` and `--layout` (nothing in the middle third, nothing overlapping).
+**Technical (as built):**
+- `hud.gd` is now a facade in `game/ui/hud/` with its parts beside it (`top_bar.gd`, `fight_bar.gd`, `messages.gd`,
+  `action_buttons.gd`, `card.gd`, `settings_window.gd`, `slide.gd` and more; the list is in `docs/GAME_GUIDE.md`
+  part 11). Public names are kept.
+- The HUD listens to Events (`currency_changed`, `fight_progress`, `riding_changed`, `mount_down_changed`,
+  `placing_changed`, `area_changed`, `boss_changed`, `campfire_hit`, `wave_ended`, `raid_ended`).
+- Ride/Walk sends the Ride command (`game/commands/ride.gd`).
+- `game/core/settings_file.gd`, `Quality.set_level` and `set_auto`, `Sfx.set_sound`.
+- **Who:** Opus agents.
+- **Tests:** the new `--settings` (40 checks); `--hudcheck` is now 121 checks (real taps on Ride, the gear, a graphics
+  row, the Bag and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills);
+  `--inventory` 56; `--layout` and `--smoke` as before. The layout test checks nothing enters the middle third and no two
+  edge controls overlap. One old fail in `--raidshots` ("the Watch card": the card is now called "Random Raids") predates
+  H2 and is still there.
 - Screenshots come with the APK.
 
 ---
 
 ### H3: food, potions and the Bag
+
+**Built (26 Nov 2026) on `feature/h3-food-bag`** (commits `f0f181a` and `09dc171`, then a stage 3 clean-up). The branch
+starts from `feature/h2-hud`, so it merges after H2. It is not pushed yet and waits for the owner's phone test. The
+game as built is in `docs/GAME_GUIDE.md` part 6 (and part 11 for developers). Below: the plan, with what changed
+marked **As built**, then the owner's answers and the defaults that were built.
 
 **What you'll see:**
 - crops and cooking keep going while the game is closed;
@@ -311,8 +332,11 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 - **The window looks like the garden:** its plots are laid out as they are in the camp, with the seeds in a row below.
 - **Planting:** drag a seed onto an empty plot. You pay when you drop it. Seeds cost as today (10 / 12 / 15 leaves);
   the new seeds are priced the same way.
-- **Water** waters every planted plot. Watered crops grow twice as fast for 5 minutes.
+- **Water** waters every planted plot. Watered crops grow twice as fast for 5 minutes. **As built:** 5, 6 and 7
+  minutes at garden levels 1, 2 and 3 (levels 2 and 3 keep their longer watering); free, no cooldown; a seed planted
+  afterwards is dry.
 - **Picking:** tap a ripe plant and it goes into the Bag. If the Bag is full, "Bag full" shows and the crop stays ripe.
+- **As built:** Emberpepper seeds cost 20 leaves and Swiftroot seeds 18, both from garden level 1.
 - **Growing time is real time** (first guesses):
 
 | Crop | Gives | Grows in |
@@ -330,13 +354,14 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
   - drag ingredients into the slots; when they make a recipe, **Cook** lights up;
   - cooking takes 30 s to 1 min, and the timer runs while the game is closed;
   - **Collect** puts the result in the Bag.
+  - **As built:** 3 slots; a tap on an ingredient also fills the next slot, and the window has a recipe list (Q15).
 - There is one pot for now. More can be added later through the timer system.
 - **The recipes:**
 
 | Recipe | Ingredients (first guesses) | What it does | Bag limit | Cooks in |
 |---|---|---|---|---|
 | **Health Potion** | 2 Fernmint, 1 honey | Heals the cat by 40% of its health over 5 s | 3 | 40 s |
-| **Mount Health Potion** | 2 Sunberries, 1 honey | Revives a knocked-out mount with half its health. That is all it does. | 3 | 45 s |
+| **Mount Health Potion** | 2 Sunberries, 1 honey | Revives a knocked-out mount with half its health. That is all it does. **As built: with full health** (the owner, 26 Nov 2026). | 3 | 45 s |
 | **Cooked Fish** | 1 fish | Heals the mount to full over 10 s | 10 | 30 s |
 | **Damage Potion** | 2 Emberpeppers, 1 honey | Arrows hit 25% harder for 30 s | 1 | 60 s |
 | **Speed Potion** | 2 Swiftroots, 1 honey | The cat moves 25% faster for 20 s | 2 | 50 s |
@@ -344,7 +369,8 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 - **Raw fish** can be eaten from the Bag to heal the mount a little (10%). The rare **Golden Carp** mends it by 50% at
   once, or Bramble buys it for 300 leaves (B4; first guesses).
 - **Every old dish is gone:** Berry Tart, Fernmint Tea, Honey Cake, Hearth Stew, Fish Skewers, Warden's Root Stew and
-  the Golden Carp Feast. Dishes in a save become Health Potions, up to the limit of 3; any extra are refunded as leaves.
+  the Golden Carp Feast. Dishes in a save become Health Potions, up to the limit of 3; any extra are refunded as leaves
+  (**as built:** 50 leaves each, Q5). Feed and the snacks below ground are gone too (Q1, Q2).
 
 **4. The Bag.**
 - **24 slots in a grid,** like Minecraft. Only things you own take a slot.
@@ -357,32 +383,82 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 
 **5. Potion buttons on the HUD (bottom-right).**
 - The Health Potion button appears only when the cat is hurt and you have one.
-- The Mount Health Potion button appears only when the mount is knocked out and you have one.
-- The Damage and Speed potions are used from the Bag.
+- The Mount Health Potion button appears only when the mount is knocked out and you have one. **As built:** it takes
+  Ride's place (row 2), and the Health Potion button is in row 1 at the right.
+- The Damage and Speed potions are used from the Bag. **As built:** while one works, a line under the currencies shows
+  it (Q22).
 
 **6. Placing defences from the Bag.**
 - Towers and spikes you buy go into the Bag. Until the Workshop (H6), they are bought where they are bought today.
 - **Place** shows where the piece can go, the same places as today. Then it drops in with a small bounce and a puff of
-  dust. This is made in code, with no new cat animation.
+  dust. This is made in code, with no new cat animation. **As built:** the ghost is also red by the lake and the home
+  (Q25), and the defence buttons above the Bag stay as a shortcut (Q4).
 
-**Technical:**
-- A new `timers.gd` (autoload).
-- `inventory.gd`, `garden.gd`, the cooking code, and the potion buttons in `hud.gd`.
-- `save.gd`, to move old saves over.
-- `balance.json`: `timers`, `garden.crops`, `cooking.recipes`, `bag` and `potions`.
-- **Who:**
-  - Opus: the timer system and old saves;
-  - Opus: the Bag and potions;
-  - Sonnet: the garden window and the cooking window, each in its own file.
-- **Tests:**
-  - `--smoke`;
-  - a new `--timers`: a fake clock checks that jobs finish while the game is "closed" and wait when the clock is set back;
-  - a new `--bag`;
-  - the garden and cooking modes, updated.
+**Technical (as built):**
+- `game/core/timers.gd` (the `Timers` autoload, right after `Save`; the jobs live in `Save.timers`), `game/core/bag.gd`
+  (the Bag's counts and stacks), `game/core/effects.gd` and `game/parts/effects_holder.gd` (what potions do),
+  `game/commands/use_potion.gd` (the Use-potion command), `game/ui/windows/garden_window.gd` and
+  `cooking_window.gd`, and the drag kit `game/ui/kit/drag_source.gd` and `drop_slot.gd`.
+- `garden.gd`, `cooking.gd` and `inventory.gd` rewritten; the potion buttons in `ui/hud/action_buttons.gd`.
+- Save version 4 (`core/save_upgrades.gd`): `bag` and `timers`; the pantry, dishes and old crop growth move over.
+- **Crops and recipes are content folders** (`game/content/crops/`, `game/content/recipes/`), not `balance.json`
+  `garden.crops` and `cooking.recipes` (ARCHITECTURE part 13). `balance.json` has the new `timers`, `bag` and
+  `potions`, and `garden.water_s_by_level`, `garden.water_speed` and `cooking.pot_slots`. Stage 3 removed the old keys.
+- **Who:** Opus agents built the core, the potions, the Bag and the garden and cooking logic; the two windows were
+  separate parts; each stage had an Opus review.
+- **Tests:** `--smoke`; new `--timers` (a fake clock: jobs finish while the game is "closed" and wait when the clock is
+  set back), `--content`, `--bag` (also `--inventory`), `--garden`, `--cook`; `--feed` runs the potions checks; `--saves`
+  upgrades the v3 sample and loads the new v4 sample; `--saves --startup=1` then `=2` tests a real first launch with a
+  v3 save on disk.
+
+**The owner's answers (26 Nov 2026):**
+- **Q1:** the Mount Health Potion replaces Feed (the Feed button and its 2 Sunberries are gone). It brings the mount
+  back with **full** health, and its button takes Ride's place.
+- **Q2:** only Health Potions heal the cat below ground. No food is eaten anywhere.
+- **Q6:** stand-in icons drawn in code: a small bottle in each recipe's colour, a red pepper, a pale root. Designed
+  icons only when the owner asks.
+- **Q15:** yes: a tap on an ingredient fills the next empty slot, and the pot's window has a read-only recipe list.
+- **Q22:** yes: the line under the currencies shows a running Damage or Speed Potion ("Damage +25% · 24 s").
+- **Q25:** yes: the placing ghost uses the start-up check's rule, so it is red by the lake and the home. Drawing the
+  allowed ground is not built.
+
+**Built by default** (no answer came, so the build map's "If no answer" line was built):
+- Q5: 50 leaves for each old dish past the potion limit (this cannot happen today). Q7: an old half-grown crop keeps
+  its share. Q9: Swiftroot 18 leaves, Emberpepper 20, both from garden level 1. Q10: watering 5, 6 and 7 min by garden
+  level.
+- Q12: the garden and pot cards stay closed in a wave; the timers keep running. Q17: a catch swims away when the Bag is
+  full; buying is refused with "Bag full" before you pay; things already paid for always go in. Q18: amber, towers and
+  spikes stack to 20. Q24: the Golden Carp sells at any time for 300 leaves; Bramble sells no peppers or roots. Q28: a
+  simple `bag` of counts in the save (towers and spikes stay in `items`), and no Undo for placing (H6). Q30: the plan's
+  clock rule (a clock set back makes jobs wait; no cap on a clock set forward).
+- Q4: the row-2 defence buttons stay as a shortcut. Q8: watering is free with no cooldown. Q11: Gloom +2 once per
+  garden visit that picks, +3 on the Cook tap only. Q13: the pot keeps cooking while the fire is out. Q14: 3 slots,
+  nothing leaves the Bag until Cook. Q16: Cook is refused when the result would not fit; a full Bag at Collect keeps it
+  in the pot. Q19: the Bag sorts itself. Q20: a potion still working cannot be used again ("Already active"); effects
+  pause with the game, end on a knock-out and are lost when the game closes. Q21: the Speed Potion works while riding;
+  the Damage Potion is for arrows only. Q26: fish and Cooked Fish mend a standing mount only.
+- Decided by the plan, not asked: raw garden food has no Use (Q3); the Health Potion button shows whenever the cat is
+  hurt (Q23); crops and recipes are content folders (Q27); the old dish boosts go with the dishes (Q29); both old
+  dishes in a save, waiting and eaten, become Health Potions.
+
+**Known points (the owner's call: noted, not fixed now):**
+- `--dungeoncareful` now loses at the boss in about 2 runs of 3 (passed 1 of 3: the boss took 25 health in the run it
+  won and 32 in a run it lost, from a 14-health cat). Below ground only Health Potions heal now (Q2), and the careful
+  test cat has 3 Health and 3 Mount Health Potions. Expeditions are rebuilt in H8 and balanced in H11.
+- The garden's card scrolls about 150 px at 540x960 to reach its Upgrade row (the window itself fits). At the phone's
+  shape (480x1040 with safe insets) nothing scrolls.
+- Cooked Fish uses a bottle icon like the other recipes (the owner chose bottles); its light orange is close to the
+  Damage Potion's orange.
 
 ---
 
 ### H4: building windows, part 1 (the shared window, the Hearthtree, the Target, the Bow Shop, the build menu)
+
+**Built (26 Nov 2026) on `feature/h4-building-windows`** (commits `e3fd019`, `63059eb` and `f72b03f`, the stage 3
+clean-up). The branch starts from `feature/h3-food-bag`, so it merges after H3. It is pushed to GitHub but not merged,
+and waits for the owner's phone test. The game as built is in `docs/GAME_GUIDE.md` part 3 ("The building windows") and
+part 11 for developers; the change list is in `docs/CHANGES.md`. Below: the plan, then **As built** and the owner's
+answers.
 
 **What you'll see:** every building opens the same tidy window, with one Upgrade button that never scrolls away, and a
 build menu.
@@ -428,9 +504,34 @@ build menu.
   - Sonnet: the build menu, in a new file.
 - **Tests:** `--smoke`, `--homegoals`, `--bowshop` and `--layout`.
 
+**As built (H4):**
+- **The Hearthtree** has three tabs at the top: Hearthtree, Cat and Defences. A tab shows once it has something (no tab
+  bar with one tab), the window opens on the Hearthtree tab, and a tab gets a "!" when something on it can be bought
+  (the owner's yes). Mend all, Patch it up and "Nothing for sale yet" stay at the top and Graphics at the bottom. A goal
+  has Go (walks the cat) or Show (opens the tab, or the build menu at a building not built yet).
+- **The pinned Upgrade** (the owner's Q1 (c) and Q2 (a)): the Hearthtree, the Target, the Bow Shop, the Well, the
+  Guardian Stone (awake), the garden, the Market, the Cottage and the Saddlery end in an Upgrade that never scrolls
+  away. It always opens a confirm window; the price is red and Confirm grey when you can't pay. Buy, Equip and Build
+  stay one tap. (H5 later took the Market's and the Cottage's Upgrade away with their levels.)
+- **The Bow Shop** (Q10 (a), Q11): one row per bow (Upgrade, then a grey Equipped for the bow in the paw; Equip; Buy;
+  Locked). A tap on a bow's picture opens its inspect view with its real arrow damage.
+- **The build menu** (Q12 to Q16): the build icon opens a grid of building pictures that fade in one by one, each open
+  one with its own Build; locked ones are greyed with their needs; a detail view; nothing can be built while the
+  Hearthtree is in ruins. A dot on the icon replaces the Hearthtree marker's "!" for buildings. The camera glides to a
+  new building for about 2 s while it rises out of the ground.
+- **Tips** (Q17 (a)): both building tips say "tap the build icon next to the Bag".
+- **Code:** one window file per building in `ui/windows/`, the kit in `ui/kit/`, bows (6) and buildings (11) as content
+  folders; `stations.gd` went from 2,672 to 1,723 lines. New `--buildmenu`; `--homegoals`, `--bowshop` and `--cards`
+  rewritten.
+
 ---
 
 ### H5: building windows, part 2 (the Market and pets, the Saddlery, the Tailor's Nook)
+
+**Built (27 Nov 2026) on `feature/h5-market-saddlery-tailor`** (commits `098b04f` and `b24159d`, then a stage 3
+clean-up). The branch starts from `feature/h4-building-windows`, so it merges after H4. It is local, not pushed, and
+waits for the owner's phone test. The game as built is in `docs/GAME_GUIDE.md` parts 3 and 5 (and part 11 for
+developers). Below: the plan, then **As built** and the owner's answers.
 
 **What you'll see:**
 - the Market looks like the owner's pictures 2 and 3, and sells mounts and pets;
@@ -488,11 +589,98 @@ build menu.
   Each agent owns its own window file. `save.gd` and `balance.json` have one owner at a time.
 - **Tests:** `--smoke`, `--saddlery`, `--tailor` and `--layout`.
 
+**The owner's answers (26 Nov 2026):**
+- **Q1 (B):** Sprig costs 160 leaves and gives the pet. **Lumi is a looks-only pet look with her own Buy at 400 leaves**,
+  and fights exactly like Sprig at the shared pet level. Her Buy shows only once the pet is owned. An old save that had
+  the Cottage (any level) owns **both** for free; a fresh save owns neither.
+- **Q2 (A):** the mount keeps the tier an old Market had paid for (`saddlery.mount_credit`). The Saddlery stays at its
+  real level. `Data.mount_level()` is the highest of 1, the Saddlery's level and that credit, and 0 while no mount is
+  owned. The Skills confirm says when the building is catching up.
+- **Q3:** the triangle holds **0 to 3** skills, never 4. An old save that learned all four fills it in the old shop
+  order (**Stomp, Ram, Pounce**); Bellow stays learned in the grid.
+- **Q4 (A):** Hearthtree 3 asks for a **built Market** and **pet level 2**; Hearthtree 4 asks for **pet level 3**.
+  Every other goal stays.
+- **Q5 (A):** a new Market has **200** health. An old Market keeps the 200, 340 or 500 its player earned.
+- **Q6 (A):** mount level 4 is **1.6575x** walking speed and **18** base health; level 5 is **1.785x** and **24**.
+- Everything in the build map's second list of defaults stood.
+
+**As built (H5):**
+- **The Market:** four icon tabs at the bottom (Sells, Buys, Mounts, Pets); no levels, no footer, no Upgrade.
+  Sells and Buys are grids of big pictures with the price; a tap opens a popup (amount, You pay or You get, Buy or Sell).
+  On Buys the price is what Bramble pays you, shown neutral. **Bramble no longer buys Gloom shards.** Amber shows after
+  the Raid Missions. The "Shards" tab is H10's.
+- **Mounts and Pets tabs:** the whole of each mount and pet; colours, Gloomlit and the Gloomwood gear moved here. Sprig
+  costs the Cottage's old 160 leaves; the pet's training (350; 900 and 30 timber) is on the Pets tab, capped by the
+  Hearthtree.
+- **The Cottage** is gone from the camp, the build menu, the marker and the code; the pet stays with the cat. The old
+  Cottage ground is open.
+- **The Saddlery:** two tabs; Attachments as pictures with a turning detail view; Skills with the triangle of three
+  circles and a round icon grid; the pinned Upgrade is on Skills, and its confirm shows the mount's speed and health.
+  The mount fires only the skills in the circles.
+- **The Tailor's Nook:** the cat turning on a stand with the outfit cards below; unowned cards grey and still
+  tryable; one Buy, Wear or Wearing button.
+- **Save version 5** (`owned`, `pet_level`, `market_hp_floor`, the circles); a Buy command (`commands/buy.gd`) used by
+  every shop window; mounts, pets, outfits and attachments as content folders (the plan's step H5 in
+  `docs/ARCHITECTURE.md` part 13).
+- **Built in** three stages by agents as Part F sets out: the foundations (stage 1), the live switch and the windows
+  (stage 2), then the older tests, the clean-up and the docs (stage 3).
+- **Tests (all pass on the PC):** `--h5found` (new, 60), `--campg` 110, `--saddlery` 156, `--tailor` 76, `--cards` 147,
+  `--saves` 85, `--content` 48, `--layout` 118, `--hudcheck` 130, `--taps` 22, `--bag` 110, `--topup` 23, `--homegoals`
+  92, `--buildmenu` 47, `--shards` 21, `--wear` 10, `--smoke`, `--village` and the default run. `--dungeoncareful`
+  was not run (its H3 point stands).
+- **Known points (noted, not fixed now):** nothing of H5 has been tried on the phone; the Nook's stand size may need
+  tuning; two unused word fallbacks (`H5_WORDS`) remain in the Saddlery's files; `--village` logs "no button Walk"
+  (no checks in that mode).
+
 ---
 
 ### H6: the Defence Workshop, upgrading each defence, armour
 
-**Needs the Workshop model.**
+**Built (27 Nov 2026) on `feature/h6-defence-workshop`** (commits `a46d449` and `b3b2364`, then a stage 3 clean-up).
+The branch starts from `feature/h5-market-saddlery-tailor`, so it merges after H5. It is local, not pushed, and waits
+for the owner's phone test. The change list is in `docs/CHANGES.md`; the status is in `docs/STATUS.md`. Below: the plan,
+then the owner's answers and **As built**. (`docs/GAME_GUIDE.md` does not yet describe H6.)
+
+**The owner's answers (27 Nov 2026):**
+- **Q1 (B), a piece's upgrade costs today's price, per piece:** each placed piece pays what upgrading its whole kind
+  costs today, in leaves (barricade row 200 / 480 / 1,500 / 3,480; Acorn Tower 220 / 500 / 2,400 / 5,760; Thorn Spikes
+  180 / 420 / 1,200 / 3,060, for levels 2 / 3 / 4 / 5). The level-4 shards are replaced by timber (20 / 30 / 15).
+  **Level 5 stays leaves only.** No shards buy power.
+- **Q2 (A), the Workshop:** it builds for 250 leaves and 10 timber. Levels 2 to 5 cost 400/20, 900/35, 1,800/55 and
+  3,200/80 (leaves/timber). Its health at levels 1 to 5 is 200, 320, 480, 650 and 850. Each specialisation costs 250/10
+  to learn, then 550/20 and 1,100/35.
+- **Q3 (A), the first guesses:** Explosive acorns (a 1.2 m blast for 30/45/60% of the hit); Reinforced barricades
+  (+25/40/55% row health, and a row cracks at 35% instead of 50%); Deep thorns (the slow is 30/40/50% stronger and lasts
+  1 s after an enemy steps off). Armour: Toadstool Brute 20%, Stump Golem 25%, Crystal Snail 30%, Beetle Knight 35%, with
+  their health lowered so they take as long to kill as today.
+- **Q4 (A):** a piece put back in the Bag keeps its level and damage. Towers and spikes already in an old Bag keep
+  today's level for their kind. New purchases start at level 1. No Pick up button.
+- **Gates (both kept):** a piece's level is capped by the Workshop's level, and still needs all Raid Missions won for
+  level 4 and the Burrows open for level 5.
+- **Mend:** no "Mend all defences" button. The Wishing Well mends standing defences in the background, as the owner
+  said. The Hearthtree's Mend row goes with its Defences tab.
+- **Bosses:** the owner confirmed that a tank made an expedition room's boss has no armour, and its health is as today.
+
+**As built (H6):**
+- **The Defence Workshop** (the owner's design, rebuilt low-poly, `assets/props/defence_workshop.glb`): built from the
+  build menu after mission 2, on its own spot. Its window: Defences (buy towers and spikes into the Bag, with each
+  kind's count and limit; a kind not open yet is a locked row), Specialisations, and the pinned Upgrade (levels 1 to 5,
+  never above the Hearthtree). The Hearthtree's temporary Defences tab is gone.
+- **Each piece on its own:** tap a placed tower, barricade row or spike patch for its own card: its level, what the next
+  level gives, Upgrade (with the confirm window), and Repair when it is down. Upgrading heals it to full. The caps are
+  the Workshop's level and the old gates. Barricade looks by level are now per row.
+- **Specialisations:** Explosive acorns, Reinforced barricades, Deep thorns. A specialisation shows once its kind is
+  open (Deep thorns at mission 3). Any more need the owner's yes.
+- **Armour:** on the four tanks as ordinary enemies only. Armour piercing (H9) is not built.
+- **Undo:** the last tower or spikes placed can be taken back. Not offered during a wave or below ground.
+- **Save version 6:** every placed piece keeps its `level`; a converter runs on version 5 saves; a paid kind level with
+  no piece is kept as a one-time credit for the first new piece of that kind.
+- **Built by agents** as Part F sets out (Codex Sol and Sonnet builders, Opus advice; every Codex patch was reviewed by an Opus agent,
+  as the owner asked on 27 Nov; Sonnet wrote the stage 2 test part when Codex ran out of quota).
+- **Tests (all pass on the PC):** `--workshop` 123 (also at the phone's shape), new `--workshop --foundation` 14, and the
+  older modes listed in `game/README.md`. The default run reached wave 15.
+- **Known points (noted, not fixed now):** the Workshop hides the cat when the cat stands directly behind it (the owner
+  to rule); the screenshots used a stand-in Workshop model; phone speed numbers still to be measured.
 
 **What you'll see:**
 - a new building for all defences;
@@ -550,6 +738,47 @@ build menu.
 ---
 
 ### H7: day and night
+
+**Built (27 Nov 2026) on `feature/h7-day-night`** (local, not pushed). The branch starts from H6 (`0765a54`), so it
+merges after H6. The change list is in `docs/CHANGES.md`; the status is in `docs/STATUS.md`. `docs/GAME_GUIDE.md` describes
+it in part 3 ("Day and night") and part 11. Below: the owner's answers and **As built**, then the plan as first written.
+
+**The owner's answers (27 Nov 2026):**
+- **Night:** clear moonlight. The ground goes blue, the fire stays warm, and enemy bodies are clearly visible on the outer
+  trails.
+- **Start:** morning, for a new game and for an older save on its first H7 load. After that, a save opens at its saved
+  time of day.
+- **No time label** on the screen. The scenery shows the time. No new Event.
+- **Brighter at night on Medium and High:** the fire and the lanterns only (the campfire, the Hearthtree's windows and
+  lanterns, the camp posts and the trail lanterns). Nothing else.
+- **No save version step:** `camp_day_s` is a new optional field. A missing or bad value starts at morning. No version 7,
+  no converter and no new sample save; `--saves`, `--campg` and `--workshop --foundation` keep their version checks.
+- **No special checkpoint during a held wave:** the clock is saved with the normal saves and at pause, focus loss, close
+  and back. Losing a few seconds of the clock after a forced kill is fine.
+- **Who builds (the owner's rule of 27 Nov):** Codex Sol builds; Opus reviews each applied Codex patch; Sonnet fixes and
+  tests; Haiku does the docs.
+
+**As built (H7):**
+- **The camp clock** (`world/camp/day_night.gd`): a 720-second day of play time, counted only in the camp. Waves and raids
+  count; expeditions and a closed game do not.
+- **Four keyframes** (morning, day, evening, night) in `balance.json` `day_night`. Each holds, then blends to the next.
+  Night is clear moonlight from 9 to 11.5 minutes, then 30 seconds back to morning.
+- **The light:** sun angle, colour and energy; sky colours; ambient colour and energy (the camp's ambient is a colour
+  now, not the sky); fog (capped); shadow opacity and softness; sunray strength (none at night).
+- **Fire and lamps:** on Medium and High at night the fire's flicker light and flame glow grow (`fire_scale` 1.55), and the
+  camp, Hearthtree, post and trail lamps grow (`lamp_scale` 1.65). Low gets no boost: its camp lamps stay off and the
+  campfire keeps its usual light and flame.
+- **Burrows:** the expedition keeps its own moon and fill light. The sun starts from a fixed baseline on every visit, and
+  the camp light comes back when the player returns.
+- **Save:** `camp_day_s`, with no version step (see the answers above).
+- **Review fixes before the tests** are listed in `docs/CHANGES.md` (a missing declaration, a missing return, a per-frame
+  save write, and two test checks).
+- **Tests (all pass on the PC):** `--daynight` 46 (and 46 at 480x1040 with the safe bars); `--dungeon` 50; `--settings`
+  40; `--laststand` 1; `--camplife` 36; `--layout` 132; `--workshop` 123; `--saves` 95; `--smoke` finished clean.
+- **Known points:** on Medium the night is fairly subtle next to noon. The lever is the night colours and energies in
+  `balance.json`. Not on the phone yet; phone speed is still to be measured.
+
+**The plan as first written:**
 
 **What you'll see:** the camp goes through morning, day, evening and night.
 

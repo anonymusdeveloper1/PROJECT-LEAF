@@ -1,12 +1,12 @@
-# Project LEAF: where we are (25 November 2026)
+# Project LEAF: where we are (27 November 2026)
 
 **The full description of the game as it is now: `docs/GAME_GUIDE.md`.**
 
 **25 Nov 2026 · Phase H started.** The owner approved `docs/PHASE_H_PLAN.md` (version 1.2) and the architecture in
 `docs/ARCHITECTURE.md`. The four rule changes are now in `CLAUDE.md` and `docs/GAME_GUIDE.md`:
-- only timers keep running while the game is closed (from H3);
+- only timers keep running while the game is closed (from H3; built 26 Nov 2026);
 - purple shards are the paid currency and buy looks only, and Bramble never buys shards;
-- the Mushroom Cottage leaves the camp (H5);
+- the Mushroom Cottage leaves the camp (H5, built 27 Nov 2026);
 - numbers live in `game/data/` and `game/content/`.
 
 **H0:**
@@ -27,7 +27,145 @@
   - PC speed: camp 2.2 to 1.88 ms, fight 4.02 to 2.94 ms.
 - **Phone (26 Nov 2026):** the H1 APK is on the owner's phone; its save went from version 2 to 3 (38 amber, 7 glowstone,
   5 heartwood and 3 keys became 2,500 leaves). Phone speed numbers are still to be measured.
-- **Next:** H2 (the HUD listens to Events, commands for the cat's buttons, `hud.gd` split), on `feature/h2-hud`.
+- **Next:** H2, below.
+
+**H2** (the new HUD and Settings) is built on `feature/h2-hud` in three commits (`c030041`, `1d0377c`, `042d78c`; 26 Nov
+2026). It waits for the owner's phone review before it merges into `development`.
+- The screen follows the owner's sketch: the currencies top-left, the Settings gear top-right, the raid bar top-centre
+  (no words, no numbers), a campfire bar in fights, the Bag and a build icon at the bottom, defences above the Bag,
+  Ride/Walk at the right. Start wave stays on the signpost's card.
+- Settings: Graphics Auto/Low/Medium/High and Sound on/off, in their own file apart from the save.
+- `hud.gd` is split into `game/ui/hud/`; new test `--settings` (40 checks), `--hudcheck` 121, `--inventory` 56.
+- **Next:** the owner's phone review of H2. H3 is built (below).
+
+**H3** (food, potions and the Bag) is built on `feature/h3-food-bag` in three stages (`f0f181a`, `09dc171` and the
+stage 3 clean-up; 26 Nov 2026). The branch starts from `feature/h2-hud`, so it merges after H2. Pushed to GitHub, not
+merged; it waits for the owner's phone test. Backup: `D:\DevCache\backup\pre_h3_2026-11-26`.
+- **Only timers keep running while the game is closed** (rule change 1 is now built): crops grow and the pot cooks by
+  the phone's clock (`core/timers.gd`). If the clock is set back, the jobs wait.
+- The garden's window (drag a seed onto a plot; Water for 5/6/7 min at garden level 1/2/3; tap to pick), two new crops
+  (Emberpeppers, Swiftroots), the cooking pot's window (3 slots, drag or tap ingredients, a recipe list, Cook, Collect).
+- 5 recipes replace the old dishes: Health Potion, Mount Health Potion (brings the mount back with full health),
+  Cooked Fish, Damage Potion, Speed Potion. Fish mend the mount; Bramble buys the Golden Carp for 300 leaves.
+- The new Bag: 24 slots, stacks of 20, potions one stack up to their limit, Use and Place. Towers and spikes are placed
+  from the Bag with a drop-in; the ghost is red by the lake and the home.
+- HUD: the Health Potion button (row 1 right), the Mount Health Potion in Ride's place, and a line for a running
+  Damage or Speed Potion. Feed, snacks and eating food are gone.
+- Save version 4. New tests `--timers`, `--content`, `--bag` (also `--inventory`); `--garden` and `--cook` are
+  rewritten; `--feed` runs the potions checks. Stage 2 results on the PC are in `docs/CHANGES.md`.
+- **Known points (the owner's call: noted, not fixed now):**
+  - `--dungeoncareful` now loses at the boss in about 2 runs of 3 (passed 1 of 3: the boss took 25 health in the run
+    it won and 32 in a run it lost, from a 14-health cat). Below ground only Health Potions heal now (the owner's Q2),
+    and the careful test cat has 3 Health and 3 Mount Health Potions. Expeditions are rebuilt in H8 and balanced in H11.
+  - The garden's card scrolls about 150 px at 540x960 to reach its Upgrade row (the window itself fits). At the
+    phone's shape (480x1040 with safe insets) nothing scrolls.
+  - Cooked Fish uses a bottle icon like the other recipes (the owner chose bottles); its light orange is close to the
+    Damage Potion's orange.
+- **Next:** the owner's phone test of H3 (drag and drop with a finger, closing the game while crops grow, the potion
+  buttons in a fight, the old save's food and crops). Then H4 as `docs/PHASE_H_PLAN.md` sets out: building windows,
+  part 1 (the shared window, the Hearthtree, the Target, the Bow Shop, the build menu).
+
+**H4** (building windows, part 1) is built on `feature/h4-building-windows` in three stages (`e3fd019`, `63059eb` and
+the stage 3 clean-up; 26 Nov 2026). The branch starts from `feature/h3-food-bag`, so it merges after H3. Local only,
+not pushed. Backup: `D:\DevCache\backup\pre_h4_2026-11-26`.
+- **The Hearthtree window** has tabs at the top: Hearthtree (Mend all, Patch it up, the goals, Graphics), Cat (the
+  cat's upgrades) and Defences. A tab shows once it has something and gets a "!" when something on it can be bought.
+  Each goal has Go (walks the cat there) or Show (opens the right tab, or the build menu at a building not built yet).
+- **The pinned Upgrade:** the nine buildings with levels end in an Upgrade that never scrolls away. It always opens a
+  confirm window with what the next level gives; the price is red and Confirm grey when you can't pay. The Tailor's
+  Nook and the Fishing Spot have one level and no Upgrade.
+- **The Bow Shop:** one row per bow (Upgrade, then a grey Equipped for the bow in the paw; Equip; Buy; Locked). A tap
+  on a bow's picture shows it turning in 3D with its arrow and the arrow's real damage.
+- **The build menu:** the build icon next to the Bag opens a grid of building pictures; each open one has its own
+  Build. A dot on the icon shows when a building can be built and paid for. After Build the camera glides to the new
+  building for about 2 s while it rises out of the ground.
+- Code: one window file per building in `game/ui/windows/`, the window kit in `game/ui/kit/` (now with `card.gd`),
+  bows and buildings as content folders, and the old stations forwarders are gone (`stations.gd` 2,672 → 1,723
+  lines).
+- Tests (all pass on the PC): `--cards` 140, `--homegoals` 89, `--bowshop` 122, `--buildmenu` 47, `--campg` 66,
+  `--layout` 132, `--hudcheck` 132 (also at 480x1040 with the safe bars; the old tap flake did not come back in 6
+  runs), `--saddlery` 111, `--tailor` 63, `--bag` 110, `--garden` 63, `--guardian` 31, `--content` 44, `--taps` 22,
+  `--topup` 23, `--shards` 21, plus the default run, `--village` and `--laststand`.
+- **Known points:** `docs/GAME_GUIDE.md` did not describe the H4 windows when H4 was built; since H5's docs it does
+  (part 3, "The building windows"). `--dungeoncareful` still loses at the boss in about 2 runs of 3 (from H3; retuned in
+  H8/H11). Phone speed numbers are still to be measured.
+- **Next:** the owner's phone test of H4, then the merges (H2, then H3, then H4) on the owner's yes. H5 is built on top
+  of H4 (below).
+
+**H5** (the Market, the Saddlery and the Tailor's Nook) is built on `feature/h5-market-saddlery-tailor` in three stages
+(`098b04f`, `b24159d` and the stage 3 clean-up; 27 Nov 2026). The branch starts from `feature/h4-building-windows`, so
+it merges after H4. Local only, not pushed. Backup: `D:\DevCache\backup\pre_h5_2026-11-26`. The owner's answers to the
+map's six questions (`docs/PHASE_H_PLAN.md`, H5) are built as given.
+- **The Market** has four icon tabs at the bottom: Sells, Buys, Mounts, Pets. No levels, no Upgrade. A tap on a picture
+  opens a popup with an amount and one Buy or Sell button. **Bramble no longer buys Gloom shards.**
+- **The Cottage is gone.** Sprig is bought at the Market's Pets tab for 160 leaves; **Lumi is a looks-only pet and costs
+  400 leaves** (the owner's Q1 B). The pet's levels are trained there. An old save that had the Cottage owns both pets
+  free, at its old level.
+- **The Saddlery** has an Attachments tab (pictures; a tap shows the turning attachment) and a Skills tab with **three
+  circles** (the mount fires only those, 0 to 3 skills; the owner's Q3). Its Upgrade also raises the mount's speed and
+  health (mount levels 4 and 5 are new; the owner's Q2 A, Q6 A).
+- **The Tailor's Nook** shows the cat turning on a stand, with grey cards for outfits not owned, which can still be
+  tried on.
+- **Home goals:** Hearthtree 3 asks for a built Market and pet level 2, Hearthtree 4 for pet level 3 (the owner's Q4 A).
+- **Save version 5** (new `owned` list, `pet_level`, `market_hp_floor`); a fifth sample save, `v5_sample.json`.
+- Tests (all pass on the PC): `--h5found` 60 (new), `--campg` 110, `--saddlery` 156, `--tailor` 76, `--cards` 147,
+  `--saves` 85, `--content` 48, `--layout` 118, `--hudcheck` 130 (also at 480x1040 with the safe bars), `--taps` 22,
+  `--bag` 110, `--topup` 23, `--homegoals` 92, `--buildmenu` 47, `--shards` 21, `--wear` 10, plus `--smoke`,
+  `--village` and the default run. `--dungeoncareful` was not run (its H3 point stands).
+- **Known points:** nothing of H5 has been tried on the phone yet. The Nook's stand size (`STAND_WIDER`, `STAND_MAX_H`
+  in `outfit_preview.gd`) may need tuning after the owner looks. `--village` logs "no button Walk" (harmless, the mode
+  has no checks). Two unused word fallbacks (`H5_WORDS`) remain in the Saddlery's files. Phone speed numbers are still
+  to be measured.
+- **Next:** the owner's phone test of H5 (taps on the Market's tabs and popup, a drag into the Saddlery's circles, the
+  Nook's try-on, an old save's pets and mount), then the merges in order H2, H3, H4, H5 on the owner's yes. After that H6
+  (the Defence Workshop), as `docs/PHASE_H_PLAN.md` sets out.
+
+**H6** (the Defence Workshop, per-piece upgrades, specialisations, armour) is built on `feature/h6-defence-workshop` in
+three stages (`a46d449`, `b3b2364` and the stage 3 clean-up; 27 Nov 2026). The branch starts from
+`feature/h5-market-saddlery-tailor`, so it merges after H5. Local only, not pushed. The owner's answers are in
+`docs/PHASE_H_PLAN.md` (H6).
+- **The Defence Workshop** is built from the build menu after mission 2, on its own spot. Its window has Defences (buy
+  towers and spikes into the Bag, with counts and limits), Specialisations, and the pinned Upgrade (levels 1 to 5, never
+  above the Hearthtree). The Hearthtree's Defences tab is gone.
+- **Each piece upgrades on its own.** Tap a placed tower, barricade row or spike patch: its card shows the level, what
+  the next level gives, Upgrade and Repair when it is down. Prices are today's kind prices per piece, in leaves; level 4
+  asks timber instead of shards. **No "Mend all defences" button:** the Wishing Well mends standing defences.
+- **Specialisations:** Explosive acorns, Reinforced barricades, Deep thorns (learn, then levels 2 and 3).
+- **Armour** on the Toadstool Brute, Stump Golem, Crystal Snail and Beetle Knight (20/25/30/35%); their health is lowered
+  to keep the time to kill. Bosses have no armour.
+- **Undo** takes back the last tower or spikes placed (not during a wave or below ground).
+- **Save version 6.** Every placed piece keeps its level; pieces in the Bag keep theirs; `def_levels` is gone.
+- **Tests (all pass on the PC):** `--workshop` 123 (also at the phone's shape), new `--workshop --foundation` 14, and the
+  older modes (`--saves` 95, `--rows` 169, `--campg` 110, `--bag` 110, `--layout` 132, `--hudcheck` 130, `--homegoals`
+  93, `--content` 48, `--taps` 22 and others, all with 0 failures). The default run reached wave 15. The logs show no
+  script or parse errors.
+- **Known points (noted, not fixed now):**
+  - **The Workshop hides the cat when the cat stands directly behind it** (the cat is seen only by the tips of its ears).
+    From the front it is fully visible. **The owner should rule on this.**
+  - The screenshots used a stand-in Workshop model.
+  - Phone speed numbers are still to be measured.
+- **Next:** the owner's phone test of H6 (the Workshop's window, a tap on a placed tower, the cat behind the Workshop,
+  Undo, a specialisation, an armoured tank), then the merges in order H2, H3, H4, H5, H6 on the owner's yes.
+
+**H7** (day and night in the camp) is built on `feature/h7-day-night` (27 Nov 2026). The branch starts from H6
+(`0765a54`), so it merges after H6. Local only, not pushed. The owner's answers are in `docs/PHASE_H_PLAN.md` (H7).
+- **The camp has a day:** 12 minutes of play time in the camp, morning, day, evening and night. Night is clear
+  moonlight, about 3 minutes. Waves and raids count; expeditions and a closed game do not. A new game and an older save
+  start at morning.
+- **Medium and High at night:** the campfire, the Hearthtree's windows and lanterns, the camp posts and the trail
+  lanterns shine brighter. Low gets no boost; its camp lamps stay off.
+- **No time label.** The scenery shows the time.
+- **Save:** one new optional field, `camp_day_s`. No new save version.
+- **Tests (all pass on the PC, with no parse or script errors in the logs):** `--daynight` 46 (also at 480x1040 with the
+  safe bars 46), `--dungeon` 50, `--settings` 40, `--laststand` 1, `--camplife` 36, `--layout` 132, `--workshop` 123,
+  `--saves` 95. `--smoke` finished clean.
+- **Known points:**
+  - On Medium the night is fairly subtle next to noon. The next lever is the night colours and energies in the
+    `day_night` block of `game/data/balance.json`.
+  - H7 is not on the phone yet. Phone speed is still to be measured.
+- **Next:** the owner's phone test of H7 (the morning start, the change over a few minutes, night on Medium and High, an
+  expedition at night and back, a close during a wave and a reopen), then the merges in order H2, H3, H4, H5, H6, H7 on
+  the owner's yes.
 
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin
@@ -153,7 +291,8 @@ with her current mount while riding. Gameplay continues during use. The garden, 
 owned totals and receipts. Select a dungeon healing food or use Auto. PC checks passed `--smoke` and `--inventory`
 (53 passes) at 480x1040 with safe areas. The revised debug APK is built at `game/build/ProjectLEAF.apk`.
 Phone verification awaits a connected device.
-See `docs/INVENTORY_PLAN.md`.
+See `docs/INVENTORY_PLAN.md`. (Replaced by the H3 Bag on 26 Nov 2026: no food is eaten now, and Quick heal and Auto
+are gone.)
 
 **23 Nov 2026.** Committed on `feature/g3-g4-bows-saddlery-outfits` and merged into `development`.
 The APK for the full update was installed on the owner's phone at 01:52. The before and after saves match.
@@ -173,8 +312,8 @@ notes are in `docs/PHASE_A_PROGRESS.md`. Each phase has its spec in `docs/PHASE_
 | A2 | Missions of 15 waves (missions 1–5) or 20 waves (6–15) in chapters of 5: elite waves, a boss at the end, 15 s breathers, chapter breaks that save ("Go on" / "Give up"), wave pay and chapter chests, a flee rule so a wave can never hang |
 | A3 | Health bars over the cat and the mount; the mount takes hits while ridden |
 | B | Home levels 4–6 with new campfires (hearth, bonfire, crystal brazier) and bigger tree homes; colour skins for every mount and pet ("Colours" row) |
-| C | The garden and cooking pot (the gift for winning mission 1, with 4 Sunberries); cooking (a dish is eaten when the next chapter starts); fishing (after mission 6); feeding a knocked-out mount (2 Sunberries via the Ride button, which becomes "Feed"); the Moss Warden guardian built with the user's Meshy model but HIDDEN until the Burrows free it (`stations.free_guardian()`) |
-| E | The Burrows. **Built** 18 November 2026, steps E0-E10 on the PC; notes in `docs/PHASE_A_PROGRESS.md`, "Phase E". The Old Hollow south of the camp (sealed from the first mission won, open after the last), free and unlimited entry (a Hollow key only adds a boon), traps, the Leaf Dash (a flick, Burrows only), the new monsters on stand-ins, the satchel (a knock-out keeps half), boons, saving and resuming a run, the mount and the pet going down with the cat (Feed and a Snack button), the Moss Warden freed from its Gloom seal behind the first boss, mastery 11-12, the Foxfire Bow, level-5 defences, the Warden's level 4 (leaves), home levels 7-8 (Burrow materials), attachments for the mount and the pet, and a debug endgame start. Its room runs (den, forks, doors, room templates) were **replaced the same evening** by the row below |
+| C | The garden and cooking pot (the gift for winning mission 1, with 4 Sunberries); cooking (a dish is eaten when the next chapter starts); fishing (after mission 6); feeding a knocked-out mount (2 Sunberries via the Ride button, which becomes "Feed"). **H3 (26 Nov 2026) replaced the dishes and Feed** with potions cooked on a real-time timer (`docs/GAME_GUIDE.md` part 6); the Moss Warden guardian built with the user's Meshy model but HIDDEN until the Burrows free it (`stations.free_guardian()`) |
+| E | The Burrows. **Built** 18 November 2026, steps E0-E10 on the PC; notes in `docs/PHASE_A_PROGRESS.md`, "Phase E". The Old Hollow south of the camp (sealed from the first mission won, open after the last), free and unlimited entry (a Hollow key only adds a boon), traps, the Leaf Dash (a flick, Burrows only), the new monsters on stand-ins, the satchel (a knock-out keeps half), boons, saving and resuming a run, the mount and the pet going down with the cat (Feed and a Snack button; H3 replaced them with the potion buttons), the Moss Warden freed from its Gloom seal behind the first boss, mastery 11-12, the Foxfire Bow, level-5 defences, the Warden's level 4 (leaves), home levels 7-8 (Burrow materials), attachments for the mount and the pet, and a debug endgame start. Its room runs (den, forks, doors, room templates) were **replaced the same evening** by the row below |
 | Burrows as paths | **Built** 18 November 2026, evening, from the user's word ("a path to the boss, like World of Warcraft"): `docs/DUNGEON_SPEC.md`; notes in `docs/PHASE_A_PROGRESS.md`, "The Gloomwood (dungeon rework, 18 Nov 2026)". The Old Hollow leads into **the Gloomwood**, one continuous wood at night built from `game/data/dungeons/old_hollow.json` (`dungeon_map.gd`, `burrow_run.gd`): a 144 m path from the way in past nine fights (six with HUD pips: the sleeping camp, the burrow holes, the Glowcap clearing, the bramble bend, the bridge with its moths and elite, the old oak; plus three ambushes), the nook's Gloom-bound chest, the rolling logs and their chest, the Moonwell (spring, boon, root lift home) and the arena gate, to Mossback (about 9,900 health at level 1, `hp_mult` 2.2; enrages below 35%; up to 6 adds) in a stone-circle arena whose roots close behind the cat, then the chest, the Warden's seal on the first clear and the lift home. Replays are levels 1, 2, 3... (other monster pools, bigger packs, snappers from 2, elites from level 1 at 30%, the boss Gloomtouched from 4). Checkpoints at the way in, the Moonwell and the gate ("Go back in" starts there). Night look that needs no lights (glowing faces, halos and pools, fireflies; three lantern lights on Medium and High). Reworked on 19 November as a night road (see the next row). A map can end in a treasure instead of a boss. Tests in `game/scripts/autotest_e.gd` (`--dungeon` and others, `game/README.md`) |
 | Night road and harder | **Built** 19 November 2026 (notes in `docs/PHASE_A_PROGRESS.md`, "Night road and harder"). The Gloomwood's floor is one night plane (`night_floor.gd`: flagstones, cobbles, planks, puddles, torches, lanterns; a stone-circle arena with a carved sigil, rune stones and giant swords). Much harder: strength 3.0 at level 1, +1 damage, bigger packs, elites from level 1, three ambushes, `max_alive` 8 / 12 / 12 (Low / Medium / High), the Moonwell heals 40% of the cat's health, pay up 25%. Raids do not come while the cat is in the Gloomwood: the meter and warnings wait. |
 | Phase F | **Built** 19 November 2026 (plan: `docs/PHASE_F_PLAN.md`; described in `docs/GAME_GUIDE.md`). Tested on the PC with `--smoke` and the three new modes. Home goals for homes 2-8 (the home grows only when every goal is met and the price is paid; the home's card has a "Grow the home" section with Go / Show buttons and the badge shows "!"), mission gates by home level (**removed 21 Nov 2026**: no mission waits for the Hearthtree any more), **no replays**, much bigger win rewards, the Training Target and Bow Bench at 5 levels (caps 4/6/8/9/10), stat and bow prices +30%, Range +0.2 m a level. Missions: roads in patterns (surround, pincer, rush; mission 1 teaches them; the top bar says where the next wave comes from), bursts, no easy waves, real last chapters for missions 6, 13 and 15, an easier mission 2 and softer boars with a daze after a missed charge. Reasons to move: Pitchers and Frogs shoot from beyond the cat's reach, the Golden Grub, the Gloom Totem, and pay bonuses for a quick clear, an intact wave and going on early. The Gloom fades a step per mission won. Tests `--homegoals`, `--fightf`, `--enemyf`. Older tests that start a won mission need `fight.skip_gate`. |
@@ -307,7 +446,8 @@ Concept images are made and were sent; the game uses stand-ins until the models 
 ## Decisions the user made on 17–18 November 2026
 
 - **The camp.** One cat protecting its campfire camp. Not Clash of Clans: no villagers, no workers, no production
-  timers. Say "camp", not "village". **Nothing happens while the game is closed.**
+  timers. Say "camp", not "village". **Nothing happens while the game is closed.** (Changed by the owner on 25 Nov
+  2026 and built in H3: only timers keep running while the game is closed, the crops and the cooking pot.)
 - **Missions.** 15–20 waves each, about 20 minutes, the camp and cat growing during a mission.
 - **After the missions.** The Burrows (working name, accepted) are most of the game: go in, bring back what the camp
   needs, upgrade, go deeper. Several Burrows, more over time, free to enter. The cat goes in with its pet and mount
@@ -324,7 +464,8 @@ Concept images are made and were sent; the game uses stand-ins until the models 
     after the missions, paid mostly with Burrow materials.
   - Upgrades at the stone cost leaves.
 - **Food.** Food matters from the start. A knocked-out mount is brought back with food; the pet never dies. Food also
-  feeds the guardians.
+  feeds the guardians. (Since H3, 26 Nov 2026: food is cooked into potions, and the Mount Health Potion brings the
+  mount back.)
 - **Pets and mounts.** New pets and mounts are looks only, with the same strength.
 - **Money.**
   - Sold: pets, mounts, cosmetics, and attachments for the pet and mount, which help in the Burrows and can also be
@@ -343,7 +484,9 @@ Concept images are made and were sent; the game uses stand-ins until the models 
   - `--smoke`, the default mission-1 run, `--resume=1/2`
   - `--village`, `--siege`, `--laststand`, `--bars`, `--skins`, `--levels`
   - `--perf`, `--perfdiag`
-  - `--guardian`, `--guardianab`, `--garden`, `--cook`, `--fishing`, `--feed`, `--camplife`
+  - `--guardian`, `--guardianab`, `--fishing`, `--camplife`
+  - H3 (26 Nov 2026): `--timers`, `--content`, `--bag` (also `--inventory`), `--feed` (the potions), `--garden`,
+    `--cook`, and `--saves --startup=1` (with `--fresh`) then `--saves --startup=2` (without `--fresh`)
   - plus Phase D's raid modes
   - the Burrows: `--dungeon`, `--dungeonshots` (480x1040, `--quality=low` and `high`), `--dungeonfall`,
     `--dungeonresume=1/2`, `--boss`, `--dungeonperf`, `--dungeontreasure`, `--dungeonlevels`, and from Phase E
@@ -351,7 +494,7 @@ Concept images are made and were sent; the game uses stand-ins until the models 
     `game/scripts/autotest_e.gd`; see `game/README.md`). Phase E's room modes are gone with the rooms.
   - New (20 Nov 2026, G1b and G2): `--rows`, `--campg`, `--cards` (in `game/scripts/autotest_g2_*.gd`; `--cards` at 480x1040 with `--safe-top=73 --safe-bottom=42`); `--fightf` now checks squads.
   - G3, G4 and outfits: `--bowshop`, `--saddlery` and `--tailor` (see `docs/GAME_GUIDE.md`, Test modes).
-  - Known old results: none since H1. On 25 Nov 2026 `--topup` passes 23 (its checks were brought up to Phase F's caps and the one-worn rule) and `--raidloss` passes 14.
+  - Known old results: none since H1. On 25 Nov 2026 `--topup` passes 23 (its checks were brought up to Phase F's caps and the one-worn rule) and `--raidloss` passes 14. Since H3 (26 Nov 2026), `--dungeoncareful` loses at the boss in about 2 runs of 3 (a known balance point, above).
   - the layout and the HUD: `--layout`, `--layoutsave=1/2`, `--hudcheck` (in `game/scripts/autotest_layout.gd`); run
     them at 540x960 and 540x1170; `--safe-top=N --safe-bottom=N` (HUD pixels) fake the phone's bars
   - **If the PC's screen is off or asleep, add `--disable-vsync` before `--`**: otherwise Godot runs at about 4 frames a

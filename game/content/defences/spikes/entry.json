@@ -1,0 +1,19 @@
+{
+  "id": "spikes",
+  "name": "Thorn Spikes",
+  "group_name": "Thorn Spikes",
+  "desc": "Hurts and slows enemies that walk over it",
+  "icon": "spikes",
+  "unlock": {"missions_won": 3},
+  "price": {"leaves": 70},
+  "from_bag": true,
+  "piece": 70,
+  "unlock_missions": 3,
+  "levels": [
+    {"dps": 6, "slow": 0.25, "model": "thorn_spikes_1"},
+    {"dps": 12, "slow": 0.35, "price": {"leaves": 180}, "model": "thorn_spikes_2"},
+    {"dps": 22, "slow": 0.45, "price": {"leaves": 420}, "model": "thorn_spikes_3"},
+    {"dps": 34, "slow": 0.5, "price": {"leaves": 1200, "timber": 15}, "model": "thorn_spikes_4"},
+    {"dps": 42, "slow": 0.55, "price": {"leaves": 3060}, "name": "Amber Thorns", "needs_burrows": true, "model": "thorn_spikes_5"}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "lumi",
+  "name": "Lumi the fox kit",
+  "short": "Lumi",
+  "desc": "A fox kit who runs beside the cat and spits sparks, just as Sprig does",
+  "icon": "pet",
+  "picture": "res://content/pets/lumi/icon.png",
+  "model": "res://assets/companions/lumi/lumi.glb",
+  "price": {"leaves": 400},
+  "unlock": {"building": ["stall", 1]},
+  "shop": "stall",
+  "looks_only": true,
+  "flies": false,
+  "spark": [1.0, 0.85, 0.4],
+  "fur": [0.07, 0.05],
+  "skins": [
+    {"id": "natural", "name": "Natural", "to": [-1, 1, 1]},
+    {"id": "snow", "name": "Snow", "to": [-1, 0.1, 1.3]},
+    {"id": "midnight", "name": "Midnight", "to": [0.6, 0.5, 0.6]},
+    {"id": "golden", "name": "Golden", "to": [0.115, 0.85, 1.08]},
+    {"id": "ember", "name": "Ember", "to": [0.01, 1.2, 0.85]},
+    {"id": "gloomlit", "name": "Gloomlit", "to": [0.76, 0.75, 0.9], "shards": 60}
+  ],
+  "_note": "H5 (26 Nov 2026, the owner's Q1 B): a looks-only pet look, moved from balance.json looks.pet. looks_only: its price buys only the look, and it is sold only once the pet is owned (before that its card says to buy the first pet; windows.pet_first). It fights exactly like Sprig at the shared pet level. An old save that had the Mushroom Cottage owns it for free."
+}

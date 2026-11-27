@@ -27,9 +27,6 @@ var chests := {}                    # id -> {"def", "node", "at", "state"}
 var traps: Array = []               # trap.gd nodes
 var strikes := 0                    # spore bombs called (for the tests)
 var strike_at: Array = []           # ... and where the last one lands: [Vector3, radius]
-var _sun_was := -1.0
-var _sun_col := Color.WHITE
-var _fill_was := -1.0
 var _save_cd := 0.0
 var _sum_t := 0.0
 var _last_sum := -1.0
@@ -99,7 +96,7 @@ func start_run(id: String, lvl: int) -> void:
 		mid = b.map_override
 	run = {"v": RUN_V, "map": mid, "map_v": int(Data.dungeon(mid).get("version", 1)), "burrow": id, "level": lvl, "seed": s,
 		"checkpoint": "wayin", "cleared": [], "chests": [], "hp": main.player.hp, "boons": boons, "satchel": {}, "spring_used": false,
-		"boon_taken": false, "first_run": int(st["runs"]) == 1 and lvl == 1, "meal": "", "boss_down": false, "woke": false}
+		"boon_taken": false, "first_run": int(st["runs"]) == 1 and lvl == 1, "boss_down": false, "woke": false}
 	Save.burrow_run = run
 	Save.save_game()
 	await _go_down(false)
@@ -132,9 +129,6 @@ func _go_down(resumed: bool) -> void:
 		main.player.hp = clampi(int(run.get("hp", main.player.hp)), 1, Data.cat_max_hp())
 	else:
 		main.player.hp = mini(main.player.hp + int(Data.run_mods.get("hp", 0)), Data.cat_max_hp())
-	if bool(cfg().get("meals_in_runs", true)) and main.cooking != null and Save.meal_ready != "":
-		main.cooking.eat("run")                               # a dish waiting in the pot goes down with the cat
-		run["meal"] = Save.meal_on
 	_build_map()
 	_env_on()
 	_setup(resumed)
@@ -153,8 +147,7 @@ func _go_down(resumed: bool) -> void:
 		main.mount.come_to(p.global_position + (Vector3.ZERO if p.riding else Vector3(1.2, 0, 0.6)))
 	_lead = Vector2.ZERO
 	main.snap_camera()
-	main.hud.refresh()
-	main.hud.refresh_build()
+	Events.area_changed.emit(true)
 	b.refresh()
 	_save_run(true)
 	await main.hud.fade(0.0, float(cfg()["fade_s"]))
@@ -196,7 +189,7 @@ func _build_map() -> void:
 
 
 ## The map's night: a camera environment of its own (never a second WorldEnvironment), the sun turned into a dim blue
-## moon and the fill light down (both restored on the way out), Sprig's lantern glow, and on Medium and High a few
+## moon and the fill light down, Sprig's lantern glow, and on Medium and High a few
 ## lights at the lanterns nearest the cat.
 func _env_on() -> void:
 	var th: Dictionary = data().get("theme", {})
@@ -224,17 +217,16 @@ func _env_on() -> void:
 	main.cam.environment = env
 	if not Quality.changed.is_connected(_on_quality):
 		Quality.changed.connect(_on_quality)
-	var sun = main.world.sun
-	if _sun_was < 0.0:
-		_sun_was = sun.light_energy
-		_sun_col = sun.light_color
+	# The moon keeps the same angle and shadows on every visit.
+	var baseline: Dictionary = Data.day_night_cfg()["burrow_sun"]
+	var sun: DirectionalLight3D = main.world.sun
+	sun.rotation_degrees = Vector3(float(baseline["pitch_deg"]), float(baseline["yaw_deg"]), 0.0)
+	sun.shadow_opacity = float(baseline["shadow_opacity"])
+	sun.shadow_blur = float(baseline["shadow_blur"])
 	sun.light_energy = float(th.get("moon_energy", 0.6))
 	sun.light_color = Color.html(String(th.get("moon", "#9FB6FF")))
-	var fill = main.world.get("fill_light")
-	if fill != null:
-		if _fill_was < 0.0:
-			_fill_was = fill.light_energy
-		fill.light_energy = float(th.get("fill_energy", 0.14))
+	var fill: DirectionalLight3D = main.world.fill_light
+	fill.light_energy = float(th.get("fill_energy", 0.14))
 	_make_halo(Color.html(String(th.get("halo", "#FFC877"))))
 	_make_lights(Color.html(String(th.get("lantern", "#FFB35C"))))
 
@@ -250,14 +242,7 @@ func _on_quality() -> void:
 func _env_off() -> void:
 	main.cam.environment = null
 	env = null
-	if _sun_was >= 0.0:
-		main.world.sun.light_energy = _sun_was
-		main.world.sun.light_color = _sun_col
-		_sun_was = -1.0
-	var fill = main.world.get("fill_light")
-	if fill != null and _fill_was >= 0.0:
-		fill.light_energy = _fill_was
-		_fill_was = -1.0
+	main.world.apply_day_night()
 	if _halo != null and is_instance_valid(_halo):
 		_halo.queue_free()
 	_halo = null
@@ -524,7 +509,7 @@ func _chest_break(id: String) -> void:
 	main.shake(0.3)
 	var c: Dictionary = ch["def"]
 	var r := _rng("guard:" + id)
-	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.b["enemies"].has(String(k)))
+	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.enemy_has(String(k)))
 	var ek := String(elites[r.randi() % elites.size()]) if not elites.is_empty() else "thornling"
 	_nook_guard.clear()
 	var g = spawn(ek, map.wpt(c.get("guard", c["at"])), {"gloomtouched": true, "elite": true})
@@ -655,7 +640,7 @@ func _rng(what: String) -> RandomNumberGenerator:
 
 ## A kind from the level's pool (weighted); kinds the game does not have yet are skipped.
 func _pool_kind(r: RandomNumberGenerator, pool: Array) -> String:
-	var ok: Array = pool.filter(func(e): return Data.b["enemies"].has(String(e[0])))
+	var ok: Array = pool.filter(func(e): return Data.enemy_has(String(e[0])))
 	if ok.is_empty():
 		return "thornling"
 	var tot := 0.0
@@ -688,7 +673,7 @@ func pack_plan(f: Dictionary) -> Array:
 	var cap: int = int(cfg()["max_alive_by_quality"][clampi(Quality.level, 0, 2)])
 	var kinds: Array = []
 	if first and pk.has("first_run"):
-		kinds = (pk["first_run"] as Array).filter(func(k): return Data.b["enemies"].has(String(k)))
+		kinds = (pk["first_run"] as Array).filter(func(k): return Data.enemy_has(String(k)))
 	else:
 		var n := int(round(float(pk.get("base", 3)) + float(pk.get("per_level", 0.0)) * (level() - 1)))
 		n = clampi(n, 1, cap - (1 if pk.has("elite") else 0))
@@ -701,7 +686,7 @@ func pack_plan(f: Dictionary) -> Array:
 		if k >= spots.size():
 			at += Vector3(r.randf_range(-0.7, 0.7), 0, r.randf_range(-0.7, 0.7))
 		out.append([String(kinds[k]), at, {}])
-	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.b["enemies"].has(String(k)))
+	var elites: Array = (tier().get("elites", ["thornling"]) as Array).filter(func(k): return Data.enemy_has(String(k)))
 	if pk.has("elite"):
 		var ek := String(pk.get("first_elite", "")) if first and pk.has("first_elite") else (String(elites[r.randi() % elites.size()]) if not elites.is_empty() else "thornling")
 		var ep: Array = pk["elite"]
@@ -709,7 +694,7 @@ func pack_plan(f: Dictionary) -> Array:
 	elif not first and not out.is_empty() and r.randf() < _by_level("pack_elite_chance_by_level") and not elites.is_empty():
 		out[0][0] = String(elites[r.randi() % elites.size()])
 		out[0][2] = {"gloomtouched": true, "elite": true}
-	if not first and level() >= 2 and Data.b["enemies"].has("snapper"):
+	if not first and level() >= 2 and Data.enemy_has("snapper"):
 		var ch := _by_level("snapper_chance_by_depth")
 		for sn in pk.get("snappers", []):
 			if r.randf() < ch:
@@ -847,7 +832,7 @@ func _fight_won(f: Dictionary) -> void:
 ## own plus the level's (never scaled by strength), no structure damage. opts: asleep, gloomtouched, boss, hp_mult,
 ## summon, elite, emerge, fight. Returns null when the boss's adds are at their cap (callers ignore it).
 func spawn(kind: String, at: Vector3, opts := {}) -> Node3D:
-	if not active or map == null or not Data.b["enemies"].has(kind):
+	if not active or map == null or not Data.enemy_has(kind):
 		return null
 	if kind == "raccoon":
 		return null                                        # nothing to steal here
@@ -874,7 +859,7 @@ func spawn(kind: String, at: Vector3, opts := {}) -> Node3D:
 		st *= float(opts.get("hp_mult", 1.0))
 	elif opts.has("fight"):
 		st *= 1.0 + float(cfg()["fight_ramp"]) * int(opts["fight"])
-	e.setup(kind, AREA_PATCH, st)
+	e.setup(kind, AREA_PATCH, st, not bool(opts.get("boss", false)))   # H6: a room boss is not armoured
 	e.damage = int(info["damage"]) + damage_add()
 	e.gate_damage = 0
 	e.summoned = bool(opts.get("summon", false))
@@ -1026,7 +1011,7 @@ func _boss_wakes() -> void:
 		return
 	if main.hud.boss == _boss:
 		return
-	main.hud.boss = _boss
+	Events.boss_changed.emit(_boss)
 	run["woke"] = true
 	_hide_home()
 	main.hud.banner("%s wakes!" % (_boss.title if _boss.title != "" else String(_boss.info["name"])), Color(1.0, 0.55, 0.45), "The roots close behind you")
@@ -1042,7 +1027,7 @@ func _boss_beaten(e) -> void:
 	_boss = null
 	_boss_down = true
 	run["boss_down"] = true
-	main.hud.boss = null
+	Events.boss_changed.emit(null)
 	for f in foes():
 		if f != e and (f.summoned or map.in_arena(f.global_position, -1.0)):
 			f.dead = true
@@ -1261,9 +1246,7 @@ func _leave(result: String) -> void:
 	main.area = null
 	Data.run_mods = {}
 	_env_off()
-	main.hud.boss = null
-	if String(run.get("meal", "")) != "" and main.cooking != null:
-		main.cooking.finish(true)                          # the dish that went down is used up
+	Events.boss_changed.emit(null)
 	run = {}
 	Save.burrow_run = {}
 	Save.save_game()
@@ -1832,7 +1815,7 @@ func _strike_now(at: Vector3, r: float, dmg: int, slow_s: float) -> void:
 func _maybe_grub(where: String, what: String) -> void:
 	var ag: Dictionary = cfg()["amber_grub"]
 	var ch := float(ag["fight_chance"] if where == "fight" else ag["spring_chance"])
-	if _rng("grub:" + what).randf() >= ch or not Data.b["enemies"].has("amber_grub") or (_grub != null and is_instance_valid(_grub)):
+	if _rng("grub:" + what).randf() >= ch or not Data.enemy_has("amber_grub") or (_grub != null and is_instance_valid(_grub)):
 		return
 	var cat: Vector3 = main.player.global_position
 	var hole := Vector3.ZERO

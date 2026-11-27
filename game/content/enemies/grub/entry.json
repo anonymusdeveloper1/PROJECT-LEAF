@@ -1,0 +1,24 @@
+{
+  "id": "grub",
+  "name": "Grubling",
+  "desc": "A small grub from the Burrows.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "mole",
+  "height": 0.6,
+  "radius": 0.28,
+  "color": "#C9B8F0",
+  "scale": 0.6,
+  "tint": "#C9B8F0",
+  "_note": "Phase E stand-in: the mole, small and tinted, until the user's Meshy model; then drop model, scale and tint",
+  "parts": {
+    "health": {"max": 14},
+    "mover": {"speed": 1.7},
+    "attack": {"damage": 1, "gate_damage": 0, "reach": 0.4, "attack_every": 0.9, "emerge_warn": 0.8, "emerge_damage": 1, "emerge_r": 0.6},
+    "status": {},
+    "loot": {"leaves": 1},
+    "health_bar": {},
+    "brain": {"aggro": 6.0}
+  }
+}

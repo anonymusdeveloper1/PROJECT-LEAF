@@ -1,0 +1,33 @@
+{
+  "id": "frost",
+  "name": "Frost Bow",
+  "desc": "Ice arrows: slow, and the 3rd hit freezes · slowest draw",
+  "icon": "bow",
+  "price": {"leaves": 1600, "timber": 50},
+  "unlock": {"building": ["bench", 5]},
+  "damage": 1.45,
+  "arrows": 1,
+  "spread_deg": 0,
+  "pierce": 0,
+  "range_bonus": 0.0,
+  "tint": "#8FD8FF",
+  "fx": {
+    "color": "#BFEAFF",
+    "burst": "puff",
+    "burst_colors": ["#FFFFFF", "#BFEAFF", "#8FD8FF"],
+    "burst_n": 8,
+    "trail": "frost",
+    "trail_len": 0.9,
+    "trail_w": 0.035,
+    "trail_alpha": 0.5,
+    "trail_n": 10,
+    "hit": "ice",
+    "hit_colors": ["#FFFFFF", "#BFEAFF", "#7CC8F0"],
+    "hit_n": 9
+  },
+  "per_level": 0.1,
+  "cost": [75, 109, 152, 211, 287, 290, 395, 535, 710, 950],
+  "mastery": [{"leaves": 1380}, {"leaves": 2340}],
+  "frost": {"slow": 0.5, "seconds": 3.0, "hits_to_freeze": 3, "freeze_s": 1.5, "boss_freeze_s": 0.5},
+  "draw_mult": 1.25
+}

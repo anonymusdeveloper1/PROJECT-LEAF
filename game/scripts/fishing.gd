@@ -2,7 +2,8 @@ extends Node3D
 ## Fishing at the lake (Phase C, mission 6's gift): a calm two-tap game at the Fishing Spot, between waves
 ## only. "Cast" on the card throws the float into the lake; after a wait (with a nibble or two) it dips: tap anywhere
 ## to hook the catch. Uncommon and rare catches need reeling: a ring closes on the float, tap while it is green.
-## Misses cost nothing. The catch goes to the pantry for the cooking pot (or timber and leaves).
+## Misses cost nothing. The catch goes into the Bag (H3: for the cooking pot and the mount; Bag.add through
+## Data.add_items), or it is timber and leaves. A catch that does not fit in a full Bag swims away.
 ## No screen of its own: fishing_ui.gd draws the "!" and the ring on the HUD and ignores the mouse; the cat stops by
 ## walking away (dragging), and a wave starting, the cat going down or leaving the spot's reach pull the line in.
 ## _process runs only while a line is out.
@@ -346,12 +347,16 @@ func _give() -> void:
 				Save.timber += n
 				bits.append("+%d timber · now %d" % [n, Save.timber])
 			_:
-				var left: Dictionary = Data.add_items({k: n})
-				if not left.is_empty():
+				var left: Dictionary = Data.add_items({k: n})        # into the Bag; what does not fit comes back
+				var put := n - int(left.get(k, 0))
+				if put < n:
 					let_go = true
-				bits.append(Data.food_receipt({k: n - int(left.get(k, 0))}))
+				if put > 0:
+					bits.append(Data.food_receipt({k: put}))
+	if let_go:
+		bits.append("Bag full, the rest swims away")
 	if not bits.is_empty():
-		main.hud.toast("%s · %s%s" % [nm, " · ".join(bits), " · pantry full, extra released" if let_go else ""])
+		main.hud.toast("%s · %s" % [nm, " · ".join(bits)])
 	if p.model:
 		Fx.boing(p.model, 0.2)
 	Fx.sparkle(main, p.global_position + Vector3(0, 1.0, 0))

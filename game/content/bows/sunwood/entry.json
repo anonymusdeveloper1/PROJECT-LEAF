@@ -1,0 +1,32 @@
+{
+  "id": "sunwood",
+  "name": "Sunwood Longbow",
+  "desc": "Goes through the first enemy, +1.5 m range · draws 10% slower",
+  "icon": "bow",
+  "price": {"leaves": 400, "timber": 15},
+  "unlock": {"building": ["bench", 2]},
+  "damage": 1.15,
+  "arrows": 1,
+  "spread_deg": 0,
+  "pierce": 1,
+  "range_bonus": 1.5,
+  "tint": "#FFD36A",
+  "fx": {
+    "color": "#FFD66E",
+    "burst": "sparks",
+    "burst_colors": ["#FFF6C8", "#FFD36A", "#FFB43C"],
+    "burst_n": 8,
+    "trail": "glint",
+    "trail_len": 1.0,
+    "trail_w": 0.035,
+    "trail_alpha": 0.55,
+    "trail_n": 10,
+    "hit": "flash",
+    "hit_colors": ["#FFF6C8", "#FFD36A", "#FFAE3A"],
+    "hit_n": 8
+  },
+  "per_level": 0.1,
+  "cost": [39, 58, 84, 117, 162, 165, 225, 300, 410, 545],
+  "mastery": [{"leaves": 1200}, {"leaves": 2100}],
+  "draw_mult": 1.1
+}

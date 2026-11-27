@@ -1,0 +1,22 @@
+{
+  "id": "stall",
+  "name": "Market",
+  "desc": "Bramble's shop, and {mount_look} comes free",
+  "icon": "market",
+  "price": {"leaves": 260, "timber": 10},
+  "unlock": {"flag": "shop_open", "building": ["home", 2]},
+  "arrives": "menu",
+  "model": "market_stall",
+  "layout": {
+    "position": [3, 0, 5.6],
+    "foot_radius": 0.9,
+    "ring_offset": [0, 0, 1.2],
+    "village": {"r": 1.3, "ring_r": 0.9},
+    "path": {"points": [[0.35, 0, 4.6], [1.2, 0, 6.45], [2.1, 0, 6.95], [3, 0, 6.8]], "smooth": 6, "half_mult": 0.85},
+    "grass_radius": 1.4
+  },
+  "levels": [
+    {}
+  ],
+  "_note": "Phase G2: the Market (Bramble the trader), buildable at Hearthtree level 2; Thistle the hare comes free with it. H5 (27 Nov 2026): one level, no Upgrade. The pet is bought and trained on its Pets tab, the mount's level comes from the Saddlery (Data.mount_level). A Market an old save had upgraded keeps the health it earned (Save.market_hp_floor, the owner's Q5 A; Data.building_hp)."
+}

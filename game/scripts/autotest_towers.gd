@@ -33,8 +33,7 @@ func _foe(at: Vector3):
 func _spawn(level: int) -> Dictionary:
 	_clear_foes()
 	d._clear()
-	Save.def_levels["tower"] = level
-	return d._spawn("tower", BASE, 0.37)
+	return d._spawn("tower", BASE, 0.37, [], level)       # H6: each piece has its own level
 
 
 func run() -> void:
@@ -109,9 +108,18 @@ func run() -> void:
 	_x("the arrow returns to the rail and the string draws back during reload", tower._loaded.visible and tower.load_progress > 0.0 and tower.load_progress < 1.0)
 	await t._shot("acorn_arrow_reload")
 	_clear_foes()
-	Save.def_levels["tower"] = 4
-	d.relevel("tower")
+	# H6: one real upgrade of this target (the Workshop at level 4, every raid mission won, leaves and timber in hand)
+	Save.leaves = 100000
+	Save.timber = 100000
+	for i in Data.mission_count():
+		if not Save.missions_done.has(String(Data.mission(i)["id"])):
+			Save.missions_done.append(String(Data.mission(i)["id"]))
+	Save.stations["workshop"] = 4
+	Save.camp_level = maxi(Save.camp_level, 4)
+	main.stations.refresh("all")
+	var upgraded: bool = d.upgrade_placed("tower", int(p["id"]), Vector2i(-1, -1), 3)
 	tower = p["node"]
+	_x("the upgrade of this one tower went through (level 3 to 4)", upgraded and d.piece_level(p) == 4, {"level": d.piece_level(p)})
 	_x("upgrading mid-reload replaces the model and loads the new tier arrow", tower.level == 4 and tower.shots == 0 and is_equal_approx(float(tower._loaded.scale.x), 2.2) and tower._string != null,
 		{"level": tower.level, "shots": tower.shots, "arrow_scale": tower._loaded.scale.x, "string": tower._string != null})
 	d.hurt_piece(int(p["id"]), 999999)

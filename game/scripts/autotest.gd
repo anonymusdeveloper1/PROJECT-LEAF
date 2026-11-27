@@ -3,7 +3,7 @@ extends Node
 ## the gate, picks Fernwood, fights each wave, buys an upgrade at the Training Target after wave 1, calls the next
 ## waves with the horn, and saves screenshots and report.json to --shots=<folder>.
 ##   --smoke   just a few screenshots of the camp, then quit
-##   --village  the Wishing Well, Mushroom Cottage and Market Stall, Sprig, riding Thistle, the Well mending between waves
+##   --village  the Wishing Well and the Market (H5: Sprig comes from its Pets tab), riding Thistle, the Well mending between waves
 ##   --newfoes  the five later enemies close up, then each one's specials
 ##   --laststand  the campfire goes out mid-stage, the enemies hunt the cat, the cat falls: the Gloom Raid, then
 ##               clearing the crusted building and mending the defences
@@ -94,6 +94,28 @@ func _press(label: String, index := 0) -> bool:
 	return false
 
 
+## H4: building goes through the build menu now (the Hearthtree's card has no Build tiles). Opens the menu at `id`'s
+## detail view (the first building that is open and affordable when `id` is ""), the way a goal's Show does, and
+## presses the detail view's Build. Returns the id it built ("" when nothing was on offer or Build did not press).
+func _build_from_menu(id := "") -> String:
+	var menu = main.hud.windows["build"]
+	var pick := id
+	if pick == "":
+		for e: Dictionary in menu.entries():
+			if String(e["state"]) == "open" and Data.can_afford(e["price"] as Dictionary):
+				pick = String(e["id"])
+				break
+	if pick == "":
+		_log("build menu: nothing open and affordable")
+		return ""
+	menu.open_at(pick)
+	await _wait(0.3)
+	var ok: bool = _press("Build")
+	await _wait(0.3)
+	_log("built from the menu", {"id": pick, "ok": ok, "level": Data.station_level(pick)})
+	return pick if ok and Data.station_level(pick) > 0 else ""
+
+
 # ---------------------------------------------------------------- taps (19 Nov 2026: cards open by a tap, as dialogs)
 var tap_misses := 0                       # taps that had to fall back (the marker hidden, or another one in the way)
 
@@ -127,7 +149,7 @@ func _tap(ring) -> bool:
 	var vis: Rect2 = get_viewport().get_visible_rect().grow(-8.0)
 	var spots: Array = []
 	var bp: Vector3 = ring.badge_pos()
-	if not cam.is_position_behind(bp):
+	if not cam.is_position_behind(bp) and (not ring.has_method("badge_is_visible") or ring.badge_is_visible()):
 		spots.append(cam.unproject_position(bp))
 	var body: Array = ring.body_px(cam)
 	if not body.is_empty():
@@ -200,15 +222,6 @@ func _tap_outside() -> void:
 func _run() -> void:
 	await _wait(1.2)
 	await _shot("01_camp_start")
-	if Data.args().has("--inventory"):
-		var check := Node.new()
-		check.set_script(load("res://scripts/autotest_inventory.gd"))
-		check.t = self
-		check.main = main
-		add_child(check)
-		await check.run()
-		_finish()
-		return
 	if Data.args().has("--grasswalk"):
 		var spot = null
 		for h in main.world.hide_spots:
@@ -314,18 +327,6 @@ func _run() -> void:
 		await _perf()
 		_finish()
 		return
-	if Data.args().has("--garden"):
-		await _garden()
-		_finish()
-		return
-	if Data.args().has("--feed"):
-		await _feed()
-		_finish()
-		return
-	if Data.args().has("--cook"):
-		await _cook()
-		_finish()
-		return
 	if Data.args().has("--fishing"):
 		await _fishing()
 		_finish()
@@ -416,7 +417,7 @@ func _run() -> void:
 				await _use(main.stations.rings["shop"])
 				await _wait(0.8)
 				await _shot("05a_shop_card")
-				_press("Build")
+				await _build_from_menu()
 				await _wait(0.6)
 			if main.fight.active and not main.fight.in_wave:
 				await _use(main.stations.rings["sign"], 0.25, 10.0)
@@ -469,6 +470,9 @@ func _shop_round() -> void:
 			continue
 		await _use(r, 0.3, 10.0)
 		await _wait(0.5)
+		if id == "shop":
+			_press("Cat")                        # H4: the Hearthtree's stats are on its Cat tab (it opens on the Hearthtree tab)
+			await _wait(0.2)
 		for k in 8:
 			if not _press("Buy"):
 				break
@@ -549,7 +553,7 @@ func _veteran(n: int) -> void:
 	if n >= 2:
 		Save.stations["stall"] = 1
 	if n >= 3:
-		Save.stations["cottage"] = 1
+		Save.pet_level = 1                              # H5: the Cottage is gone; the pet (Sprig, level 1) is the shared Save.pet_level
 	if n >= 4:
 		Save.stations["well"] = 1
 	if n >= 6:                                          # Phase C: mission 6 gives the Fishing Spot
@@ -581,10 +585,7 @@ func _grow() -> void:
 		Save.stations["target"] = lv
 		Save.stations["bench"] = lv
 		Save.camp_level = lv
-		Save.def_levels = {"barricade": lv, "tower": lv, "spikes": lv}
 		main.on_camp_grown()
-		for t in ["barricade", "tower", "spikes"]:
-			main.defences.relevel(t)
 		if lv == 1:
 			var e0: Vector3 = main.world.edge_point(0)
 			var side := Vector3(-e0.z, 0, e0.x).normalized()
@@ -593,12 +594,72 @@ func _grow() -> void:
 					main.defences._spawn("barricade", sl[0], sl[1], [int(sl[2]), int(sl[3])])
 			main.defences._spawn("tower", e0 * 1.9 + side * 3.2 + e0.normalized() * -0.8, 0.0)
 			main.defences._spawn("spikes", e0 * 1.45, atan2(e0.x, e0.z))
+		for t in ["barricade", "tower", "spikes"]:       # H6: each piece has its own level (the fixture sets them all alike)
+			level_pieces(t, lv)
 		main.player.global_position = Vector3(0.8, 0, 1.6)
 		await _wait(1.6)
 		await _shot("grow_level%d_camp" % lv)
 		main.player.global_position = main.world.edge_point(0) * 1.6
 		await _wait(1.2)
 		await _shot("grow_level%d_defences" % lv)
+
+
+## H6: what the Defences tab's Mend row did, now one broken piece at a time through the cards' own Repair
+## (defences.repair_placed): a downed tower, and a row with a broken section. Standing wear is the Well's job.
+func repair_broken_defences() -> int:
+	var d = main.defences
+	var done := 0
+	for p in d.pieces.duplicate():
+		if String(p["type"]) == "tower" and float(p["hp"]) <= 0.0 and d.repair_placed("tower", int(p["id"]), Vector2i(-1, -1)):
+			done += 1
+	for row in d.rows.duplicate():
+		var slot: Array = row["slot"]
+		if d.row_broken(row) and d.repair_placed("barricade", -1, Vector2i(int(slot[0]), int(slot[1]))):
+			done += 1
+	return done
+
+
+## H6 fixture: builds a barricade row on the first open empty pad (money topped up) and returns its slot (lane, pad).
+func build_any_row() -> Vector2i:
+	var d = main.defences
+	for cur in d.row_cost():
+		if Save.get(cur) != null and int(Save.get(cur)) < int(d.row_cost()[cur]):
+			Save.set(cur, int(d.row_cost()[cur]))
+	for sl in main.world.barricade_slots():
+		var lane_k := int(sl[2])
+		var idx := int(sl[3])
+		if d.pad_open(lane_k, idx) and d.row_at(lane_k, idx).is_empty() and d.build_row(lane_k, idx):
+			return Vector2i(lane_k, idx)
+	return Vector2i(-1, -1)
+
+
+## H6 fixture: a legal open spot for a piece of this kind (the same rule the ghost uses: defences.placement_reason), or
+## Vector3(1.0e9, 0, 0) when none is found. Used by the placement and layout checks.
+func open_place_spot(kind: String) -> Vector3:
+	var d = main.defences
+	for radius: float in [6.0, 8.0, 10.0, 12.0, 14.0]:
+		for i: int in 16:
+			var yaw: float = TAU * float(i) / 16.0
+			var at: Vector3 = Vector3(sin(yaw), 0.0, cos(yaw)) * radius
+			if d.placement_reason(kind, at) == "":
+				return at
+	return Vector3(1.0e9, 0.0, 0.0)
+
+
+## H6 fixture: every placed piece (and row) of a kind goes to one level, whole and in its model. Live play upgrades one
+## piece at a time (defences.upgrade_placed); a test that only needs levelled stock uses this.
+func level_pieces(kind: String, lv: int) -> void:
+	var d = main.defences
+	if kind == "barricade":
+		for row in d.rows:
+			d._apply_level(row, lv)
+			for p in row["pieces"]:
+				d._restat(p)
+		return
+	for p in d.pieces:
+		if String(p["type"]) == kind:
+			d._apply_level(p, lv)
+			d._restat(p)
 
 
 ## Roads, grass, flowers, bushes and hiding.
@@ -696,6 +757,16 @@ func _gallery() -> void:
 	main.closeup = Vector3.ZERO
 
 
+## H5: calls the action of cell `cell_id` on the Market's tab `tab` (a tap on that picture or its Use), then the card refreshes.
+func _market_cell_act(tab: String, cell_id: String) -> void:
+	for c: Dictionary in main.hud.windows["stall"].entries(tab):
+		if String(c["id"]) == cell_id:
+			var a: Variant = c.get("action", Callable())
+			if a is Callable and (a as Callable).is_valid():
+				(a as Callable).call()
+	main.hud.refresh_card()
+
+
 ## The village: build all three, look at their cards, ride Thistle out with Sprig, fight a wave of Moonmoth Hollow,
 ## then watch the Well mend a hurt campfire.
 func _village() -> void:
@@ -708,14 +779,14 @@ func _village() -> void:
 	Save.missions_done = ["embers", "bramble", "toadstool", "stumps"]
 	Save.camp_level = 3
 	main.on_camp_grown()
-	main.stations.gift("stall")
-	main.stations.gift("cottage")
+	main.stations.gift("stall")                              # H5: Thistle comes with the Market; Sprig is bought on its Pets tab below
 	await _use(main.stations.rings["shop"])
 	await _wait(0.8)
 	await _shot("village_00_shop")
 	for k in 5:
-		_press("Build")
+		await _build_from_menu()
 		await _wait(0.4)
+	await _wait(1.2)                                         # the camera's shot at the last new building ends first
 	_log("village built", {"stations": Save.stations, "pet": main.pet != null, "mount": main.mount != null})
 	main.player.global_position = Vector3(0.3, 0, 2.2)
 	await _wait(1.5)
@@ -732,15 +803,22 @@ func _village() -> void:
 		await _shot("village_02b_trader")
 		main.closeup_at = null
 	main.closeup = Vector3.ZERO
-	for id in ["well", "cottage", "stall"]:
+	for id in ["well", "stall"]:
 		await _use(main.stations.rings[id], 0.25, 12.0)
 		await _wait(0.9)
 		await _shot("village_card_" + id)
-		if id == "cottage":
-			_press("Use")
-			await _wait(0.6)
-			_log("pet look", {"look": Save.pet_look})
-	_press("Use")
+	# H5: the pet is Sprig bought on the Market's Pets tab (160 leaves), then Lumi is picked there; the mount look on Mounts
+	var mw = main.hud.windows["stall"]
+	Save.leaves = maxi(Save.leaves, 500)
+	main.stations._buy_companion("pet", "sprig")
+	mw.select("pets")
+	await _wait(0.6)
+	await _shot("village_card_pets")
+	_market_cell_act("pets", "lumi")
+	await _wait(0.6)
+	_log("pet look", {"look": Save.pet_look, "pet": main.pet != null, "pet_level": Data.pet_level()})
+	mw.select("mounts")
+	_market_cell_act("mounts", "bramblewool")
 	await _wait(0.6)
 	_log("mount look", {"look": Save.mount_look})
 	await _shot("village_card_stall_ram")
@@ -788,7 +866,8 @@ func _village() -> void:
 	await _shot("village_07_after_well_mend")
 	await _use(main.stations.rings["stall"], 0.25, 12.0)
 	await _wait(0.6)
-	_press("Sell")
+	main.stations.market_trade("buys", "timber", 1)          # H5: the old Sell tile is Bramble's Buys tab, timber's offer
+	main.hud.windows["stall"].select("mounts")
 	_press("Walk")
 	await _wait(1.5)
 	_log("walk again", {"riding": main.player.riding, "timber": Save.timber})
@@ -1012,7 +1091,7 @@ func _laststand() -> void:
 	await _wait(0.8)
 	await _use(main.stations.rings["shop"], 0.25, 15.0)
 	await _wait(0.8)
-	_press("Mend")
+	repair_broken_defences()                 # H6: no Defences tab and no Mend row: each broken piece is repaired from its own card
 	await _wait(0.5)
 	_log("restored", {"ruined": Save.ruined, "fire_ruined": Save.fire_ruined, "fire_out": main.world.fire_out, "wrecked": main.defences.wrecked_count(), "leaves": Save.leaves, "timber": Save.timber})
 	await _shot("laststand_08_restored")
@@ -1439,8 +1518,11 @@ func _guardian() -> void:
 	await _wait(0.4)
 	await _shot("warden_stone_card_awake")
 	main.hud.hide_card()
-	# its post in a mission (Mossback Wakes: one lane, so it stands at the inner mouth of that trail)
+	# its post in a mission (Mossback Wakes: one lane, so it stands at the inner mouth of that trail). After 4 wins the
+	# next mission is Bandit Night, so the Phase F gate would refuse Mossback Wakes: the test opens it (as --laststand does)
+	main.fight.skip_gate = true
 	main.start_stage(5)
+	main.fight.skip_gate = false
 	await _wait(0.5)
 	main.fight.set_physics_process(false)
 	for f in get_tree().get_nodes_in_group("foes"):
@@ -1751,135 +1833,7 @@ func _guardianab() -> void:
 	_expect("no stuck wave with the Warden", int(w["waves_cleared"]) >= int(wo["waves_cleared"]) and int(w["wave"]) >= 2, out)
 
 
-## The garden (--garden): plant, grow per wave held (dry 1, watered 2), pick into the pantry; nothing grows in real
-## time; the save keeps it; an upgrade opens more plots; nothing works while a wave is on.
-func _garden() -> void:
-	main.player.invincible = true
-	_veteran(4)
-	Save.leaves = 500
-	await _wait(0.5)
-	var g = main.garden
-	_expect("3 plots at level 1", g.plots() == 3, {"plots": g.plots()})
-	await _use(main.stations.rings["garden"], 0.25, 15.0)
-	await _wait(0.8)
-	await _shot("garden_card")
-	var l0 := Save.leaves
-	for k in 3:
-		_press("Plant")
-		await _wait(0.3)
-	_expect("3 Sunberry seeds cost 30 leaves", l0 - Save.leaves == 30, {"spent": l0 - Save.leaves})
-	await _shot("garden_planted")
-	main.on_wave_held()
-	main.on_wave_held()
-	var two := true
-	for i in 3:
-		two = two and int(Save.garden[i]["grow"]) == 2 and not g.is_ripe(i)
-	_expect("two dry waves: 2 steps, not ripe", two, {"garden": Save.garden})
-	main.hud.refresh_card()
-	await _wait(0.3)
-	_press("Water")
-	await _wait(0.3)
-	main.on_wave_held()
-	var ripe := true
-	for i in 3:
-		ripe = ripe and g.is_ripe(i)
-	_expect("watered: ripe after one more wave", ripe, {"garden": Save.garden})
-	main.hud.refresh_card()
-	await _wait(0.6)
-	await _shot("garden_ripe")
-	main.closeup_at = main.stations.nodes.get("garden")
-	main.closeup = Vector3(0.0, 2.6, -3.2)
-	await _wait(0.4)
-	await _shot("garden_ripe_close")
-	main.closeup = Vector3.ZERO
-	main.closeup_at = null
-	_press("Pick")
-	await _wait(0.3)
-	_expect("9 Sunberries in the pantry", int(Save.pantry["berries"]) == 9, {"pantry": Save.pantry})
-	_press("Plant")
-	await _wait(0.3)
-	var before := JSON.stringify(Save.garden)
-	await _wait(6.0)
-	_expect("nothing grows in real time", JSON.stringify(Save.garden) == before)
-	Save.save_game()
-	var snap := JSON.stringify(Save.garden) + JSON.stringify(Save.pantry)
-	Save.load_game()
-	_expect("the save keeps the garden and the pantry", JSON.stringify(Save.garden) + JSON.stringify(Save.pantry) == snap)
-	Save.camp_level = 2
-	main.on_camp_grown()
-	await _wait(0.5)
-	await _use(main.stations.rings["garden"], 0.25, 15.0)
-	await _wait(0.6)
-	_press("Upgrade")
-	await _wait(0.3)
-	_expect("level 2: 5 plots", g.plots() == 5, {"plots": g.plots(), "leaves": Save.leaves})
-	await _shot("garden_level2")
-	main.fight.set_physics_process(false)               # a wave "on" for the check, with nothing running it
-	main.fight.active = true
-	main.fight.in_wave = true
-	var gsnap := JSON.stringify(Save.garden)
-	var l1 := Save.leaves
-	main.stations._garden_plant("sunberry")
-	main.stations._garden_water()
-	_expect("nothing works in a wave", JSON.stringify(Save.garden) == gsnap and Save.leaves == l1)
-	Save.add_leaves(1)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	_expect("the open card has no buttons in a wave", main.hud.card_buttons().size() == 0, {"buttons": main.hud.card_buttons().size()})
-	main.fight.active = false
-	main.fight.in_wave = false
-	main.fight.set_physics_process(true)
-
-
-## The mount knocked out in a mission (--feed): it stays out after the wave, Feed (food from the pantry) brings it
-## back whole and riding, the button greys out with no food, and a chapter break brings it back anyway.
-func _feed() -> void:
-	main.player.invincible = true
-	_veteran(3)
-	Save.pantry["berries"] = 0
-	await _wait(0.4)
-	main.start_stage(1)
-	await _wait(0.5)
-	main.fight.set_physics_process(false)
-	await _clear_test_foes()
-	main.player.global_position = Vector3(0, 0, 8.0)
-	main.set_riding(true, false)
-	await _wait(0.5)
-	var m = main.mount
-	m.hurt(999, main.player.global_position)
-	await _wait(0.3)
-	_expect("knocked out: off the mount", m.resting > 0.0 and not main.player.riding, {"resting": m.resting})
-	main.fight._queue.clear()
-	main.fight.set_physics_process(true)
-	var cleared: bool = await _until(func(): return not main.fight.in_wave, 3.0)
-	await _wait(1.0)
-	_expect("the wave cleared and the mount is still out", cleared and m.resting > 0.0, {"resting": m.resting, "in_wave": main.fight.in_wave})
-	var b := _build_button("No food")
-	_expect("no food: the button is greyed", b != null and b.disabled)
-	await _shot("feed_no_food")
-	Save.pantry["berries"] = 4
-	Save.add_leaves(0)
-	await _wait(0.2)
-	b = _build_button("Feed")
-	_expect("food: the Feed button works", b != null and not b.disabled)
-	await _shot("feed_button")
-	if b != null:
-		b.pressed.emit()
-	await _wait(0.6)
-	_expect("fed: pantry -2, whole, riding again", int(Save.pantry["berries"]) == 2 and m.resting <= 0.0 and m.hp == m.max_hp() and main.player.riding,
-		{"berries": Save.pantry["berries"], "hp": m.hp, "riding": main.player.riding})
-	await _shot("feed_fed")
-	Save.pantry["berries"] = 0
-	m.hurt(999, main.player.global_position)
-	await _wait(0.3)
-	b = _build_button("No food")
-	_expect("out again with an empty pantry: greyed", m.resting > 0.0 and b != null and b.disabled)
-	main.fight._chapter_done(0)
-	await _wait(0.5)
-	_expect("a chapter break brings it back", m.resting <= 0.0 and m.hp == m.max_hp() and _build_button("Ride") != null, {"resting": m.resting})
-	await _shot("feed_chapter_break")
-
-
+## The bottom-right HUD button whose label starts with prefix (null when none shows; tests of the HUD buttons use it).
 func _build_button(prefix: String) -> Button:
 	for bb in main.hud.build_buttons():
 		if String(bb.get_meta("label", "")).begins_with(prefix) and not bb.is_queued_for_deletion():
@@ -1887,80 +1841,9 @@ func _build_button(prefix: String) -> Button:
 	return null
 
 
-## Cooking (--cook): a dish waits in the pot, a new one swaps it, it is eaten when a chapter starts and used up when the
-## chapter is held; a stew gives the campfire 40% more; the camp falling puts it back in the pot; a reload turns an
-## eaten dish back into a waiting one; nothing cooks in a wave or on the ashes.
-func _cook() -> void:
-	main.player.invincible = true
-	_veteran(5)
-	Save.pantry = {"berries": 8, "herbs": 6, "honey": 4, "fish": 0, "goldfish": 0}
-	Save.meal_ready = ""
-	Save.meal_on = ""
-	await _wait(0.4)
-	await _use(main.stations.rings["pot"], 0.25, 15.0)
-	await _wait(0.8)
-	await _shot("cook_card")
-	var texts := ""
-	for r in main.stations._card_pot()["rows"]:
-		texts += String(r["text"]) + " | " + String(r.get("note", "")) + " || "
-	_expect("no fish recipes and no Feast yet", not texts.contains("Fish Skewers") and not texts.contains("Root Stew") and not texts.contains("Feast"), {"rows": texts})
-	_press("Cook")
-	await _wait(0.4)
-	_expect("Berry Tart in the pot", Save.meal_ready == "berry_tart", {"ready": Save.meal_ready})
-	main.stations._cook_dish("fernmint_tea")
-	await _wait(0.4)
-	_expect("Fernmint Tea swaps it", Save.meal_ready == "fernmint_tea", {"ready": Save.meal_ready})
-	var base_hp := Data.cat_max_hp()
-	main.hud.hide_card()
-	main.player.global_position = Vector3(0, 0, 2.0)
-	main.start_stage(0)
-	await _wait(0.4)
-	main.fight.set_physics_process(false)
-	await _clear_test_foes()
-	_expect("eaten at wave 1", Save.meal_on == "fernmint_tea" and Save.meal_ready == "" and Data.cat_max_hp() == base_hp + 2 and main.hud._meal_l.visible,
-		{"on": Save.meal_on, "ready": Save.meal_ready, "max": Data.cat_max_hp(), "base": base_hp, "chip": main.hud._meal_l.text})
-	await _wait(3.6)
-	await _shot("cook_eaten")
-	main.fight.wave = 5
-	main.fight.in_wave = false
-	main.fight._chapter_done(0)
-	await _wait(0.3)
-	_expect("used up at the chapter break", Save.meal_on == "" and Data.cat_max_hp() == base_hp, {"on": Save.meal_on, "max": Data.cat_max_hp()})
-	main.stations._cook_dish("hearth_stew")
-	_expect("cooked in the break", Save.meal_ready == "hearth_stew")
-	main.fight.next_phase_now()
-	await _wait(0.3)
-	main.fight.set_physics_process(false)
-	await _clear_test_foes()
-	var fire := float(Data.fire_hp())
-	_expect("the stew: campfire +40%", absf(main.fight.gate_max - fire * 1.4) < 0.5 and Save.meal_on == "hearth_stew", {"gate_max": main.fight.gate_max, "fire": fire})
-	main.fight.camp_falls()
-	await _wait(0.3)
-	_expect("the camp fell: the stew is back in the pot", Save.meal_ready == "hearth_stew" and Save.meal_on == "", {"ready": Save.meal_ready, "on": Save.meal_on})
-	Save.fire_ruined = false
-	main.world.set_fire_out(false)
-	main.stations.set_fire_out(false)
-	Save.meal_on = "berry_tart"
-	Save.meal_ready = ""
-	Save.save_game()
-	Save.load_game()
-	_expect("a reload puts an eaten dish back in the pot", Save.meal_ready == "berry_tart" and Save.meal_on == "", {"ready": Save.meal_ready, "on": Save.meal_on})
-	main.fight.active = true
-	main.fight.in_wave = true
-	var before := JSON.stringify(Save.pantry) + Save.meal_ready
-	main.stations._cook_dish("fernmint_tea")
-	_expect("nothing cooks in a wave", JSON.stringify(Save.pantry) + Save.meal_ready == before)
-	main.fight.active = false
-	main.fight.in_wave = false
-	main.stations.set_fire_out(true)
-	_expect("the pot ring hides when the fire is out", not main.stations.rings["pot"].visible)
-	main.stations.set_fire_out(false)
-	_expect("and comes back with the fire", main.stations.rings["pot"].visible)
-
-
 ## Fishing (--fishing): five casts landed (taps on the bite, reeling in the green), a tap while waiting only waits, a
-## bite let go, a Golden Carp lost to early taps and then landed (the Feast shows at the pot), the pity, the three lake
-## treasures in order, stopping by dragging and by a wave starting.
+## bite let go, a Golden Carp lost to early taps and then landed (H3: into the Bag), the pity, the three lake treasures
+## in order, stopping by dragging and by a wave starting.
 func _fishing() -> void:
 	main.player.invincible = true
 	_veteran(6)
@@ -1980,7 +1863,8 @@ func _fishing() -> void:
 		await _cast_once(k == 0)
 		if fs.last == "caught":
 			caught += 1
-		_log("catch", {"catch": fs.catch.get("id", ""), "last": fs.last, "pantry": Save.pantry, "log": Save.fish_log, "timber": Save.timber})
+		_log("catch", {"catch": fs.catch.get("id", ""), "last": fs.last, "fish": Bag.count("fish"), "goldfish": Bag.count("goldfish"),
+			"log": Save.fish_log, "timber": Save.timber})
 	_expect("five casts landed", caught == 5, {"caught": caught})
 	# a tap while it waits only waits; a bite nobody taps gets away
 	_press_cast()
@@ -2002,12 +1886,9 @@ func _fishing() -> void:
 	fs.tap()
 	await _wait(0.2)
 	_expect("early taps: it escapes", fs.last == "escaped" and fs.phase == "", {"last": fs.last, "phase": fs.phase})
+	var carp0 := Bag.count("goldfish")
 	await _cast_once(false)
-	_expect("landed: 1 Golden Carp", int(Save.pantry.get("goldfish", 0)) == 1, {"pantry": Save.pantry})
-	var pot := ""
-	for r in main.stations._card_pot()["rows"]:
-		pot += String(r["text"]) + " " + String(r.get("note", "")) + " | "
-	_expect("the Feast shows at the pot", pot.contains("Golden Carp Feast"), {"pot": pot})
+	_expect("landed: 1 Golden Carp in the Bag", Bag.count("goldfish") == carp0 + 1, {"before": carp0, "goldfish": Bag.count("goldfish")})
 	# the pity: the 20th catch since a rare one is rare
 	fs.debug_catch = ""
 	Save.fish_dry = 19
@@ -2216,7 +2097,7 @@ func _kill_foes(leader := false) -> int:
 	for e in get_tree().get_nodes_in_group("foes"):
 		if e.dead or (e.has_meta("leader") and not leader):
 			continue
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 		n += 1
 	return n
 
@@ -2272,7 +2153,7 @@ func _raid() -> void:
 			await _shot("raid_02_leader")
 			_expect("the leader has the boss bar", main.hud.boss == leader)
 			var others := get_tree().get_nodes_in_group("foes").size() - 1
-			leader.hit(Vector3.FORWARD, leader.hp + 1.0)
+			leader.hit(Vector3.FORWARD, leader.hp * 10.0 + 100.0)
 			leader_down = leader.dead
 			var left: int = f._wave_foe_count()
 			_expect("the leader falls and the other raiders stay in the fight", leader_down and others > 0 and left == others and f.in_wave,
@@ -2659,7 +2540,25 @@ func _raidshots() -> void:
 	main.player.global_position = Vector3(0, 0, 1.6)
 	await _until(func(): return main.fight.in_wave, 3.0)
 	await _wait(2.0)
-	_expect("HUD shows continuous raid progress", String(main.hud._stage_l.text).contains("raiders left"), {"text": main.hud._stage_l.text})
+	# H2: one raider beaten (not the leader): the raid bar shows the whole attack's share beaten, the words no count
+	var one: Node3D = null
+	for i in 20:
+		for e in get_tree().get_nodes_in_group("foes"):
+			if not e.dead and e.has_meta("raid_member") and not e.has_meta("leader"):
+				one = e
+				break
+		if one != null:
+			break
+		await _wait(0.3)
+	if one != null:
+		one.hit(Vector3.FORWARD, one.hp * 10.0 + 100.0)
+	await _wait(0.4)
+	var run_d: Array = Save.raids.get("run", {}).get("defeated", [])
+	var fl: float = main.hud.p_fight.fill()
+	_expect("HUD shows continuous raid progress (H2: the raid bar fills with the attack's share beaten, the words give no count)",
+		one != null and not String(main.hud._stage_l.text).contains("left") and main.hud._gate_bar.visible and fl > 0.0
+		and is_equal_approx(fl, float(run_d.size()) / float(main.fight.raid_total())) and main.hud.p_fight.progress_done > 0,
+		{"text": main.hud._stage_l.text, "fill": fl, "defeated": run_d.size(), "total": main.fight.raid_total(), "done": main.hud.p_fight.progress_done})
 	await _shot("hud_wave")
 	var t := 0.0
 	while main.fight.active and t < 120.0:
@@ -2884,10 +2783,9 @@ func _wear() -> void:
 	await _at_ring(st.rings["sign"])
 	await _wait(0.8)
 	await _shot("wear_watch_card")
-	# Mend some: leaves for the ruin and the wreck only
+	# Mend some: leaves for the ruin only (H6: the Hearthtree's price holds ruins and wear, a wreck is the Well's or its card's)
 	var c_ruin := int(cc["items"][0]["cost"]["leaves"])
-	var c_wreck := int(cc["items"][1]["cost"]["leaves"])
-	Save.leaves = c_ruin + c_wreck + 2
+	Save.leaves = c_ruin + 2
 	var row: Dictionary = rd.camp_row(cc)
 	_expect("the row reads Mend some", String(row["label"]) == "Mend some", {"row": row["label"], "note": row["note"]})
 	main.hud.refresh_card()
@@ -2895,9 +2793,12 @@ func _wear() -> void:
 	await _shot("wear_mend_some_card")
 	rd.mend_all()
 	await _wait(0.8)
-	_expect("Mend some mended the ruin and the wreck first", not Save.ruined.has("well") and not bar["wrecked"] and Save.wear.has("stall") and Save.wear.has("home")
+	_expect("Mend some mended the ruin first and left the wreck to the Well", not Save.ruined.has("well") and bar["wrecked"] and Save.wear.has("stall") and Save.wear.has("home")
 		and Save.leaves == 2, {"ruined": Save.ruined, "wear": Save.wear, "leaves": Save.leaves})
 	await _shot("wear_mend_some")
+	for i in 40:                                              # the Wishing Well mends the standing wear in the background
+		main.defences.well_mend(0.1, 1.0, 1.0)
+	_expect("the Well mended the wreck", not bar["wrecked"], {"hp": bar["hp"], "max": bar["max_hp"]})
 	Save.leaves = 5000
 	main.hud.refresh_card()
 	await _wait(0.3)
@@ -2909,18 +2810,19 @@ func _wear() -> void:
 		{"cc": cc["condition"], "wear": Save.wear})
 	await _shot("wear_mended")
 	# the Patch row on a building's own card
-	Save.wear["cottage"] = 0.4
+	Save.wear["stall"] = 0.4                                  # H5: the Cottage is gone; the Market's Sells tab carries the Patch row
 	st.refresh()
-	await _at_ring(st.rings["cottage"])
+	await _at_ring(st.rings["stall"])
 	await _wait(0.8)
 	await _shot("wear_patch_row")
 	var ok: bool = _press("Patch")
 	await _wait(0.3)
-	_expect("Patch on the cottage's card", ok and not Save.wear.has("cottage"))
+	_expect("Patch on the Market's card", ok and not Save.wear.has("stall"))
 
 
-## What Gloom shards buy (the rest of --shards): defence level 4 (hidden before every mission is won, blocked below
-## home level 4, then bought), Lookout and Tracker, Gloomlit colours, the shard trade, Shardfire.
+## What Gloom shards buy (the rest of --shards): Lookout and Tracker, Gloomlit colours, no shard trade (H5), Shardfire.
+## H6: the three defence tier, price and model checks moved to --workshop (autotest_workshop.gd): the pieces are upgraded
+## one by one from their own cards and level 4 costs timber, not shards.
 func _shard_goods() -> void:
 	main.player.invincible = true
 	_veteran(14)
@@ -2929,56 +2831,12 @@ func _shard_goods() -> void:
 	Save.shards = 1000
 	Save.leaves = 20000
 	Save.timber = 500
-	for t in ["barricade", "tower", "spikes"]:
-		Save.def_levels[t] = 3
-		d.relevel(t)
-	d._spawn("spikes", Vector3(2.6, 0, -6.2), 0.0)
-	var texts := func() -> Array: return (st._card_shop()["rows"] as Array).map(func(rw): return String(rw.get("title", "")) + " " + String(rw.get("text", "")))
-	_expect("level 4 is hidden before every raid is won", not " ".join(texts.call()).contains("Shardstone"), {"rows": texts.call()})
-	Save.missions_done.append(String(Data.mission(Data.mission_count() - 1)["id"]))
-	main.raids.refresh_open()
-	main.world.swap_sign()
-	var row4: Dictionary = {}
-	for rw in st._card_shop()["rows"]:
-		if String(rw.get("title", "")) == "Barricades: Shardstone":
-			row4 = rw
-	_expect("level 4 shows once raids are open, blocked below Hearthtree level 4", not row4.is_empty() and not bool(row4["enabled"]) and String(row4.get("text", "")).contains("Hearthtree at level 4")
-		and int(row4["cost"].get("shards", 0)) == 60, {"row": row4})
-	Save.camp_level = 4
-	main.on_camp_grown()
-	await _wait(0.5)
-	var leaves0 := Save.leaves
 	var shards0 := Save.shards
-	for t in ["barricade", "tower", "spikes"]:
-		st._upgrade_defence(t)
-	_expect("all three bought at level 4 (leaves and shards taken)", d.level("barricade") == 4 and d.level("tower") == 4 and d.level("spikes") == 4
-		and Save.leaves == leaves0 - 1500 - 2400 - 1200 and Save.shards == shards0 - 60 - 90 - 50,
-		{"levels": Save.def_levels, "leaves": [leaves0, Save.leaves], "shards": [shards0, Save.shards]})
-	var bar: Dictionary = {}
-	var tower: Dictionary = {}
-	var spikes: Dictionary = {}
-	for pc in d.pieces:
-		if pc["type"] == "barricade" and bar.is_empty():
-			bar = pc
-		elif pc["type"] == "tower" and tower.is_empty():
-			tower = pc
-		elif pc["type"] == "spikes" and spikes.is_empty():
-			spikes = pc
-	_expect("a Shardstone barricade has 1,400 health", absf(float(bar["max_hp"]) - 1400.0) < 0.5 and String((bar["node"] as Node3D).name) == "barricade_shard", {"max": bar["max_hp"], "model": (bar["node"] as Node3D).name})
-	_expect("the level 4 tower and spikes models", String((tower["node"] as Node3D).name) == "acorn_tower_4" and String((spikes["node"] as Node3D).name) == "thorn_spikes_4")
-	main.player.global_position = Vector3(0, 0, 1.6)
-	for pc in [bar, tower, spikes]:
-		main.closeup_at = pc["node"]
-		main.closeup = Vector3(1.4, 2.2, 3.4)
-		await _wait(0.4)
-		await _shot("shards_level4_%s" % String(pc["type"]))
-	main.closeup = Vector3.ZERO
-	main.closeup_at = null
 	# the Watch's Lookout and Tracker
 	var rd = main.raids
 	rd.buy_watch("lookout")
 	_expect("Lookout: a normal warning is 60 s (not 75), a called one 45", rd.has_unlock("watch:lookout") and rd.warn_seconds({"type": "siege"}, false) == 60.0
-		and rd.warn_seconds({"type": "siege"}, true) == 45.0 and Save.shards == shards0 - 200 - 25)
+		and rd.warn_seconds({"type": "siege"}, true) == 45.0 and Save.shards == shards0 - 25)
 	rd.buy_watch("tracker")
 	_expect("Tracker: sneak raids can't hide", rd.has_unlock("watch:tracker") and not rd.hidden_kind({"type": "sneak"}))
 	# Gloomlit colours
@@ -2994,11 +2852,13 @@ func _shard_goods() -> void:
 		await _shot("shards_gloomlit_mount")
 		main.closeup = Vector3.ZERO
 		main.closeup_at = null
-	# the shard trade
+	# H5: Bramble no longer buys shards: no shard offer on his Buys tab, a shard sale is refused and nothing moves
 	var l0 := Save.leaves
 	sh = Save.shards
-	rd.trade_shards()
-	_expect("Bramble pays 100 leaves for 5 shards", Save.leaves == l0 + 100 and Save.shards == sh - 5)
+	var buys_ids: Array = main.hud.windows["stall"].entries("buys").map(func(c): return String(c["id"]))
+	var refused: bool = not main.stations.market_trade("buys", "shards", 5) and not rd.has_method("trade_shards")
+	_expect("Bramble buys no shards: no offer, a sale is refused, leaves and shards unchanged", not buys_ids.has("shards") and refused
+		and Save.leaves == l0 and Save.shards == sh, {"offers": buys_ids, "leaves": [l0, Save.leaves], "shards": [sh, Save.shards]})
 	# Shardfire
 	rd.unlock_fire("shardfire")
 	var tint = st._flame_mat.get_shader_parameter("tint") if st._flame_mat != null else null
@@ -3015,7 +2875,7 @@ func _shard_goods() -> void:
 	await _at_ring(st.rings["stall"])
 	await _wait(0.8)
 	await _shot("shards_stall_card")
-	_log("shard goods", {"shards": Save.shards, "unlocks": Save.unlocks, "def_levels": Save.def_levels})
+	_log("shard goods", {"shards": Save.shards, "unlocks": Save.unlocks})
 
 
 ## Frame cost of a big Gloom Raid (--raidperf, with --quality=low|medium|high): a level 23 siege on two trails, the cat
@@ -3062,7 +2922,8 @@ func _phase_e() -> bool:
 ## --fightf (roads, waves, bonuses), --enemyf (boar daze, siege, Golden Grub, Gloom Totem), --homegoals (the home's
 ## goal lists, mission gates, caps). Each file's run() does its checks and logs EXPECT PASS / EXPECT FAIL lines.
 ## H1: --pools (autotest_pools.gd: the object pools and the event board) and --saves (autotest_saves.gd: the sample
-## saves); a mode whose file is missing logs one EXPECT FAIL saying so.
+## saves); a mode whose file is missing logs one EXPECT FAIL saying so. H3: --timers, --content, --bag (and the old
+## --inventory), --garden, --cook and --feed have their own files too (the old garden, cook and feed checks are gone).
 func _phase_f() -> bool:
 	var a := Data.args()
 	var file := ""
@@ -3092,6 +2953,26 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_pools.gd"
 	elif a.has("--saves"):                              # H1: the sample saves load, upgrade and save (autotest_saves.gd)
 		file = "res://scripts/autotest_saves.gd"
+	elif a.has("--settings"):                          # H2: the Settings window
+		file = "res://scripts/autotest_settings.gd"
+	elif a.has("--timers"):                            # H3: the Timers jobs and the clock rule
+		file = "res://scripts/autotest_timers.gd"
+	elif a.has("--content"):                           # H3: the content folders and index.json
+		file = "res://scripts/autotest_content.gd"
+	elif a.has("--h5found"):                           # H5 Stage 1: the shops' foundations (catalogue, v5 step, trades, Buy)
+		file = "res://scripts/autotest_h5_found.gd"
+	elif a.has("--workshop"): file = "res://scripts/autotest_workshop.gd"
+	elif a.has("--daynight"): file = "res://scripts/autotest_daynight.gd"
+	elif a.has("--bag") or a.has("--inventory"):       # H3: the Bag (and its potions); --inventory was the H2 name
+		file = "res://scripts/autotest_bag.gd"
+	elif a.has("--garden"):                            # H3: the garden's window, real-time growth, picking
+		file = "res://scripts/autotest_garden.gd"
+	elif a.has("--cook"):                              # H3: the cooking pot's window, cooking and collecting
+		file = "res://scripts/autotest_cook.gd"
+	elif a.has("--feed"):                              # H3: the potions and the mount (the old --feed checks)
+		file = "res://scripts/autotest_potions.gd"
+	elif a.has("--buildmenu"):                         # H4: the build menu, its icon, the camera and the rise
+		file = "res://scripts/autotest_build_menu.gd"
 	if file == "":
 		return false
 	if not ResourceLoader.exists(file):

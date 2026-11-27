@@ -1,0 +1,33 @@
+{
+  "id": "ember",
+  "name": "Ember Bow",
+  "desc": "Fire arrows: the hit enemy burns for 3 s · 0.8 m shorter range",
+  "icon": "bow",
+  "price": {"leaves": 900, "timber": 30},
+  "unlock": {"building": ["bench", 3]},
+  "damage": 1.3,
+  "arrows": 1,
+  "spread_deg": 0,
+  "pierce": 0,
+  "range_bonus": -0.8,
+  "tint": "#E0603A",
+  "fx": {
+    "color": "#FF8A3C",
+    "burst": "sparks",
+    "burst_colors": ["#FFE58A", "#FF8A3C", "#D8401E"],
+    "burst_n": 10,
+    "trail": "flame",
+    "trail_len": 0.9,
+    "trail_w": 0.04,
+    "trail_alpha": 0.5,
+    "trail_n": 12,
+    "hit": "fire",
+    "hit_colors": ["#FFE58A", "#FF8A3C", "#C8341A"],
+    "hit_n": 12
+  },
+  "per_level": 0.1,
+  "cost": [58, 84, 117, 162, 221, 225, 300, 410, 545, 730],
+  "mastery": [{"leaves": 1200}, {"leaves": 2100}],
+  "burn": {"seconds": 3.0, "share_per_s": 0.25},
+  "draw_mult": 1.0
+}

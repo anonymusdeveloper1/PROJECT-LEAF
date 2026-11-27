@@ -48,16 +48,15 @@ func build(world) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 77
 	var keep_out: Array = []
-	for id in ["campfire", "home", "bench", "target"]:
-		keep_out.append([world.station_pos(id), 1.7 if id == "campfire" else 1.3])
-	for id in world.VILLAGE:
-		if int(Save.stations.get(id, 0)) > 0:
-			keep_out.append([world.station_pos(id), {"well": 0.95, "cottage": 1.35, "stall": 1.4}[id]])
-	for id in ["stone", "garden", "fishing"]:                    # Phase C: a dict of its own, never the VILLAGE one
-		if int(Save.stations.get(id, 0)) > 0:
-			keep_out.append([world.station_pos(id), {"stone": 1.0, "garden": 1.5, "fishing": 0.8}[id]])
-	if int(Save.stations.get("tailor", 0)) > 0:                   # 23 Nov 2026: the Tailor's Nook
-		keep_out.append([world.station_pos("tailor"), 1.4])
+	keep_out.append([world.station_pos("campfire"), 1.7])
+	# H6: each building's grass keep-out radius is its entry's layout.grass_radius; "grass_always" ones keep it from the
+	# start (home, bench, target), the others once they are built. The saddlery has none.
+	for id in ["home", "bench", "target", "well", "stall", "stone", "garden", "fishing", "tailor", "workshop"]:
+		var lay: Dictionary = Data.building_layout(id)
+		if not lay.has("grass_radius"):
+			continue
+		if bool(lay.get("grass_always", false)) or int(Save.stations.get(id, 0)) > 0:
+			keep_out.append([world.station_pos(id), float(lay["grass_radius"])])
 	for bd in Data.burrow_list():                                  # Phase E: each Burrow's hollow and its ring, in their own list
 		var en: Dictionary = bd["entrance"]
 		keep_out.append([Vector3(float(en["pos"][0]), 0, float(en["pos"][2])), float(en.get("grass_keep_out", 2.4))])

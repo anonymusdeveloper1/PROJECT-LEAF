@@ -181,7 +181,11 @@ func _physics_process(delta: float) -> void:
 	global_position += dir * SPEED * delta
 	var seg := dir * SPEED * delta
 	life -= delta
-	for e in get_tree().get_nodes_in_group("enemies"):
+	# H6: only the enemies near this frame's sweep (the grid gives them in group order, the dummy included)
+	var tip1 := tip0 + seg
+	var box_lo := Vector2(minf(tip0.x, tip1.x) - 0.08, minf(tip0.z, tip1.z) - 0.08)
+	var box_hi := Vector2(maxf(tip0.x, tip1.x) + 0.08, maxf(tip0.z, tip1.z) + 0.08)
+	for e in main.enemy_grid.candidates(box_lo, box_hi, &"enemies"):
 		if e.dead or _done.has(e):
 			continue
 		var c: Vector3 = e.global_position + Vector3(0.0, e.aim_height, 0.0)
@@ -193,7 +197,9 @@ func _physics_process(delta: float) -> void:
 			if landed and not fx.is_empty():
 				Fx.hit_burst(main, tip0 + seg * t, dir, fx)
 			if not burn.is_empty() and not e.dead and e.has_method("ignite"):
-				e.ignite(float(burn.get("seconds", 0.0)), float(burn.get("share_per_s", 0.0)) * float(e.last_dealt))
+				var raw = e.get("last_raw")                  # H6: Ember burns for a share of the damage before armour
+				var burn_base := float(raw) if raw != null else float(e.last_dealt)
+				e.ignite(float(burn.get("seconds", 0.0)), float(burn.get("share_per_s", 0.0)) * burn_base)
 			if not frost.is_empty() and landed and not e.dead and e.has_method("chill"):
 				e.chill(frost)
 			_done.append(e)

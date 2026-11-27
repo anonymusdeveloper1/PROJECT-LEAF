@@ -1,0 +1,22 @@
+{
+  "id": "gloom_totem",
+  "name": "Gloom Totem",
+  "desc": "A crystal that strengthens nearby enemies.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "totem": true,
+  "height": 1.4,
+  "radius": 0.5,
+  "color": "#8C5BD6",
+  "_note": "Phase F: a Gloom crystal that grows on a road during a wave; foes near it are faster and tougher (mission.totem). Stand-in look until the owner decides on a model",
+  "parts": {
+    "health": {"max": 140},
+    "mover": {"speed": 0.0, "anchored": true},
+    "attack": {"damage": 0, "gate_damage": 0, "reach": 0.0, "attack_every": 9.0},
+    "status": {},
+    "loot": {"leaves": 8},
+    "health_bar": {},
+    "brain": {"aggro": 0.0, "ai": "totem"}
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "workshop",
+  "name": "Defence Workshop",
+  "desc": "Buy defences, improve pieces and learn specialisations",
+  "icon": "tower",
+  "price": {"leaves": 250, "timber": 10},
+  "unlock": {"missions_won": 2},
+  "arrives": "menu",
+  "model": "defence_workshop",
+  "layout": {
+    "position": [13.5, 0, 4.8],
+    "foot_radius": 2.13,
+    "ring_offset": [0, 0, 2.75],
+    "village": {"r": 2.13, "ring_r": 0.9},
+    "path": {
+      "trunk_of": "tailor",
+      "fork_at": [6.5, 0, 6.45],
+      "points": [[7.15, 0, 8.65], [8.6, 0, 9.3], [10.7, 0, 9.25], [12.3, 0, 8.7], [13.5, 0, 7.55]],
+      "smooth": 6,
+      "half_mult": 0.85
+    },
+    "grass_radius": 2.13,
+    "stand_in": {"model": "bow_bench_1", "tint": "#C99A5B"}
+  },
+  "levels": [
+    {},
+    {"leaves": 400, "timber": 20},
+    {"leaves": 900, "timber": 35},
+    {"leaves": 1800, "timber": 55},
+    {"leaves": 3200, "timber": 80}
+  ]
+}

@@ -1,1 +1,13 @@
-{"kinds": {}}
+{"kinds": {"settings": ["graphics", "sound"],
+           "crops": ["sunberry", "fernmint", "honeybell", "emberpepper", "swiftroot"],
+           "recipes": ["health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"],
+           "bows": ["twig", "sunwood", "ember", "frost", "volley", "foxfire"],
+           "buildings": ["home", "target", "bench", "well", "stall", "stone", "garden", "fishing", "saddlery", "tailor", "workshop"],
+           "mounts": ["thistle", "bramblewool"],
+           "pets": ["sprig", "lumi"],
+           "outfits": ["original", "dusk_ranger", "nightfall_ranger"],
+           "attachments": ["fire_spitter", "saddle", "saddlebags", "mount_shoes", "pet_lantern", "pet_charm", "pet_bell"],
+           "enemies": ["thornling", "chief", "brute", "raccoon", "boar", "bear", "moth", "frog", "beetle", "snail", "owl", "stump", "pitcher", "mole", "puffball", "crow", "stag", "herald", "grub", "glowcap", "snapper", "amber_grub", "golden_grub", "gloom_totem"],
+           "squads": ["scouts", "chief_band", "boar_raid", "brute_wall", "stump_siege", "bandits", "moth_cloud", "moth_escort", "spitter_nest", "choir", "shield_wall", "crystal_creep"],
+           "defences": ["tower", "spikes", "barricade"],
+           "specialisations": ["explosive_acorns", "reinforced_barricades", "deep_thorns"]}}

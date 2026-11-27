@@ -1,0 +1,13 @@
+{
+  "id": "stump_siege",
+  "name": "Stump Siege",
+  "desc": "Stump Golem, Thornling",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 4,
+  "members": [
+    {"kind": "stump", "n": [1, 1]},
+    {"kind": "thornling", "n": [3, 3]}
+  ]
+}

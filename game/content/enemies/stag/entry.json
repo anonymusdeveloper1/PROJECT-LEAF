@@ -1,0 +1,22 @@
+{
+  "id": "stag",
+  "name": "The Elder Thornstag",
+  "desc": "A stag that charges and summons golems.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "stag",
+  "boss": true,
+  "height": 3.0,
+  "radius": 0.9,
+  "color": "#7E8F6A",
+  "parts": {
+    "health": {"max": 3200},
+    "mover": {"speed": 0.8},
+    "attack": {"damage": 2, "gate_damage": 70, "reach": 1.4, "attack_every": 1.9, "charge_speed": 7.0, "windup": 0.9, "charge_time": 1.6, "charge_every": 7.0, "fence_damage": 400, "slam_range": 3.0, "slam_every": 6.0},
+    "status": {},
+    "loot": {"leaves": 500},
+    "health_bar": {},
+    "brain": {"aggro": 10.0, "roar_every": 16.0, "roar_minions": 2, "minion": "stump"}
+  }
+}

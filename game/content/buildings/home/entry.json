@@ -1,0 +1,97 @@
+{
+  "id": "home",
+  "name": "Hearthtree",
+  "desc": "The camp's heart: grow it to open more",
+  "icon": "home",
+  "price": {},
+  "unlock": {},
+  "arrives": "always",
+  "model": "home_tree_1",
+  "layout": {
+    "position": [-4.6, 0, 0.25],
+    "foot_radius": 1.15,
+    "ring_offset": [0.75, 0, 2.1],
+    "ring_marker": "marker_ring",
+    "foot_by_level": [1.15, 1.32, 1.15, 1.5, 1.7, 1.9, 1.9, 1.9],
+    "models_by_level": {"models": ["home_tree_1", "home_tree_1", "home_treehouse", "home_tree_4", "home_tree_5", "home_tree_6", "home_tree_7", "home_tree_8"], "level_from": "camp", "step_down": true},
+    "scale_at_camp": {"2": 1.15},
+    "grass_radius": 1.3,
+    "grass_always": true
+  },
+  "levels": [
+    {},
+    {"leaves": 500, "timber": 20, "goals": [
+      {"type": "mission", "n": 1},
+      {"type": "station", "id": "target", "level": 1},
+      {"type": "station", "id": "bench", "level": 1},
+      {"type": "stat", "id": "damage", "level": 4},
+      {"type": "stat", "id": "draw", "level": 2},
+      {"type": "stat", "id": "health", "level": 3},
+      {"type": "bow", "id": "twig", "level": 4}
+    ]},
+    {"leaves": 3500, "timber": 40, "goals": [
+      {"type": "mission", "n": 5},
+      {"type": "station", "id": "target", "level": 2},
+      {"type": "station", "id": "bench", "level": 2},
+      {"type": "station", "id": "stall", "level": 1},
+      {"type": "pet_level", "level": 2},
+      {"type": "stat", "id": "damage", "level": 6},
+      {"type": "stat", "id": "draw", "level": 5},
+      {"type": "stat", "id": "range", "level": 3},
+      {"type": "stat", "id": "health", "level": 5},
+      {"type": "stat", "id": "speed", "level": 3},
+      {"type": "bow", "id": "sunwood", "level": 4},
+      {"type": "towers", "count": 3, "level": 1},
+      {"type": "defence", "id": "barricade", "level": 2}
+    ]},
+    {"leaves": 9000, "timber": 60, "goals": [
+      {"type": "mission", "n": 9},
+      {"type": "station", "id": "target", "level": 3},
+      {"type": "station", "id": "bench", "level": 3},
+      {"type": "pet_level", "level": 3},
+      {"type": "station", "id": "well", "level": 2},
+      {"type": "station", "id": "garden", "level": 2},
+      {"type": "stat", "id": "damage", "level": 8},
+      {"type": "stat", "id": "draw", "level": 7},
+      {"type": "stat", "id": "range", "level": 5},
+      {"type": "stat", "id": "health", "level": 7},
+      {"type": "stat", "id": "speed", "level": 5},
+      {"type": "bow_any", "level": 7},
+      {"type": "towers", "count": 4, "level": 1},
+      {"type": "towers", "count": 2, "level": 3},
+      {"type": "defence", "id": "barricade", "level": 3},
+      {"type": "defence", "id": "spikes", "level": 2}
+    ]},
+    {"leaves": 10500, "timber": 80, "goals": [
+      {"type": "mission", "n": 12},
+      {"type": "station", "id": "target", "level": 4},
+      {"type": "station", "id": "bench", "level": 4},
+      {"type": "station", "id": "well", "level": 3},
+      {"type": "station", "id": "garden", "level": 3},
+      {"type": "stat", "id": "damage", "level": 9},
+      {"type": "stat", "id": "draw", "level": 9},
+      {"type": "stat", "id": "range", "level": 7},
+      {"type": "stat", "id": "health", "level": 9},
+      {"type": "stat", "id": "speed", "level": 7},
+      {"type": "bow_any", "level": 9},
+      {"type": "towers", "count": 5, "level": 3},
+      {"type": "defence", "id": "spikes", "level": 3}
+    ]},
+    {"leaves": 17160, "timber": 110, "needs_burrows": true, "needs_depth": 1, "goals": [
+      {"type": "mission", "n": 15},
+      {"type": "depth", "n": 1},
+      {"type": "station", "id": "target", "level": 5},
+      {"type": "station", "id": "bench", "level": 5},
+      {"type": "all_stats", "level": 10},
+      {"type": "bow_any", "level": 10},
+      {"type": "bow_owned", "id": "frost"}
+    ]},
+    {"leaves": 33480, "timber": 150, "needs_burrows": true, "needs_depth": 2, "goals": [
+      {"type": "depth", "n": 2}
+    ]},
+    {"leaves": 54400, "timber": 200, "needs_burrows": true, "needs_depth": 3, "goals": [
+      {"type": "depth", "n": 3}
+    ]}
+  ],
+  "_note": "Phase F (19 Nov 2026): each home level has `goals`; the home grows only when every goal is met and its price is paid. Goal types: mission {n: mission number, 1-based, won}; station {id, level}; stat {id, level}; bow {id, level} (that bow owned at that level); bow_any {level}; bow_owned {id}; towers {count, level} (placed towers at least that level); defence {id, level} (barricade / spikes / tower type level); all_stats {level}; depth {n} (Gloomwood level n beaten); pet_level {level} (H5: the pet trained to that level, at the Market's Pets tab). needs_burrows / needs_depth on levels 6-8 are kept for older code. H5 (27 Nov 2026, the owner's Q4 A): the Mushroom Cottage left the camp and the Market has one level, so level 3 asks for a built Market and pet level 2 (were Cottage 2 and Market 2), and level 4 for pet level 3 (were Cottage 3 and Market 3)."
+}

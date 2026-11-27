@@ -1,0 +1,23 @@
+{
+  "id": "stump",
+  "name": "Stump Golem",
+  "desc": "A heavy golem that attacks camp defences.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "stump",
+  "role": "tank",
+  "height": 1.6,
+  "radius": 0.55,
+  "color": "#7A5230",
+  "parts": {
+    "health": {"max": 220},
+    "armour": {"share": 0.25},
+    "mover": {"speed": 0.6},
+    "attack": {"damage": 2, "gate_damage": 30, "reach": 0.8, "attack_every": 2.0, "siege": 2.0},
+    "status": {},
+    "loot": {"leaves": 12},
+    "health_bar": {},
+    "brain": {"aggro": 1.5}
+  }
+}

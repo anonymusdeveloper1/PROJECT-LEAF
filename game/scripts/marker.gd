@@ -19,7 +19,7 @@ const RIM_SHADER := preload("res://shaders/marker_rim.gdshader")
 const REACH_PAD := 0.65              # reach: the spot's radius and this (1.4 m for most)
 const BADGE_W := 0.8                 # the badge's width at full size, metres at the camp camera's distance
 const REF_DIST := 20.0               # the camera distance the sizes are for (they keep their size on screen)
-const ICONS := {"shop": "bag", "target": "target", "bench": "bow", "sign": "flag", "well": "bucket", "cottage": "mushroom",
+const ICONS := {"shop": "bag", "target": "target", "bench": "bow", "sign": "flag", "well": "bucket",
 	"stall": "awning", "fire": "flame", "stone": "stone", "garden": "sprout", "pot": "pot", "fishing": "fish",
 	"home": "home", "lift": "lift", "end_lift": "lift", "seal": "crystal", "barricade": "barricade",
 	"repair": "repair", "saddlery": "saddle", "tailor": "needle"}   # and hollow:*, chest_*, shrine_*, road_* (barricade), tower_* (repair)
@@ -59,6 +59,8 @@ var _rm: StandardMaterial3D
 var _dm: StandardMaterial3D
 var _rim: ShaderMaterial
 var _rim_on: Array = []              # the thing's meshes that wear the rim glow now
+var _badge_on := true                # H6: false hides the badge, its halo, ripple and dot only (never the marker itself)
+var _proxy := Callable()             # H6: a Callable that returns the thing's world AABB, for tapping it (none: body_px)
 
 
 func setup(k: String, pos: Vector3, r: float, b: Callable, col := Color(1.0, 0.82, 0.3)) -> void:
@@ -71,6 +73,7 @@ func setup(k: String, pos: Vector3, r: float, b: Callable, col := Color(1.0, 0.8
 	_phase = fmod(absf(pos.x * 1.7 + pos.z * 2.3), TAU)
 	_pin = Node3D.new()
 	_pin.top_level = true
+	_pin.visible = _badge_on
 	add_child(_pin)
 	_hm = _mat(_texture("halo"), 1, false)
 	_halo = _quad(Vector2(BADGE_W * 1.9, BADGE_W * 1.9), Vector3(0, BADGE_W * 0.1, -0.02), _hm)
@@ -125,7 +128,7 @@ static func icon_for(k: String) -> String:
 		return "shrine"
 	if k.begins_with("road_"):
 		return "barricade"
-	if k.begins_with("tower_"):
+	if k.begins_with("tower_") or k.begins_with("spikes_"):
 		return "repair"
 	return "dot"
 
@@ -211,6 +214,71 @@ func body_px(cam: Camera3D) -> Array:
 	var t := cam.unproject_position(top)
 	var w := absf(cam.unproject_position(b + cam.global_transform.basis.x * 0.6).x - a.x)
 	return [a, t, maxf(w, 26.0)]
+
+
+## H6: hides or shows only the badge and what hangs on it (halo, ripple, "!" dot). The marker stays visible in the
+## tree, so a tap on the thing itself still finds it (interact.gd skips markers that are not visible).
+func set_badge_visible(on: bool) -> void:
+	_badge_on = on
+	if _pin != null:
+		_pin.visible = on
+
+
+func badge_is_visible() -> bool:
+	return _badge_on
+
+
+## Has a body proxy (a built row, a tower, a patch): such a marker counts as a piece for taps.
+func has_body_proxy() -> bool:
+	return _proxy.is_valid()
+
+
+## H6: the thing's tap area comes from a world box instead of the badge's own height. `source` returns an AABB (a
+## row's whole length, say). An invalid Callable puts back the old body_px rule.
+func set_body_proxy(source: Callable) -> void:
+	_proxy = source
+
+
+## Is a screen point (HUD pixels) on the thing itself? {} for a miss, else {"score": lower is nearer, "depth": the
+## metres from the camera}. With no proxy this is exactly the old rule: dd = distance to body_px's line / its half
+## width + 0.4, a hit when dd < 1.4. With a proxy the score is 0.4 + how far out the point is in the box's screen
+## rectangle (0 in the middle, 1 at its edge), so the two rules read on the same scale.
+func body_hit(cam: Camera3D, pos: Vector2) -> Dictionary:
+	if cam == null:
+		return {}
+	if _proxy.is_valid():
+		var box = _proxy.call()
+		if not (box is AABB) or (box as AABB).size == Vector3.ZERO:
+			return {}
+		return _proxy_hit(cam, pos, box as AABB)
+	var body: Array = body_px(cam)
+	if body.is_empty():
+		return {}
+	var c := Geometry2D.get_closest_point_to_segment(pos, body[0], body[1])
+	var dd := pos.distance_to(c) / float(body[2]) + 0.4
+	if dd >= 1.4:
+		return {}
+	var o := thing()
+	var at: Vector3 = o.global_position if o != null else global_position
+	return {"score": dd, "depth": cam.global_position.distance_to(at)}
+
+
+func _proxy_hit(cam: Camera3D, pos: Vector2, box: AABB) -> Dictionary:
+	var lo := Vector2(INF, INF)
+	var hi := Vector2(-INF, -INF)
+	for i in 8:
+		var corner := box.get_endpoint(i)
+		if cam.is_position_behind(corner):
+			return {}
+		var sp := cam.unproject_position(corner)
+		lo = Vector2(minf(lo.x, sp.x), minf(lo.y, sp.y))
+		hi = Vector2(maxf(hi.x, sp.x), maxf(hi.y, sp.y))
+	var mid := (lo + hi) * 0.5
+	var half := Vector2(maxf((hi.x - lo.x) * 0.5, 26.0), maxf((hi.y - lo.y) * 0.5, 26.0))
+	var m := maxf(absf(pos.x - mid.x) / half.x, absf(pos.y - mid.y) / half.y)
+	if m > 1.0:
+		return {}
+	return {"score": 0.4 + m, "depth": cam.global_position.distance_to(box.get_center())}
 
 
 func _process(delta: float) -> void:

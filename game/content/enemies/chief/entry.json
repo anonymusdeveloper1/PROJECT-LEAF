@@ -1,0 +1,23 @@
+{
+  "id": "chief",
+  "name": "Thornling Chief",
+  "desc": "A Thornling that leads a band.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "thornling",
+  "role": "leader",
+  "height": 1.43,
+  "radius": 0.45,
+  "color": "#3C7A24",
+  "scale": 2.3,
+  "parts": {
+    "health": {"max": 160},
+    "mover": {"speed": 1.1},
+    "attack": {"damage": 2, "gate_damage": 14, "reach": 0.7, "attack_every": 1.2},
+    "status": {},
+    "loot": {"leaves": 30},
+    "health_bar": {},
+    "brain": {"aggro": 5.0}
+  }
+}

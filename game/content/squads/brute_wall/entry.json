@@ -1,0 +1,13 @@
+{
+  "id": "brute_wall",
+  "name": "Brute Wall",
+  "desc": "Toadstool Brute, Thornling",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 3,
+  "members": [
+    {"kind": "brute", "n": [1, 1]},
+    {"kind": "thornling", "n": [3, 3]}
+  ]
+}

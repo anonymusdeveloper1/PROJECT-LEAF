@@ -1,0 +1,24 @@
+{
+  "id": "amber_grub",
+  "name": "Amber Grub",
+  "desc": "A grub that runs away.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "mole",
+  "height": 0.45,
+  "radius": 0.28,
+  "color": "#F2B44C",
+  "scale": 0.5,
+  "tint": "#F2B44C",
+  "_note": "Phase E stand-in: the mole, small and amber",
+  "parts": {
+    "health": {"max": 45},
+    "mover": {"speed": 2.3},
+    "attack": {"damage": 0, "gate_damage": 0, "reach": 0.3, "attack_every": 9.0},
+    "status": {},
+    "loot": {"leaves": 0},
+    "health_bar": {},
+    "brain": {"aggro": 0.0}
+  }
+}

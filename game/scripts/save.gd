@@ -44,6 +44,7 @@ var timber := 0:
 		timber = v
 		_currency_changed("timber", v)
 var camp_level := 1
+var camp_day_s: float = 0.0                     # H7: seconds into the camp's day (balance.json day_night); start_s when the save has none
 ## 0 = not there yet (23 Nov 2026: the Tailor's Nook, "tailor"). H5: the Market ("stall") is 0 or 1 (one level), and the
 ## Mushroom Cottage is gone. load_game starts from these every time, then puts the file's levels over them.
 const STATIONS_DEFAULT := {"target": 0, "bench": 0, "well": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0,
@@ -171,6 +172,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_process(false)
 	raids = RAIDS_DEFAULT.duplicate(true)
+	camp_day_s = float(Data.day_night_cfg()["start_s"])
 	var args := Data.args()
 	# the debug endgame start (Phase E): `--endgame` (also from files/test_args.txt on the phone) opens a separate save as
 	# if every mission were won; it stays on until `--endgame-off`. The real save is never touched meanwhile.
@@ -198,6 +200,8 @@ func _ready() -> void:
 func load_game() -> void:
 	set_deferred("_loading", false)                # a bad field can interrupt the load
 	loaded_v = 0
+	var day_night: Dictionary = Data.day_night_cfg()
+	camp_day_s = float(day_night["start_s"])
 	defence_reserves = {}                          # H6: a second load in one process starts clean
 	defence_legacy_credit = {}
 	var backup := path.get_basename() + ".bak.json"
@@ -243,6 +247,12 @@ func load_game() -> void:
 	leaves = int(d.get("leaves", 0))
 	timber = int(d.get("timber", 0))
 	camp_level = int(d.get("camp_level", 1))
+	var day_offset: Variant = d.get("camp_day_s")
+	if _is_num(day_offset) and is_finite(float(day_offset)):
+		var cycle_s: float = float(day_night["cycle_s"])
+		camp_day_s = fposmod(float(day_offset), cycle_s)
+		if camp_day_s >= cycle_s:
+			camp_day_s = 0.0
 	# H5: from the defaults every time, so a second file loaded in this run never keeps the first one's buildings
 	stations = STATIONS_DEFAULT.duplicate()
 	items = {"tower": 0, "spikes": 0}                # H6: a second file loaded in this run never keeps the first one's Bag
@@ -697,6 +707,7 @@ func _process(delta: float) -> void:
 func _notification(what: int) -> void:
 	match what:
 		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_WM_CLOSE_REQUEST, NOTIFICATION_WM_GO_BACK_REQUEST:
+			mark_dirty()
 			flush()
 		NOTIFICATION_PREDELETE:
 			# A mid-wave exit keeps the last completed checkpoint.
@@ -710,6 +721,7 @@ func _notification(what: int) -> void:
 func save_game(quiet := false) -> void:
 	var d := {
 		"leaves": leaves, "timber": timber, "camp_level": camp_level, "stations": stations, "stats": stats,
+		"camp_day_s": camp_day_s,
 		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "defence_reserves": _reserves_to_write(), "defence_legacy_credit": defence_legacy_credit, "flags": flags, "best_night": best_night,
 		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
 		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,

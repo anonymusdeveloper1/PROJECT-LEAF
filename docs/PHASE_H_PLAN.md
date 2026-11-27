@@ -739,6 +739,47 @@ then the owner's answers and **As built**. (`docs/GAME_GUIDE.md` does not yet de
 
 ### H7: day and night
 
+**Built (27 Nov 2026) on `feature/h7-day-night`** (local, not pushed). The branch starts from H6 (`0765a54`), so it
+merges after H6. The change list is in `docs/CHANGES.md`; the status is in `docs/STATUS.md`. `docs/GAME_GUIDE.md` describes
+it in part 3 ("Day and night") and part 11. Below: the owner's answers and **As built**, then the plan as first written.
+
+**The owner's answers (27 Nov 2026):**
+- **Night:** clear moonlight. The ground goes blue, the fire stays warm, and enemy bodies are clearly visible on the outer
+  trails.
+- **Start:** morning, for a new game and for an older save on its first H7 load. After that, a save opens at its saved
+  time of day.
+- **No time label** on the screen. The scenery shows the time. No new Event.
+- **Brighter at night on Medium and High:** the fire and the lanterns only (the campfire, the Hearthtree's windows and
+  lanterns, the camp posts and the trail lanterns). Nothing else.
+- **No save version step:** `camp_day_s` is a new optional field. A missing or bad value starts at morning. No version 7,
+  no converter and no new sample save; `--saves`, `--campg` and `--workshop --foundation` keep their version checks.
+- **No special checkpoint during a held wave:** the clock is saved with the normal saves and at pause, focus loss, close
+  and back. Losing a few seconds of the clock after a forced kill is fine.
+- **Who builds (the owner's rule of 27 Nov):** Codex Sol builds; Opus reviews each applied Codex patch; Sonnet fixes and
+  tests; Haiku does the docs.
+
+**As built (H7):**
+- **The camp clock** (`world/camp/day_night.gd`): a 720-second day of play time, counted only in the camp. Waves and raids
+  count; expeditions and a closed game do not.
+- **Four keyframes** (morning, day, evening, night) in `balance.json` `day_night`. Each holds, then blends to the next.
+  Night is clear moonlight from 9 to 11.5 minutes, then 30 seconds back to morning.
+- **The light:** sun angle, colour and energy; sky colours; ambient colour and energy (the camp's ambient is a colour
+  now, not the sky); fog (capped); shadow opacity and softness; sunray strength (none at night).
+- **Fire and lamps:** on Medium and High at night the fire's flicker light and flame glow grow (`fire_scale` 1.55), and the
+  camp, Hearthtree, post and trail lamps grow (`lamp_scale` 1.65). Low gets no boost: its camp lamps stay off and the
+  campfire keeps its usual light and flame.
+- **Burrows:** the expedition keeps its own moon and fill light. The sun starts from a fixed baseline on every visit, and
+  the camp light comes back when the player returns.
+- **Save:** `camp_day_s`, with no version step (see the answers above).
+- **Review fixes before the tests** are listed in `docs/CHANGES.md` (a missing declaration, a missing return, a per-frame
+  save write, and two test checks).
+- **Tests (all pass on the PC):** `--daynight` 46 (and 46 at 480x1040 with the safe bars); `--dungeon` 50; `--settings`
+  40; `--laststand` 1; `--camplife` 36; `--layout` 132; `--workshop` 123; `--saves` 95; `--smoke` finished clean.
+- **Known points:** on Medium the night is fairly subtle next to noon. The lever is the night colours and energies in
+  `balance.json`. Not on the phone yet; phone speed is still to be measured.
+
+**The plan as first written:**
+
 **What you'll see:** the camp goes through morning, day, evening and night.
 
 1. **A day lasts 12 minutes,** a first guess within the owner's 10–15. Night is about 3 of those minutes.

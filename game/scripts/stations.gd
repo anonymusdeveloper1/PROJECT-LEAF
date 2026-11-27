@@ -60,6 +60,11 @@ var windows: Dictionary = {}   # H4: marker id -> its building's window (hud.win
 
 func build(m) -> void:
 	main = m
+	var fire: Dictionary = Data.day_night_cfg()["fire"]
+	_fire_energy = float(fire["light_energy"])
+	_flicker_energy = float(fire["flicker_energy"])
+	_flame_glow = float(fire["flame_glow"])
+	main.world.register_camp_fire(_set_fire_scale)
 	for id in ["shop", "target", "bench", "sign", "well", "stall", "saddlery", "tailor", "workshop", "fire"] + CAMP_LIFE:
 		var ring := Node3D.new()
 		ring.set_script(RingScript)
@@ -295,6 +300,7 @@ func refresh(celebrate := "", rise := false) -> void:
 		_attach_marker(id, ring)
 	dummy.global_position = w.station_pos("target") + Vector3(0, 0, 0.05)
 	dummy.visible = nodes.has("target")
+	_light_fire()
 	w.rebuild_paths()                 # little paths to newly built stations
 	_update_pulses()
 	if main.get("burrows") != null:
@@ -836,15 +842,14 @@ func _glow(home: Node3D) -> void:
 	light.light_energy = 0.8
 	light.omni_range = 2.4
 	light.position = Vector3(0, 1.5, 1.2)
-	light.add_to_group("lamp")
-	light.visible = Quality.lamps()
 	home.add_child(light)
 	if Save.camp_level >= 4:                        # the big homes have rooms and lanterns up high too
 		var up := light.duplicate() as OmniLight3D
 		up.position = Vector3(0, 3.4 + (mini(Save.camp_level, 6) - 4) * 0.5, 1.0)
 		up.omni_range = 3.2
-		up.add_to_group("lamp")
 		home.add_child(up)
+		main.world.register_camp_lamp(up)
+	main.world.register_camp_lamp(light, m)
 
 
 func _update_pulses() -> void:
@@ -883,6 +888,10 @@ var _fire_light: OmniLight3D
 var _fire_fx: Node3D
 var _fire_for: Node3D
 var _embers_p: CPUParticles3D
+var _fire_energy: float
+var _flicker_energy: float
+var _flame_glow: float
+var _fire_scale: float
 var _out := false
 
 
@@ -894,6 +903,7 @@ func set_fire_out(on: bool) -> void:
 		f.visible = not on
 	if _fire_light and is_instance_valid(_fire_light):
 		_fire_light.visible = not on
+		_update_fire_light()
 	if _embers_p and is_instance_valid(_embers_p):
 		_embers_p.emitting = not on
 	if on and nodes.has("campfire"):
@@ -909,7 +919,8 @@ func _light_fire() -> void:
 	if fire == null or fire == _fire_for:
 		return
 	_fire_for = fire
-	var f := flame()
+	_flame_mat = null
+	var f: Node3D = flame()
 	var base := 0.0                                 # where the flame starts and how tall it is, for the light,
 	var tall := 0.6                                 # the embers and the smoke (the brazier's sits up in its bowl)
 	if f:
@@ -917,8 +928,9 @@ func _light_fire() -> void:
 		if f is MeshInstance3D and (f as MeshInstance3D).mesh:
 			tall = maxf(0.6, (f as MeshInstance3D).mesh.get_aabb().end.y)
 		var fm := ShaderMaterial.new()
-		fm.shader = preload("res://shaders/flame.gdshader")
+		fm.shader = FLAME
 		fm.set_shader_parameter("tint", _fire_tint())
+		fm.set_shader_parameter("glow", _flame_glow * _fire_scale)
 		_flame_mat = fm
 		fm.set_shader_parameter("height", tall)
 		fm.set_shader_parameter("sway", clampf(tall / 0.6, 1.0, 1.8))
@@ -928,8 +940,8 @@ func _light_fire() -> void:
 	_fire_fx = Node3D.new()
 	fire.add_child(_fire_fx)
 	_fire_light = OmniLight3D.new()
-	_fire_light.light_color = Color(1.0, 0.62, 0.28)
-	_fire_light.light_energy = 2.2
+	_fire_light.light_color = _light_col
+	_fire_light.light_energy = _fire_energy * _fire_scale
 	_fire_light.omni_range = 4.5
 	_fire_light.omni_attenuation = 1.4
 	_fire_light.position = Vector3(0, base + 0.6, 0)
@@ -1046,13 +1058,24 @@ func apply_fire_look() -> void:
 		Fx.flower_ring(main, Vector3.ZERO, 1.4)
 
 
+func _set_fire_scale(scale_value: float) -> void:
+	_fire_scale = scale_value
+	if _flame_mat != null:
+		_flame_mat.set_shader_parameter("glow", _flame_glow * _fire_scale)
+	_update_fire_light()
+
+
 func _process(_delta: float) -> void:
-	_light_fire()
-	if _fire_light and is_instance_valid(_fire_light):
-		var t := Time.get_ticks_msec() * 0.001
-		var n := 0.55 * sin(t * 13.0) * sin(t * 5.7) + 0.3 * sin(t * 23.0 + 1.3)
-		_fire_light.light_energy = 2.2 + n * 0.6
-		_fire_light.light_color = Color(_light_col.r, _light_col.g + n * 0.05, _light_col.b)
+	_update_fire_light()
+
+
+func _update_fire_light() -> void:
+	if _out or not is_instance_valid(_fire_light):
+		return
+	var t: float = Time.get_ticks_msec() * 0.001
+	var n: float = 0.55 * sin(t * 13.0) * sin(t * 5.7) + 0.3 * sin(t * 23.0 + 1.3)
+	_fire_light.light_energy = (_fire_energy + n * _flicker_energy) * _fire_scale
+	_fire_light.light_color = Color(_light_col.r, _light_col.g + n * 0.05, _light_col.b)
 
 
 # ---------------------------------------------------------------- cards (H4: a building's card is its window, ui/windows/)

@@ -27,9 +27,6 @@ var chests := {}                    # id -> {"def", "node", "at", "state"}
 var traps: Array = []               # trap.gd nodes
 var strikes := 0                    # spore bombs called (for the tests)
 var strike_at: Array = []           # ... and where the last one lands: [Vector3, radius]
-var _sun_was := -1.0
-var _sun_col := Color.WHITE
-var _fill_was := -1.0
 var _save_cd := 0.0
 var _sum_t := 0.0
 var _last_sum := -1.0
@@ -192,7 +189,7 @@ func _build_map() -> void:
 
 
 ## The map's night: a camera environment of its own (never a second WorldEnvironment), the sun turned into a dim blue
-## moon and the fill light down (both restored on the way out), Sprig's lantern glow, and on Medium and High a few
+## moon and the fill light down, Sprig's lantern glow, and on Medium and High a few
 ## lights at the lanterns nearest the cat.
 func _env_on() -> void:
 	var th: Dictionary = data().get("theme", {})
@@ -220,17 +217,16 @@ func _env_on() -> void:
 	main.cam.environment = env
 	if not Quality.changed.is_connected(_on_quality):
 		Quality.changed.connect(_on_quality)
-	var sun = main.world.sun
-	if _sun_was < 0.0:
-		_sun_was = sun.light_energy
-		_sun_col = sun.light_color
+	# The moon keeps the same angle and shadows on every visit.
+	var baseline: Dictionary = Data.day_night_cfg()["burrow_sun"]
+	var sun: DirectionalLight3D = main.world.sun
+	sun.rotation_degrees = Vector3(float(baseline["pitch_deg"]), float(baseline["yaw_deg"]), 0.0)
+	sun.shadow_opacity = float(baseline["shadow_opacity"])
+	sun.shadow_blur = float(baseline["shadow_blur"])
 	sun.light_energy = float(th.get("moon_energy", 0.6))
 	sun.light_color = Color.html(String(th.get("moon", "#9FB6FF")))
-	var fill = main.world.get("fill_light")
-	if fill != null:
-		if _fill_was < 0.0:
-			_fill_was = fill.light_energy
-		fill.light_energy = float(th.get("fill_energy", 0.14))
+	var fill: DirectionalLight3D = main.world.fill_light
+	fill.light_energy = float(th.get("fill_energy", 0.14))
 	_make_halo(Color.html(String(th.get("halo", "#FFC877"))))
 	_make_lights(Color.html(String(th.get("lantern", "#FFB35C"))))
 
@@ -246,14 +242,7 @@ func _on_quality() -> void:
 func _env_off() -> void:
 	main.cam.environment = null
 	env = null
-	if _sun_was >= 0.0:
-		main.world.sun.light_energy = _sun_was
-		main.world.sun.light_color = _sun_col
-		_sun_was = -1.0
-	var fill = main.world.get("fill_light")
-	if fill != null and _fill_was >= 0.0:
-		fill.light_energy = _fill_was
-		_fill_was = -1.0
+	main.world.apply_day_night()
 	if _halo != null and is_instance_valid(_halo):
 		_halo.queue_free()
 	_halo = null

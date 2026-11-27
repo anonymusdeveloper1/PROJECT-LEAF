@@ -11,6 +11,7 @@ extends Node3D
 const GrassScript := preload("res://scripts/grass.gd")
 const BushScript := preload("res://scripts/bush.gd")
 const LakeScript := preload("res://scripts/lake.gd")
+const DayNightScript := preload("res://world/camp/day_night.gd")
 const LAKE_C := Vector3(-7.8, 0, 5.0)       # the lake beside the camp, south-west (2.6 m further out since 19 Nov 2026)
 const OLD_LAKE_C := Vector3(-6.3, 0, 2.7)   # where it was: only the woods' and the hide spots' seeded sequences read it
 const LAKE_R := 2.5
@@ -40,6 +41,7 @@ var _ground_mat: ShaderMaterial
 var sun: DirectionalLight3D
 var fill_light: DirectionalLight3D           # the cool fill light (the Burrows' night turns it down)
 var env: Environment
+var _day_night: DayNightScript
 var _camp_root: Node3D                      # signpost and decorations: rebuilt when the camp grows
 var _trail_root: Node3D
 var _mist: Array = []                       # per patch: [mist material, eyes node]
@@ -63,13 +65,16 @@ func build(m) -> void:
 	camp_r = Data.light_radius()
 	for i in 4:
 		gloom[i] = gloom_level()
-	_environment()
+	var sky_mat: ProceduralSkyMaterial = _environment()
 	_ground()
 	lake = Node3D.new()
 	lake.set_script(LakeScript)
 	add_child(lake)
 	lake.setup(self, LAKE_C, LAKE_R)
-	_woods()
+	var ray_mat: ShaderMaterial = _woods()
+	_day_night = DayNightScript.new(sky_mat, env, sun, fill_light, ray_mat)
+	apply_day_night()
+	Events.save_loaded.connect(apply_day_night)
 	_camp_root = Node3D.new()
 	add_child(_camp_root)
 	_trail_root = Node3D.new()
@@ -100,6 +105,7 @@ func apply_quality() -> void:
 				_ground_mat.set_shader_parameter(k, keep[k])
 	for n in get_tree().get_nodes_in_group("lamp"):
 		n.visible = Quality.lamps()
+	_day_night.update_boosts()
 	for n in get_tree().get_nodes_in_group("sunray"):
 		n.visible = Quality.sunrays()
 	for n in get_tree().get_nodes_in_group("blob"):
@@ -109,23 +115,36 @@ func apply_quality() -> void:
 
 
 # ---------------------------------------------------------------- light and sky
-func _environment() -> void:
-	# a bright fantasy afternoon: warm sun, sky-coloured ambient, a cool fill from the other side, soft haze and glow
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.36, 0.62, 0.92)
-	sky_mat.sky_horizon_color = Color(0.78, 0.88, 0.86)
+func advance_day_night(delta: float) -> void:
+	_day_night.advance(delta)
+
+
+func apply_day_night() -> void:
+	if main.area == null:
+		_day_night.apply(true)
+
+
+func register_camp_lamp(light: OmniLight3D, window: StandardMaterial3D = null) -> void:
+	_day_night.register_lamp(light, window)
+
+
+func register_camp_fire(update_scale: Callable) -> void:
+	_day_night.register_fire(update_scale)
+
+
+func _environment() -> ProceduralSkyMaterial:
+	var sky_mat: ProceduralSkyMaterial = ProceduralSkyMaterial.new()
 	sky_mat.ground_horizon_color = Color(0.55, 0.7, 0.45)
 	sky_mat.ground_bottom_color = Color(0.25, 0.38, 0.2)
 	sky_mat.sun_angle_max = 20.0
 	var sky := Sky.new()
+	sky.radiance_size = Sky.RADIANCE_SIZE_32
 	sky.sky_material = sky_mat
 	env = Environment.new()
 	env.background_mode = Environment.BG_SKY
 	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_sky_contribution = 0.85
-	env.ambient_light_color = Color(0.85, 0.9, 1.0)
-	env.ambient_light_energy = 0.62
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_sky_contribution = 0.0
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	env.tonemap_exposure = 0.98
@@ -137,10 +156,8 @@ func _environment() -> void:
 	env.glow_hdr_threshold = 0.95
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.82, 0.88, 0.78)
 	env.fog_light_energy = 1.0
 	env.fog_sun_scatter = 0.25
-	env.fog_density = 0.0025
 	env.fog_sky_affect = 0.0
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.22
@@ -149,12 +166,6 @@ func _environment() -> void:
 	we.environment = env
 	add_child(we)
 	sun = DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-52.0, -38.0, 0.0)
-	sun.light_energy = 1.7
-	sun.light_color = Color(1.0, 0.93, 0.80)
-	sun.shadow_enabled = true
-	sun.shadow_blur = 1.2
-	sun.shadow_opacity = 0.85
 	# one shadow map over what the camera sees (21.5 m away, 50 degrees down: the ground in view is 17-34 m off). The
 	# default four splits spent two passes on the empty air in front of the lens and drew every caster up to four times.
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
@@ -162,10 +173,10 @@ func _environment() -> void:
 	add_child(sun)
 	fill_light = DirectionalLight3D.new()
 	fill_light.rotation_degrees = Vector3(-35.0, 150.0, 0.0)
-	fill_light.light_energy = 0.35
 	fill_light.light_color = Color(0.62, 0.75, 1.0)
 	fill_light.shadow_enabled = false
 	add_child(fill_light)
+	return sky_mat
 
 
 func _ground() -> void:
@@ -518,9 +529,8 @@ func rebuild_camp() -> void:
 			glow.light_energy = 0.9
 			glow.omni_range = 2.6
 			glow.position = Vector3(0, 1.35, 0.15)
-			glow.add_to_group("lamp")
-			glow.visible = Quality.lamps()
 			lantern.add_child(glow)
+			register_camp_lamp(glow)
 		for v in [Vector3(-0.35, 0, 1.0), Vector3(0.8, 0, 0.62)]:
 			if near_village(v * camp_r, 2.6) or in_village(v * camp_r, 1.0):
 				continue
@@ -883,9 +893,8 @@ func _path_edges() -> void:
 		glow.light_energy = 0.7
 		glow.omni_range = 2.4
 		glow.position = Vector3(0, 1.35, 0.15)
-		glow.add_to_group("lamp")
-		glow.visible = Quality.lamps()
 		lantern.add_child(glow)
+		register_camp_lamp(glow)
 	for kind in kinds:
 		_scatter_cells(kind, kinds[kind], _trail_root)
 
@@ -1087,7 +1096,7 @@ func trail_progress(i: int, p: Vector3) -> float:
 
 
 # ---------------------------------------------------------------- the woods and the Gloom
-func _woods() -> void:
+func _woods() -> ShaderMaterial:
 	var kinds := {"tree_jungle_1": [], "tree_jungle_2": [], "tree_round": [], "bush_1": [], "bush_2": [], "fern": [],
 		"monstera": [], "rock_2": [], "gloom_crystal": [], "mushroom_cluster": [], "flower_hibiscus": [],
 		"flower_small_white": [], "flower_purple": [], "rock_1": [], "log_fallen": []}
@@ -1202,6 +1211,7 @@ func _woods() -> void:
 			e.position = Vector3(sin(a), 0, -cos(a)) * (WOODS_R + rng.randf_range(1.0, 3.5)) + Vector3(0, rng.randf_range(0.5, 1.4), 0)
 			eyes.add_child(e)
 		_mist.append([mat, eyes])
+	return ray_mat
 
 
 func _eye_pair() -> Node3D:

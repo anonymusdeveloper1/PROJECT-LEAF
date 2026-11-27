@@ -216,6 +216,21 @@ The campfire is the heart of the camp. Its warm light on the ground **is** the c
 
 In a fight, enemies go for the campfire last but hardest. If it is destroyed, the **Last Stand** starts (part 4).
 
+### Day and night (New, H7, 27 Nov 2026)
+
+The camp has a day. One day lasts 12 minutes of play time:
+
+- **Morning:** cool, pale light and a low sun. The shadows are long.
+- **Day:** bright blue sky and a high sun. The shadows are short.
+- **Evening:** an amber sky and a low sun. The shadows get long again.
+- **Night:** clear moonlight. The ground goes blue and the campfire stays warm. It lasts about 3 minutes, then the light turns back to morning.
+
+- **The clock runs only in the camp.** Trails, waves and Gloom Raids count. Expeditions and the time the game is closed do not.
+- **A new game starts at morning.** The game keeps the time of day when you close it.
+- **On Medium and High at night,** the campfire, the Hearthtree's windows and lanterns, the camp posts and the trail lanterns shine brighter.
+- **On Low,** the night is darker. The campfire keeps its flame and light. The other lamps are off, as before.
+- **The clock changes only the look.** Waves, the safe area, repairs and rewards work as before.
+
 ### The Hearthtree and the shop
 
 The tree home and its campfire are both called **the Hearthtree** (New, G2; the level names stay).
@@ -1771,6 +1786,37 @@ stages: stage 1 the code rebuild with H5's gameplay (commit `a46d449`), stage 2 
   - `defences.gd` (1,159) and `stations.gd` (1,800) are over the 800-line guide.
   - It is not on the phone yet.
 
+### Day and night (New, H7, 27 Nov 2026)
+
+Step H7, on `feature/h7-day-night` (local). The player side is part 3, "Day and night". The owner's answers are in
+`docs/PHASE_H_PLAN.md` (H7).
+
+- **The clock** is `game/world/camp/day_night.gd`, a helper that `world.gd` owns. `main.gd` calls
+  `world.advance_day_night(delta)` once a frame, and only when `main.area` is null (the camp and its trails). A long frame
+  counts at most `max_step_s` (0.1 s). The cycle is 720 s and wraps.
+- **The keyframes** are morning (0 s), day (180 s), evening (450 s) and night (540 s). Each holds until its
+  `hold_until_s`, then blends to the next. The night-to-morning blend runs from 690 to 720 s. The sun's yaw takes the
+  shorter turn.
+- **Tuning** is `balance.json` `day_night`. The code reads it through `Data.day_night_cfg()` and writes no numbers.
+  `ambient_min_color` and `ambient_min_energy` keep the camp readable at night, and `fog_max_density` caps the haze.
+- **The light** is written about four times a second (`visual_update_s` 0.25), at once on boot, on a save load and when
+  the Burrows hand back the camp. Each tick does scalar work only. Unchanged values are not written again.
+- **The ambient light** is a colour the clock sets (`AMBIENT_SOURCE_COLOR`). The sky no longer lights the camp.
+- **Lamps:** `world.register_camp_lamp(light, window)` keeps each lamp's base energy and visibility (`Quality.lamps()`).
+  `lamp_scale` multiplies it on Medium and High, and a Hearthtree window's tint follows the same scale. A lamp built or
+  rebuilt takes the current scale at once. The camp list is separate from the Burrows' `lamp` group.
+- **The fire:** `world.register_camp_fire(callable)` hooks `stations.gd`. `fire_scale` multiplies the flicker light and the
+  flame's `glow` (`balance.json` `day_night.fire`). `apply_quality()` calls `update_boosts()`, so a tier change applies at
+  once. On Low the boost is 1.0, and the campfire's light and flame stay as before.
+- **Burrows:** `burrow_run._env_on()` sets the sun to the `burrow_sun` baseline (the old angle and shadow values) before it
+  applies the moon. `_env_off()` calls `world.apply_day_night()`, which applies the camp light only when `main.area` is null.
+- **Save:** `Save.camp_day_s` is an optional field in the v6 file. `load_game()` takes it when it is a finite number and
+  wraps it into the cycle. Otherwise it uses `day_night.start_s` (0, morning). `_notification()` marks the save dirty and
+  flushes it on pause, focus loss, close and back. The clock never marks the save dirty per frame. A held mission wave
+  writes no special checkpoint.
+- **Shadows** keep the one-map setup. `Quality.shadows()` still decides whether they draw.
+- **Tests:** `--daynight` (`scripts/autotest_daynight.gd`), listed in `game/README.md` and in the table in part 11.
+
 ### Tailor's Nook and cat outfits (23 Nov 2026)
 
 - `balance.json` holds the building price and unlock in `stations.tailor` and the outfit prices in `cat_skins`.
@@ -1999,6 +2045,7 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/`, `v2_sample.json`, `v3_sample.json` and since H3 `v4_sample.json`, load, upgrade and save, with the clock held still) |
 | H2 (New, 26 Nov 2026) | `autotest_settings.gd` | `--settings` (40 checks: the settings file, Graphics Auto/Low/Medium/High, sound on/off, the gear window, nothing written during autotests) |
 | H3 (New, 26 Nov 2026) | `autotest_timers.gd`, `autotest_content.gd`, `autotest_bag.gd`, `autotest_potions.gd`, `autotest_garden.gd`, `autotest_cook.gd`, `autotest_saves.gd` | `--timers` (jobs with a pretend clock: they follow it, end "while the game is closed", wait when the clock is set back; resume checks; `seen` alone never marks the save dirty), `--content` (the crop and recipe folders and `index.json`), `--bag` (also `--inventory`, the old name; `autotest_inventory.gd` is now `autotest_bag.gd`: the Bag window, stacks, "Bag full", Use and Place, the drop-in, the Golden Carp sale; at its end it runs the potions checks of `autotest_potions.gd`), `--feed` (the potions checks only: every effect, the HUD potion buttons, the mount), `--garden` (the window, a real drag, real-time growth, watering, "grows while closed", picking, the Gloom bump per visit, the ring), `--cook` (the window, a real drag, Cook, the timer, Collect, a full Bag, the fire out), and `--saves --startup=1` (with `--fresh`) then `--saves --startup=2` (without `--fresh`): a real first launch with a v3 save on disk |
+| H7 (New, 27 Nov 2026) | `autotest_daynight.gd` | `--daynight` (46 checks: the cycle and its wrap, the four keys and their midpoints, the night hold, the live clock in the camp, the camp lights on Low and on Medium and High, the save (morning when missing or bad, the round trip), the Burrows' hand-back, and the night floor during a wave; also at 480x1040 with the safe bars) |
 | Mounted target lock | `autotest_mounted_aim.gd` | `--mountedaim` (69 checks: strict 280-degree arc boundaries, rear blind spot, both mounts, real arrows and hits, torso aiming above a forward-facing root, hips and feet, outfits and different bows, left/right steering and forward gait, target reacquisition, Ram direction and dismounting mid-shot) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it

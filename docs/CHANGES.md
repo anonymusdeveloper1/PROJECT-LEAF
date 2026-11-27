@@ -2,6 +2,62 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 27 Nov 2026 · H7: day and night in the camp (on `feature/h7-day-night`, local only, waiting for the owner's phone test)
+
+Built on top of H6 (`0765a54`), so it merges after H6. Not pushed. The owner's answers are in `docs/PHASE_H_PLAN.md`
+(H7). No new save version: the clock is one new optional field.
+
+- **The camp has a day.** One day lasts 12 minutes (720 s of play time): morning, day, evening and night, then back to
+  morning. Night is about 3 minutes of it, as clear moonlight: the ground goes blue and the fire stays warm.
+- **What changes:** the sky colours, the sun's angle, colour and energy, the shadows' length and softness, the haze, the
+  ambient light and the sunrays (none at night). Nothing else in play changes.
+- **The camp's ambient light is now a colour set by the clock,** not the sky. The camp no longer takes its light from the
+  sky, so it looks different from H6 on the phone.
+- **The clock counts only in the camp** (trails, mission waves and Gloom Raids included). It stops during an expedition
+  and while the game is closed.
+- **Medium and High at night:** the campfire, the Hearthtree's windows and lanterns, the camp posts and the trail
+  lanterns shine brighter. Nothing else is boosted (the owner's choice).
+- **Low at night:** the camp gets darker. The campfire keeps its usual light and flame. The camp and trail lanterns stay
+  off on Low, as before.
+- **The Burrows:** the expedition keeps its own moon and fill light. The sun starts from a fixed baseline on every visit,
+  and the camp's light comes back when the player returns.
+- **A new game and an older save start at morning.** After that, a save opens at its saved time of day.
+- **No time label on the screen.** The sky, shadows and lamps show the time.
+- **Save:** `camp_day_s` (seconds into the day) is a new optional field. A save without it, or with a bad value, starts
+  at morning. It is written with the normal saves, and on pause, focus loss, close and back. A held mission wave writes
+  no special checkpoint, so a forced kill can lose a few seconds of the clock.
+- **Code:**
+  - `game/world/camp/day_night.gd` (new): the clock and the light, owned by `world.gd` and called once a frame from
+    `main.gd` (only when `main.area` is null).
+  - `world.gd`: the sky, sun, fog and ambient light come from the clock. The camp and trail lamps register with it.
+  - `stations.gd`: the campfire's flicker light and flame glow take the fire scale. The Hearthtree's lamps register.
+  - `burrow_run.gd`: the moon's sun baseline on every visit; going back to camp applies the camp light again.
+  - `data.gd`: `day_night_cfg()`.
+  - `save.gd`: `camp_day_s`, read and written, and the lifecycle flush.
+  - `balance.json`: a `day_night` block (the cycle, four keyframes, the limits on ambient and haze, the fire and the moon).
+  - `scripts/autotest_daynight.gd` (new), `--daynight` in `autotest.gd`, and `autotest_saves.gd` (the expected save now
+    includes `camp_day_s`).
+- **Review fixes (before the tests):**
+  - `save.gd` had lost the declaration of `camp_day_s`, so the game did not parse. Fixed.
+  - `world.gd`'s `_woods()` did not return the sunray material. Fixed.
+  - The clock marked the save dirty every frame. Removed. The clock now saves on the normal schedule and at the lifecycle
+    events.
+  - The Low night check expected the lamp energy to be 0. It now expects no lamps and a fire scale of 1.0.
+  - The saves test now expects `camp_day_s` (equal to `start_s`).
+  - The sky's radiance size is set to 32 (`Sky.RADIANCE_SIZE_32`).
+  - The boost check compares the fire's scale ratio, not a flickering light value.
+- **Tests (all pass on the PC; the logs and `.err` files show no parse or script errors):**
+  - `--daynight` 46, and the same at 480x1040 with `--safe-top=73 --safe-bottom=42` 46;
+  - `--dungeon` 50, `--settings` 40, `--laststand` 1, `--camplife` 36, `--layout` 132, `--workshop` 123, `--saves` 95;
+  - `--smoke` finished clean (it has no pass counter) and took its screenshots.
+- **Pictures** (PC, 480x1040 with the safe bars): morning, noon, evening, night (Medium), night (High), night (Low) and a
+  last-stand fight at night on Low. Noon is the brightest and most saturated. The night on Medium is cooler and darker
+  but the change from noon is fairly subtle. The fight shot shows no foes in view, and the campfire is out in that scene.
+- **Known points (noted, not fixed now):**
+  - The night on Medium is fairly subtle. The next lever is the night colours and energies in the `day_night` block of
+    `game/data/balance.json`.
+  - H7 has not been on the phone yet. Phone speed is still to be measured.
+
 ## 27 Nov 2026 · H6: the Defence Workshop, per-piece upgrades, specialisations and armour (on `feature/h6-defence-workshop`, local only, waiting for the owner's phone test)
 
 Built in three stages: `a46d449` (stage 1: the code rebuild with H5's gameplay; nothing the player sees changes; save

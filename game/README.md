@@ -236,6 +236,16 @@ a building's window through `main.hud.windows[<id>]`, never through `stations`.
   `--layout` (132), `--hudcheck` (130), `--homegoals` (93), `--buildmenu` (48), `--shards` (15), `--topup` (24),
   `--laststand` (1), `--wear` (11) and `--taps` (22). Run them one after another, never in parallel.
 
+**H7 (27 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines):**
+- `--daynight` (`scripts/autotest_daynight.gd`, 46 checks): run after `--autotest --fresh`, for example
+  `-- --autotest --fresh --daynight` (add `--disable-vsync` before `--`). It checks the cycle and its wrap, the four
+  keyframes and their midpoints, the night hold, the live clock in the camp, the camp lights on Low and on Medium and
+  High, the save (morning when the field is missing or bad, and a round trip), the Burrows' hand-back, and the night
+  floor during a wave. The pictures are `daynight_*.png` (morning, noon, evening, three nights and a night fight on Low).
+  Also at the phone's shape: `--daynight --safe-top=73 --safe-bottom=42` at 480x1040 (46 checks).
+- Also re-run for H7, one after another: `--smoke`, `--dungeon` (50), `--settings` (40), `--laststand` (1), `--camplife`
+  (36), `--layout` (132), `--workshop` (123) and `--saves` (95).
+
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
 bow's own model and arrow in the cat's paw, and close-up shots `bowshop_<id>.png`. Current PC result: 77 pass,

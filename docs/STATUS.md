@@ -147,6 +147,26 @@ three stages (`a46d449`, `b3b2364` and the stage 3 clean-up; 27 Nov 2026). The b
 - **Next:** the owner's phone test of H6 (the Workshop's window, a tap on a placed tower, the cat behind the Workshop,
   Undo, a specialisation, an armoured tank), then the merges in order H2, H3, H4, H5, H6 on the owner's yes.
 
+**H7** (day and night in the camp) is built on `feature/h7-day-night` (27 Nov 2026). The branch starts from H6
+(`0765a54`), so it merges after H6. Local only, not pushed. The owner's answers are in `docs/PHASE_H_PLAN.md` (H7).
+- **The camp has a day:** 12 minutes of play time in the camp, morning, day, evening and night. Night is clear
+  moonlight, about 3 minutes. Waves and raids count; expeditions and a closed game do not. A new game and an older save
+  start at morning.
+- **Medium and High at night:** the campfire, the Hearthtree's windows and lanterns, the camp posts and the trail
+  lanterns shine brighter. Low gets no boost; its camp lamps stay off.
+- **No time label.** The scenery shows the time.
+- **Save:** one new optional field, `camp_day_s`. No new save version.
+- **Tests (all pass on the PC, with no parse or script errors in the logs):** `--daynight` 46 (also at 480x1040 with the
+  safe bars 46), `--dungeon` 50, `--settings` 40, `--laststand` 1, `--camplife` 36, `--layout` 132, `--workshop` 123,
+  `--saves` 95. `--smoke` finished clean.
+- **Known points:**
+  - On Medium the night is fairly subtle next to noon. The next lever is the night colours and energies in the
+    `day_night` block of `game/data/balance.json`.
+  - H7 is not on the phone yet. Phone speed is still to be measured.
+- **Next:** the owner's phone test of H7 (the morning start, the change over a few minutes, night on Medium and High, an
+  expedition at night and back, a close during a wave and a reopen), then the merges in order H2, H3, H4, H5, H6, H7 on
+  the owner's yes.
+
 **24 Nov 2026 · Skin concepts and identity workflow saved.** See
 [`SKIN_DESIGN_WORKFLOW.md`](SKIN_DESIGN_WORKFLOW.md) for the latest spectral reference, three alternative skin
 concepts, exact image-generation prompts and direct renders of the shipping cat. The latest image restores the

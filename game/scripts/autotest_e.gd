@@ -210,7 +210,8 @@ func _dungeon() -> void:
 	await _endgame_camp()
 	_strong_cat()                                        # the endgame save's cat; invincible: the walk checks every stop
 	var mf := {"run": Save.mission_run.duplicate(), "done": Save.missions_done.size()}
-	var sun0: float = main.world.sun.light_energy
+	main.world.apply_day_night()
+	var camp_sun_energy: float = main.world.sun.light_energy
 	var r = _r()
 	await main.burrows.enter("old_hollow", 1)
 	await t._wait(0.8)
@@ -219,7 +220,10 @@ func _dungeon() -> void:
 	_x("in the Gloomwood: main.area is the run, the map far from the camp", main.area == r and r.active and main.player.global_position.x > 300.0)
 	_x("the path is 130-150 m from the way in to the arena's south edge", m.length - m.arena_r - 3.0 > 128.0 and m.length - m.arena_r - 3.0 < 152.0,
 		{"to_arena": snappedf(m.length - m.arena_r - 3.0, 0.1)})
-	_x("the night: its own camera environment, the sun a dim blue moon", main.cam.environment != null and main.world.sun.light_energy < sun0 - 0.3)
+	var theme: Dictionary = r.data()["theme"]
+	_x("the night: its own camera environment, the sun a dim blue moon", main.cam.environment == r.env and r.env != null
+		and is_equal_approx(main.world.sun.light_energy, float(theme["moon_energy"]))
+		and main.world.sun.light_color.is_equal_approx(Color.html(String(theme["moon"]))))
 	_x("the first run ever: six fights and a boss on the HUD", r.fight_pips().size() == 7 and main.hud._stage_l.text.contains("Gloomwood · Level 1"),
 		{"pips": r.fight_pips().size(), "status": main.hud._stage_l.text})
 	_x("H1: no Hollow keys: the run starts with no boon and no key flag", (r.run["boons"] as Array).is_empty() and not r.run.has("key"), {"run": r.run})
@@ -456,8 +460,15 @@ func _dungeon() -> void:
 	var sat1: Dictionary = r.satchel().duplicate()
 	await t._use(m.parts["end_lift_ring"], 0.2, 10.0)
 	await t._wait(0.8)
+	var camp_light_restored: Array[bool] = [false]
+	var check_camp_light: Callable = func(inside: bool) -> void:
+		camp_light_restored[0] = not inside and main.cam.environment == null \
+			and is_equal_approx(main.world.sun.light_energy, camp_sun_energy)
+	Events.area_changed.connect(check_camp_light, CONNECT_ONE_SHOT)
 	t._press("Climb")
 	await t._until(func(): return main.area == null and not r.leaving, 6.0)
+	if Events.area_changed.is_connected(check_camp_light):
+		Events.area_changed.disconnect(check_camp_light)
 	await t._wait(0.6)
 	var grew := true
 	for k in sat1:
@@ -472,7 +483,7 @@ func _dungeon() -> void:
 	_x("no run saved, the raids untouched", Save.burrow_run.is_empty() and not main.fight.active and Save.mission_run == mf["run"]
 		and Save.missions_done.size() == int(mf["done"]))
 	_x("back in the camp at the return spot, the camp's light again", main.area == null and main.player.global_position.distance_to(Vector3(0, 0, 15.5)) < 0.6
-		and main.cam.environment == null and absf(main.world.sun.light_energy - sun0) < 0.01)
+		and main.cam.environment == null and camp_light_restored[0])
 	_x("the run counted as won", int(Save.burrow_stats("old_hollow")["won"]) == 1)
 	var card: Dictionary = main.burrows.card("old_hollow")
 	_x("the Hollow card now opens level 2", String(card["rows"][0]["text"]).contains("Level 2"), {"row": card["rows"][0]["text"]})

@@ -186,6 +186,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if frozen:
 		return
+	if area == null:
+		world.advance_day_night(delta)
 	empowered_t = maxf(0.0, empowered_t - minf(delta, 0.1))
 	raids.tick(delta)
 	_update_camera(delta)

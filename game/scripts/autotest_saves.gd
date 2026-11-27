@@ -500,6 +500,7 @@ func _check_v6_sample() -> bool:
 	if not t._expect("H6: the v6 save fixture is readable", s is Dictionary and int(s.get("save_v", 0)) == 6
 			and (s as Dictionary).get("owned") is Dictionary and (s as Dictionary).get("timers") is Dictionary):
 		return false
+	(s as Dictionary)["camp_day_s"] = float(Data.day_night_cfg()["start_s"])
 	if not t._expect("H6: the v6 fixture is copied to the scratch slot", _write_test_save(text)):
 		return false
 	if FileAccess.file_exists(BACKUP_PATH):
@@ -746,6 +747,8 @@ func _upgraded_v5(d: Dictionary) -> Dictionary:
 	var out: Dictionary = SaveUpgrades.upgrade(d.duplicate(true))
 	if out.get("stations") is Dictionary and not (out["stations"] as Dictionary).has("workshop"):
 		(out["stations"] as Dictionary)["workshop"] = 0       # H6: the loader gives a missing Workshop station its default (0)
+	if not out.has("camp_day_s"):
+		out["camp_day_s"] = float(Data.day_night_cfg()["start_s"])
 	var back: Variant = JSON.parse_string(JSON.stringify(out))
 	return back if back is Dictionary else {}
 

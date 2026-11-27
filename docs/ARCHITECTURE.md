@@ -674,6 +674,7 @@ depends on whom, so **there are exactly eight**, each with one job:
 | H4 | the window kit (`ui/kit/`); one window file per building; buildings and bows as content folders |
 | H5 | the Buy command; outfits, mounts, pets and attachments as content folders |
 | H6 (built, local) | Components and States for enemies (armour arrives here); the enemy grid; Place/Undo; the ability toolbox for specialisations; enemies, squads and defences as content folders. Also the Defence Workshop, per-piece levels, building layouts in data and the save at v6 |
+| H7 (built, local) | the camp clock as one helper, `world/camp/day_night.gd`, owned by `world.gd` and called once a frame from `main.gd` (camp only, when `main.area` is null); its tuning in `balance.json` `day_night`, read through `Data.day_night_cfg()`; the saved offset `Save.camp_day_s` (an optional field, no new save version); the Burrows' sun baseline in `burrow_run.gd`. Tested by `--daynight` |
 | H8 | Components and States for the golem and the friend; fighting styles; the Gloomwood as the first biome; expeditions built room by room |
 | H10 | the Store with its real and pretend providers; offers as content folders |
 | later | the cat's and mount's own parts, mount skills as abilities, and anything not yet moved, when a step next touches them |

@@ -1226,6 +1226,11 @@ func raids_open() -> bool:
 	return next_mission() >= mission_count()
 
 
+# ---------------------------------------------------------------- H7: day and night
+func day_night_cfg() -> Dictionary:
+	return b["day_night"]
+
+
 # ---------------------------------------------------------------- Phase E: the Burrows
 func burrow_cfg() -> Dictionary:
 	return b["burrows"]

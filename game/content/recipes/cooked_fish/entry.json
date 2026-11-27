@@ -1,0 +1,15 @@
+{
+  "id": "cooked_fish",
+  "name": "Cooked Fish",
+  "plural": "Cooked Fish",
+  "desc": "Mends the mount to full health over 10 s.",
+  "icon": "cooked_fish",
+  "color": "#e8a25c",
+  "needs": {"fish": 1},
+  "cook_s": 30,
+  "limit": 10,
+  "unlock": {"building": ["fishing", 1]},
+  "effects": [
+    {"type": "heal_over_time", "target": "mount", "share": 1.0, "seconds": 10}
+  ]
+}

@@ -3,14 +3,20 @@ extends Node
 ## Each check logs "EXPECT PASS <what>" or "EXPECT FAIL <what>" through autotest.gd's _expect. Light on purpose: every
 ## number comes from balance.json; a fight being on is faked by hand (fight.active, in_wave and on_break, so no wave
 ## runs); the foes stand still; the cat's own _process is stopped while the moves are tried (no arrows muddy the hits).
-##   (a) the building: Locked ("Win 8 missions first") before mission 8; after it, Locked at Hearthtree 1 ("Needs the
-##       Hearthtree at level 2", since 21 Nov 2026); then Build pays its price; its card
+##   (a) the building: Locked ("Finish 8 Raid Missions first") before raid 8; after it, Locked at Hearthtree 1 ("Needs the
+##       Hearthtree at level 2", since 21 Nov 2026); then Build pays its price
+##   (w) H5: its window, through real taps (autotest_saddle_window.gd): the two bottom tabs, the attachments' pictures and
+##       the turning detail (Buy, Wear, Upgrade), the skill circles (a real drag, replace, move, clear, refusals), a
+##       skill's detail (Learn), the Upgrade confirm (the next cap, the mount's speed and health; back on Skills)
 ##   (b) Buy Stomp, Upgrade, the Saddlery's level as the cap, level 4 only after the Raid Missions (H1: its price is leaves and timber), Max
-##   (c) no built-in move: riding with nothing learned does nothing in a fight
-##   (d) each skill by try_move: Stomp, Ram, Pounce, Bellow; never two moves in the same moment
+##   (c) no built-in move: riding with nothing learned does nothing in a fight; H5: a learned skill outside the three
+##       circles never goes (neither by itself nor through try_move), and the circles stay through a look change and a reload
+##   (d) each skill by try_move (each put in a circle first, H5): Stomp, Ram, Pounce, Bellow; never two moves in the same moment
 ##   (e) attachments: Mossweave Saddle health, Saddlebags leaves, Fire-spitter burns; their models on the saddle bone
 ##       only when the files exist (none yet: nothing attached, nothing errors), the flames from the nozzle if any
 ##   (f) an old save (no "saddlery" key) is brought over once
+## H5 (27 Nov 2026): the Saddlery's attachments a player owns are Save.owned["attachments"][id] = {"level": n} (the v5
+## save); the skills stay Save.saddlery "skills", the circles are Save.saddlery "skill_slots".
 
 var t                     # autotest.gd (its helpers: _wait, _expect, _until, _log)
 var main
@@ -46,9 +52,14 @@ func run() -> bool:
 		t._log("ride shots done")
 		return true
 	_building()
+	await _window()
+	_start_fresh(8)
+	Save.stations["saddlery"] = 1
+	_st().refresh()
 	_buy()
 	await _ride()
 	await _no_builtin()
+	await _unslotted()
 	await _stomp()
 	await _ram()
 	await _pounce()
@@ -88,7 +99,8 @@ func _start_fresh(won: int) -> void:
 		Save.stations[k] = 0
 	Save.stations["bench"] = 1
 	Save.stations["stall"] = 1
-	Save.saddlery = {"skills": {}, "attach": {}}
+	Save.saddlery = {"skills": {}, "skill_slots": ["", "", ""], "worn": "", "mount_credit": 0}   # H5: the v5 shape
+	_no_gear()
 	Save.attach = {"owned": [], "mount": "", "pet": ""}
 	Save.ruined = []
 	Save.wear = {}
@@ -101,23 +113,61 @@ func _start_fresh(won: int) -> void:
 	_st().refresh()
 
 
-func _item(card: Dictionary, title: String) -> Dictionary:
-	for r in card["rows"]:
-		if String(r.get("kind", "")) == "item" and String(r.get("title", "")) == title:
-			return r
+## H5: what the Saddlery's window says of one skill or attachment now (saddlery_window.gd entry: its level, state, the
+## one action and its word, why it can't go further).
+func _tile(part: String, id: String) -> Dictionary:
+	return main.hud.windows["saddlery"].entry(part, id)
+
+
+func _build_entry(id: String) -> Dictionary:
+	for e: Dictionary in main.hud.windows["build"].entries():
+		if String(e["id"]) == id:
+			return e
 	return {}
 
 
-func _tile(part: String, id: String) -> Dictionary:
-	return _item(_st()._card_saddlery(), String(Data.saddle_info(part, id)["name"]))
+# ---------------------------------------------------------------- H5: the v5 save's owned attachments and the circles
+## Save.owned (the v5 save; read through get so this file never names a field the save does not have).
+func _owned() -> Dictionary:
+	var o: Variant = Save.get("owned")
+	return o if o is Dictionary else {}
 
 
-func _sections(card: Dictionary) -> Array:
+## The Saddlery attachment id owned at level lv (0: not owned): Save.owned["attachments"][id] = {"level": lv}.
+func _gear(id: String, lv: int) -> void:
+	var o := _owned()
+	if not o.get("attachments") is Dictionary:
+		o["attachments"] = {}
+	var shelf: Dictionary = o["attachments"]
+	if lv <= 0:
+		shelf.erase(id)
+	else:
+		shelf[id] = {"level": lv}
+
+
+## No attachment owned at all (the expedition gear's records too: this file never buys them).
+func _no_gear() -> void:
+	_owned()["attachments"] = {}
+
+
+## The mount's three circles hold these skills (in order; the rest empty).
+func _slots(ids: Array) -> void:
 	var out: Array = []
-	for r in card["rows"]:
-		if String(r.get("kind", "")) == "section":
-			out.append(String(r["text"]))
-	return out
+	for i in 3:
+		out.append(String(ids[i]) if i < ids.size() else "")
+	Save.saddlery["skill_slots"] = out
+
+
+## Skill id learned at level lv and put in the first circle (the combat checks below use one skill at a time).
+func _learn(id: String, lv: int) -> void:
+	Save.saddlery["skills"][id] = lv
+	_slots([id])
+
+
+## The skill forgotten and the circles emptied.
+func _forget(id: String) -> void:
+	Save.saddlery["skills"].erase(id)
+	_slots([])
 
 
 func _fight(on: bool) -> void:
@@ -131,61 +181,74 @@ func _fight(on: bool) -> void:
 # ---------------------------------------------------------------- (a) the building
 func _building() -> void:
 	var st = _st()
-	var tl := _item(st._card_shop(), "Saddlery")
-	_x("before raid 8: the Hearthtree shows a Locked Saddlery tile ('Win 8 raids first')", String(tl.get("badge", "")) == "Locked"
-		and String(tl.get("text", "")).contains("Finish 8 Raid Missions first") and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
-	var build: Dictionary = Data.b["stations"]["saddlery"]["build"]
+	var entry := _build_entry("saddlery")
+	_x("before raid 8: the Saddlery is locked in the build menu ('Finish 8 Raid Missions first')",
+		String(entry.get("state", "")) == "locked" and String(entry.get("needs", "")) == "Finish 8 Raid Missions first", {"entry": entry})
+	var build: Dictionary = Data.build_price("saddlery")
 	Save.leaves = 100000
 	Save.timber = 1000
 	st._build_station("saddlery")
 	_x("before raid 8 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
 	_start_fresh(8)
 	# 21 Nov 2026: it needs the Hearthtree at level 2 too (stations.saddlery.needs_home)
-	var nh := int(Data.b["stations"]["saddlery"].get("needs_home", 1))
+	var nh := Data.station_needs_home("saddlery")
 	Save.camp_level = 1
 	Save.leaves = 100000
 	Save.timber = 1000
-	tl = _item(st._card_shop(), "Saddlery")
+	entry = _build_entry("saddlery")
 	var need_txt := "Needs %s at level %d" % [Data.camp_name(), nh]
-	_x("8 raids won at Hearthtree 1: the tile is Locked ('%s')" % need_txt, nh == 2 and String(tl.get("badge", "")) == "Locked"
-		and String(tl.get("text", "")) == need_txt and not bool(tl.get("enabled", true)), {"tile": tl.get("text", ""), "badge": tl.get("badge", "")})
+	_x("8 raids won at Hearthtree 1: the Saddlery is locked ('%s')" % need_txt,
+		nh == 2 and String(entry.get("state", "")) == "locked" and String(entry.get("needs", "")) == need_txt, {"entry": entry})
 	st._build_station("saddlery")
 	_x("at Hearthtree 1 it cannot be built", int(Save.stations["saddlery"]) == 0 and Save.leaves == 100000)
 	Save.camp_level = 5
 	Save.leaves = int(build["leaves"]) + 123
 	Save.timber = int(build["timber"]) + 7
-	tl = _item(st._card_shop(), "Saddlery")
-	_x("after 8 raids the tile is a Build button", String(tl.get("label", "")) == "Build" and String(tl.get("badge", "")) == "New" and bool(tl.get("enabled", false)),
-		{"badge": tl.get("badge", ""), "label": tl.get("label", "")})
+	entry = _build_entry("saddlery")
+	_x("after 8 raids the Saddlery is open in the build menu with its price",
+		String(entry.get("state", "")) == "open" and entry.get("price", {}) == build, {"entry": entry})
 	st._build_station("saddlery")
 	_x("Build pays its price and the Saddlery is level 1", int(Save.stations["saddlery"]) == 1 and Save.leaves == 123 and Save.timber == 7,
 		{"leaves": Save.leaves, "timber": Save.timber})
 	_x("its ring is in the camp", st.rings.has("saddlery") and st.rings["saddlery"] != null)
-	var card: Dictionary = st._card_saddlery()
-	_x("the card: title Saddlery, sections Skills, Attachments, Upgrade", String(card["title"]) == "Saddlery" and _sections(card) == ["Skills", "Attachments", "Upgrade"],
-		{"title": card["title"], "sections": _sections(card)})
-	var titles: Array = []
-	for r in card["rows"]:
-		if String(r.get("kind", "")) == "item":
-			titles.append(String(r["title"]))
-	var want: Array = []
-	for id in SKILLS:
-		want.append(String(Data.saddle_info("skills", id)["name"]))
-	for id in GEAR:
-		want.append(String(Data.saddle_info("attach", id)["name"]))
-	_x("seven tiles in order: Stomp, Ram, Pounce, Bellow, Fire-spitter, Mossweave Saddle, Saddlebags (then the upgrade)",
-		titles.size() == 8 and titles.slice(0, 7) == want and want == ["Stomp", "Ram", "Pounce", "Bellow", "Fire-spitter", "Mossweave Saddle", "Saddlebags"], {"titles": titles})
+	# H5: the window's own checks (tabs, pictures, details, circles, the confirm) are in autotest_saddle_window.gd (_window)
+	var w = main.hud.windows["saddlery"]
+	var names: Array = []
+	for tab in ["attachments", "skills"]:
+		for e: Dictionary in w.entries(tab):
+			names.append(String(e["name"]))
+	_x("its two tabs list the attachments, then the skills, in order: Fire-spitter, Mossweave Saddle, Saddlebags, Stomp, Ram, Pounce, Bellow",
+		names == ["Fire-spitter", "Mossweave Saddle", "Saddlebags", "Stomp", "Ram", "Pounce", "Bellow"], {"names": names})
 	var ok := true
 	var seen := {}
 	for id in SKILLS:
 		var r := _tile("skills", id)
-		seen[id] = r.get("text", "")
-		ok = ok and String(r.get("label", "")) == "Buy" and String(r.get("badge", "")) == "New" and String(r.get("text", "")).begins_with(String(LINES[id]))
+		var note: String = st._saddle_note("skills", id, 1)
+		seen[id] = [r.get("label", ""), r.get("state", ""), note]
+		ok = ok and String(r.get("label", "")) == "Learn" and String(r.get("state", "")) == "new" and note.begins_with(String(LINES[id]))
 	for id in GEAR:
 		var r := _tile("attach", id)
-		seen[id] = r.get("text", "")
-		ok = ok and String(r.get("label", "")) == "Buy" and String(r.get("badge", "")) == "New" and String(r.get("text", "")).contains(String(LINES[id]))
-	_x("every tile: Buy, New, and its level-1 line", ok, seen)
+		var note: String = st._saddle_note("attach", id, 1)
+		seen[id] = [r.get("label", ""), r.get("state", ""), note]
+		ok = ok and String(r.get("label", "")) == "Buy" and String(r.get("state", "")) == "new" and note.contains(String(LINES[id]))
+	_x("every skill new with Learn, every attachment new with Buy, and each its level-1 line", ok, seen)
+
+
+# ---------------------------------------------------------------- (w) H5: the window, through real taps
+## The Saddlery's window (autotest_saddle_window.gd: its own file, so this one does not grow): its tabs, details, circles
+## and confirm, with screenshots. It starts from the camp _building() left (the Saddlery built at level 1).
+func _window() -> void:
+	var path := "res://scripts/autotest_saddle_window.gd"
+	if not ResourceLoader.exists(path):
+		_x("the window checks' file %s is there" % path, false)
+		return
+	var w = load(path).new()
+	w.t = t
+	w.main = main
+	w.g4 = self
+	add_child(w)
+	await w.run()
+	w.queue_free()
 
 
 # ---------------------------------------------------------------- (b) Buy, Upgrade, the caps
@@ -198,15 +261,17 @@ func _buy() -> void:
 	_x("Buy Stomp: level 1, exactly its leaves and timber taken", Data.skill_level("stomp") == 1 and Save.leaves == 77 and Save.timber == 3,
 		{"level": Data.skill_level("stomp"), "leaves": Save.leaves, "timber": Save.timber})
 	var tl := _tile("skills", "stomp")
-	_x("the Stomp tile is now Level 1/5 with an Upgrade button", String(tl.get("badge", "")) == "Level 1/5" and String(tl.get("label", "")) == "Upgrade", {"badge": tl.get("badge", "")})
+	_x("Stomp is now level 1 of 5, learned (not in a circle: a new skill goes into the grid), its button Upgrade",
+		int(tl.get("level", 0)) == 1 and int(tl.get("top", 0)) == 5 and String(tl.get("state", "")) == "learned"
+		and String(tl.get("label", "")) == "Upgrade" and not Data.skill_is_slotted("stomp"), tl)
 	# capped by the Saddlery (level 1)
 	Save.leaves = 1000000
 	Save.timber = 100000
 	_x("at Saddlery level 1: Stomp level 2 is blocked 'cap'", Data.saddle_block("skills", "stomp") == "cap")
 	st._saddle_buy("skills", "stomp")
 	tl = _tile("skills", "stomp")
-	_x("Upgrade past the Saddlery's level does nothing; the tile says 'Upgrade the Saddlery for more'", Data.skill_level("stomp") == 1 and Save.leaves == 1000000
-		and not bool(tl.get("enabled", true)) and String(tl.get("text", "")) == "Upgrade the Saddlery for more", {"text": tl.get("text", "")})
+	_x("Upgrade past the Saddlery's level does nothing; its detail says 'Upgrade the Saddlery for more'", Data.skill_level("stomp") == 1 and Save.leaves == 1000000
+		and not bool(tl.get("can", true)) and String(tl.get("why", "")) == "Upgrade the Saddlery for more", {"why": tl.get("why", "")})
 	Save.stations["saddlery"] = 2
 	var p2 := Data.saddle_price("skills", "stomp", 2)
 	st._saddle_buy("skills", "stomp")
@@ -216,8 +281,8 @@ func _buy() -> void:
 	Save.stations["saddlery"] = 5
 	Save.saddlery["skills"]["stomp"] = 3
 	tl = _tile("skills", "stomp")
-	_x("level 4 is blocked 'burrows' before the raids end, with its note", Data.saddle_block("skills", "stomp") == "burrows" and not bool(tl.get("enabled", true))
-		and String(tl.get("text", "")) == "Level 4 opens after the Raid Missions", {"text": tl.get("text", ""), "block": Data.saddle_block("skills", "stomp")})
+	_x("level 4 is blocked 'burrows' before the raids end, with its note", Data.saddle_block("skills", "stomp") == "burrows" and not bool(tl.get("can", true))
+		and String(tl.get("why", "")) == "Level 4 opens after the Raid Missions", {"why": tl.get("why", ""), "block": Data.saddle_block("skills", "stomp")})
 	st._saddle_buy("skills", "stomp")
 	_x("and it cannot be bought", Data.skill_level("stomp") == 3)
 	Save.set_flag("hollow_open")
@@ -227,7 +292,8 @@ func _buy() -> void:
 	Save.flags.erase("hollow_open")
 	Save.saddlery["skills"]["stomp"] = 5
 	tl = _tile("skills", "stomp")
-	_x("at level 5: badge Max and no button", Data.saddle_block("skills", "stomp") == "max" and String(tl.get("badge", "")) == "Max" and String(tl.get("label", "")) == "")
+	_x("at level 5: Max level and nothing to do", Data.saddle_block("skills", "stomp") == "max" and String(tl.get("action", "x")) == ""
+		and String(tl.get("label", "")) == Data.word("max") and String(tl.get("why", "")) == Data.word("max"), tl)
 	Save.saddlery["skills"] = {}
 	Save.leaves = 0
 	Save.timber = 0
@@ -289,9 +355,62 @@ func _no_builtin() -> void:
 	_x("try_move gives false for a skill it has not learned", not m.try_move("stomp") and not m.try_move("ram") and not m.try_move("pounce") and not m.try_move("bellow"))
 
 
+## H5 (the owner's Q3): all four learned, three in the circles: the fourth never goes, neither by itself in a fight
+## (_try_moves) nor through try_move, and keeps its level; the circles' order does not change the priority; the circles
+## stay through a change of mount and a save and reload.
+func _unslotted() -> void:
+	var m = main.mount
+	for id in SKILLS:
+		Save.saddlery["skills"][id] = 1
+	_slots(["stomp", "ram", "pounce"])
+	var at: Vector3 = await _reset()
+	var ring: Array = []
+	for k in 4:                                         # four foes round it: Bellow's moment, and Stomp's too
+		ring.append(_foe(at + Vector3(0, 0, 1.2).rotated(Vector3.UP, k * PI * 0.5)))
+	m.cooldowns["stomp"] = 99.0                         # Stomp (in a circle) waits: only Bellow could go now
+	m.cooldowns["ram"] = 99.0
+	m.cooldowns["pounce"] = 99.0
+	await t._wait(1.5)
+	_x("Bellow learned but in no circle: it never goes by itself, with four foes round the mount",
+		int(m.moves_made.get("bellow", 0)) == 0 and ring.all(func(f): return f.bellow_t <= 0.0) and Data.skill_level("bellow") == 1
+		and Data.active_skill_level("bellow") == 0, {"moves": m.moves_made})
+	_x("and try_move refuses it too", not m.try_move("bellow"))
+	_slots(["bellow", "ram", "pounce"])
+	m.cooldowns.clear()
+	m.gap = 0.0
+	_x("in a circle (where Stomp was) Bellow goes; Stomp, out of the circles, keeps its level 1 and is refused",
+		m.try_move("bellow") and not m.try_move("stomp") and Data.skill_level("stomp") == 1)
+	# the priority stays mount_skills.priority (Bellow first), whatever circle each sits in
+	at = await _reset()
+	for k in 4:
+		_foe(at + Vector3(0, 0, 1.2).rotated(Vector3.UP, k * PI * 0.5))
+	_slots(["pounce", "ram", "bellow"])
+	await t._wait(0.45)
+	_x("with Bellow in the last circle it still goes first (the priority, not the circles' order)", m.last_move == "bellow",
+		{"last": m.last_move, "moves": m.moves_made})
+	# a change of mount and a reload keep the circles (one list for every mount)
+	var want: Array = Data.skill_slots()
+	var keep_look := Save.mount_look
+	Save.mount_look = "bramblewool" if keep_look != "bramblewool" else "thistle"
+	m.set_look()
+	await t._wait(0.3)
+	var after_look: Array = Data.skill_slots()
+	Save.mount_look = keep_look
+	m.set_look()
+	await t._wait(0.3)
+	Save.save_game(true)
+	Save.load_game()
+	var after_load: Array = Data.skill_slots()
+	_x("the circles are the same on the other mount and after a save and a reload", after_look == want and after_load == want
+		and Data.skill_level("bellow") == 1 and Data.skill_level("stomp") == 1, {"want": want, "look": after_look, "load": after_load})
+	_clear()
+	Save.saddlery["skills"] = {}
+	_slots([])
+
+
 func _stomp() -> void:
 	var m = main.mount
-	Save.saddlery["skills"]["stomp"] = 1
+	_learn("stomp", 1)
 	var at: Vector3 = await _reset()
 	var near = _foe(at + Vector3(0, 0, 1.0))
 	var far = _foe(at + Vector3(0, 0, -4.5))
@@ -306,12 +425,12 @@ func _stomp() -> void:
 		{"cd": m.cooldowns, "gap": m.gap})
 	await _reset()
 	_x("Stomp with no foe near does not go", not m.try_move("stomp"))
-	Save.saddlery["skills"].erase("stomp")
+	_forget("stomp")
 
 
 func _ram() -> void:
 	var m = main.mount
-	Save.saddlery["skills"]["ram"] = 1
+	_learn("ram", 1)
 	var at: Vector3 = await _reset()
 	var ahead = _foe(at + Vector3(0, 0, 2.5))
 	var behind = _foe(at + Vector3(0, 0, -2.0))
@@ -326,12 +445,12 @@ func _ram() -> void:
 	at = await _reset()
 	var only_behind = _foe(at + Vector3(0, 0, -2.0))
 	_x("Ram does not go for a foe behind it", not m.try_move("ram") and only_behind.hp == 1e6)
-	Save.saddlery["skills"].erase("ram")
+	_forget("ram")
 
 
 func _pounce() -> void:
 	var m = main.mount
-	Save.saddlery["skills"]["pounce"] = 1
+	_learn("pounce", 1)
 	var at: Vector3 = await _reset()
 	var g: Array = [_foe(at + Vector3(0, 0, 4.0)), _foe(at + Vector3(1.0, 0, 4.6)), _foe(at + Vector3(-1.0, 0, 4.3))]
 	var h0: Array = g.map(func(f): return f.hp)
@@ -347,12 +466,12 @@ func _pounce() -> void:
 	_x("Pounce moved the mount toward the group", m.global_position.z > at.z + 2.5 and m.moving() == "", {"z0": at.z, "z": m.global_position.z})
 	_x("Pounce damaged all three (its damage) and stunned them (dazed)", all_hurt and all_stunned, {"hp": g.map(func(f): return f.hp), "state": g.map(func(f): return f.state)})
 	await _reset()
-	Save.saddlery["skills"].erase("pounce")
+	_forget("pounce")
 
 
 func _bellow() -> void:
 	var m = main.mount
-	Save.saddlery["skills"]["bellow"] = 1
+	_learn("bellow", 1)
 	var at: Vector3 = await _reset()
 	var three: Array = [_foe(at + Vector3(2.0, 0, 0)), _foe(at + Vector3(-2.0, 0, 0)), _foe(at + Vector3(0, 0, 2.5))]
 	_x("Bellow does not go for only three foes", not m.try_move("bellow") and three.all(func(f): return f.bellow_t <= 0.0))
@@ -365,7 +484,7 @@ func _bellow() -> void:
 	var foe = all4[0]
 	foe.hit(Vector3.FORWARD, 10.0)
 	_x("a shaken foe takes %d%% more damage" % roundi(k * 100.0), absf(float(foe.last_dealt) - 10.0 * (1.0 + k)) < 0.01, {"dealt": foe.last_dealt})
-	Save.saddlery["skills"].erase("bellow")
+	_forget("bellow")
 
 
 # ---------------------------------------------------------------- never two moves in the same moment
@@ -374,6 +493,7 @@ func _gap() -> void:
 	var gap_s := Data.saddle_gap()
 	Save.saddlery["skills"]["stomp"] = 1
 	Save.saddlery["skills"]["ram"] = 1
+	_slots(["stomp", "ram"])                            # H5: both in a circle (Stomp's circle first: the priority still wins)
 	var at: Vector3 = await _reset()
 	_foe(at + Vector3(0, 0, 1.2))                       # ahead and inside Stomp's reach: both could go
 	await t._wait(0.45)
@@ -387,6 +507,7 @@ func _gap() -> void:
 	m.try_move("stomp")
 	_x("after a move the gap is saddlery.gap_s (%s s) and its own timer runs" % gap_s, absf(m.gap - gap_s) < 0.05 and float(m.cooldowns.get("stomp", 0.0)) > 3.0, {"gap": m.gap})
 	Save.saddlery["skills"] = {}
+	_slots([])
 
 
 # ---------------------------------------------------------------- (e) attachments
@@ -394,30 +515,30 @@ func _attach() -> void:
 	var m = main.mount
 	var base_hp: int = m.max_hp()
 	var per: float = float(Data.saddle_info("attach", "saddle")["hp_per_level"])
-	Save.saddlery["attach"]["saddle"] = 1
+	_gear("saddle", 1)
 	Save.saddlery["worn"] = "saddle"                       # one attachment worn at a time (the owner, 22 Nov 2026)
 	var hp1: int = m.max_hp()
-	Save.saddlery["attach"]["saddle"] = 2
+	_gear("saddle", 2)
 	var hp2: int = m.max_hp()
 	_x("Mossweave Saddle: +%d%% mount health a level" % roundi(per * 100.0), hp1 == roundi(base_hp * (1.0 + per)) and hp2 == roundi(base_hp * (1.0 + 2.0 * per)),
 		{"base": base_hp, "l1": hp1, "l2": hp2})
-	Save.saddlery["attach"].erase("saddle")
+	_gear("saddle", 0)
 	Save.saddlery["worn"] = ""
 	_x("without it the health is back", m.max_hp() == base_hp)
 	var bags := float(Data.saddle_info("attach", "saddlebags")["leaves_per_level"])
 	Data._bag_acc = 0.0
 	var none := Data.saddlebag_leaves(100)
-	Save.saddlery["attach"]["saddlebags"] = 1
+	_gear("saddlebags", 1)
 	Save.saddlery["worn"] = "saddlebags"
 	var l1 := Data.saddlebag_leaves(100)
-	Save.saddlery["attach"]["saddlebags"] = 3
+	_gear("saddlebags", 3)
 	var l3 := Data.saddlebag_leaves(100)
 	_x("Saddlebags: kills drop +%d%% leaves a level (none without them)" % roundi(bags * 100.0), none == 100 and l1 == 100 + roundi(100.0 * bags) and l3 == 100 + roundi(300.0 * bags),
 		{"none": none, "l1": l1, "l3": l3})
-	Save.saddlery["attach"].erase("saddlebags")
+	_gear("saddlebags", 0)
 	Save.saddlery["worn"] = ""
 	Data._bag_acc = 0.0
-	Save.saddlery["attach"]["fire_spitter"] = 1
+	_gear("fire_spitter", 1)
 	Save.saddlery["worn"] = "fire_spitter"
 	var at: Vector3 = await _reset()
 	var close = _foe(at + Vector3(0, 0, 1.6))
@@ -430,7 +551,7 @@ func _attach() -> void:
 	# 22 Nov 2026: only the WORN attachment shows its model on the saddle bone (one at a time, the owner), when its file
 	# exists; the others owned stay off
 	for id in GEAR:
-		Save.saddlery["attach"][id] = 1
+		_gear(id, 1)
 	var shown_ok := true
 	var info := {}
 	for id in GEAR:
@@ -488,7 +609,7 @@ func _attach() -> void:
 		after = after and m.gear.has(id) == (id == String(Save.saddlery["worn"]) and ResourceLoader.exists(m.gear_path(id, Save.mount_look)))   # only the worn one shows
 	_x("with all three owned the Fire-spitter still spits, and after a look change the models follow (nothing errors)", went2 and close2.burn_t > 0.0 and after,
 		{"went": went2, "gear": m.gear.keys()})
-	Save.saddlery["attach"] = {}
+	_no_gear()
 	m.refresh_gear()
 	_x("without attachments no model is shown", m.gear.is_empty())
 
@@ -500,14 +621,15 @@ func _fireballs() -> void:
 	var old_bow: String = Save.bow
 	Save.bow = "twig"
 	Save.saddlery["skills"] = {}
-	Save.saddlery["attach"] = {"fire_spitter": 1}
+	_no_gear()
+	_gear("fire_spitter", 1)
 	Save.saddlery["worn"] = "fire_spitter"
 	m.set_process(false)
 	for look in ["thistle", "bramblewool"]:
 		Save.mount_look = look
 		m.set_look()
 		for level in [1, 2, 5]:
-			Save.saddlery["attach"]["fire_spitter"] = level
+			_gear("fire_spitter", level)
 			var at: Vector3 = await _reset()
 			var primary = _foe(at + Vector3(0, 0, 2.0))
 			var splash = _foe(at + Vector3(1.0, 0, 2.1))
@@ -536,7 +658,7 @@ func _fireballs() -> void:
 	for level in range(2, 6):
 		rising = rising and Data.fire_damage(level) > Data.fire_damage(level - 1) and Data.fire_burn_per_s(level) > Data.fire_burn_per_s(level - 1)
 	_x("each Fire-spitter upgrade increases impact and burn damage", rising)
-	Save.saddlery["attach"]["fire_spitter"] = 1
+	_gear("fire_spitter", 1)
 	var at: Vector3 = await _reset()
 	_foe(main.player.global_position + Vector3(0, 0, Data.cat_range() + 0.5))
 	_x("Fire-spitter does not shoot beyond the cat's arrow range", not m.try_move("fire_spitter"))
@@ -581,7 +703,7 @@ func _fireballs() -> void:
 	Save.stats["draw"] = old_draw
 	Save.bow = old_bow
 	Save.mount_look = "thistle"
-	Save.saddlery["attach"] = {}
+	_no_gear()
 	Save.saddlery["worn"] = ""
 	m.set_look()
 	m.set_process(true)
@@ -595,7 +717,8 @@ func _ground_fire() -> void:
 	var old_quality: int = Quality.level
 	Save.mount_look = "thistle"
 	Save.saddlery["skills"] = {}
-	Save.saddlery["attach"] = {"fire_spitter": 1}
+	_no_gear()
+	_gear("fire_spitter", 1)
 	Save.saddlery["worn"] = "fire_spitter"
 	m.set_look()
 	m.set_process(false)
@@ -671,7 +794,7 @@ func _ground_fire() -> void:
 	main.closeup = Vector3.ZERO
 	main.closeup_at = null
 	_clear()
-	Save.saddlery["attach"] = {}
+	_no_gear()
 	Save.saddlery["worn"] = ""
 	m.set_look()
 	m.set_process(true)
@@ -681,7 +804,8 @@ func _fire_tracking() -> void:
 	var m = main.mount
 	var old_range: int = Save.stats.get("range", 0)
 	var old_bow: String = Save.bow
-	Save.saddlery["attach"] = {"fire_spitter": 1}
+	_no_gear()
+	_gear("fire_spitter", 1)
 	Save.saddlery["worn"] = "fire_spitter"
 	Save.saddlery["skills"] = {}
 	for look in ["thistle", "bramblewool"]:
@@ -744,7 +868,7 @@ func _fire_tracking() -> void:
 	Save.stats["range"] = old_range
 	Save.bow = old_bow
 	Save.mount_look = "thistle"
-	Save.saddlery["attach"] = {}
+	_no_gear()
 	Save.saddlery["worn"] = ""
 	m.set_look()
 	m.set_process(true)
@@ -1021,6 +1145,7 @@ func _skill_shots() -> void:
 	_fight(true)
 	for sid in SKILLS:
 		Save.saddlery["skills"] = {sid: 1}
+		_slots([sid])
 		_clear()
 		pl.global_position = BASE
 		m.gap = 99.0                                    # nothing goes by itself: only try_move below
@@ -1042,6 +1167,7 @@ func _skill_shots() -> void:
 		_x("ride shots: %s went (for its picture)" % sid, went)
 		await t._wait(0.9)
 	Save.saddlery["skills"] = {}
+	_slots([])
 	_clear()
 	_fight(false)
 
@@ -1066,7 +1192,9 @@ func _migrate() -> void:
 		{"skills": Save.saddlery["skills"]})
 	_x("its old Burrows saddle is Saddlery saddle level 3, the bags level 5 (flag), the mount slot comes off, the bell stays",
 		Data.attach_level("saddle") == 3 and Data.attach_level("saddlebags") == 5 and Save.flag("g4_old_attach") and String(Save.attach["mount"]) == ""
-		and String(Save.attach["pet"]) == "pet_bell", {"attach": Save.saddlery["attach"], "worn": Save.attach})
+		and String(Save.attach["pet"]) == "pet_bell", {"attach": _owned().get("attachments", {}), "worn": Save.attach})
+	_x("H5: the free Stomp sits in a circle (the v5 step fills the circles from the learned skills), so the mount uses it",
+		Data.skill_is_slotted("stomp") and Data.active_skill_level("stomp") == 1, {"slots": Data.skill_slots()})
 	Save.saddlery["skills"].erase("stomp")
 	Save.save_game(true)
 	Save.load_game()
@@ -1078,7 +1206,7 @@ func _migrate() -> void:
 	f.close()
 	Save.flags = {}
 	Save.load_game()
-	_x("an old save with only 5 raids won gets nothing", Data.skill_level("stomp") == 0 and Save.saddlery["attach"].is_empty())
+	_x("an old save with only 5 raids won gets nothing", Data.skill_level("stomp") == 0 and Data.attach_level("saddle") == 0 and Data.attach_level("saddlebags") == 0)
 	Save.path = keep_path
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(tmp))
 

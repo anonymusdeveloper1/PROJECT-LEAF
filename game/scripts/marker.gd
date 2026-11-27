@@ -19,7 +19,7 @@ const RIM_SHADER := preload("res://shaders/marker_rim.gdshader")
 const REACH_PAD := 0.65              # reach: the spot's radius and this (1.4 m for most)
 const BADGE_W := 0.8                 # the badge's width at full size, metres at the camp camera's distance
 const REF_DIST := 20.0               # the camera distance the sizes are for (they keep their size on screen)
-const ICONS := {"shop": "bag", "target": "target", "bench": "bow", "sign": "flag", "well": "bucket", "cottage": "mushroom",
+const ICONS := {"shop": "bag", "target": "target", "bench": "bow", "sign": "flag", "well": "bucket",
 	"stall": "awning", "fire": "flame", "stone": "stone", "garden": "sprout", "pot": "pot", "fishing": "fish",
 	"home": "home", "lift": "lift", "end_lift": "lift", "seal": "crystal", "barricade": "barricade",
 	"repair": "repair", "saddlery": "saddle", "tailor": "needle"}   # and hollow:*, chest_*, shrine_*, road_* (barricade), tower_* (repair)

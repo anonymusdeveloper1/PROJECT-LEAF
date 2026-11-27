@@ -1,0 +1,16 @@
+{
+  "id": "target",
+  "name": "Training Target",
+  "desc": "Train here to hit harder, shoot faster, reach further",
+  "icon": "target",
+  "price": {"leaves": 10},
+  "unlock": {"flag": "shop_target"},
+  "arrives": "menu",
+  "levels": [
+    {},
+    {"leaves": 150},
+    {"leaves": 600, "timber": 20},
+    {"leaves": 2000, "timber": 60},
+    {"leaves": 4000, "timber": 100}
+  ]
+}

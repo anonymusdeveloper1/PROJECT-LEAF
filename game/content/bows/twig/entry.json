@@ -1,0 +1,31 @@
+{
+  "id": "twig",
+  "name": "Twig Bow",
+  "desc": "Fastest draw",
+  "icon": "bow",
+  "price": {},
+  "unlock": {"building": ["bench", 1]},
+  "damage": 1.0,
+  "arrows": 1,
+  "spread_deg": 0,
+  "pierce": 0,
+  "range_bonus": 0.0,
+  "tint": "#FFFFFF",
+  "fx": {
+    "color": "#EEF6E2",
+    "burst": "puff",
+    "burst_colors": ["#FFFFFF", "#DDEBC8"],
+    "burst_n": 6,
+    "trail": "wind",
+    "trail_len": 0.8,
+    "trail_w": 0.03,
+    "trail_alpha": 0.4,
+    "hit": "leaf",
+    "hit_colors": ["#9CCB5A", "#7A5A36", "#D9E8A6"],
+    "hit_n": 7
+  },
+  "per_level": 0.1,
+  "cost": [26, 39, 58, 84, 117, 120, 165, 225, 300, 410],
+  "mastery": [{"leaves": 1200}, {"leaves": 2100}],
+  "draw_mult": 1.0
+}

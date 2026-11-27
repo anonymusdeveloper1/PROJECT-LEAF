@@ -15,49 +15,83 @@ extends Node3D
 ## its separate Random Raids view unlocks once every Raid Mission is finished.
 ## The buildings round the campfire (world.SPOTS; the well stands on the lake's near shore):
 ##   Market            (Hearthtree 2)     Bramble trades timber, food and (after the missions) buys amber; Thistle
-##                                        the hare comes free with it: ride it (mount.gd)
-##   Mushroom Cottage  (Hearthtree 2)     Sprig the leaf dragon moves in and fights beside the cat (pet.gd)
+##                                        the hare comes free with it: ride it (mount.gd). H5: one level; its Pets
+##                                        tab sells the pet (Sprig, 160 leaves) and trains it (pet.gd)
 ##   Wishing Well      (Hearthtree 3)     mends the camp by itself (well_tick): never tapped, only upgraded
-##   Saddlery   (mission 8, Hearthtree 2) G4: teaches the mount skills and makes it attachments (_card_saddlery); levels
+##   Saddlery   (mission 8, Hearthtree 2) G4: teaches the mount skills and makes it attachments (saddlery_window); levels
 ##                                        1-5, never above the Hearthtree; a stand-in model until the owner's comes
-##   Tailor's Nook      (Hearthtree 3)    23 Nov 2026: the cat's outfits, looks only (_card_tailor; balance.json
+##   Tailor's Nook      (Hearthtree 3)    23 Nov 2026: the cat's outfits, looks only (tailor_window; balance.json
 ##                                        cat_skins); one level; a stand-in model until the owner's comes
 ## Every building has health during a mission (hp, hurt_building). Knocked down, it is a ruin: it shows only a Repair
 ## row and does nothing until then (no Sprig, no riding, no mending, no training, no crafting, no shop). A won mission
 ## mends every ruin for free; when the camp falls they stay, and repairs cost a share of what the building cost.
 ## When the camp has fallen, the campfire's ring offers to rebuild the fire; no mission can start before that.
+## H4 (26 Nov 2026): each building's card is its own window (ui/windows/, one file per building, made by the HUD:
+## hud.windows; use_windows plugs them into the markers). A window builds words and rows; this file keeps the rules
+## (everything that pays, changes the save, moves a node or plays an effect) under their old names, and the windows call
+## them (st._upgrade_station, st._build_station, ...). The signpost's, the campfire's and the cooking pot's cards stay
+## here (they are not buildings). Every time a building's level goes up, Events.building_upgraded says so.
+## H5 (27 Nov 2026): the Mushroom Cottage has left the camp (its pet moved to the Market's Pets tab, an old save's
+## Cottage became the pet's level: core/save_upgrade_v5.gd). Every purchase here is the one Buy command
+## (commands/buy.gd) or Bramble's trade (scripts/market_trade.gd); the rules below keep only what follows a purchase
+## (saving, the live models, the effects and the receipt), as they did before. Choosing a look and the mount's skill
+## circles are scripts/companion_shop.gd's.
 
 const RingScript := preload("res://scripts/marker.gd")      # a tap on its badge or the building opens its card
 const FLAME := preload("res://shaders/flame.gdshader")
+const Buy := preload("res://commands/buy.gd")
+const MarketTrade := preload("res://scripts/market_trade.gd")
+const CompanionShop := preload("res://scripts/companion_shop.gd")
+const MARKET := "stall"  # H5: the Market's building id (the save's): Bramble's trades, the companions' shop
 
 var main
-var nodes := {}          # "home", "campfire", "target", "bench", "well", "cottage", "stall", "saddlery", "tailor" -> prop node
-var rings := {}          # "shop", "target", "bench", "sign", "well", "cottage", "stall", "saddlery", "tailor", "fire" -> marker (marker.gd)
+var nodes := {}          # "home", "campfire", "target", "bench", "well", "stall", "saddlery", "tailor" -> prop node
+var rings := {}          # "shop", "target", "bench", "sign", "well", "stall", "saddlery", "tailor", "fire" -> marker (marker.gd)
 var hp := {}             # building -> health in the current mission
-const VILLAGE := ["well", "cottage", "stall"]
-const BUILDINGS := ["home", "target", "bench", "well", "cottage", "stall", "saddlery", "tailor"]
-const FOOT := {"campfire": 0.6, "home": 1.15, "bench": 0.8, "target": 0.45, "well": 0.62, "cottage": 0.95, "stall": 0.9,
+const VILLAGE := ["well", "stall"]
+const BUILDINGS := ["home", "target", "bench", "well", "stall", "saddlery", "tailor"]
+const FOOT := {"campfire": 0.6, "home": 1.15, "bench": 0.8, "target": 0.45, "well": 0.62, "stall": 0.9,
 	"stone": 0.7, "garden": 1.1, "pot": 0.25, "fishing": 0.45, "saddlery": 0.8, "tailor": 1.35}
 ## Phase C stations: never wrecked, never in BUILDINGS or VILLAGE (the Moss Warden takes the hits for the camp).
 const CAMP_LIFE := ["stone", "garden", "pot", "fishing"]
 var dummy: Node3D        # what the cat shoots at the training target
 var sign_tab := ""       # empty selects the current progression view; otherwise missions / raids
+var windows: Dictionary = {}   # H4: marker id -> its building's window (hud.windows; use_windows), plus "build"
 
 
 func build(m) -> void:
 	main = m
-	for id in ["shop", "target", "bench", "sign", "well", "cottage", "stall", "saddlery", "tailor", "fire"] + CAMP_LIFE:
+	for id in ["shop", "target", "bench", "sign", "well", "stall", "saddlery", "tailor", "fire"] + CAMP_LIFE:
 		var ring := Node3D.new()
 		ring.set_script(RingScript)
 		add_child(ring)
 		var col := Color(1.0, 0.82, 0.3) if id != "sign" and id != "fire" else Color(1.0, 0.55, 0.35)
-		ring.setup(id, Vector3.ZERO, 0.75, Callable(self, "_card_" + id), col)
+		# H4: a building's card is its window, plugged in by use_windows once the HUD has made them; until then (the
+		# first refresh runs before the HUD) the marker shows its own card (pot, campfire, signpost) or an empty one
+		var card: Callable = Callable(self, "_card_" + id) if has_method("_card_" + id) else _no_card
+		ring.setup(id, Vector3.ZERO, 0.75, card, col)
 		rings[id] = ring
 		main.register_ring(ring)
 	dummy = Node3D.new()
 	dummy.set_script(preload("res://scripts/dummy.gd"))
 	add_child(dummy)
 	refresh()
+
+
+## H4: the HUD's building windows (hud.windows, ui/windows/window_list.gd): each one becomes its marker's card (the
+## marker's builder is the window's spec, so the card tells the window when a visit starts and ends). "build" (the
+## build menu) is in the list but is not a marker. Then the markers' "!" are worked out again from the windows.
+func use_windows(w: Dictionary) -> void:
+	windows = w
+	for rid in w:
+		if rings.has(rid):
+			rings[rid].builder = w[rid].spec
+	_update_pulses()
+
+
+## A marker's card before its window is plugged in (nothing to show yet).
+func _no_card() -> Dictionary:
+	return {"title": "", "rows": []}
 
 
 ## The home and the campfire by home level (1-6). A level whose model is not made yet shows the one before it.
@@ -94,7 +128,6 @@ func model_name(id: String) -> String:
 		"bench": return String(BENCH_MODELS[clampi(int(Save.stations["bench"]), 1, BENCH_MODELS.size()) - 1])
 		"target": return String(TARGET_MODELS[clampi(int(Save.stations["target"]), 1, TARGET_MODELS.size()) - 1])
 		"well": return "wishing_well"
-		"cottage": return "mushroom_cottage"
 		"stall": return "market_stall"
 		"saddlery": return _saddlery_model()
 		"tailor": return _tailor_model()
@@ -124,18 +157,18 @@ func _saddlery_tint() -> Color:
 
 
 ## 23 Nov 2026: the Tailor's Nook's model: the owner's (props/tailors_nook.glb) once it is made, else the stand-in
-## (balance.json stations.tailor.stand_in: the Market's stall, tinted a fabric purple, see _tailor_tint).
+## (its entry's stand_in, content/buildings/tailor: the Market's stall, tinted a fabric purple, see _tailor_tint).
 func _tailor_model() -> String:
 	if Props.has("tailors_nook"):
 		return "tailors_nook"
-	return String((Data.b["stations"]["tailor"].get("stand_in", {}) as Dictionary).get("model", "market_stall"))
+	return String((Data.building("tailor").get("stand_in", {}) as Dictionary).get("model", "market_stall"))
 
 
-## The stand-in's tint (balance.json stations.tailor.stand_in.tint); white (none) on the owner's own model.
+## The stand-in's tint (its entry's stand_in.tint); white (none) on the owner's own model.
 func _tailor_tint() -> Color:
 	if Props.has("tailors_nook"):
 		return Color(1, 1, 1)
-	return Color.html(String((Data.b["stations"]["tailor"].get("stand_in", {}) as Dictionary).get("tint", "#B48CE6")))
+	return Color.html(String((Data.building("tailor").get("stand_in", {}) as Dictionary).get("tint", "#B48CE6")))
 
 
 func shown(id: String) -> bool:
@@ -143,7 +176,7 @@ func shown(id: String) -> bool:
 		"campfire", "home": return true
 		"bench": return Save.stations["bench"] >= 1
 		"target": return Save.stations["target"] >= 1
-		"well", "cottage", "stall", "saddlery", "tailor": return int(Save.stations.get(id, 0)) >= 1
+		"well", "stall", "saddlery", "tailor": return int(Save.stations.get(id, 0)) >= 1
 		"stone", "garden", "fishing": return int(Save.stations.get(id, 0)) >= 1
 		"pot": return int(Save.stations.get("garden", 0)) >= 1          # the pot comes with the garden
 	return false
@@ -152,17 +185,20 @@ func shown(id: String) -> bool:
 func ring_shown(id: String) -> bool:
 	match id:
 		"shop", "sign": return true
-		"target", "bench", "well", "cottage", "stall", "saddlery", "tailor": return shown(id)
+		"target", "bench", "well", "stall", "saddlery", "tailor": return shown(id)
 		"fire": return Save.fire_ruined
 		"stone", "garden", "fishing": return shown(id)
 		"pot": return shown("pot") and not _out and not Save.fire_ruined     # no cooking on the ashes
 	return false
 
 
-## Rebuilds the buildings that changed (new level, newly built) and moves the rings.
-func refresh(celebrate := "") -> void:
+## Rebuilds the buildings that changed (new level, newly built) and moves the rings. `celebrate` (a building's id, or
+## "all") gives it a boing and the flower ring. H4: with `rise` (_build_station: built from the build menu) the new
+## building grows up out of the ground instead (Fx.rise), once the camera has glided there (main.show_spot), with a
+## puff of dust and the flower ring at that moment.
+func refresh(celebrate := "", rise := false) -> void:
 	var w = main.world
-	for id in ["campfire", "home", "bench", "target", "well", "cottage", "stall", "saddlery", "tailor"] + CAMP_LIFE:
+	for id in ["campfire", "home", "bench", "target", "well", "stall", "saddlery", "tailor"] + CAMP_LIFE:
 		var want := model_name(id) if shown(id) else ""
 		var have: Node3D = nodes.get(id)
 		if have != null and String(have.get_meta("model", "")) != want:
@@ -182,7 +218,18 @@ func refresh(celebrate := "") -> void:
 					Props.set_param(have, "tint", _saddlery_tint())   # G4: the stand-in Bow Bench, tinted brown
 				if id == "tailor":
 					Props.set_param(have, "tint", _tailor_tint())     # 23 Nov 2026: the stand-in stall, tinted purple
-				if celebrate == id or celebrate == "all":
+				if rise and celebrate == id:
+					# H4: the camera's glide to it takes about this long; the dust and the flowers come as it rises (a
+					# tween on the building, so nothing plays if it is gone by then)
+					var delay := 0.45
+					var at: Vector3 = w.station_pos(id)
+					Fx.rise(have, delay)
+					var puff := have.create_tween()
+					puff.tween_interval(delay)
+					puff.tween_callback(func() -> void:
+						Fx.dust(main, at, 8, 1.2)
+						Fx.flower_ring(main, at, 1.6))
+				elif celebrate == id or celebrate == "all":
 					Fx.boing(have, 0.35)
 					Fx.flower_ring(main, w.station_pos(id), 1.6)
 			elif celebrate == id and (CAMP_LIFE.has(id) or id == "target" or id == "bench" or id == "saddlery"):
@@ -226,7 +273,7 @@ func refresh(celebrate := "") -> void:
 			"shop":
 				var marker: Node3D = Props.find_part(nodes["home"], "marker_ring") if nodes.has("home") else null
 				pos = marker.global_position if marker else w.station_pos("home") + Vector3(0.75, 0, 2.1)
-			"target", "bench", "well", "cottage", "stall", "saddlery", "tailor": pos = w.spot_ring(id)    # on the camera's side of each
+			"target", "bench", "well", "stall", "saddlery", "tailor": pos = w.spot_ring(id)    # on the camera's side of each
 			"sign": pos = w.station_pos("sign") + Vector3(0, 0, 0.95)
 			"fire": pos = Vector3(0, 0, maxf(1.15, foot("campfire") + 0.45))
 			"stone": pos = w.station_pos("stone") + Vector3(0, 0, 1.1)
@@ -327,16 +374,16 @@ func _wear_look(id: String) -> void:
 func repair_cost(id: String) -> Dictionary:
 	var spent := {"leaves": 0.0, "timber": 0.0}
 	if id == "home":
-		var levels: Array = Data.b["stations"]["camp"]["levels"]
+		var levels: Array = Data.building_levels("home")
 		spent["leaves"] = 100.0
 		for k in range(1, mini(Save.camp_level, levels.size())):
 			spent["leaves"] += float(levels[k].get("leaves", 0))
 			spent["timber"] += float(levels[k].get("timber", 0))
 	else:
-		var st: Dictionary = Data.b["stations"][id]
-		spent["leaves"] = float(st.get("build", {}).get("leaves", 0))
-		spent["timber"] = float(st.get("build", {}).get("timber", 0))
-		var levels2: Array = st.get("levels", [])
+		var price: Dictionary = Data.build_price(id)
+		spent["leaves"] = float(price.get("leaves", 0))
+		spent["timber"] = float(price.get("timber", 0))
+		var levels2: Array = Data.building_levels(id)
 		for k in range(1, mini(int(Save.stations.get(id, 1)), levels2.size())):
 			spent["leaves"] += float(levels2[k].get("leaves", 0))
 			spent["timber"] += float(levels2[k].get("timber", 0))
@@ -355,26 +402,7 @@ func repair_cost(id: String) -> Dictionary:
 	return cost
 
 
-func _ruin_card(id: String, title: String, anchor: Vector3) -> Dictionary:
-	var cost := repair_cost(id)
-	var what: String = {"home": "Nothing can be bought here", "target": "No training here", "bench": "No bows to buy or upgrade",
-		"well": "It can't mend the camp", "cottage": "%s is hiding" % Data.pet_name(),
-		"stall": "%s won't come out, and no trading" % Data.mount_name(),
-		"saddlery": "No skills or attachments to buy or upgrade",
-		"tailor": "No outfits to buy or put on"}.get(id, "")
-	var rows: Array = [{"text": "In ruins", "note": "%s until it is repaired" % what, "cost": {}, "label": "", "enabled": false, "action": Callable()}]
-	var raid: bool = main.fight.active and main.fight.mode == "raid"
-	if main.fight.active and main.fight.in_wave:
-		if raid:
-			rows.append({"text": "Repair between waves", "note": "Raids leave their damage: repair it after this wave", "cost": {}, "label": "", "enabled": false, "action": Callable()})
-		else:
-			rows.append({"text": "Repair between waves", "note": "Or win the raid and the camp mends itself", "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	else:
-		rows.append(_tile("repair", "Repair", "Everything here works again" + (" · free if the raid is won" if main.fight.active and not raid else ""),
-			cost, "Repair", true, _repair.bind(id)))
-	return {"title": title, "sub": "Knocked down by the Gloom", "rows": rows, "anchor": anchor}
-
-
+## Repairs a ruin (the ruin card's Repair: ui/windows/building_window.gd _ruin_card): between waves, its price paid.
 func _repair(id: String) -> void:
 	if not Save.ruined.has(id) or (main.fight.active and main.fight.in_wave) or not Data.pay(repair_cost(id)):
 		return
@@ -389,19 +417,10 @@ func _repair(id: String) -> void:
 
 
 func _name(id: String) -> String:
-	return Data.camp_name(true) if id == "home" else String(Data.b["stations"][id]["name"])
+	return Data.camp_name(true) if id == "home" else String(Data.building(id).get("name", id))
 
 
-## "Patch it up": a building worn by raids (on its own card).
-func _wear_row(id: String) -> Array:
-	var w := float(Save.wear.get(id, 0.0))
-	if w < float(Data.gr()["repair"]["wear_step"]) - 0.0001 or Save.ruined.has(id):
-		return []
-	var full := full_hp(id)
-	var note := "Worn %d%% by raids: %s of %s health" % [int(round(w * 100.0)), _thousands(int(round(full * (1.0 - w)))), _thousands(int(round(full)))]
-	return [_tile("repair", "Patch it up", note, patch_cost(id), "Patch", not _locked(), _patch.bind(id), "Worn")]
-
-
+## "Patch it up" (a worn building's row on its own window: ui/windows/building_window.gd _wear_row).
 func _patch(id: String) -> void:
 	if _locked() or not Save.wear.has(id) or not Data.pay(patch_cost(id)):
 		return
@@ -430,7 +449,8 @@ func mend_ruin(id: String) -> void:
 
 
 # ---------------------------------------------------------------- health in a mission
-## A building's full health at its level now.
+## A building's full health at its level now. H5 (the owner's Q5 A): the one-level Market's is its level-1 health or
+## the higher health an old save's Market had earned (Data.building_hp reads Save.market_hp_floor).
 func full_hp(id: String) -> float:
 	return Data.building_hp(id, Save.camp_level if id == "home" else int(Save.stations.get(id, 1)))
 
@@ -539,26 +559,25 @@ func repair_all_free(before = null) -> void:
 
 
 ## A building given by a mission (balance.json missions[].gift: the garden, the Fishing Spot; Phase G2: the Market
-## and the Mushroom Cottage are bought at Hearthtree level 2 now, but a gift of them still works). Its banner comes
-## a moment after the "mission won" banner, so both can be read.
+## is bought at Hearthtree level 2 now, but a gift of it still works). Its banner comes a moment after the "mission
+## won" banner, so both can be read. H5: an id that is no building any more (the Mushroom Cottage) gives nothing.
 func gift(id: String) -> void:
-	if int(Save.stations.get(id, 0)) > 0:
+	if Data.building(id).is_empty() or int(Save.stations.get(id, 0)) > 0:
 		return
 	Save.stations[id] = 1
 	_gift_extras(id)
 	Save.save_game()
+	Events.building_upgraded.emit(id, 1)
 	refresh(id)
 	main.refresh_companions()
 	match id:
 		"stall":
 			main.hud.banner_later(3.4, "%s arrives!" % Data.mount_name(), Color(1.0, 0.9, 0.55), "A Market for the camp, and a friend to ride: tap Ride")
-		"cottage":
-			main.hud.banner_later(3.4, "%s moves in!" % Data.pet_name(), Color(0.6, 1.0, 0.45), "A Mushroom Cottage, and a little friend who fights beside you")
 		"garden":
 			main.hud.banner_later(3.4, "A garden!", Color(0.6, 1.0, 0.45), "Rich soil south of the camp · and a cooking pot by the fire")
 			if not Save.flag("told_garden"):
 				Save.set_flag("told_garden")
-				main.hud.tip_after("Plant seeds, water them, pick them when ripe. They grow a step for every wave you hold.", rings.get("garden"))
+				main.hud.tip_after("Plant seeds, water them, pick them when ripe. They grow while you play, and while the game is closed.", rings.get("garden"))
 		"fishing":
 			main.hud.banner_later(3.4, "Gone fishing!", Color(0.6, 0.85, 1.0), "Bramble left you a rod by the lake")
 			if not Save.flag("told_fish"):
@@ -566,10 +585,11 @@ func gift(id: String) -> void:
 				main.hud.tip_after("Tap the Fishing Spot to cast a line between waves. Tap again when the float dips!", rings.get("fishing"))
 
 
-## What comes with a gift besides the building (the garden brings a few berries, so the pantry is never empty).
+## What comes with a gift besides the building (the garden brings a few berries, so the Bag is never empty). H3: the
+## berries are a gift already given, so they always go in (forced), even into a full Bag.
 func _gift_extras(id: String) -> void:
 	if id == "garden":
-		Save.pantry["berries"] = int(Save.pantry.get("berries", 0)) + 4
+		Bag.add("berries", 4, true)
 
 
 ## An older save that won a mission before its gift existed (or missed one) gets it now. Called once at the end of
@@ -577,16 +597,20 @@ func _gift_extras(id: String) -> void:
 func catch_up_gifts() -> void:
 	_tell_saddlery_moves()                         # G4: an old save's Thump and Burrows gear, now the Saddlery's
 	var got: Array = []
+	var given: Array = []                          # their ids, for Events.building_upgraded
 	for i in Data.mission_count():
 		var m := Data.mission(i)
 		var g := String(m.get("gift", ""))
-		if g != "" and Save.missions_done.has(String(m["id"])) and int(Save.stations.get(g, 0)) == 0:
+		if g != "" and not Data.building(g).is_empty() and Save.missions_done.has(String(m["id"])) and int(Save.stations.get(g, 0)) == 0:
 			Save.stations[g] = 1
 			_gift_extras(g)
 			got.append(_name(g))
+			given.append(g)
 	if got.is_empty():
 		return
 	Save.save_game()
+	for g in given:
+		Events.building_upgraded.emit(String(g), 1)
 	refresh("all")
 	main.refresh_companions()
 	main.hud.tip("New in your camp: %s" % ", ".join(got), null)
@@ -595,8 +619,11 @@ func catch_up_gifts() -> void:
 ## The cat freed the Moss Warden (Phase E calls this, in the first Burrow, once every mission is won). Guardians are
 ## found, never bought: no mission gives the stone and no row sells or wakes one. The stone and its ring show from now.
 func free_guardian() -> void:
-	Save.stations["stone"] = maxi(1, int(Save.stations.get("stone", 0)))
+	var was := int(Save.stations.get("stone", 0))
+	Save.stations["stone"] = maxi(1, was)
 	Save.save_game()
+	if was == 0:
+		Events.building_upgraded.emit("stone", 1)  # found: the stone is a level-1 building from now
 	refresh("stone")
 	main.refresh_companions()                      # spawns it (asleep, the first time) at its stone
 	Save.set_flag("warden_awake")
@@ -679,44 +706,8 @@ func _locked() -> bool:
 	return main.fight.active and main.fight.in_wave
 
 
-
 # ---------------------------------------------------------------- the Guardian Stone and the Moss Warden (Phase C)
-func _card_stone() -> Dictionary:
-	var anchor := _anchor("stone", 2.0)
-	var lv := int(Save.stations.get("stone", 0))
-	var sub := "Level %d · the Warden grows with %s too (x%.2f)" % [lv, Data.camp_name(), Data.guardian_power()]
-	var g = main.guardian
-	if g == null:
-		return {"title": "Guardian Stone", "sub": sub, "rows": [{"text": "The stone is quiet", "note": "", "cost": {}, "label": "", "enabled": false, "action": Callable()}], "anchor": anchor}
-	if not Save.flag("warden_awake"):
-		return {"title": "Guardian Stone", "sub": sub, "rows": [
-			{"text": "The %s is asleep" % Data.guardian_name(), "note": "An old guardian of mossy stone. Wake it and it guards your camp",
-				"cost": {}, "label": "Wake", "enabled": true, "pulse": true, "action": _wake_warden}], "anchor": anchor}
-	var rows: Array = []
-	rows.append({"text": "%s · level %d" % [Data.guardian_name(), lv], "note": "%s health · fists %d · ground slam %d" % [
-		_thousands(int(round(Data.guardian_max_hp()))), int(round(Data.guardian_fist())), int(round(Data.guardian_slam()))],
-		"cost": {}, "label": "", "enabled": false, "action": Callable()})
-	rows.append({"text": "How it fights", "note": "Goes for whatever attacks your buildings, barricades or campfire · too slow for fliers and thieves · stand by it to help it up",
-		"cost": {}, "label": "", "enabled": false, "action": Callable()})
-	rows.append({"text": "Post: %s" % g.post_text(Save.guardian_post), "note": _post_note(), "cost": {}, "label": "Change", "enabled": true, "action": _next_post})
-	var looks: Array = []
-	if (Data.b["looks"]["guardian"] as Array).size() > 1:
-		looks = _look_tiles("guardian", "guardian", "Your guardian now", "Same strength, a new look")
-	looks.append(_skin_row("guardian"))
-	_add_section(rows, "Looks", looks)
-	_add_section(rows, "Upgrade", [_station_upgrade_row("stone")])
-	return {"title": "Guardian Stone", "sub": sub, "rows": rows, "anchor": anchor}
-
-
-## 1035 -> "1,035".
-func _thousands(n: int) -> String:
-	var s := str(absi(n))
-	var out := ""
-	while s.length() > 3:
-		out = "," + s.substr(s.length() - 3) + out
-		s = s.substr(0, s.length() - 3)
-	return ("-" if n < 0 else "") + s + out
-
+# Its card is ui/windows/stone_window.gd (H4); the rules stay here.
 
 ## The lanes of the mission that comes next (the running one, the saved run's, else the next not won; all four after
 ## the last mission), as ints.
@@ -738,17 +729,6 @@ func _post_lanes() -> Array:
 	else:
 		out = [0, 1, 2, 3]
 	return out
-
-
-func _post_note() -> String:
-	var lanes := _post_lanes()
-	var names: Array = lanes.map(func(ln): return String(Data.patch(int(ln))["name"]))
-	var p := Save.guardian_post
-	var note := "Goes where the fight is, all round the camp" if p < 0 else "Stays at that trail's mouth; the rest of the camp is yours"
-	note += " · next raid: %s" % ", ".join(names)
-	if p >= 0 and not lanes.has(p):
-		note += " (not that trail: it guards the camp then)"
-	return note
 
 
 func _wake_warden() -> void:
@@ -775,178 +755,25 @@ func _next_post() -> void:
 	main.hud.refresh_card()
 
 # ---------------------------------------------------------------- the garden (Phase C, mission 1's gift)
-func _card_garden() -> Dictionary:
-	var anchor := _anchor("garden", 1.2)
-	var lv := Data.garden_level()
-	var g = main.garden
-	var sub := "Level %d · %d plots · a step for every wave the camp holds" % [lv, Data.garden_plots()]
-	if g == null:
-		return {"title": "Garden", "sub": sub, "rows": [], "anchor": anchor}
-	var rows: Array = []
-	var cnt: Dictionary = g.counts()
-	rows.append({"kind": "pantry"})
-	if int(cnt["ripe"]) > 0:
-		var pv: Dictionary = g.pick_preview()
-		var bits: Array = []
-		var add: Dictionary = pv["add"]
-		for k in add:
-			bits.append("+%d %s → %d/%d" % [int(add[k]), Data.item_name(String(k), int(add[k])),
-				int(Save.pantry.get(k, 0)) + int(add[k]), int(Data.b["cooking"]["pantry_cap"])])
-		var note := ", ".join(bits)
-		for k in pv["full"]:
-			note += (" · " if note != "" else "") + "pantry full of %s" % Data.item_name(String(k), 2)
-		rows.append({"text": "Pick what is ripe", "note": note, "cost": {}, "label": "Pick", "enabled": not add.is_empty(), "pulse": true, "action": _garden_pick})
-	else:
-		rows.append({"text": "Nothing ripe yet", "note": g.summary(), "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	if int(cnt["growing"]) > 0:
-		var w: int = g.wet_waves()
-		var least := w
-		for i in g.plots():
-			if g._growing(i):
-				least = mini(least, int(g.plot(i)["wet"]))
-		if least < w:
-			rows.append({"text": "Water the garden", "note": "Watered plants grow twice as fast for %d waves" % w, "cost": {}, "label": "Water",
-				"enabled": true, "pulse": int(cnt["dry"]) > 0, "action": _garden_water})
-		else:
-			rows.append({"text": "Watered", "note": "%d more waves of water" % least, "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	var empty := int(cnt["empty"])
-	var extra := int(Data.pick("garden", "extra_by_level", lv))
-	var wet := int(Data.b["garden"]["grow_wet"])
-	var dry := int(Data.b["garden"]["grow_dry"])
-	var seeds: Array = []
-	for c in Data.b["garden"]["crops"]:
-		var grow := int(c["grow"])
-		var note2 := "Ripe in %d waves with water, %d without · gives %d" % [int(ceil(float(grow) / wet)), int(ceil(float(grow) / dry)),
-			int(c["yield"]) + extra] if empty > 0 else "No empty plot"
-		seeds.append(_tile(String(c.get("gives", "garden")), "Plant %s" % String(c["name"]), note2, c["seed"], "Plant", empty > 0,
-			_garden_plant.bind(String(c["id"])), "%d empty" % empty if empty > 0 else "Full"))
-	_add_section(rows, "Plant", seeds)
-	_add_section(rows, "Upgrade", [_station_upgrade_row("garden")])
-	return {"title": "Garden", "sub": sub, "rows": rows, "anchor": anchor}
-
-
-func _garden_plant(crop_id: String) -> void:
-	if _locked() or main.garden == null:
-		return
-	var c := Data.crop(crop_id)
-	if c.is_empty() or main.garden.first_empty() < 0 or not Data.can_afford(c["seed"]):
-		return
-	var i: int = main.garden.first_empty()
-	Data.pay(c["seed"])
-	main.garden.plant(crop_id)
-	var at: Vector3 = main.garden.plot_pos(i)
-	Fx.dust(main, at, 6, 0.7)
-	main.garden.pop()
-	Sfx.play("pop", -6.0)
-	Save.save_game()
-	main.on_purchase()
-
-
-func _garden_water() -> void:
-	if _locked() or main.garden == null:
-		return
-	if main.garden.water() <= 0:
-		return
-	Fx.puff(main, main.world.station_pos("garden") + Vector3(0, 0.6, 0), Color(0.55, 0.8, 1.0), 12)
-	Sfx.play("water", -6.0)
-	Save.save_game()
-	main.on_purchase()
-
-
-func _garden_pick() -> void:
-	if _locked() or main.garden == null:
-		return
-	var got: Dictionary = main.garden.pick()
-	if got.is_empty():
-		return
-	var at: Vector3 = main.world.station_pos("garden")
-	var k := 0
-	for g in got:
-		Fx.text(main, at + Vector3(0, 1.0 + 0.4 * k, 0), "+%d %s" % [int(got[g]), Data.item_name(String(g), int(got[g]))], Color(0.75, 1.0, 0.5))
-		k += 1
-	Fx.flower_ring(main, at, 1.0)
-	Sfx.play("pluck", -4.0)
-	main.raids.add_gloom("harvest")
-	Save.save_game()
-	main.on_purchase()
-	main.hud.toast(Data.food_receipt(got))
-	if not Save.flag("told_cook"):
-		Save.set_flag("told_cook")
-		main.hud.tip("Cook what you pick at the pot by the campfire. A dish is eaten when the next chapter starts.", rings.get("pot"))
+# H4: the garden's card is ui/windows/garden_card.gd (around H3's garden window); the rules are garden.gd's.
 
 
 # ---------------------------------------------------------------- the cooking pot (comes with the garden)
+## H3: the pot's card is its window (ui/windows/cooking_window.gd: the slots, Cook, the bar, Collect). The window holds
+## no rules: cooking and collecting are cooking.gd's, and the pot cooks in real time (Timers). Its ring hides while the
+## fire is out (ring_shown), and a wave blanks the card (card.gd _spec).
 func _card_pot() -> Dictionary:
 	var anchor: Vector3 = main.world.station_pos("pot") + Vector3(0, 1.4, 0)
 	var ck = main.cooking
-	if ck == null:
+	if ck == null or main.hud == null or main.hud.cooking_window == null:
 		return {"title": "Cooking Pot", "sub": "", "rows": [], "anchor": anchor}
-	var subs: Array = []
-	if Save.meal_on != "":
-		var ron := Data.recipe(Save.meal_on)
-		subs.append("Active dish · %s · %s" % [String(ron.get("name", "")), String(ron.get("says", ""))])
-	if Save.meal_ready != "":
-		var waiting_dish := Data.recipe(Save.meal_ready)
-		subs.append("Waiting dish · %s · %s · next chapter or dungeon run" % [String(waiting_dish.get("name", "")), String(waiting_dish.get("says", ""))])
-	var sub := "\n".join(subs) if not subs.is_empty() else "One waiting dish · activates next chapter or dungeon run"
-	var rows: Array = []
-	rows.append({"kind": "section", "text": "Your food"})
-	rows.append({"kind": "pantry"})
-	var known: Array = ck.known()
-	var ready: Array = known.filter(func(r): return ck.can_cook(r))
-	var not_yet: Array = known.filter(func(r): return not ck.can_cook(r))
-	var order: Array = ready + not_yet                 # what can be cooked now comes first
-	var waiting := String(Data.recipe(Save.meal_ready).get("name", "")) if Save.meal_ready != "" else ""
-	for r in order:
-		var ok: bool = ck.can_cook(r)
-		var note := "%s\n%s · next chapter or dungeon run" % [ck.needs_text(r), String(r.get("says", ""))]
-		if not ok:
-			note = "%s · %s" % [ck.why_not(r), note]
-		elif waiting != "":
-			note += "\nReplaces %s and uses these ingredients" % waiting
-		rows.append({"text": "Cook %s" % String(r["name"]), "note": note, "cost": {}, "label": "Replace" if waiting != "" else "Cook", "enabled": ok,
-			"pulse": ok and Save.meal_ready == "", "action": _cook_dish.bind(String(r["id"]))})
-	return {"title": "Cooking Pot", "sub": sub, "rows": rows, "anchor": anchor}
-
-
-## Cook a dish: it waits in the pot and is eaten when the next chapter starts. Between waves only, never on the ashes.
-func _cook_dish(id: String) -> void:
-	if _locked() or _out or Save.fire_ruined or main.cooking == null:
-		return
-	main.cooking.cook(id)
+	var pulse: bool = bool(ck.wants_pulse())
+	return {"title": "Cooking Pot", "sub": "", "rows": [{"kind": "window", "window": main.hud.cooking_window, "enabled": true, "pulse": pulse}],
+		"anchor": anchor, "view_id": "pot"}
 
 
 # ---------------------------------------------------------------- the Fishing Spot (Phase C, mission 6's gift)
-func _card_fishing() -> Dictionary:
-	var anchor := _anchor("fishing", 1.6)
-	var fsh = main.fishing
-	var sub := "Calm water · fish for the cooking pot · %d fish in the pantry" % int(Save.pantry.get("fish", 0))
-	if fsh == null:
-		return {"title": "Fishing Spot", "sub": sub, "rows": [], "anchor": anchor}
-	var rows: Array = []
-	var riding: bool = main.player.riding
-	rows.append({"text": "Cast a line", "note": ("Get off %s to fish" % Data.mount_name()) if riding else "Tap anywhere when the float dips · drag to stop",
-		"cost": {}, "label": "Cast", "enabled": fsh.can_fish(), "action": _cast})
-	var cfg: Dictionary = Data.b["fishing"]
-	var bits: Array = []
-	for e in cfg["catches"]:
-		var n := int(Save.fish_log.get(String(e["id"]), 0))
-		bits.append("%s %d" % [String(e["name"]), n] if n > 0 else "?")
-	rows.append({"text": "Fish log · %d of %d found" % [fsh.log_found(), (cfg["catches"] as Array).size()], "note": " · ".join(bits),
-		"cost": {}, "label": "", "enabled": false, "action": Callable()})
-	var found := 0
-	var tb: Array = []
-	for tr in cfg["treasures"]:
-		if Save.flag(String(tr["id"])):
-			found += 1
-			tb.append("%s: %s" % [String(tr["name"]), String(tr["says"])])
-		else:
-			tb.append("?")
-	rows.append({"text": "Lake treasures · %d of %d" % [found, (cfg["treasures"] as Array).size()], "note": " · ".join(tb),
-		"cost": {}, "label": "", "enabled": false, "action": Callable()})
-	return {"title": "Fishing Spot", "sub": sub, "rows": rows, "anchor": anchor}
-
-
+## Its card is ui/windows/fishing_window.gd (H4); casting is the rule here.
 func _cast() -> void:
 	if _locked() or main.fishing == null:
 		return
@@ -1012,11 +839,15 @@ func _glow(home: Node3D) -> void:
 func _update_pulses() -> void:
 	# a ring pulses when something there is new or affordable (the Hearthtree's: growing it, once every goal is met and
 	# the price is affordable, is one of those rows; a "quiet" row never counts: the Market's everyday trades); the
-	# signpost between waves, unless the next mission waits for a bigger Hearthtree
+	# signpost between waves, unless the next mission waits for a bigger Hearthtree. H4: a building's marker asks its
+	# window (building_window.gd pulse: the same rule over its rows, or its pinned Upgrade's pulse)
 	for id in rings:
 		var ring = rings[id]
 		if not ring.visible:
 			ring.pulse = false
+			continue
+		if windows.has(id):
+			ring.pulse = bool(windows[id].pulse())
 			continue
 		var spec: Dictionary = ring.builder.call()
 		var any := false
@@ -1213,176 +1044,16 @@ func _process(_delta: float) -> void:
 		_fire_light.light_color = Color(_light_col.r, _light_col.g + n * 0.05, _light_col.b)
 
 
-# ---------------------------------------------------------------- cards
+# ---------------------------------------------------------------- cards (H4: a building's card is its window, ui/windows/)
+## A plain row with a price (the campfire's Rebuild; the windows' _cost_row hands theirs on to this one).
 func _cost_row(text: String, note: String, cost: Dictionary, label: String, ok: bool, action: Callable) -> Dictionary:
 	return {"text": text, "note": note, "cost": cost, "label": label, "enabled": ok and Data.can_afford(cost), "action": action}
 
 
-## Phase G2: a shop tile (hud.gd lays consecutive ones out as a grid): an icon, a name, one short line, optional stat
-## bars ([["Damage", 0..1], ...]) and a badge ("Level 3/5", "Owned", "Equipped", "New", "Max", "Locked"), the price and
-## one button. With no label (or no action) it has no working button: an owned look in use, a stat at its top.
-func _tile(icon: String, title: String, text: String, cost: Dictionary, label: String, ok: bool, action: Callable,
-		badge := "", stats: Array = []) -> Dictionary:
-	var t := {"kind": "item", "icon": icon, "title": title, "text": text, "cost": cost, "label": label,
-		"enabled": ok and label != "" and action.is_valid() and Data.can_afford(cost), "action": action}
-	if badge != "":
-		t["badge"] = badge
-	if not stats.is_empty():
-		t["stats"] = stats
-	return t
-
-
-## The Hearthtree's name without "the", for a tile's title ("Hearthtree level 3").
-func _camp_word() -> String:
-	return Data.camp_name(true).trim_prefix("The ")
-
-
-## A small shelf heading over the tiles that follow it.
-func _section(text: String) -> Dictionary:
-	return {"kind": "section", "text": text}
-
-
-## A shelf: its heading, then its rows (nothing at all when it has none).
-func _add_section(rows: Array, heading: String, items: Array) -> void:
-	if items.is_empty():
-		return
-	rows.append(_section(heading))
-	rows.append_array(items)
-
-
-func _anchor(id: String, h: float) -> Vector3:
-	return main.world.station_pos(id) + Vector3(0, h, 0)
-
-
-## The Hearthtree's card (ring "shop"): its goal list first (compact lines), then shop tiles in sections: Grow, The
-## cat, Buildings, Defences, and Settings (the graphics row stays a plain row).
-func _card_shop() -> Dictionary:
-	var title := Data.camp_name(true)
-	if Save.ruined.has("home"):
-		return _ruin_card("home", title, _anchor("home", 3.2))
-	var lv := Save.camp_level
-	var rows: Array = []
-	if Data.raids_open():
-		var cc: Dictionary = main.raids.camp_check()
-		if not (cc["items"] as Array).is_empty():
-			rows.append(main.raids.camp_row(cc))          # anything broken after a raid: Mend all at the very top
-	rows.append_array(_grow_rows())                    # Phase F: its goals, then (G2) the Grow section and its tile
-	rows.append_array(_wear_row("home"))
-	if not Save.flag("shop_open"):
-		rows.append({"text": "Nothing for sale yet", "note": "Defend the camp first: enemies drop golden leaves", "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	# the cat
-	if Save.flag("home"):
-		_add_section(rows, "The cat", _stat_rows(["health", "speed", "magnet"]))
-	_add_section(rows, "Buildings", _building_tiles())
-	_add_section(rows, "Defences", _defence_tiles())
-	# graphics: Auto, Low, Medium, High (kept apart from the save; see quality.gd)
-	rows.append(_section("Settings"))
-	rows.append(_cost_row("Graphics: %s" % Quality.label(), "Lower it if the game stutters · Auto picks for this phone",
-		{}, "Change", true, Quality.cycle))
-	var names: Array = Data.b["home_names"]
-	var sub := "Level %d: %s" % [lv, String(names[clampi(lv - 1, 0, names.size() - 1)])]
-	if _grow_shown():
-		var goals := Data.home_goals(lv + 1)
-		var met := goals.filter(func(g): return bool(g["done"])).size()
-		sub += " · level %d: %d of %d goals" % [lv + 1, met, goals.size()]
-	return {"title": title, "sub": sub, "rows": rows, "anchor": _anchor("home", 3.2)}
-
-
-## The Buildings shelf: the Training Target and the Bow Shop (once the first mission shows them), then the Wishing
-## Well (Hearthtree 3), the Mushroom Cottage and the Market (Hearthtree 2), the Saddlery (8 missions and
-## Hearthtree 2). Once the first mission is won, a building that is not open yet shows as a locked tile with what it
-## needs.
-func _building_tiles() -> Array:
-	var out: Array = []
-	for sid in ["target", "bench"]:
-		if Save.flag("shop_" + sid) and int(Save.stations[sid]) == 0:
-			var info: Dictionary = Data.b["stations"][sid]
-			out.append(_tile(_station_icon(sid), String(info["name"]), _village_note(sid), info["build"], "Build", true,
-				_build_station.bind(sid), "New"))
-	if not Save.flag("shop_open"):
-		return out
-	# G4: the Saddlery once mission 8 is won (and Hearthtree 2); 23 Nov 2026: the Tailor's Nook at Hearthtree 3
-	for sid in ["well", "cottage", "stall", "saddlery", "tailor"]:
-		if int(Save.stations.get(sid, 0)) > 0:
-			continue
-		var vi: Dictionary = Data.b["stations"][sid]
-		if Data.station_open(sid):
-			out.append(_tile(_station_icon(sid), String(vi["name"]), _village_note(sid), vi["build"], "Build", true,
-				_build_station.bind(sid), "New"))
-		elif Data.progress() >= 1:
-			out.append(_tile(_station_icon(sid), String(vi["name"]), _station_needs(sid), vi["build"], "Build", false, Callable(), "Locked"))
-	return out
-
-
-## What a building still waits for: "Needs the Hearthtree at level 2", "Win 4 missions first".
-func _station_needs(sid: String) -> String:
-	var vi: Dictionary = Data.b["stations"][sid]
-	var bits: Array = []
-	if Save.camp_level < int(vi.get("needs_home", 1)):
-		bits.append("Needs %s at level %d" % [Data.camp_name(), int(vi.get("needs_home", 1))])
-	var need := int(vi.get("needs_missions", 0))
-	if Data.progress() < need:
-		bits.append("Finish %d Raid Missions first" % need)
-	return " · ".join(bits)
-
-
-## The Defences shelf: mending what a raid or a camp fall left broken, then for each kind its pieces (towers and spikes:
-## barricade rows are built at the road spots now, defences.gd) and its next level (the barricade level raises every
-## row's health).
-func _defence_tiles() -> Array:
-	var out: Array = []
-	var lv := Save.camp_level
-	# defences kept damaged after a Gloom Raid or a camp fall
-	var wrecked: int = main.defences.wrecked_count()
-	if wrecked > 0:
-		out.append(_tile("repair", "Mend the defences", "%d defence piece%s broken or damaged" % [wrecked, "s" if wrecked > 1 else ""],
-			{"leaves": main.defences.repair_cost()}, "Mend", true, _mend_raid))
-	for type in ["barricade", "tower", "spikes"]:
-		var di := Data.defence_info(type)
-		if not main.defences.unlocked(type):
-			continue
-		if type != "barricade":
-			var have := int(Save.items.get(type, 0))
-			var note := "You have %d to place · tap the build button" % have if have > 0 else _def_note(type)
-			var room: bool = main.defences.room_for(type)
-			if not room:
-				note = main.defences.room_note(type)
-			out.append(_tile(type, String(di["name"]), note, {"leaves": int(di["piece"])}, "Buy", room, _buy_piece.bind(type),
-				("%d to place" % have) if have > 0 else ""))
-		var dl: int = main.defences.level(type)
-		var dlevels: Array = di["levels"]
-		var shown_top := _def_shown_top(type)
-		# level 4 (Shardstone) once raids are open; level 5 (Phase E: Heartwood, Amber) once the Burrows are open
-		if dl < shown_top:
-			var ok := dl + 1 <= lv
-			var lnote := _def_level_note(type, dl + 1) if ok else "Needs %s at level %d" % [Data.camp_name(), dl + 1]
-			var dcost := _def_cost(type, dl + 1)
-			if ok and dl + 1 == 4:
-				lnote += " · set with Gloom shards"
-			elif ok and dl + 1 >= 5:
-				lnote += Data.mats_line(dcost)
-			out.append(_tile(type, _def_level_title(type, dl + 1), lnote, dcost, "Upgrade", ok, _upgrade_defence.bind(type),
-				"Level %d/%d" % [dl, dlevels.size()], [["Level", float(dl) / float(maxi(dlevels.size(), 1))]]))
-	return out
-
-
-## The highest defence level on offer now: 3, then 4 (Shardstone) once raids are open, 5 once the Burrows are open.
-func _def_shown_top(type: String) -> int:
-	var n := (Data.defence_info(type)["levels"] as Array).size()
-	if not Data.raids_open():
-		n = mini(n, 3)
-	elif not Data.burrows_open():
-		n = mini(n, 4)
-	return n
-
-
-## "Barricades level 2", "Towers level 3", "Thorn Spikes: Shardstone" (levels 4 and 5 have names).
-func _def_level_title(type: String, lv: int) -> String:
-	var dlevels: Array = Data.defence_info(type)["levels"]
-	var kind := Data.def_kind_name(type)
-	if lv >= 4 and lv <= dlevels.size() and dlevels[lv - 1].has("name"):
-		return "%s: %s" % [kind, String(dlevels[lv - 1]["name"])]
-	return "%s level %d" % [kind, lv]
+# ---------------------------------------------------------------- H4: no old card names
+# A building's card is its window (hud.windows[<marker id>].spec()); code and tests reach it there. Only the cards of
+# things that are not buildings stay in this file (_card_pot, _card_fire, _card_sign); _no_card covers a marker before
+# the HUD has made its window.
 
 
 func _mend_raid() -> void:
@@ -1394,68 +1065,22 @@ func _mend_raid() -> void:
 	main.on_purchase()
 
 
-func _village_note(sid: String) -> String:
-	match sid:
-		"target": return "Train here to hit harder, shoot faster, reach further"
-		"bench": return "Buy new bows, upgrade and equip them"
-		"well": return "Mends the camp by itself, a little at a time"
-		"cottage": return "%s moves in and fights beside you" % String(Data.look("pet", Save.pet_look)["name"])
-		"stall": return "Bramble's shop, and %s comes free" % String(Data.look("mount", Save.mount_look)["name"])
-		"saddlery": return "Skills and attachments for %s" % Data.mount_name()
-		"tailor": return "New outfits for the cat · looks only"
-	return ""
-
-
-## The icon id of a building's tiles (hud.gd draws them; an unknown id is a plain round icon).
-func _station_icon(sid: String) -> String:
-	match sid:
-		"home": return "home"
-		"target": return "target"
-		"bench": return "bow"
-		"well": return "well"
-		"cottage": return "pet"
-		"stall": return "market"
-		"saddlery": return "saddlery"
-		"tailor": return "tailor"
-		"garden": return "garden"
-		"stone": return "guardian"
-		"fishing": return "fishing"
-		"pot": return "pot"
-	return sid
-
-
-func _def_note(type: String) -> String:
-	match type:
-		"barricade": return "Blocks a road at one of its glowing spots: enemies must break it"
-		"tower": return "Shoots acorns at enemies near it"
-		"spikes": return "Hurts and slows enemies that walk over it"
-	return ""
-
-
-func _def_level_note(type: String, lv: int) -> String:
-	var l: Dictionary = Data.defence_info(type)["levels"][lv - 1]
-	match type:
-		"barricade": return "%d health each" % int(l["hp"])
-		"tower": return "360° · %d damage · %.1fm\nEvery %.2fs · %d health" % [int(l["damage"]), float(l["range"]), float(l["every"]), int(l.get("hp", 0))]
-		"spikes": return "%d damage a second, slows more" % int(l["dps"])
-	return ""
-
-
-## Builds a station bought on the Hearthtree's card, once it is open (Data.station_open: needs_missions, needs_home).
-## Phase G2: the Market brings Thistle with it (the mount comes with the stall's level, main.refresh_companions), as the
-## old gift of mission 2 did.
+## Builds a station bought in the build menu (ui/windows/build_menu_window.gd), once it is open (Data.station_open: its
+## entry's unlock rule) and its price (Data.build_price) is paid. Phase G2: the Market brings Thistle with it (H5: the
+## Market's mounts are owned once it is built, Data.owned_level; main.refresh_companions brings it out), as the old
+## gift of mission 2 did. An id that is no building any more (the Mushroom Cottage) builds nothing.
 func _build_station(sid: String) -> void:
-	if int(Save.stations[sid]) > 0 or not Data.station_open(sid) or not Data.pay(Data.b["stations"][sid]["build"]):
+	if Data.building(sid).is_empty() or int(Save.stations.get(sid, 0)) > 0 or not Data.station_open(sid) \
+			or not Data.pay(Data.build_price(sid)):
 		return
 	Save.stations[sid] = 1
 	if main.fight.active and BUILDINGS.has(sid):
 		hp[sid] = full_hp(sid)
 	Save.save_game()
-	refresh(sid)
+	Events.building_upgraded.emit(sid, 1)
+	refresh(sid, true)                         # H4: it rises out of the ground (the build menu's camera shows it)
 	main.on_purchase()
 	match sid:
-		"cottage":
-			main.hud.banner("%s moves in!" % Data.pet_name(), Color(0.6, 1.0, 0.45), "A little friend now fights beside the cat")
 		"stall":
 			main.hud.banner("The %s is open!" % _name("stall"), Color(1.0, 0.9, 0.55), "Bramble trades here, and %s comes free: tap Ride to hop on" % Data.mount_name())
 		"well":
@@ -1465,16 +1090,18 @@ func _build_station(sid: String) -> void:
 		"tailor":
 			main.hud.banner("%s built!" % _name("tailor"), Color(0.82, 0.68, 1.0), "New outfits for the cat: looks only")
 		_:
-			main.hud.banner("%s built!" % Data.b["stations"][sid]["name"], Color(1.0, 0.9, 0.45))
+			main.hud.banner("%s built!" % _name(sid), Color(1.0, 0.9, 0.45))
 
 
-func _buy_piece(type: String) -> void:
-	if not Data.pay({"leaves": int(Data.defence_info(type)["piece"])}):
-		return
-	Save.items[type] = int(Save.items.get(type, 0)) + 1
+## Buys one tower or spikes piece into the Bag (H3: placed from the Bag or the row-2 button). H5: the Buy command
+## (kind "defences") checks first, so a full Bag or the tower cap never takes the leaves for nothing.
+func _buy_piece(type: String) -> bool:
+	if not Buy.new("defences", type).run(main):
+		return false
 	Save.save_game()
 	main.on_purchase()
 	main.hud.refresh_build()
+	return true
 
 
 ## What a defence level costs: leaves, and Gloom shards for level 4 (H1: level 5 is leaves only, after the Burrows open).
@@ -1503,7 +1130,7 @@ func _upgrade_defence(type: String) -> void:
 ## Grows the home a level: every goal on the next level's list met (Data.home_goals_met, which keeps the older
 ## needs_burrows / needs_depth gates of levels 6-8) and its price paid.
 func _grow_camp() -> void:
-	var levels: Array = Data.b["stations"]["camp"]["levels"]
+	var levels: Array = Data.building_levels("home")
 	if Save.camp_level >= levels.size():
 		return
 	var next: Dictionary = levels[Save.camp_level]
@@ -1513,72 +1140,13 @@ func _grow_camp() -> void:
 		return
 	Save.camp_level += 1
 	Save.save_game()
+	Events.building_upgraded.emit("home", Save.camp_level)
 	main.on_camp_grown()
 
 
 # ---------------------------------------------------------------- Phase F: growing the Hearthtree (its goals)
-## The Hearthtree's card shows the next level's goals once the first mission is won (the first mission's shop stays
-## simple).
-func _grow_shown() -> bool:
-	var levels: Array = Data.b["stations"]["camp"]["levels"]
-	return Save.camp_level < levels.size() and (Data.progress() >= 1 or Save.camp_level > 1)
-
-
-## The top of the Hearthtree's card: each goal of its next level on one line (a tick when met, else its progress and a
-## button to where it is bought), then (G2) the Grow section with its tile: the price and Grow (on only when every goal
-## is met and the price affordable: then the Hearthtree's badge shows its "!"). The tile is the last row.
-func _grow_rows() -> Array:
-	var rows: Array = []
-	if not _grow_shown():
-		return rows
-	var lv := Save.camp_level
-	var levels: Array = Data.b["stations"]["camp"]["levels"]
-	var goals := Data.home_goals(lv + 1)
-	for g in goals:
-		rows.append(_goal_row(g))
-	var next: Dictionary = levels[lv]
-	var cost := _level_cost(next)
-	var met := Data.home_goals_met(lv + 1)
-	var fires: Array = Data.b["fire_hp_by_camp_level"]
-	var fire_hp := int(fires[mini(lv + 1, fires.size() - 1)])
-	var towers: Array = Data.defence_info("tower")["max_by_camp_level"]
-	var names: Array = Data.b["home_names"]
-	var gives := "%s · campfire %d · %d towers" % [String(names[mini(lv, names.size() - 1)]), fire_hp,
-		int(towers[mini(lv + 1, towers.size() - 1)])]
-	if lv + 1 <= 5:                                     # the Training Target and the Bow Shop stop at 5
-		gives += " · buildings lv %d" % (lv + 1)
-	var left := goals.filter(func(g): return not bool(g["done"])).size()
-	var note := gives + Data.mats_line(cost)
-	if not met:
-		if left > 0:
-			note = gives                                # the tile's Goals bar shows how many are met
-		elif bool(next.get("needs_burrows", false)) and not Data.burrows_open():
-			note = "After the raids: the Gloomwood must open first"
-		else:
-			note = "Beat level %d of %s first" % [int(next.get("needs_depth", 0)), String(Data.burrow_list()[0]["name"])]
-	rows.append(_section("Grow"))
-	var row := _tile("grow", "%s level %d" % [_camp_word(), lv + 1], note, cost, "Grow", met, _grow_camp,
-		"Level %d/%d" % [lv, levels.size()], [["Goals", float(goals.size() - left) / float(maxi(goals.size(), 1)),
-		"%d/%d" % [goals.size() - left, goals.size()]]])
-	row["pulse"] = bool(row["enabled"])
-	rows.append(row)
-	return rows
-
-
-## One goal on the Hearthtree's card: "Damage 4" with a tick when met, else "Damage 3/4" and Go (the cat walks to the
-## card that sells it) or Show (it is sold further down this card). `small`/`done` make it a compact line (hud.gd).
-func _goal_row(g: Dictionary) -> Dictionary:
-	var done := bool(g["done"])
-	var row := {"text": String(g["text"]) if done else String(g["progress"]), "note": "", "cost": {}, "label": "",
-		"enabled": false, "action": Callable(), "small": true, "done": done, "goal": g}
-	if not done:
-		var r = goal_ring(String(g["station"]))
-		if r != null:
-			row["label"] = "Show" if r == rings["shop"] else "Go"
-			row["enabled"] = true
-			row["action"] = _goal_go.bind(g)
-	return row
-
+# The goal list and its Go / Show buttons are the Hearthtree's window's (ui/windows/hearthtree_window.gd); goal_ring
+# (which marker sells a goal) and the price of a level stay here.
 
 ## The marker whose card sells a goal (Data.home_goals' `station`): the Hearthtree's ("home"), a station's, the signpost's
 ## ("sign") or the Old Hollow's ("hollow"). null when there is none to go to now (not built, or hidden).
@@ -1593,44 +1161,6 @@ func goal_ring(sid: String):
 	return r
 
 
-## A tap on a goal: its card opens, and the cat walks there first if it is out of reach (as a tap on its marker does).
-## A goal sold on the card already open (the Hearthtree's own stats, buildings, towers, defences) scrolls the card to
-## its tile.
-func _goal_go(g: Dictionary) -> void:
-	var r = goal_ring(String(g.get("station", "")))
-	if r == null:
-		return
-	if r == main.hud.card_ring():
-		main.hud.scroll_card_to(_goal_find(g))
-		return
-	main.hud.hide_card()
-	if main.interact != null:
-		main.interact.use(r)
-	else:
-		main.open_ring(r)
-
-
-## The title of the tile on the Hearthtree's card that sells a goal (hud.scroll_card_to finds the first row or tile
-## holding these words).
-func _goal_find(g: Dictionary) -> String:
-	var id := String(g.get("id", ""))
-	match String(g.get("type", "")):
-		"stat", "all_stats":
-			return String(Data.stat_info(id)["name"]) if Data.b["stats"].has(id) else ""
-		"towers":
-			var tl: int = main.defences.level("tower")
-			if tl < int(g.get("level", 1)):
-				return _def_level_title("tower", tl + 1)
-			return String(Data.defence_info("tower")["name"])
-		"defence":
-			if not Data.b["defences"].has(id):
-				return ""
-			return _def_level_title(id, main.defences.level(id) + 1)
-		"station":
-			return String(Data.b["stations"].get(id, {}).get("name", id))
-	return ""
-
-
 ## A level's price (every currency it names; other keys such as needs_* are not money).
 func _level_cost(next: Dictionary) -> Dictionary:
 	var c := {}
@@ -1638,52 +1168,6 @@ func _level_cost(next: Dictionary) -> Dictionary:
 		if int(next.get(k, 0)) > 0:
 			c[k] = int(next[k])
 	return c
-
-
-## What each stat does, in one short line, and its tile's icon (hud.gd draws the icons).
-const STAT_SAYS := {"damage": "Arrows hit harder", "draw": "Shoots faster", "range": "Shoots from further away",
-	"health": "More health for the cat", "speed": "The cat runs faster", "magnet": "Leaves fly in from further"}
-const STAT_ICONS := {"damage": "damage", "draw": "draw", "range": "range", "health": "heart", "speed": "speed", "magnet": "magnet"}
-
-
-## The stat tiles (the Training Target's Damage, Draw speed and Range; the Hearthtree's Health, Move speed and Leaf
-## magnet): a bar for the level out of what the station allows now, "Level 3/6", and Buy.
-func _stat_rows(ids: Array) -> Array:
-	var rows: Array = []
-	for sid in ids:
-		var info := Data.stat_info(sid)
-		var lv := int(Save.stats[sid])
-		var cap := Data.stat_cap(sid)
-		var costs: Array = info["cost"]
-		var top := Data.stat_top(sid)
-		var unit := String(info["unit"])
-		var per := float(info["per_level"])
-		var now := ""
-		match unit:
-			"x": now = "+%d%%" % int(round(per * lv * 100.0))
-			"m": now = "+%.1fm" % (per * lv)
-			"hp": now = "+%d" % int(per * lv)
-		var nm := String(info["name"])
-		var icon := String(STAT_ICONS.get(sid, sid))
-		var says := String(STAT_SAYS.get(sid, ""))
-		var bar := [["Level", float(lv) / float(maxi(maxi(cap, lv), 1))]]
-		var at_home := String(info["station"]) == "home" or String(info["station"]) == "camp"
-		if cap == 0:
-			rows.append(_tile(icon, nm, "Upgrade the %s to unlock" % _name(String(info["station"])) if not at_home else "Grow %s to unlock" % Data.camp_name(),
-				{}, "", false, Callable(), "Locked"))
-		elif lv >= top:
-			rows.append(_tile(icon, nm, "%s · now %s" % [says, now], {}, "", false, Callable(), "Max", [["Level", 1.0]]))
-		elif lv >= cap:
-			var more := ("Grow %s for more" % Data.camp_name()) if at_home else ("Upgrade the %s for more" % _name(String(info["station"])))
-			rows.append(_tile(icon, nm, "Now %s · %s" % [now, more], {}, "", false, Callable(), "Level %d/%d" % [lv, maxi(cap, lv)], bar))
-		elif lv >= costs.size():
-			var mc := Data.stat_cost(sid, lv)          # Phase E: mastery, past level 10
-			rows.append(_tile(icon, nm, "Mastery: now %s%s" % [now, Data.mats_line(mc)], mc, "Buy", true, _buy_stat.bind(sid),
-				"Mastery %d/%d" % [lv - costs.size() + 1, top - costs.size()], bar))
-		else:
-			rows.append(_tile(icon, nm, ("%s · now %s" % [says, now]) if lv > 0 else says, Data.stat_cost(sid, lv), "Buy", true,
-				_buy_stat.bind(sid), "Level %d/%d" % [lv, cap], bar))
-	return rows
 
 
 func _buy_stat(sid: String) -> void:
@@ -1702,54 +1186,11 @@ func _buy_stat(sid: String) -> void:
 		main.hud.refresh_hp()
 
 
-## A station's own upgrade tile: "Training Target level 2" with what the level gives, "Level 1/5", and Upgrade (never
-## above the Hearthtree's level). At its top: the station's name and Max, no button.
-func _station_upgrade_row(id: String) -> Dictionary:
-	var lv := int(Save.stations[id])
-	var levels: Array = Data.b["stations"][id]["levels"]
-	var nm := String(Data.b["stations"][id]["name"])
-	var icon := _station_icon(id)
-	if lv >= levels.size() or (bool(levels[lv].get("needs_burrows", false)) and not Data.burrows_open()):
-		return _tile(icon, nm, "At max level for now" if lv < levels.size() else "At max level", {}, "", false, Callable(), "Max", [["Level", 1.0]])
-	var next: Dictionary = levels[lv]
-	var cost := _level_cost(next)
-	var ok := lv + 1 <= Save.camp_level
-	var gives := ""
-	if id == "target":
-		gives = "Stats up to level %d%s" % [int(Data.b["stat_cap_by_station_level"][lv + 1]), ", unlocks Range" if lv + 1 == 2 else ""]
-	elif id == "well":
-		gives = _well_line(lv + 1)
-	elif id == "cottage":
-		gives = "%s: %d damage every %.1fs" % [Data.pet_name(), int(Data.pick("pet", "damage_by_level", lv + 1)), Data.pick("pet", "every_by_level", lv + 1)]
-	elif id == "stall":
-		gives = "%s runs faster and has %d health" % [Data.mount_name(), roundi(Data.pick("mount", "hp_by_level", lv + 1) * Data.mount_hp_mult())]
-	elif id == "saddlery":
-		gives = "Skills and attachments up to level %d" % (lv + 1)
-	elif id == "stone":
-		var pw := Data.guardian_power()                 # the next stone level at today's Hearthtree level
-		gives = "%s: %s health, fists %d, slam %d" % [Data.guardian_name(), _thousands(int(round(Data.pick("guardian", "hp_by_level", lv + 1) * pw))),
-			int(round(Data.pick("guardian", "fist_damage_by_level", lv + 1) * pw)), int(round(Data.pick("guardian", "slam_damage_by_level", lv + 1) * pw))]
-	elif id == "garden":
-		gives = "%d plots, water lasts %d waves" % [int(Data.pick("garden", "plots_by_level", lv + 1)), int(Data.pick("garden", "wet_waves_by_level", lv + 1))]
-		if int(Data.pick("garden", "extra_by_level", lv + 1)) > 0:
-			gives += ", +%d on every harvest" % int(Data.pick("garden", "extra_by_level", lv + 1))
-	else:
-		gives = "Bows up to level %d" % int(Data.b["bow_cap_by_bench_level"][lv + 1])
-		var sells: Array = []
-		for bid in Data.b["bows"]:
-			var bi := Data.bow_info(bid)
-			if int(bi["bench_level"]) == lv + 1 and not Data.bow_hidden(String(bid)) and not (bool(bi.get("needs_burrows", false)) and not Data.burrows_open()):
-				sells.append("the " + String(bi["name"]))
-		if not sells.is_empty():
-			gives += ", sells %s" % " and ".join(sells)
-	var text := gives if ok else ("Needs %s at level %d" % [Data.camp_name(), lv + 1])
-	return _tile(icon, "%s level %d" % [nm, lv + 1], text, cost, "Upgrade", ok, _upgrade_station.bind(id),
-		"Level %d/%d" % [lv, levels.size()], [["Level", float(lv) / float(maxi(levels.size(), 1))]])
-
-
+## A building's own Upgrade (its window's upgrade tile, or the confirm window's Confirm from Stage 2): never above the
+## Hearthtree's level, a level that waits for the Gloomwood not before it opens, and its price paid.
 func _upgrade_station(id: String) -> void:
 	var lv := int(Save.stations[id])
-	var levels: Array = Data.b["stations"][id]["levels"]
+	var levels: Array = Data.building_levels(id)
 	if lv >= levels.size():
 		return
 	var next: Dictionary = levels[lv]
@@ -1757,158 +1198,9 @@ func _upgrade_station(id: String) -> void:
 		return
 	Save.stations[id] = lv + 1
 	Save.save_game()
+	Events.building_upgraded.emit(id, lv + 1)
 	refresh(id)
 	main.on_purchase()
-
-
-func _card_target() -> Dictionary:
-	if Save.ruined.has("target"):
-		return _ruin_card("target", "Training Target", _anchor("target", 1.5))
-	var rows := _wear_row("target")
-	_add_section(rows, "Train", _stat_rows(["damage", "draw", "range"]))
-	_add_section(rows, "Upgrade", [_station_upgrade_row("target")])
-	return {"title": "Training Target", "sub": "Level %d · the cat practises while you stand here" % Save.stations["target"], "rows": rows, "anchor": _anchor("target", 1.5)}
-
-
-## G3: the Bow Shop (station id "bench", the Bow Bench before G3): one tile per bow, in balance.json's order (Twig,
-## Sunwood, Ember, Frost; since 22 Nov 2026 Thorn Volley and Foxfire are "hidden": no tile unless the save owns one, then
-## it shows Owned / Equipped as below so it can still be used), each with one button:
-##   the bow in the cat's paw   "Upgrade" (its level, mastery past 10 once the Burrows are open; never above the
-##                              shop's cap, Data.bow_cap(): at the cap the button is off and the note says to upgrade
-##                              the Bow Shop); badge "Equipped"
-##   owned, not in the paw      "Equip" (free); off while a mission or raid wave is on, the note then "Between waves";
-##                              badge "Owned"
-##   not owned                  "Buy" (balance.json craft); off below the shop level it needs ("Needs Bow Shop level
-##                              N", badge "Locked"), else badge "New". A bow bought between waves goes in the paw; one
-##                              bought mid-wave waits on the shelf (equip it after the wave)
-## The Foxfire Bow is left out until the Burrows open (unless the save owns it). Each bow keeps its own level. A tile
-## shows res://assets/ui/bows/bow_<id>.png (row key "picture", hud.gd) when that picture exists, else the "bow" icon.
-func _card_bench() -> Dictionary:
-	if Save.ruined.has("bench"):
-		return _ruin_card("bench", _name("bench"), _anchor("bench", 1.6))
-	var rows: Array = _wear_row("bench")
-	var bows: Array = []
-	for bid in Data.b["bows"]:
-		var t := _bow_tile(String(bid))
-		if not t.is_empty():
-			bows.append(t)
-	_add_section(rows, "Bows", bows)
-	_add_section(rows, "Upgrade", [_station_upgrade_row("bench")])
-	return {"title": _name("bench"), "sub": "Level %d · buy, upgrade and equip bows" % Save.stations["bench"], "rows": rows,
-		"anchor": _anchor("bench", 1.6)}
-
-
-## The path of a bow's shop picture (G3: rendered from its model); the tile uses it only when the file exists.
-static func bow_picture_path(bid: String) -> String:
-	return "res://assets/ui/bows/bow_%s.png" % bid
-
-
-## One bow's tile on the Bow Shop (see _card_bench); {} for a bow not shown: a hidden bow the save does not own (Thorn
-## Volley and Foxfire, 22 Nov 2026), or one that waits for the Burrows.
-func _bow_tile(bid: String) -> Dictionary:
-	var bi := Data.bow_info(bid)
-	var nm := String(bi["name"])
-	var owned := Save.bows.has(bid)
-	if not owned and Data.bow_hidden(bid):
-		return {}                                           # kept out of the shop for now (owned ones still show)
-	if not owned and bool(bi.get("needs_burrows", false)) and not Data.burrows_open():
-		return {}                                           # a bow that waits for the Burrows
-	var says := _bow_note(bid)
-	var cap := Data.bow_cap()
-	var t: Dictionary
-	if owned:
-		var lv := int(Save.bows[bid])
-		var top := Data.bow_top(bid)
-		var shown_cap := maxi(mini(cap, top), lv)
-		var bar := [["Level", float(lv) / float(maxi(shown_cap, 1)), "%d/%d" % [lv, shown_cap]]]
-		if bid == Save.bow:
-			var curve: Dictionary = Data.b["bow_upgrade_curve"]
-			if lv + 1 >= int(curve["late_from_level"]) and lv + 1 <= int(curve["late_to_level"]) and lv < cap and lv < top:
-				var gain := (Data.bow_level_mult(bid, lv + 1) / Data.bow_level_mult(bid, lv) - 1.0) * 100.0
-				says = "Next: +%s%% damage\n%s" % [_short_num(gain), says]
-			var costs: Array = bi["cost"]
-			if lv >= top:
-				t = _tile("bow", nm, "At max level · " + says, {}, "", false, Callable(), "Equipped", [["Level", 1.0, "Max"]])
-			elif lv >= cap:
-				t = _tile("bow", nm, "Upgrade the %s for more" % _name("bench"), {}, "Upgrade", false, Callable(), "Equipped", bar)
-			elif lv >= costs.size():
-				var bc := Data.bow_cost(bid, lv)            # Phase E: bow mastery, past level 10
-				t = _tile("bow", nm, "Mastery %d/%d%s" % [lv - costs.size() + 1, top - costs.size(), Data.mats_line(bc)], bc,
-					"Upgrade", true, _upgrade_bow, "Equipped", bar)
-			else:
-				t = _tile("bow", nm, says, Data.bow_cost(bid, lv), "Upgrade", true, _upgrade_bow, "Equipped", bar)
-		else:
-			var mid := _locked()                            # a wave is on: bows are swapped between waves
-			t = _tile("bow", nm, "Between waves" if mid else says, {}, "Equip", not mid, _equip.bind(bid), "Owned", bar)
-	else:
-		var need := int(bi["bench_level"])
-		var ok := int(Save.stations["bench"]) >= need
-		var cc := Data.craft_cost(bid)
-		t = _tile("bow", nm, (says + Data.mats_line(cc)) if ok else "Needs %s level %d" % [_name("bench"), need], cc, "Buy", ok,
-			_craft.bind(bid), "New" if ok else "Locked")
-	var pic := bow_picture_path(bid)
-	if ResourceLoader.exists(pic):
-		t["picture"] = pic
-	return t
-
-
-## What a bow does, in plain words, from its balance.json numbers: "A normal bow", "Goes through the first enemy, +1.5 m
-## range", "Fire arrows: the hit enemy burns for 3 s", "Ice arrows: slow, and the 3rd hit freezes", "3 arrows in a fan",
-## "Goes through two enemies, +1 m range".
-func _bow_note(bid: String) -> String:
-	var bi := Data.bow_info(bid)
-	var bits: Array = []
-	var n := int(bi["arrows"])
-	if n > 1:
-		bits.append("%d arrows in a fan" % n)
-	var p := int(bi["pierce"])
-	if p == 1:
-		bits.append("goes through the first enemy")
-	elif p > 1:
-		bits.append("goes through %s enemies" % _count_word(p))
-	var fire := Data.bow_burn(bid)
-	if not fire.is_empty():
-		bits.append("fire arrows: the hit enemy burns for %s s" % _short_num(float(fire.get("seconds", 0.0))))
-	var ice := Data.bow_frost(bid)
-	if not ice.is_empty():
-		bits.append("ice arrows: slow, and the %s hit freezes" % _ordinal(int(ice.get("hits_to_freeze", 3))))
-	var rb := float(bi["range_bonus"])
-	if rb > 0.0:
-		bits.append("+%s m range" % _short_num(rb))
-	var dm := Data.bow_draw_mult(bid)
-	var cons: Array = []                                 # the bow's downsides, after a "·"
-	if rb < 0.0:
-		cons.append("%s m shorter range" % _short_num(-rb))
-	if dm > 1.0:
-		var pct := roundi((dm - 1.0) * 100.0)
-		cons.append("draws %d%% slower" % pct if pct < 20 else "slowest draw")   # a big slowdown reads as "slowest draw"
-	if bits.is_empty() and cons.is_empty():
-		return "Fastest draw" if dm <= 1.0 else "A normal bow"
-	var s := ", ".join(bits)
-	if s != "":
-		s = s.substr(0, 1).to_upper() + s.substr(1)
-	if not cons.is_empty():
-		s = (s + " · " if s != "" else "") + " · ".join(cons)
-	return s
-
-
-const _COUNT_WORDS := ["no", "one", "two", "three", "four", "five"]
-
-
-## "two", "three" (a number as a word in a line; the figure itself past five).
-func _count_word(n: int) -> String:
-	return String(_COUNT_WORDS[n]) if n >= 0 and n < _COUNT_WORDS.size() else str(n)
-
-
-## 1 -> "1st", 2 -> "2nd", 3 -> "3rd", 4 -> "4th", 11 -> "11th", 22 -> "22nd".
-func _ordinal(n: int) -> String:
-	var suf := "th"
-	if n % 100 < 11 or n % 100 > 13:
-		match n % 10:
-			1: suf = "st"
-			2: suf = "nd"
-			3: suf = "rd"
-	return "%d%s" % [n, suf]
 
 
 ## 1.5 -> "1.5", 1.0 -> "1", 3.0 -> "3".
@@ -1927,23 +1219,21 @@ func _upgrade_bow() -> void:
 	main.on_purchase()
 
 
-## Buys bow bid on the Bow Shop (its balance.json craft price: leaves and timber), once the shop is big enough.
-## Between waves it goes straight into the cat's paw; bought while a wave is on it waits (Equip after the wave). A hidden
-## bow (22 Nov 2026) is not sold.
-func _craft(bid: String) -> void:
-	if Save.bows.has(bid) or Data.bow_hidden(bid) or int(Save.stations["bench"]) < int(Data.bow_info(bid)["bench_level"]) \
-			or (bool(Data.bow_info(bid).get("needs_burrows", false)) and not Data.burrows_open()) or not Data.pay(Data.craft_cost(bid)):
-		return
-	Save.bows[bid] = 1
-	var swap := not _locked()
-	if swap:
-		Save.bow = bid
+## Buys bow bid on the Bow Shop (its price, Data.craft_cost: leaves and timber), once the shop is big enough
+## (Data.bow_shop_level) and the bow does not wait for the Gloomwood (Data.bow_waits). Between waves it goes straight
+## into the cat's paw; bought while a wave is on it waits (Equip after the wave). A hidden bow (22 Nov 2026) is not sold.
+## H5: the Buy command (kind "bows") checks, pays and puts it in her paw; this does what follows.
+func _craft(bid: String) -> bool:
+	if not Buy.new("bows", bid).run(main):
+		return false
+	var swap := Save.bow == bid
 	Save.save_game()
 	Fx.flower_ring(main, main.world.station_pos("bench"), 1.4)
 	main.player.apply_bow()
 	main.on_purchase()
 	main.hud.banner("%s bought!" % Data.bow_info(bid)["name"], Color(1.0, 0.9, 0.45),
 		"In the cat's paw now" if swap else "Equip it between waves")
+	return true
 
 
 ## Puts an owned bow in the cat's paw (free), only between waves.
@@ -1958,68 +1248,6 @@ func _equip(bid: String) -> void:
 
 
 # ---------------------------------------------------------------- G4: the Saddlery (the mount's skills and attachments)
-## G4: the Saddlery's card: two shelves of tiles, "Skills" (Stomp, Ram, Pounce, Bellow: balance.json mount_skills) and
-## "Attachments" (Fire-spitter, Mossweave Saddle, Saddlebags: mount_attachments), in balance.json's order, then its own
-## upgrade ("Upgrade"). Each tile has one button:
-##   not learned yet     "Buy" (its level-1 price, leaves and timber); badge "New"
-##   learned             "Upgrade" (the next level's price; levels 4-5 only once the Burrows are open); off at the Saddlery's
-##                       level (the line "Upgrade the Saddlery for more") or while the next level needs the Burrows
-##                       ("Level 4 opens after the Raid Missions"); badge "Level 2/5" and a level bar
-##   at its top          no button; badge "Max"
-## Its line says what it does at its level (level 1 before it is learned): _saddle_note. Learning and upgrading work
-## any time (mid-wave too, like the bows' levels). Never real money. Every skill learned works (mount.gd).
-## 22 Nov 2026 (the owner's rule): the mount wears ONE attachment at a time (Save.saddlery.worn), and only that one acts
-## and shows. The Attachments tiles work like the Bow Shop's, one button each:
-##   the worn one        "Upgrade" as above (or no button at its top); badge "Worn"
-##   owned, not worn     "Wear" (free); off while a mission or raid wave is on, the line then "Between waves"; badge
-##                       "Owned"
-##   not owned           "Buy"; badge "New". Bought when nothing is worn, it is worn at once.
-func _card_saddlery() -> Dictionary:
-	var title := _name("saddlery")
-	if Save.ruined.has("saddlery"):
-		return _ruin_card("saddlery", title, _anchor("saddlery", 1.6))
-	var rows: Array = _wear_row("saddlery")
-	var skills: Array = []
-	for id in Data.saddle_items("skills"):
-		skills.append(_saddle_tile("skills", String(id)))
-	var gear: Array = []
-	for id in Data.saddle_items("attach"):
-		gear.append(_saddle_tile("attach", String(id)))
-	_add_section(rows, "Skills", skills)
-	_add_section(rows, "Attachments", gear)
-	_add_section(rows, "Upgrade", [_station_upgrade_row("saddlery")])
-	return {"title": title, "sub": "Level %d · %s uses its skills and wears one attachment while you ride" % [Data.saddlery_level(), Data.mount_name()],
-		"rows": rows, "anchor": _anchor("saddlery", 1.6)}
-
-
-## One skill's or attachment's tile on the Saddlery (part "skills" or "attach"; see _card_saddlery).
-func _saddle_tile(part: String, id: String) -> Dictionary:
-	var info := Data.saddle_info(part, id)
-	var nm := String(info.get("name", id))
-	var icon := String(info.get("icon", "saddlery"))
-	var lv := Data.saddle_level(part, id)
-	var top := Data.saddle_top(part, id)
-	var says := _saddle_note(part, id, maxi(lv, 1))
-	var block := Data.saddle_block(part, id)
-	if lv <= 0:
-		var c := Data.saddle_price(part, id, 1)
-		return _tile(icon, nm, says, c, "Buy", block == "", _saddle_buy.bind(part, id), "New")
-	var badge := "Level %d/%d" % [lv, top]
-	var bar := [["Level", float(lv) / float(maxi(top, 1)), "%d/%d" % [lv, top]]]
-	if part == "attach":
-		if Data.worn_attach() != id:                    # owned, not worn: Wear it (free, between waves)
-			var mid := _locked()
-			return _tile(icon, nm, "Between waves" if mid else says, {}, "Wear", not mid, _saddle_wear.bind(id), "Owned", bar)
-		badge = "Worn"
-	match block:
-		"max":
-			return _tile(icon, nm, says, {}, "", false, Callable(), "Worn" if part == "attach" else "Max", [["Level", 1.0, "Max"]])
-		"cap":
-			return _tile(icon, nm, "Upgrade the %s for more" % _name("saddlery"), {}, "Upgrade", false, Callable(), badge, bar)
-		"burrows":
-			return _tile(icon, nm, "Level %d opens after the Raid Missions" % (lv + 1), {}, "Upgrade", false, Callable(), badge, bar)
-	var nc := Data.saddle_price(part, id, lv + 1)
-	return _tile(icon, nm, says + Data.mats_line(nc), nc, "Upgrade", block == "", _saddle_buy.bind(part, id), badge, bar)
 
 
 ## What a skill or attachment does at level lv, in one short line, from its balance.json numbers ("Shockwave every 4 s:
@@ -2046,26 +1274,23 @@ func _saddle_note(part: String, id: String, lv: int) -> String:
 	return String(info.get("text", ""))
 
 
-## Learns (level 1) or upgrades skill or attachment id at the Saddlery: built and standing, never past its level, the
-## Burrows open for levels marked needs_burrows, and the price paid. 22 Nov 2026: an attachment is upgraded only
-## while it is worn; one bought while nothing is worn is worn at once.
-func _saddle_buy(part: String, id: String) -> void:
+## Learns (level 1) or upgrades skill or attachment id at the Saddlery (part "skills" or "attach"): built and
+## standing, never past its level, the Burrows open for levels marked needs_burrows, and the price paid. 22 Nov 2026:
+## an attachment is upgraded only while it is worn; one bought while nothing is worn is worn at once. H5: the Buy
+## command (kind "skills" or "attachments") checks and pays; `expected` is the level the button showed this reaching
+## (-1: no check), so a stale button never buys a second level. A new skill goes into the grid, not a circle: the
+## player drags it in (its receipt says so). true when it was bought.
+func _saddle_buy(part: String, id: String, expected: int = -1) -> bool:
 	var info := Data.saddle_info(part, id)
-	if info.is_empty() or Data.saddle_block(part, id) != "":
-		return
-	var lv := Data.saddle_level(part, id)
-	if part == "attach" and lv > 0 and Data.worn_attach() != id:
-		return                                          # owned and not worn: its button is Wear
-	if not Data.pay(Data.saddle_price(part, id, lv + 1)):
-		return
-	var shelf: Dictionary = Save.saddlery[part]
-	shelf[id] = lv + 1
-	if part == "attach" and Data.worn_attach() == "":
-		Save.saddlery["worn"] = id
+	var attach := part != "skills"
+	var buy := Buy.new("attachments" if attach else "skills", id, 1, expected)
+	var lv := buy.next_level() - 1
+	if info.is_empty() or not buy.run(main):
+		return false
 	Save.save_game()
-	if part == "attach" and id == "saddle" and Data.worn_attach() == "saddle" and main.mount != null and main.mount.resting <= 0.0:
+	if attach and id == "saddle" and Data.worn_attach() == "saddle" and main.mount != null and main.mount.resting <= 0.0:
 		main.mount.hp = main.mount.max_hp()            # the new saddle's health comes at once
-	if part == "attach" and main.mount != null and main.mount.has_method("refresh_gear"):
+	if attach and main.mount != null and main.mount.has_method("refresh_gear"):
 		main.mount.refresh_gear()                       # 22 Nov 2026: its model on the mount, when the file exists
 	Fx.flower_ring(main, main.world.station_pos("saddlery"), 1.4 if lv == 0 else 1.0)
 	if main.mount != null:
@@ -2073,10 +1298,27 @@ func _saddle_buy(part: String, id: String) -> void:
 	main.on_purchase()
 	if lv == 0:
 		var nm := String(info.get("name", id))
-		if part == "attach" and Data.worn_attach() != id:
-			main.hud.banner("%s bought!" % nm, Color(1.0, 0.9, 0.55), "Wear it here to use it (between waves)")
+		if attach and Data.worn_attach() != id:
+			main.hud.banner(_say("receipt_bought", [nm]), Color(1.0, 0.9, 0.55), _say("receipt_wear_here"))
+		elif not attach and not Data.skill_is_slotted(id):
+			main.hud.banner(_say("receipt_learned", [nm]), Color(1.0, 0.9, 0.55), _say("skill_slot_hint"))
 		else:
-			main.hud.banner(("%s learned!" if part == "skills" else "%s ready!") % nm, Color(1.0, 0.9, 0.55), _saddle_note(part, id, 1))
+			main.hud.banner(_say("receipt_ready" if attach else "receipt_learned", [nm]), Color(1.0, 0.9, 0.55), _saddle_note(part, id, 1))
+	return true
+
+
+## A window word (balance.json windows), filled in with args when it has places for them; a missing word shows as its
+## key (scripts/market_trade.gd say, the shops' one helper).
+func _say(key: String, args: Array = []) -> String:
+	return MarketTrade.say(key, args)
+
+
+## H5: puts learned skill id in the mount's skill circle `index` (0 to 2; "" empties it). Every mount shares the three
+## circles (scripts/companion_shop.gd assign_skill: the Saddlery standing, no wave on, a known learned skill; a skill in
+## another circle moves, a filled circle is replaced). Quiet: it saves and nothing is redrawn, so a drag in the
+## Saddlery's Skills tab is never cut short; the window updates its circles itself. true when the circles changed.
+func _assign_skill(index: int, id: String) -> bool:
+	return CompanionShop.assign_skill(main, index, id)
 
 
 ## 22 Nov 2026: puts on attachment id (owned, not the one worn), free, only between waves; the one worn before comes
@@ -2097,7 +1339,8 @@ func _saddle_wear(id: String) -> void:
 	main.on_purchase()
 
 
-## G4: an old save brought over (Save.migrate_saddlery) hears once what became of its mount's moves and attachments.
+## G4: an old save brought over (Save.migrate_saddlery; H5: core/save_upgrade_v5.gd, which keeps the old Burrows gear's
+## ids in Save.owned attachments as receipts) hears once what became of its mount's moves and attachments.
 func _tell_saddlery_moves() -> void:
 	var bits: Array = []
 	if Save.flag("g4_free_stomp") and not Save.flag("told_g4_stomp"):
@@ -2109,7 +1352,7 @@ func _tell_saddlery_moves() -> void:
 		var old: Dictionary = Data.saddlery_cfg().get("old_attachments", {})
 		for oid in old:
 			var to: Array = old[oid]
-			if not to.is_empty() and (Save.attach.get("owned", []) as Array).has(String(oid)):
+			if not to.is_empty() and Data.owned_level("attachments", String(oid)) >= 1:
 				names.append(String(Data.saddle_info("attach", String(to[0])).get("name", to[0])))
 		if names.size() == 1:
 			bits.append("Your %s is a Saddlery attachment now: it works everywhere." % names[0])
@@ -2124,87 +1367,26 @@ func _tell_saddlery_moves() -> void:
 
 
 # ---------------------------------------------------------------- 23 Nov 2026: the Tailor's Nook (the cat's outfits)
-## The Tailor's Nook's card: one tile per outfit (balance.json cat_skins, in its order: the original first), in the
-## shop-tile style, one button each. Outfits are looks only: they change no number.
-##   the one she wears      "Wearing" (no working button); badge "Wearing"
-##   owned, not worn        "Wear" (free); off while a mission or raid wave is on, the line then "Between waves"; badge
-##                          "Owned"
-##   not owned              "Buy" and its price (balance.json price in its currency, today leaves); the line "Needs
-##                          <price>" when she cannot pay it. A missing model or a currency the game cannot take yet
-##                          leaves Buy off ("Coming later"). She puts it on at once between waves. A mid-wave purchase waits for Wear.
-## A tile shows res://assets/ui/cat_skins/<id>.png (row key "picture") when that picture exists, else the outfit icon.
-## One level: no upgrade shelf.
-func _card_tailor() -> Dictionary:
-	var title := _name("tailor")
-	if Save.ruined.has("tailor"):
-		return _ruin_card("tailor", title, _anchor("tailor", 2.0))
-	var rows: Array = _wear_row("tailor")
-	var tiles: Array = []
-	for id in Data.cat_skin_ids():
-		tiles.append(_skin_tile(String(id)))
-	_add_section(rows, "Outfits", tiles)
-	return {"title": title, "sub": "Outfits for the cat · looks only, no strength", "rows": rows, "anchor": _anchor("tailor", 2.0)}
-
-
-## One outfit's tile on the Tailor's Nook (see _card_tailor).
-func _skin_tile(id: String) -> Dictionary:
-	var info := Data.cat_skin(id)
-	var nm := Data.cat_skin_name(id)
-	var says := String(info.get("short", ""))
-	var t: Dictionary
-	if Save.cat_skin == id:
-		t = _tile("outfit", nm, says, {}, "Wearing", false, Callable(), "Wearing")
-	elif Data.cat_skin_owned(id):
-		var mid := _locked()                                 # a wave is on: outfits are changed between waves
-		t = _tile("outfit", nm, "Between waves" if mid else says, {}, "Wear", not mid, _wear_skin.bind(id), "Owned")
-	else:
-		var cost := Data.cat_skin_cost(id)
-		var buyable := Data.cat_skin_buyable(id)
-		var note := says
-		if not buyable:
-			note = "Coming later"
-		elif not Data.can_afford(cost):
-			note = "Needs %s" % _price_words(cost)
-		t = _tile("outfit", nm, note, cost, "Buy", buyable, _buy_skin.bind(id), "New")
-	var pic := Data.cat_skin_picture(id)
-	if ResourceLoader.exists(pic):
-		t["picture"] = pic
-	return t
-
-
-## "3,000 leaves", "1,500 leaves and 40 timber": a price in words. gloom: shards read "Gloom shard(s)" (what Bramble
-## pays) instead of the plain currency id.
-func _price_words(cost: Dictionary, gloom := false) -> String:
-	var bits: Array = []
-	for k in cost:
-		var n := int(cost[k])
-		if n > 0:
-			var word := Data.mat_name(String(k)) if String(k) in Data.MATS else String(k)
-			if gloom and String(k) == "shards":
-				word = "Gloom shard" if n == 1 else "Gloom shards"
-			bits.append("%s %s" % [_thousands(n), word])
-	if bits.size() <= 1:
-		return "".join(bits)
-	return ", ".join(bits.slice(0, bits.size() - 1)) + " and " + String(bits[bits.size() - 1])
 
 
 ## Buys outfit id at the Tailor's Nook (built and standing; its price in its currency). Between waves she puts it on at
-## once (as a bow bought at the Bow Shop goes into her paw); bought while a wave is on, it waits for Wear.
-func _buy_skin(id: String) -> void:
-	if Data.cat_skin(id).is_empty() or Data.cat_skin_owned(id) or int(Save.stations.get("tailor", 0)) < 1 \
-			or Save.ruined.has("tailor") or not Data.cat_skin_buyable(id) or not Data.pay(Data.cat_skin_cost(id)):
-		return
-	Save.cat_skins_owned.append(id)
-	var swap := not _locked()
-	if swap:
-		Save.cat_skin = id
+## once (as a bow bought at the Bow Shop goes into her paw); bought while a wave is on, it waits for Wear. H5: the Buy
+## command (kind "outfits") checks, pays, records it (Save.owned outfits) and puts it on; this does what follows. true
+## when it was bought.
+func _buy_skin(id: String) -> bool:
+	var before := Save.cat_skin
+	if not Buy.new("outfits", id).run(main):
+		return false
+	var swap := Save.cat_skin == id and before != id
 	Save.save_game()
 	if swap:
 		main.player.apply_skin()
 		Fx.sparkle(main, main.player.global_position + Vector3(0, 1.0, 0))
 	Fx.flower_ring(main, main.world.station_pos("tailor"), 1.4)
 	main.on_purchase()
-	main.hud.banner("%s bought!" % Data.cat_skin_name(id), Color(0.82, 0.68, 1.0), "She wears it now" if swap else "Wear it between waves")
+	main.hud.banner(_say("receipt_bought", [Data.cat_skin_name(id)]), Color(0.82, 0.68, 1.0),
+		_say("receipt_wears_now" if swap else "receipt_wear_later"))
+	return true
 
 
 ## Puts on an owned outfit (free), only between waves; the cat's model swaps in place (player.apply_skin).
@@ -2218,145 +1400,119 @@ func _wear_skin(id: String) -> void:
 	main.on_purchase()
 
 
-## The standing Well's only row is its upgrade.
-func _card_well() -> Dictionary:
-	if Save.ruined.has("well"):
-		return _ruin_card("well", "Wishing Well", _anchor("well", 1.9))
-	var lv := int(Save.stations["well"])
-	return {"title": "Wishing Well", "sub": "Level %d · %s" % [lv, _well_line(lv)],
-		"rows": [_station_upgrade_row("well")], "anchor": _anchor("well", 1.9)}
+# ---------------------------------------------------------------- the Market: Bramble's trades and the companions (H5)
+
+## H5: one of Bramble's trades by its side (MarketTrade.SELLS "sells": he sells, the player buys; MarketTrade.BUYS
+## "buys": he buys, the player sells) and exact id, `bundles` whole bundles (two of Sunberries: 4 for 60 leaves; two
+## amber: 2,000 leaves and 2 shards). The Buy command (kind "market_goods") or MarketTrade.sell makes the whole
+## exchange or nothing (the Market standing, the mission gate, the money and the Bag's room, or the stock); then, as
+## before, the save, the sparkle at the stall, the refresh and the receipt toast. true when it went through; a refused
+## trade changes nothing, and MarketTrade.quote(side, id, bundles)["reason"] says why.
+func market_trade(side: String, id: String, bundles: int = 1) -> bool:
+	if side != MarketTrade.SELLS and side != MarketTrade.BUYS:
+		return false
+	var q: Dictionary = MarketTrade.quote(side, id, bundles)
+	var ok: bool = Buy.new("market_goods", id, bundles).run(main) if side == MarketTrade.SELLS \
+		else MarketTrade.sell(main, id, bundles)
+	if not ok:
+		return false
+	Save.save_game()
+	Fx.sparkle(main, main.world.station_pos(MARKET) + Vector3(0, 1.2, 0))
+	main.on_purchase()
+	main.hud.toast(_trade_receipt(side, id, q))
+	return true
 
 
-## The Well's mending rates at level lv.
-func _well_line(lv: int) -> String:
-	return "Mends to full · %s/s between waves, %s/s in waves" % [_pct(well_between(lv)), _pct(well_regen(lv))]
+## The toast after a trade, in the words it had before H5: timber "+5 timber · now 12 · leaves 950", a material
+## "+1 amber · now 3 · leaves 950", food "+2 Sunberries · leaves 940", a sale "Sold 1 Golden Carp · now 0 · leaves 1300".
+func _trade_receipt(side: String, id: String, q: Dictionary) -> String:
+	var n := int(q.get("units", 0))
+	if id == MarketTrade.TIMBER:
+		return "%+d timber · now %d · leaves %d" % [n if side == MarketTrade.SELLS else -n, Save.timber, Save.leaves]
+	if side == MarketTrade.SELLS:
+		if Data.MATS.has(id):
+			return "+%d %s · now %d · leaves %d" % [n, Data.mat_name(id), Data.have(id), Save.leaves]
+		return "%s · leaves %d" % [Data.food_receipt({id: n}), Save.leaves]
+	var now: Array = []
+	for k in (q.get("payout", {}) as Dictionary):
+		now.append("%s %d" % [k, Data.have(String(k))])
+	var nm := Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n)
+	return "Sold %d %s · now %d · %s" % [n, nm, _stock(id), " · ".join(now)]
 
 
-## 0.75 -> "75%", 0.005 -> "0.5%", 0.0025 -> "0.25%".
-func _pct(x: float) -> String:
-	var p := snappedf(x * 100.0, 0.01)
-	return ("%d%%" % int(roundf(p))) if is_equal_approx(p, roundf(p)) else ("%s%%" % String.num(p, 2))
+## Bramble's timber trade (balance.json trade): buying 5 for 50 leaves, or selling 5 for 30; H5: `bundles` lots of it
+## (market_trade). true when it went through.
+func _trade(buying: bool, bundles: int = 1) -> bool:
+	return market_trade(MarketTrade.SELLS if buying else MarketTrade.BUYS, MarketTrade.TIMBER, bundles)
 
 
-func _card_cottage() -> Dictionary:
-	if Save.ruined.has("cottage"):
-		return _ruin_card("cottage", "Mushroom Cottage", _anchor("cottage", 2.6))
-	var lv := int(Save.stations["cottage"])
-	var rows: Array = _wear_row("cottage")
-	rows.append({"text": "%s · level %d" % [Data.pet_name(), lv], "note": "Flicks sparks: %d damage every %.1fs" % [int(Data.pick("pet", "damage_by_level", lv)), Data.pick("pet", "every_by_level", lv)],
-		"cost": {}, "label": "", "enabled": false, "action": Callable()})
-	# the Nest: every look fights exactly the same
-	var nest := _look_tiles("pet", "pet", "Your pet now", "Same damage and speed, a different friend")
-	nest.append(_skin_row("pet"))
-	nest.append_array(_gloomlit_row("pet"))
-	nest.append_array(_attach_rows("pet"))
-	_add_section(rows, "The Nest", nest)
-	_add_section(rows, "Upgrade", [_station_upgrade_row("cottage")])
-	return {"title": "Mushroom Cottage", "sub": "Level %d · %s lives here" % [lv, String(Data.look("pet", Save.pet_look)["name"])], "rows": rows, "anchor": _anchor("cottage", 2.6)}
+## Buys `bundles` bundles of what Bramble sells (market_trade, side "sells"): into the Bag (H3: a full Bag refuses it
+## before the leaves are paid), or timber into the purse. `what` is the offer's exact id (H5); an older caller's index
+## into balance.json market.sells still finds its id (_offer_id). true when it went through.
+func _market_buy(what: Variant, bundles: int = 1) -> bool:
+	return market_trade(MarketTrade.SELLS, _offer_id(MarketTrade.SELLS, what), bundles)
 
 
-## The looks of a companion slot as tiles: the one in use ("Equipped", no button), the others free to Use (every look
-## has the same numbers).
-func _look_tiles(slot: String, icon: String, use_text: String, other_text: String) -> Array:
-	var out: Array = []
-	for lk in Data.b["looks"][slot]:
-		var id := String(lk["id"])
-		var use: bool = _look_id(slot) == id
-		var txt := use_text if use else other_text
-		if slot == "mount" and not use:
-			txt = "Same speed and skills, a new look"         # G4: looks have no move of their own
-		out.append(_tile(icon, String(lk["name"]), txt, {}, "" if use else "Use", not use, _use_look.bind(slot, id), "Equipped" if use else ""))
-	return out
+## Sells `bundles` bundles to Bramble (market_trade, side "buys"): the goods are taken and he pays what the offer names
+## (H1: leaves, and a shard for each amber). `what` as _market_buy's. true when it went through.
+func _market_sell(what: Variant, bundles: int = 1) -> bool:
+	return market_trade(MarketTrade.BUYS, _offer_id(MarketTrade.BUYS, what), bundles)
 
 
-## Phase G2: the Market (the old Market Stall's card): riding Thistle at the top, then Bramble's shop in tiles (what he
-## sells, what he buys), the Stable (mount looks, colours, attachments) and the Market's own upgrade.
-func _card_stall() -> Dictionary:
-	var title := _name("stall")
-	if Save.ruined.has("stall"):
-		return _ruin_card("stall", title, _anchor("stall", 2.4))
-	var lv := int(Save.stations["stall"])
-	var rows: Array = _wear_row("stall")
-	var riding: bool = main.player.riding
-	var mn := Data.mount_name()
-	# G4: the mount has no move of its own: it carries the cat faster and takes the hits; it fights with the Saddlery's skills
-	var learned := 0
-	for sk in Data.saddle_items("skills"):
-		if Data.skill_level(String(sk)) > 0:
-			learned += 1
-	var ride_note := "%s%% faster, takes the hits for you" % _short_num((Data.pick("mount", "speed_by_level", lv) - 1.0) * 100.0)
-	if learned > 0:
-		ride_note += " · %d skill%s" % [learned, "s" if learned > 1 else ""]
-	rows.append({"text": ("Get off %s" if riding else "Ride %s") % mn, "note": "%s goes back to the %s" % [mn, title] if riding else ride_note,
-		"cost": {}, "label": "Walk" if riding else "Ride", "enabled": main.mount != null, "action": main.toggle_ride})
-	_add_section(rows, "Bramble sells", _market_sells())
-	_add_section(rows, "Bramble buys", _market_buys())
-	# the Stable: every look rides exactly the same, with the same Saddlery skills (G4: the saddle and the bags are
-	# Saddlery attachments now; the Thunder Shoes stay here)
-	var stable := _look_tiles("mount", "mount", "Your mount now", "")
-	stable.append(_skin_row("mount"))
-	stable.append_array(_gloomlit_row("mount"))
-	stable.append_array(_attach_rows("mount"))
-	_add_section(rows, "Stable", stable)
-	_add_section(rows, "Upgrade", [_station_upgrade_row("stall")])
-	return {"title": title, "sub": "Level %d · Bramble's trades, and %s" % [lv, mn], "rows": rows, "anchor": _anchor("stall", 2.4)}
+## An offer's id: `what` itself when it is an id; for an older caller's number, the id of balance.json market[side][what]
+## (the raw list, never a filtered grid); "" for anything else (no offer, so nothing is traded).
+func _offer_id(side: String, what: Variant) -> String:
+	if what is String:
+		return String(what)
+	if not what is int:
+		return ""
+	var list: Variant = (Data.b.get("market", {}) as Dictionary).get(side, [])
+	var i := int(what)
+	if not list is Array or i < 0 or i >= (list as Array).size() or not (list as Array)[i] is Dictionary:
+		return ""
+	return String(((list as Array)[i] as Dictionary).get("id", ""))
 
 
-## What Bramble sells: timber (balance.json trade.buy), then each market.sells entry (food goes to the pantry, up to its
-## cap; an expedition material, if one is ever listed, to the materials. H1: he sells no amber).
-func _market_sells() -> Array:
-	var out: Array = []
-	var tb: Dictionary = Data.b["trade"].get("buy", {"timber": 5, "leaves": 50})
-	out.append(_quiet(_tile("timber", "%d timber" % int(tb.get("timber", 5)), "For building and growing · you have %d" % Save.timber,
-		{"leaves": int(tb.get("leaves", 50))}, "Buy", true, _trade.bind(true))))
-	var list: Array = Data.b.get("market", {}).get("sells", [])
-	var cap := int(Data.b["cooking"].get("pantry_cap", 20))
-	for i in list.size():
-		var e: Dictionary = list[i]
-		if not _market_open(e):
-			continue
-		var id := String(e["id"])
-		var n := int(e.get("amount", 1))
-		var mat := Data.MATS.has(id)
-		var title := "%d %s" % [n, Data.mat_name(id) if mat else Data.item_name(id, n)]
-		var room := mat or int(Save.pantry.get(id, 0)) + n <= cap
-		var text := ""
-		if mat:
-			text = "An expedition material · you have %d" % Data.have(id)
-		elif room:
-			text = "Food for cooking and dungeon healing · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
-		else:
-			text = "Pantry full · %d/%d owned" % [int(Save.pantry.get(id, 0)), cap]
-		out.append(_quiet(_tile(id, title, text, {"leaves": int(e.get("leaves", 0))}, "Buy", room, _market_buy.bind(i))))
-	return out
+## H5: buys a mount or pet look at the Market's Mounts or Pets tab (scripts/companion_shop.gd buy: the Buy command, then
+## the first pet joins the cat, once, and an owned look comes out). Sprig (160 leaves) gives the pet itself; Lumi (a
+## look only, 400 leaves) needs the pet first; the Market's own mounts are never bought (they come with it). `expected`
+## as Buy's (-1: no check). Then the sparkle, the flower ring at the stall, the refresh and the receipt. true when it
+## was bought.
+func _buy_companion(slot: String, id: String, expected: int = -1) -> bool:
+	var kind := String(CompanionShop.SLOT_KINDS.get(slot, ""))
+	var e: Dictionary = Data.shop_entry(kind, id) if kind != "" else {}
+	var had_pet := Data.pet_level() >= 1
+	if e.is_empty() or not CompanionShop.buy(main, slot, id, expected):
+		return false
+	var who = _companion(slot)
+	if who != null:
+		Fx.sparkle(main, who.global_position + Vector3(0, 1.0, 0))
+	Fx.flower_ring(main, main.world.station_pos(MARKET), 1.4)
+	main.on_purchase()
+	var sub := _say("mount_same")
+	if slot == "pet":
+		sub = Data.word("pet_joins") if not had_pet and Data.pet_level() >= 1 else _say("pet_same")
+	main.hud.banner(_say("receipt_bought", [String(e.get("short", e.get("name", id)))]), Color(0.6, 1.0, 0.45), sub)
+	return true
 
 
-## What Bramble buys: timber (trade.sell), Gloom shards once there are enough (as before), and each market.buys entry
-## (H1: amber, once every mission is won), for what the entry pays (_market_pay: leaves, and shards).
-func _market_buys() -> Array:
-	var out: Array = []
-	var ts: Dictionary = Data.b["trade"].get("sell", {"timber": 5, "leaves": 30})
-	out.append(_quiet(_tile("timber", "Sell %d timber" % int(ts.get("timber", 5)), "Bramble pays %d leaves" % int(ts.get("leaves", 30)),
-		{"timber": int(ts.get("timber", 5))}, "Sell", true, _trade.bind(false))))
-	var st: Dictionary = Data.gr()["shard_trade"]
-	if Save.shards >= int(st["shards"]):
-		out.append(_tile("shard", "Sell %d Gloom shards" % int(st["shards"]), "Bramble pays %d leaves" % int(st["leaves"]),
-			{"shards": int(st["shards"])}, "Sell", true, main.raids.trade_shards))
-	var list: Array = Data.b.get("market", {}).get("buys", [])
-	for i in list.size():
-		var e: Dictionary = list[i]
-		if not _market_open(e):
-			continue
-		var id := String(e["id"])
-		var n := int(e.get("amount", 1))
-		var nm := Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n)
-		out.append(_quiet(_tile(id, "Sell %d %s" % [n, nm], "Bramble pays %s · you have %d" % [_price_words(_market_pay(e), true), _stock(id)],
-			{id: n} if Data.CURRENCIES.has(id) else {}, "Sell", _stock(id) >= n, _market_sell.bind(i))))
-	return out
+## H5: trains the pet one level at the Market's Pets tab (the Buy command, kind "pet_training": the old Cottage's level
+## prices, never above the Hearthtree's level, the Market standing, the pet owned). Every pet look shares the level,
+## and the pet's sparks read it at once (pet.gd). `expected`: the level the button showed (-1: no check). true when done.
+func _train_pet(expected: int = -1) -> bool:
+	if not Buy.new("pet_training", "", 1, expected).run(main):
+		return false
+	Save.save_game()
+	var at: Vector3 = main.pet.global_position if main.pet != null else main.world.station_pos(MARKET)
+	Fx.sparkle(main, at + Vector3(0, 0.6, 0))
+	Fx.flower_ring(main, Vector3(at.x, 0.0, at.z), 1.0)
+	main.on_purchase()
+	main.hud.toast(_say("pet_level", [Data.pet_name(), Data.pet_level()]))
+	return true
 
 
 ## H1: what Bramble pays for a market.buys entry: every currency the entry names (Data.CURRENCIES, above 0), e.g.
-## {"leaves": 1000, "shards": 1} for amber.
+## {"leaves": 1000, "shards": 1} for amber. H5: MarketTrade.quote gives a trade's payout; this stays for older readers.
 func _market_pay(e: Dictionary) -> Dictionary:
 	var pay := {}
 	for k in Data.CURRENCIES:
@@ -2365,117 +1521,46 @@ func _market_pay(e: Dictionary) -> Dictionary:
 	return pay
 
 
-## An everyday trade: always there, so it never lights the Market's "!" (the shard trade still does, as before).
-func _quiet(tile: Dictionary) -> Dictionary:
-	tile["quiet"] = true
-	return tile
-
-
-## A market entry is on offer now (after_missions: only once every mission is won).
+## A market entry is on offer now (after_missions: only once every mission is won). H5: MarketTrade.offers gives each
+## offer's "open"; this stays for older readers.
 func _market_open(e: Dictionary) -> bool:
 	return not bool(e.get("after_missions", false)) or Data.raids_open()
 
 
-## How many of a market item the player has: a currency or material (Data.have), else the pantry.
+## How many of a market item the player has: a currency or material (Data.have), else the Bag's count (H3).
 func _stock(id: String) -> int:
-	return Data.have(id) if Data.CURRENCIES.has(id) else int(Save.pantry.get(id, 0))
+	return Data.have(id) if Data.CURRENCIES.has(id) else Bag.count(id)
 
 
-## Buys market.sells[i] from Bramble: the leaves are paid, the item goes to the pantry or the materials.
-func _market_buy(i: int) -> void:
-	var list: Array = Data.b.get("market", {}).get("sells", [])
-	if i < 0 or i >= list.size() or Save.ruined.has("stall") or int(Save.stations.get("stall", 0)) <= 0:
-		return
-	var e: Dictionary = list[i]
-	var id := String(e["id"])
-	var n := int(e.get("amount", 1))
-	if not _market_open(e) or n <= 0:
-		return
-	var mat := Data.MATS.has(id)
-	if not mat and int(Save.pantry.get(id, 0)) + n > int(Data.b["cooking"].get("pantry_cap", 20)):
-		return
-	if not Data.pay({"leaves": int(e.get("leaves", 0))}):
-		return
-	if mat:
-		Data.give(id, n)
-	else:
-		Data.add_items({id: n})
+## Buys a piece of expedition gear (content/attachments, "scope": "expedition": the Thunder Shoes, the pet's lantern,
+## charm and bell), sold at the Market once the Burrows are open; it is worn at once in its slot. H5: the Buy command
+## (kind "attachments") checks, pays and records it (Save.owned attachments); a Saddlery attachment goes through
+## _saddle_buy. true when it was bought.
+func _buy_attach(id: String) -> bool:
+	var e: Dictionary = Data.shop_entry("attachments", id)
+	if String(e.get("shop", "")) == Buy.SADDLERY:
+		return _saddle_buy("attach", id)
+	if e.is_empty() or not Buy.new("attachments", id).run(main):
+		return false
 	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
-	main.on_purchase()
-	if mat:
-		main.hud.toast("+%d %s · now %d · leaves %d" % [n, Data.mat_name(id), Data.have(id), Save.leaves])
-	else:
-		main.hud.toast("%s · leaves %d" % [Data.food_receipt({id: n}), Save.leaves])
-
-
-## Sells market.buys[i] to Bramble: the item is taken, he pays what the entry names (H1: leaves, and shards).
-func _market_sell(i: int) -> void:
-	var list: Array = Data.b.get("market", {}).get("buys", [])
-	if i < 0 or i >= list.size() or Save.ruined.has("stall") or int(Save.stations.get("stall", 0)) <= 0:
-		return
-	var e: Dictionary = list[i]
-	var id := String(e["id"])
-	var n := int(e.get("amount", 1))
-	if not _market_open(e) or n <= 0 or _stock(id) < n:
-		return
-	if Data.CURRENCIES.has(id):
-		if not Data.pay({id: n}):
-			return
-	else:
-		Data.take_items({id: n})
-	var pay := _market_pay(e)
-	for k in pay:
-		Data.give(String(k), int(pay[k]))
-	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
-	main.on_purchase()
-	var now: Array = []
-	for k in pay:
-		now.append("%s %d" % [k, Data.have(String(k))])
-	main.hud.toast("Sold %d %s · now %d · %s" % [n, Data.mat_name(id) if Data.MATS.has(id) else Data.item_name(id, n), _stock(id), " · ".join(now)])
-
-
-## Phase E: attachments for the mount or the pet (balance.json attachments): Burrows-only help, bought with the price
-## balance.json names (leaves today), one worn at a time. Shown once the Burrows are open. Card-only for now (no model on the companion).
-func _attach_rows(slot: String) -> Array:
-	var rows: Array = []
-	if not Data.burrows_open():
-		return rows
-	var items: Dictionary = Data.b.get("attachments", {}).get("items", {})
-	var owned: Array = Save.attach.get("owned", [])
-	for id in items:
-		var it: Dictionary = items[id]
-		if String(it["slot"]) != slot:
-			continue
-		var worn: bool = String(Save.attach.get(slot, "")) == id
-		if worn:
-			rows.append(_tile(slot, String(it["name"]), String(it["note"]), {}, "Take off", true, _wear.bind(slot, ""), "Equipped"))
-		elif owned.has(id):
-			rows.append(_tile(slot, String(it["name"]), String(it["note"]), {}, "Wear", true, _wear.bind(slot, String(id)), "Owned"))
-		else:
-			var c: Dictionary = it["cost"]
-			rows.append(_tile(slot, String(it["name"]), String(it["note"]) + Data.mats_line(c), c, "Buy", true, _buy_attach.bind(String(id)), "New"))
-	return rows
-
-
-func _buy_attach(id: String) -> void:
-	var it: Dictionary = Data.b["attachments"]["items"].get(id, {})
-	if it.is_empty() or (Save.attach["owned"] as Array).has(id) or not Data.pay(it["cost"]):
-		return
-	(Save.attach["owned"] as Array).append(id)
-	Save.attach[String(it["slot"])] = id                   # worn at once
-	Save.save_game()
-	var who = _companion(String(it["slot"]))
+	var who = _companion(String(e.get("slot", "")))
 	if who != null:
 		Fx.sparkle(main, who.global_position + Vector3(0, 1.0, 0))
-	main.hud.banner(String(it["name"]), Color(1.0, 0.9, 0.55), String(it["note"]))
+	main.hud.banner(String(e.get("name", id)), Color(1.0, 0.9, 0.55), String(e.get("desc", "")))
 	main.on_purchase()
+	return true
 
 
+## Puts on owned expedition gear id in its slot ("mount" or "pet"), or takes that slot's off (id ""). H5: owned is
+## Save.owned attachments (Data.owned_level), and it must be that slot's expedition gear.
 func _wear(slot: String, id: String) -> void:
-	if id != "" and not (Save.attach["owned"] as Array).has(id):
+	if not Save.attach.has(slot):
 		return
+	if id != "":
+		var e: Dictionary = Data.item("attachments", id)
+		if Data.owned_level("attachments", id) < 1 or String(e.get("scope", "")) != "expedition" \
+				or String(e.get("slot", "")) != slot:
+			return
 	Save.attach[slot] = id
 	Save.save_game()
 	main.on_purchase()
@@ -2534,37 +1619,22 @@ func _skin_unlock(slot: String, skin_id: String) -> String:
 	return "skin:%s:%s:%s" % [slot, _look_id(slot), skin_id]
 
 
-## Gloomlit colours for the look in a slot: earned with Gloom shards, never sold (shown until it is unlocked).
-func _gloomlit_row(slot: String) -> Array:
-	for s in Data.look(slot, _look_id(slot)).get("skins", []):
-		if int(s.get("shards", 0)) > 0 and not Save.unlocks.has(_skin_unlock(slot, String(s["id"]))):
-			return [_tile("shard", "%s colours" % String(s["name"]), "Earned with Gloom shards, never sold", {"shards": int(s["shards"])}, "Unlock",
-				true, _unlock_skin.bind(slot, String(s["id"])), "New")]
-	return []
-
-
-func _unlock_skin(slot: String, skin_id: String) -> void:
-	var sk := Data.skin(slot, _look_id(slot), skin_id)
-	if String(sk.get("id", "")) != skin_id or Save.unlocks.has(_skin_unlock(slot, skin_id)) or not Data.pay({"shards": int(sk.get("shards", 0))}):
-		return
-	Save.unlocks.append(_skin_unlock(slot, skin_id))
-	_set_skin_id(slot, skin_id)
+## Unlocks a priced colour (Gloomlit, Gloom shards: a look only) of the look out in slot now, and puts it on. H5: the Buy
+## command (kind "colour_unlock", that exact look; a mount's or pet's look must be owned) checks, pays and records it
+## (Save.unlocks); this does what follows. true when it was unlocked.
+func _unlock_skin(slot: String, skin_id: String) -> bool:
+	var look := _look_id(slot)
+	var sk := Data.skin(slot, look, skin_id)
+	if not Buy.new("colour_unlock", skin_id, 1, -1, look).run(main):
+		return false
 	var who = _companion(slot)
 	if who != null:
 		who.set_look()
 		Fx.sparkle(main, who.global_position + Vector3(0, 1.0, 0))
 	Save.save_game()
-	main.hud.banner("%s colours!" % String(sk["name"]), Color(0.8, 0.6, 1.0), "Earned with Gloom shards")
+	main.hud.banner(_say("receipt_colours", [String(sk.get("name", skin_id))]), Color(0.8, 0.6, 1.0), _say("receipt_colours_note"))
 	main.on_purchase()
-
-
-## The skin row: the colours of the look in use; "Next" goes round them (all free while testing, sold later).
-func _skin_row(slot: String) -> Dictionary:
-	var skins := _skins(slot)
-	var cur := Data.skin(slot, _look_id(slot), _skin_id(slot))
-	var names: Array = skins.map(func(s): return String(s["name"]))
-	return {"text": "Colours: %s" % String(cur.get("name", "Natural")), "note": " · ".join(names),
-		"cost": {}, "label": "Next", "enabled": skins.size() > 1, "action": _next_skin.bind(slot)}
+	return true
 
 
 func _next_skin(slot: String) -> void:
@@ -2584,35 +1654,22 @@ func _next_skin(slot: String) -> void:
 	main.on_purchase()
 
 
-func _use_look(slot: String, id: String) -> void:
-	_set_look_id(slot, id)
-	var who = _companion(slot)
-	if who != null:
-		who.set_look()
-	Save.save_game()
-	main.hud.banner(String(Data.look(slot, id)["name"]), Color(1.0, 0.9, 0.55), "Same power, a new look")
-	main.on_purchase()
-
-
-## Bramble's timber trade (balance.json trade): buying 5 for 50 leaves, or selling 5 for 30.
-func _trade(buying: bool) -> void:
-	if Save.ruined.has("stall"):
-		return
-	var timber_before := Save.timber
-	if buying:
-		var tb: Dictionary = Data.b["trade"].get("buy", {"timber": 5, "leaves": 50})
-		if not Data.pay({"leaves": int(tb.get("leaves", 50))}):
-			return
-		Save.timber += int(tb.get("timber", 5))
+## Puts out look id in a companion slot (free: every look has the same numbers). H5: the mount's and the pet's go
+## through scripts/companion_shop.gd choose (an owned look only, the pet owned, the Market standing); the guardian's
+## stay as before. true when it changed.
+func _use_look(slot: String, id: String) -> bool:
+	if CompanionShop.SLOT_KINDS.has(slot):
+		if not CompanionShop.choose(main, slot, id):
+			return false
 	else:
-		var ts: Dictionary = Data.b["trade"].get("sell", {"timber": 5, "leaves": 30})
-		if not Data.pay({"timber": int(ts.get("timber", 5))}):
-			return
-		Save.add_leaves(int(ts.get("leaves", 30)))
-	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
+		_set_look_id(slot, id)
+		var who = _companion(slot)
+		if who != null:
+			who.set_look()
+		Save.save_game()
+	main.hud.banner(String(Data.look(slot, id).get("name", id)), Color(1.0, 0.9, 0.55), _say("receipt_new_look"))
 	main.on_purchase()
-	main.hud.toast("%+d timber · now %d · leaves %d" % [Save.timber - timber_before, Save.timber, Save.leaves])
+	return true
 
 
 func _card_sign() -> Dictionary:
@@ -2702,33 +1759,6 @@ func _mission_entry(i: int, won: bool, blocked: String) -> Dictionary:
 		note = "Finish #%d first · %d waves" % [i, int(m["waves"])] if i > Data.next_mission() else "Needs %s at level %d" % [Data.camp_name(), Data.mission_needs_home(i)]
 	return {"kind": "mission", "mission_index": i, "mission_name": String(m["name"]), "completed": won, "text": "Raid Mission %d · %s" % [i + 1, m["name"]],
 		"note": note, "cost": {}, "label": label, "enabled": enabled, "action": main.start_stage.bind(i)}
-
-
-## The next mission while it needs a bigger Hearthtree (Phase F: missions 3, 7, 11 and 14 start an act): "Needs the
-## Hearthtree at level 3", a button to its card, and what is still missing on its goal list (only the next level's
-## list counts).
-func _locked_rows(nxt: int) -> Array:
-	var m := Data.mission(nxt)
-	var need := Data.mission_needs_home(nxt)
-	var home = goal_ring("home")
-	var rows: Array = []
-	rows.append({"text": "%d. %s" % [nxt + 1, m["name"]], "note": "Needs %s at level %d (now %d) · grow it there" % [Data.camp_name(), need, Save.camp_level],
-		"cost": {}, "label": "Go" if home != null else "", "enabled": home != null, "action": _goal_go.bind({"station": "home"})})
-	var lv := Save.camp_level + 1
-	var missing: Array = []
-	for g in Data.home_goals(lv):
-		if not bool(g["done"]):
-			missing.append(String(g["progress"]))
-	if not missing.is_empty():
-		rows.append({"text": "Goals left for %s level %d" % [Data.camp_name(true).trim_prefix("The "), lv], "note": " · ".join(missing), "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	elif Data.home_goals_met(lv):
-		var price := Data.home_price(lv)
-		var bits: Array = []
-		for k in Data.CURRENCIES:
-			if int(price.get(k, 0)) > 0:
-				bits.append("%s %s" % [_thousands(int(price[k])), "leaves" if k == "leaves" else (Data.mat_name(k) if Data.MATS.has(k) else k)])
-		rows.append({"text": "Every goal is met", "note": "Grow %s for %s" % [Data.camp_name(), ", ".join(bits)], "cost": {}, "label": "", "enabled": false, "action": Callable()})
-	return rows
 
 
 ## A mission under way, saved at a chapter break: go on from there, or give it up ([] when there is none). `blocked`:

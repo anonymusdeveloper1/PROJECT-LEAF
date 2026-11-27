@@ -1,0 +1,21 @@
+{
+  "id": "saddlebags",
+  "name": "Saddlebags",
+  "desc": "Kills drop more leaves",
+  "icon": "saddlebags",
+  "picture": "res://content/attachments/saddlebags/icon.png",
+  "model": "res://assets/companions/attachments/saddlebags_{mount}.glb",
+  "shop": "saddlery",
+  "slot": "mount",
+  "scope": "all",
+  "price": {"leaves": 1000, "timber": 40},
+  "upgrades": [
+    {"leaves": 1500, "timber": 50},
+    {"leaves": 2300, "timber": 65},
+    {"leaves": 4480, "timber": 85, "needs_burrows": true},
+    {"leaves": 7200, "timber": 115, "needs_burrows": true}
+  ],
+  "unlock": {"building": ["saddlery", 1]},
+  "leaves_per_level": 0.05,
+  "_note": "H5 (26 Nov 2026): a Saddlery attachment, moved from balance.json mount_attachments (its rules are in that block's _note). It works everywhere and fits every mount; the mount wears one at a time. price: learning it (level 1); upgrades: levels 2-5 in order, never above the Saddlery's level, and one with needs_burrows only once the Burrows are open (a gate, never a payment). model: the file fitted to each mount's saddle bone, {mount} being the mount look's id (Data.gear_model)."
+}

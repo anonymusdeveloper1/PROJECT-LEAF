@@ -32,7 +32,7 @@ what, and the house rules that keep the game easy to grow.
 ```
 game/
   core/        data.gd, save.gd, save_upgrades.gd, events.gd, pools.gd, timers.gd, audio.gd, store.gd, quality.gd,
-               effects.gd (the effects list), enemy_grid.gd
+               effects.gd (the effects list), bag.gd (the Bag's counts and stacks, static functions), enemy_grid.gd
   parts/       health.gd, armour.gd, mover.gd, attack.gd, heal.gd, status.gd, effects_holder.gd, loot.gd,
                health_bar.gd, brain.gd, shooter.gd, skills.gd, attachment_slot.gd, level.gd …
   brains/      enemy/, boss/, companion/, cat/, mount/, game/      one small file per state
@@ -49,8 +49,8 @@ game/
                  companions/moss_warden/
                  bows/sunwood/
                  defences/acorn_tower/
-                 buildings/bow_shop/
-                 crops/sunberries/
+                 buildings/bench/         (the Bow Shop; a building's id is the save's)
+                 crops/sunberry/          (the folder is the id, and ids never change: the save says "sunberry")
                  recipes/health_potion/
                  biomes/gloomwood/        look, props, room pieces, enemy list, music
                  expeditions/gloomwood/
@@ -61,8 +61,91 @@ game/
   tests/       one test file per system, the content check, and sample old saves
 ```
 
-- **Today** the scripts are all in `game/scripts/`, the models in `game/assets/`, and every number in
-  `game/data/balance.json`. They move into this layout during Phase H (part 13).
+- **Today** (H3) most scripts are still in `game/scripts/` (`core/`, `parts/`, `commands/` and `ui/` have their first
+  files), the models are in `game/assets/`, and the numbers are in `game/data/balance.json` and the first content
+  folders (`settings`, `crops`, `recipes`; H4 adds `bows` and `buildings`). They move into this layout during Phase H
+  (part 13).
+- **Today in `ui/windows/`** (H4): one window file per building. `building_window.gd` is the shared base (the rows,
+  the pinned Upgrade `upgrade_footer`, `ask_upgrade` through the confirm window, `list_row`, `as_list`). Besides it:
+  `hearthtree_window.gd` (with the static helpers `defences_tab.gd` and `stat_list.gd`), `target_window.gd`,
+  `bow_shop_window.gd`, `well_window.gd`, `stone_window.gd`, `garden_card.gd`, `market_window.gd`,
+  `saddlery_window.gd`, `tailor_window.gd`, `fishing_window.gd` and `build_menu_window.gd`, next to
+  H3's garden and cooking windows. (H5 deleted `cottage_window.gd`.) A window only builds words and rows; the rules stay in `stations.gd` under their old
+  names, and windows call them as `st.<name>`. The HUD makes the windows (`hud.windows`, `hud.confirm`), and
+  `stations.use_windows` plugs each one into its marker.
+  - Since H4 Stage 2 the nine buildings with levels (the Hearthtree, the Training Target, the Bow Shop, the Well, the
+    Guardian Stone when awake, the garden, the Market, the Mushroom Cottage and the Saddlery; since H5 the Market has
+    no levels and no Upgrade, and the Cottage is gone) end in the pinned
+    Upgrade (`"footer": upgrade_footer()`), and their old "Upgrade" section is gone. Upgrade always opens the confirm
+    window with what the next level gives (`gives`): the price shows in red and Confirm stays grey when you can't pay.
+    The Tailor's Nook and the Fishing Spot have one level and no footer. (The Market, the Cottage and the Saddlery kept
+    their tile rows until H5, below.)
+  - **H5 (the Market, the Saddlery and the Tailor's Nook).** The Mushroom Cottage and its window are gone
+    (`window_list.gd` has no `cottage`). The Hearthtree's pet-level goals: Show opens the build menu at the Market
+    before it is built (`_menu_id` handles `pet_level`); Go walks to the Market and opens its Pets tab through the
+    Market window's one-visit `open_on`.
+  - `market_window.gd` has four bottom icon tabs, Sells, Buys, Mounts and Pets (`tabs_at: "bottom"`; each tab keeps its
+    word as `"name"`, which `card.gd` also gives the tab button as `tab_name` and `accessibility_name`). It has no
+    footer and no level, and opens on Sells unless `open_on(tab)` asked. API: `tab`, `TABS`, `select(t)`, `tab_ids()`,
+    `tab_spec(t)`, `tab_lights(t)`, `entries(t)`, `inspect(id)`, `back()`, `trade`, `companions`.
+    - `market_trade_tab.gd`: Sells and Buys are `ui/kit/icon_grid.gd` grids with one bundle's price, or a neutral
+      payout. A tap opens `ui/kit/item_popup.gd` (amount, Buy or Sell), and the trade is
+      `stations.market_trade(side, id, bundles)`.
+    - `market_companions.gd`: Mounts and Pets have Ride, the pet's training row and grids of whole pictures with Use or
+      Buy. A tap shows a detail view. Below the grid are colours, Gloomlit and the expedition gear. The actions are
+      `stations._use_look`, `_buy_companion`, `_train_pet`, `_next_skin`, `_unlock_skin`, `_buy_attach` and `_wear`.
+    - `market_words.gd` holds the Market's words (`say(key)` reads `Data.word`). Tab dots and the marker's "!" come
+      from `tab_lights` over every tab.
+  - `saddlery_window.gd` has two bottom tabs (Attachments, then Skills, icon and word); a fresh visit opens on
+    Attachments. Attachments: Patch it up and the three attachments as big pictures (`icon_grid.gd`). A tap opens
+    `attachment_inspect.gd` in the same window: the attachment turning in `model_view.gd`, fitted to the mount out now
+    (`Data.gear_model`, stood as on the saddle bone through `mount.gear_frame()`), with Back and one button (Buy, Wear,
+    Upgrade, or a grey Worn). Skills (`saddlery_skills.gd`): the three circles (`ui/kit/skill_triangle.gd`) over the
+    round skill icons. Drag a learned skill in, tap a filled circle to empty it (`CompanionShop.assign_skill`, drawn in
+    place); a tap on an icon opens its detail (Learn or Upgrade). The Saddlery's Upgrade is pinned on the Skills tab
+    only; its confirm lists the next cap and the mount's speed and health (`gives`), and Confirm and Cancel come back to
+    Skills. Every paying button passes the level it showed as Buy's `expected_level`. The Skills overview's `view_id`
+    is `saddlery_skills:<learned levels>`, so a leaf pickup never redraws it under a drag.
+  - `tailor_window.gd` is one card window row, `outfit_preview.gd`: a turning `ModelView` of a preview-only hero from
+    the outfit file (or `original_base()`) on a scaled `stepping_stone`, one Buy, Wear or Wearing button, an `IconGrid`
+    of outfit cards (unowned = grey, still tappable), and Back. Try-on only changes the picture; it never writes
+    `Save.cat_skin` or calls `apply_skin`. The view is made once, moved across rebuilds and freed in `closed()`. API:
+    `entries()`, `state(id)`, `selected_id()`, `try_on(id)`, `back()`, `pulse()`, `preview()`.
+  - Kit (H5): `card.gd` gives each tab its `name` as `tab_name`; an icon-only tab draws a 52 px icon
+    (`CardParts.TAB_ICON_ALONE`); `card_signpost._start_signpost_reveal` accepts a row that was already freed.
+  - The pet (`pet.gd`) takes its model from its content entry and never hides.
+  - `hearthtree_window.gd` has tabs at the top: **Hearthtree** (Mend all, Patch it up, "Nothing for sale yet", its
+    goals and the Graphics row, with the pinned Upgrade), **Cat** (the cat's own upgrades, `stat_list.gd`) and
+    **Defences** (`defences_tab.gd`, the whole old shelf until H6's Workshop). A tab shows once it has something, and
+    there is no tab bar with one tab. The window always opens on the Hearthtree tab, and a tab shows a "!" dot while
+    something on it can be bought. A goal's Go walks the cat to the marker that sells it; Show opens the Cat or
+    Defences tab at its row, or the build menu at a building not built yet (`Data._goal` gives such goals the station
+    `"build"`).
+  - `bow_shop_window.gd` lists the bows as list rows: the bow in the paw shows Upgrade with its price, then a grey
+    Equipped when it can't level now; other owned bows show Equip, the rest Buy or Locked. A tap on a bow's picture
+    opens its inspect view (`bow_inspect.gd`) inside the shop's window: the bow turning in 3D with its arrow, its
+    numbers, the arrow's real damage (`Data.arrow_damage(bid)`, the same number a shot uses, with the cat's Damage stat
+    and a running potion), its one button and Back.
+  - `build_menu_window.gd` is not a marker window: it lives at `hud.windows["build"]` and opens through the card as a
+    `{"kind": "window"}` row. `entries()` is the one place that says what can be built and what is locked; it reads
+    each building's `unlock` and `price` and `build_menu.locked_from_missions`, so a new building with
+    `"arrives": "menu"` appears in the grid with no code change. Each open picture has its own Build button (one tap);
+    a locked one is greyed with its needs and has none. A built building leaves the menu, and nothing can be built
+    while the Hearthtree is in ruins.
+  - The build icon next to the Bag (`ui/hud/action_buttons.gd`) opens the build menu and shows a small "!" dot while a
+    building can be built and paid for (the cue the Hearthtree's marker gave before H4). Building from the menu sends
+    the camera to the new building for about 2 s (`main.show_spot`; the joystick, a wave or going below ground ends it
+    at once, and the cat keeps control) while the building rises out of the ground with dust and the flower ring
+    (`Fx.rise`, from `stations.refresh(id, true)`). The build menu sends nothing itself; it hears
+    `Events.building_upgraded` only through `stations.refresh`.
+  - Known differences: the signpost's, the campfire's and the cooking pot's cards stay in `stations.gd` for now (they
+    are not buildings: no save entry, no content folder). `window_list.gd` is a known list of names in code (house
+    rule 3) until a building entry names its window.
+  - Also known: in H4 the dialog host (its frame, the pinned footer, the tabs on top or at the bottom, each with an
+    optional icon and a small "!" dot, and the visit hooks `card_opened`/`card_closed` on the window behind a card's
+    builder) moved to `ui/kit/card.gd` in H4 Stage 3, as a pure file move. The stations forwarders (`_card_shop` and
+    the rest) are gone: tests reach a window only through `main.hud.windows[<id>]`, `hud.windows["build"]` and
+    `hud.confirm`.
 - **Moving a script:** move it together with its `.uid` file, update every `preload("res://…")` path, then run the
   smoke test. A move commit changes nothing else.
 
@@ -78,7 +161,7 @@ depends on whom, so **there are exactly eight**, each with one job:
 | **Quality** | The graphics level (Low, Medium, High). | exists |
 | **Events** | The event board: signals only, no logic (part 4, Observer). | new, H1 |
 | **Pools** | Hands out reusable objects and takes them back (part 4, Object Pool). | new, H1 |
-| **Timers** | Real-time jobs that keep running while the game is closed: crops, cooking, later any long job. | new, H3 |
+| **Timers** | Real-time jobs that keep running while the game is closed: crops, cooking, later any long job. | exists, H3 (`core/timers.gd`; the jobs live in `Save.timers`) |
 | **Audio** | Plays sounds through a queue. Replaces today's static `Sfx` helper. | upgrade |
 | **Store** | The shard store and rewarded ads behind one front door, with a real and a pretend provider. | new, H10 |
 
@@ -116,13 +199,19 @@ depends on whom, so **there are exactly eight**, each with one job:
 | Thornling, Brute, Beetle Knight… | Health (+ Armour for tanks), Mover, Attack, Status, Loot, Health bar, enemy Brain |
 | Bosses | the same, plus a boss Brain with phases |
 | The cat | Health, Mover, Shooter, Status, Effects holder |
-| Mount | Health, Mover, Skills (the 3 chosen), Attachment slot |
+| Mount | Health, Mover, Skills (the 3 chosen), Attachment slot, Effects holder |
 | Golem, the friend, Sprig | Health, Mover, Attack or Heal, Brain with a fighting style (tank, healer, shooter) |
 | Towers, spikes, barricade rows | Health, Level, plus Attack (towers) or a slow (spikes) |
 | Training dummy | Health only |
 
 - The entry lists the parts and their numbers. **A new enemy is usually just a new entry.** A new part (for example
   "teleports") is code once, then any entry can use it.
+- **Built so far (H3):** the Effects holder, `parts/effects_holder.gd` (no class_name; preload it), a child named
+  "Effects" of the cat (`player.effects`) and of the mount (`mount.effects`). It runs `heal_over_time` and `stat_mult`
+  effects on frame time (paused while `main.frozen`, not saved, cleared when its owner is knocked out), and on every
+  start and end of a `stat_mult` hands its owner the full map of every running stat (the cat: `Data.set_effect_mults`,
+  read by `Data.effect_mult`). Its API: `add(e, source)`, `has_source`, `left`, `mult`, `active()`, `clear()`,
+  `step(dt)` and the signal `changed`.
 
 ### State: the Brain is a set of small state scripts
 - Each state is one short file with `enter()`, `exit()` and `update(delta)`, which returns the next state's name or
@@ -143,9 +232,27 @@ depends on whom, so **there are exactly eight**, each with one job:
 ### Command: actions are objects that anyone can issue
 - **The cat:** Move, Shoot, Ride/Walk, Use skill, Use potion. The joystick, the buttons, auto-aim and the tests all send
   the same commands. Companion and mount brains send them to their own parts.
+- **Built so far:** Ride/Walk (H2, `commands/ride.gd`) and Use potion (H3, `commands/use_potion.gd`:
+  `UsePotion.new(id)`, `can_run(main)` gives "" or the reason, `run(main)` takes one from the Bag and does its effects
+  through `core/effects.gd`). The HUD's two potion buttons, the Bag's Use button and the tests send it. A command never
+  calls the HUD and never saves; the caller shows a refusal.
 - **Camp building:** Place, Move, Upgrade and Remove a defence, with **Undo** for placing from the Bag.
 - **Buying:** one **Buy** command used by every shop window. It checks the price and unlock rule, shows the confirm
   window, pays, marks the save, and announces `item_gained`. There is one way to buy anything.
+  - **Built in H5** (`commands/buy.gd`): `Buy.new(kind, id, amount, expected_level, look_id)`, `can_run(main)` gives ""
+    or the reason, `run(main)` pays and gives. `expected_level` is the level the button showed, so a stale tap buys
+    nothing. The command never saves and never calls the HUD; it marks the save dirty. Besides the Bag's kinds,
+    `item_gained(kind, id, amount)` now also carries `mounts`, `pets`, `outfits`, `attachments` and a colour's unlock
+    key `skin:<slot>:<look>:<colour>`. `scripts/market_trade.gd` (`offers`, `quote`, `sell`) and
+    `scripts/companion_shop.gd` (`choose`, `assign_skill`, `buy`) hold the rules the Buy command and the windows share.
+  - The shop rules in `stations.gd` are thin callers: `_saddle_buy`, `_buy_skin`, `_buy_attach`, `_unlock_skin`,
+    `_craft` and `_buy_piece` send `Buy.new(...).run(main)`. `_trade`, `_market_buy` and `_market_sell` go through
+    `stations.market_trade(side, id, bundles)`. `_use_look` and `_assign_skill` go through CompanionShop, and
+    `_buy_companion` and `_train_pet` serve the Market's companions. Each then saves, refreshes the live model and gives
+    the receipt.
+  - The mount's skills fire only from the Saddlery's circles: `mount.gd` `_try_moves()` and `try_move()` read
+    `Data.active_skill_level(id)`; the order stays `mount_skills.priority`; the Fire-spitter keeps its own `worn_level`
+    clock. `mount.max_hp()` reads `Data.mount_base_hp_at(Data.mount_level())`, the same table the Saddlery confirm shows.
 
 ### Observer: the Events board
 - **Game-wide announcements** (first list; add more here as they are made):
@@ -160,6 +267,13 @@ depends on whom, so **there are exactly eight**, each with one job:
 | `wave_started(n)`, `wave_ended(n, held)` | Raid Missions |
 | `raid_started(spec)`, `raid_ended(won, perfect)` | Random Raids (moved from `raids.gd`'s signals) |
 | `mission_won(n)` | a Raid Mission is won |
+| `fight_progress(done, total)` | progress changes in the current Raid Mission wave or the whole Random Raid attack |
+| `riding_changed(on)` | the Ride command mounts or dismounts the cat |
+| `mount_down_changed(down)` | the mount is knocked out or gets back up |
+| `placing_changed(kind)` | defence placement starts or ends (empty kind) |
+| `area_changed(inside)` | the cat enters or leaves an expedition |
+| `boss_changed(boss)` | a boss appears or its encounter ends (null) |
+| `campfire_hit()` | the campfire takes damage |
 | `building_upgraded(id, level)` | any building levels up |
 | `timer_finished(job_id)` | a Timers job ends |
 | `quality_changed(level)` | the graphics level changes (moved from Quality) |
@@ -168,8 +282,10 @@ depends on whom, so **there are exactly eight**, each with one job:
 - **Listeners:** the HUD, Audio, the Hearthtree goal lists, the raid meter, hints, the tests.
 - **The rule:** an event says **what happened**. It never asks for an answer, and the sender never depends on who
   listens.
-- **Today** there are 6 signals and about 730 direct calls like `main.hud.…`; those are replaced as each step rewrites
-  its part.
+- **Today** (H3, 26 Nov 2026) there are 21 signals, and many direct calls like `main.hud.…` remain; those are replaced
+  as each step rewrites its part. `timer_finished` is sent by Timers (`check()`) since H3. `building_upgraded` is sent
+  by `stations.gd` since H4, when a building is built, upgraded, given by a mission or found (the Guardian Stone), or
+  when the Hearthtree grows; `id` is the save's id (`home` for the Hearthtree).
 
 ### Prototype: variants written as "that one, but…"
 - An entry can say `"base": "thornling"` and list only what is different, for example the Gloomtouched elite (+health,
@@ -207,6 +323,8 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ### Dirty Flag: recompute only when something changed
 - **The cat's final stats** (bow, levels, outfit, potions, boons): worked out when one of those changes, not every frame.
+  (H3: the cat's Effects holder hands Data the full map of running potion stats only when a Damage or Speed Potion
+  starts or ends.)
 - **The HUD and windows** redraw only what changed.
 - **The raid power score** (H9).
 - **Saving:** changes call `Save.mark_dirty()`, and the file is written once at a safe moment: the end of a wave or
@@ -220,6 +338,9 @@ depends on whom, so **there are exactly eight**, each with one job:
 ### Service Locator: swap the real thing for a pretend one
 - **Store and ads:** the real Google Play provider, or a pretend one for tests and for before the Play Console is set up.
 - **Audio:** real, or silent for tests.
+- **Timers:** the real clock, or a pretend one for tests (H3). `Timers.clock` is a Callable giving Unix seconds; a test
+  sets it to a method of its own node (real now + an offset, or held still) and calls `Timers.use_real_clock()` when it
+  ends, so no future `seen` stays in the test save. The 3 → 4 save step reads the same clock.
 - The Store and Audio singletons each hold their provider; the game only ever talks to the singleton.
 
 ### Update Method and data locality (through Godot)
@@ -235,6 +356,17 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ## 5. Content: one folder per thing
 
+- **Built by H5** (kinds, listed in `content/index.json` in this order): `mounts` (thistle, bramblewool), `pets`
+  (sprig, lumi), `outfits` (original, dusk_ranger, nightfall_ranger) and `attachments` (fire_spitter, saddle,
+  saddlebags, mount_shoes, pet_lantern, pet_charm, pet_bell). Each kind adds `picture` (its whole-body or card picture)
+  and its own fields; `shop` names the building that sells it. `scripts/shop_data.gd` reads them (`Data.shop_entries`,
+  `owned_level`, `companion_model`, `shop_picture`, `attachment_entries`). `content/README.md` has the fields and price
+  forms. The Cottage's entry is gone (its picture and model stay in `assets/`); the Market has `levels: [{}]`;
+  `building_hp.stall` is `[0, 200]` and `Data.building_hp` applies `Save.market_hp_floor`. Home goal type
+  `pet_level {level}`. `gloom_raids.shard_trade` is gone. `balance.json` no longer has `looks.mount`, `looks.pet`,
+  `cat_skins`, `attachments` or `mount_attachments`; `looks.guardian` stays. A code word moves into `windows` and is
+  read through `Data.word` (`pet_joins`, `head_outfits`, the Market's words).
+
 - **The folder name is the id.** Ids are lowercase with underscores and **never change after release**; the name the
   player sees can change (the Ember Ranger's id is still `nightfall_ranger`).
 - **Shared fields** in every `entry.json` (a kind adds its own):
@@ -243,9 +375,9 @@ depends on whom, so **there are exactly eight**, each with one job:
 |---|---|
 | `id` | the same as the folder name |
 | `name`, `desc` | what the player sees (all player text lives in data, never in code) |
-| `icon`, `model` | file names inside the folder (default `icon.png`, `model.glb`) |
+| `icon`, `model` | file names inside the folder (default `icon.png`, `model.glb`). **H3's crops and recipes, until their art moves into the folders:** `icon` is a picture id of `scripts/ui_icons.gd` (drawn in code; `hud.icon(id)`), and a crop's `model` is the base of its Props ids in `assets/props/` (`<model>_growing`, `<model>_ripe`) |
 | `price` | always the same form: `{"leaves": 900, "timber": 10}` or `{"shards": 60}` |
-| `unlock` | always the same form, for example `{"hearthtree": 3}`, `{"missions_won": 5}`, `{"building": ["bow_shop", 7]}`, `{"flag": "hollow_open"}` |
+| `unlock` | always the same form, for example `{"building": ["home", 3]}`, `{"missions_won": 5}`, `{"building": ["bench", 7]}`, `{"flag": "hollow_open"}`. `{}` is open from the start. `Data.unlocked(rule)` answers it: it knows `{}`, `building`, `flag` and `missions_won`, every part must hold, and another form warns and stays shut; `Data.unlock_missing(rule)` lists the parts not met |
 | `hidden` | `true` keeps it out of the game until it is released (like the Foxfire Bow today) |
 | `effects` | a list from the effects list, for example `[{"type": "stat_mult", "stat": "damage", "mult": 0.25, "seconds": 30}]` |
 | `parts` | for things in the world: which parts and their numbers |
@@ -273,12 +405,35 @@ depends on whom, so **there are exactly eight**, each with one job:
 - **Example, an outfit** (made-up numbers): `{"id": "dusk_ranger", "name": "Dusk Ranger", "price": {"leaves": 2500}, "quiver":
   "dusk_quiver", "fx_color": "#8a7cff"}` plus its model fitted to the cat's skeleton.
 - **The effects list** lives in `core/effects.gd`, one small function per type: `stat_mult`, `stat_add`, `heal`,
-  `heal_over_time`, `slow`, `burn`, `chill`, `daze`, `shield`, `knockback` (the first list). A new type is code once;
-  every potion, upgrade, attachment and boon can then use it.
+  `heal_over_time`, `revive` (H3: brings a knocked-out mount back with `share` of its health), `slow`, `burn`, `chill`,
+  `daze`, `shield`, `knockback` (the first list). A new type is code once; every potion, upgrade, attachment and boon
+  can then use it. **Built in H3:** `heal`, `heal_over_time`, `stat_mult` and `revive`, through `Effects.known(type)`,
+  `Effects.reason(e, main, source)` ("" when it can act now) and `Effects.apply(e, main, source)`; the source is the
+  item id, and one effect per source runs at a time ("Already active"). `Effects.hud_potion("cat" | "mount")` names the
+  potion each HUD button uses (`balance.json potions.hud`).
+- **An effect's fields:** `type`; `target` (who it acts on: `"cat"` or `"mount"`; H3); `share` (of the target's max
+  health: heal, heal_over_time, revive; H3); `stat` and `mult` (the stat becomes × (1 + mult)); `seconds`. For example
+  the Health Potion's `{"type": "heal_over_time", "target": "cat", "share": 0.4, "seconds": 5}`.
 - **Finding the folders:** `tools/build_content_index` writes `content/index.json` (every folder by kind) before each
   build; Data reads it at start. (Listing folders inside an exported Android game is unreliable, so the game never
   lists them itself.) The content test fails if the index is out of date. `*.json` is already in the export's include
-  filter.
+  filter. **Until that tool exists** (H3), `index.json` is written by hand, and `--content` checks that it lists every
+  entry folder and nothing else.
+- **Bows and buildings** (H4) are content kinds (`content/bows/<id>`, `content/buildings/<id>`), with ids equal to the
+  save's ids (`home` is the Hearthtree, `bench` the Bow Shop, `stall` the Market). Callers never read
+  `Data.b["bows"]` or `Data.b["stations"]` (they are gone); they ask the Data API (`Data.building`, `building_levels`,
+  `build_price`, `level_price`, `building_desc`, `menu_buildings`, `bow_info`, `bow_ids`, `bow_shop_level`,
+  `bow_waits`, `has_bow` …).
+  - A bow's model, arrow and shop picture stay in `assets/` by id (`player.bow_path`, `arrow.arrow_path`,
+    `Data.bow_picture`). A building's picture is `assets/ui/buildings/<id>.png`, found through
+    `Data.building_picture` (`""` when there is none yet, like the Saddlery).
+  - A building's `arrives` field says how it comes: `menu` (bought in the build menu), `gift` (a mission gives it),
+    `found` or `always`. `Data.from_menu` replaces the old `SHOP_BUILT` list.
+  - **H4 exception:** buildings' models, spots, footprints and ring offsets stay in `stations.gd` and `world.gd` until
+    a step adds a building with its own spot (the Workshop in H6).
+  - The window words live in `balance.json "windows"`, read through `Data.word(key)`. General building tables stay in
+    `balance.json`: `building_hp`, `stat_cap_by_station_level`, `bow_cap_by_bench_level`, `bow_upgrade_curve` and the
+    like.
 - **New folder from a template:** `tools/new_content <kind> <new_id> [--from <id>]` copies a template or an existing
   thing.
 - **Balancing many entries:** `tools/content_table <kind>` prints every entry's numbers in one table, so 30 enemies can
@@ -352,20 +507,60 @@ depends on whom, so **there are exactly eight**, each with one job:
 
 ## 10. The save
 
-- **A version number** (today 3). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
-  (2→3 is built, 3→4 …), run in order when an older save loads. Before upgrading, the old file is copied to a backup.
-- **What the player owns has one form for every kind:** `owned[kind][id] = {"level": 1, …}`.
+- **A version number** (today 5). Every change to the save's form adds one upgrade step in `core/save_upgrades.gd`
+  (2→3, 3→4 and 4→5 are built), run in order when an older save loads. Before upgrading, the old file is copied to a
+  backup. A step reads only frozen numbers (`balance.json save_upgrades.to_vN`) and erases every field it converts.
+- **4→5 (H5, `core/save_upgrade_v5.gd`, frozen `save_upgrades.to_v5`):**
+  - the Cottage's level becomes the shared `pet_level`, and Sprig and Lumi are owned;
+  - the Market becomes one level (`stall` 1); its old level is the mount's carried tier (`saddlery.mount_credit`) and
+    its earned health is `market_hp_floor`;
+  - outfits and both attachment families move into `owned`;
+  - a save from before G4 gets its G4 gifts once;
+  - the learned skills fill `saddlery.skill_slots` in the old shop order (Stomp, Ram, Pounce).
+
+  Save resets stations and the H5 fields on every load and keeps unknown kinds, ids and fields in `owned`. `attach` is
+  now `{"mount", "pet"}` (the worn expedition gear) and `saddlery` is `{skills, skill_slots, worn, mount_credit}`.
+  `Data.pet_level()` is the shared pet level and `Data.mount_level()` is the highest of 1, the Saddlery's level and
+  `mount_credit` (0 while no mount is owned).
+- **What the player owns has one form for every kind:** `owned[kind][id] = {"level": 1, …}`, built in H5 for mounts,
+  pets, outfits and attachments (`Data.owned_level`). **Not yet for the rest:** in H3 the
+  Bag is a simple `bag` of counts (`{"berries": 5, "health_potion": 1}`: food, fish and potions; `core/bag.gd` writes
+  it), towers and spikes stay in `items` and amber in `mats`. The Timers jobs are
+  `timers` (`{"seen": Unix s, "jobs": {id: {"start", "len", "data", "told"}}}`).
 - **New content** starts locked. **Unknown ids** in a save are kept but ignored, so content that is hidden or comes back
-  later is not lost. **Removed content** is refunded or turned into something else by an upgrade step (as amber,
-  glowstone, heartwood and the keys become leaves in H1).
-- **Sample saves** of every version live in `tests/saves/` (today `v2_sample.json` and `v3_sample.json`), and a test loads each one.
+  later is not lost (an unknown id in the Bag is kept and never shown; a garden plot with an unknown crop id is kept as
+  it is, shown as empty, and planting there replaces it). **Removed content** is refunded or turned into something else
+  by an upgrade step (as amber, glowstone, heartwood and the keys become leaves in H1, and in H3 the pantry goes into
+  the Bag, an old dish becomes a Health Potion, and a half-grown crop keeps its share as a Timers job).
+- **Sample saves** of every version live in `tests/saves/` (today `v2_sample.json`, `v3_sample.json` and
+  `v4_sample.json`, and H5 adds `v5_sample.json`), and a test loads each one.
 
 ## 11. Tests
 
 - `--content`: every folder in the index has the shared fields; its id matches the folder; its model and icon exist;
   prices use known currencies; unlock rules point to things that exist; effects use known types; `base` points to a
-  real entry; the index is up to date. Then buy, save and load one entry of each kind.
-- `--saves`: loads every sample save and checks nothing is lost.
+  real entry; the index is up to date. Then buy, save and load one entry of each kind. **In H3** (crops and recipes):
+  the index is written by hand, so the test checks that it lists every entry folder and nothing else; the model check
+  is `Props.has(<model>_ripe)` and `Props.has(<model>_growing)`, and the icon check is the `ui_icons.gd` id (a missing
+  icon is a failure: the owner chose stand-ins drawn in code, so every icon exists); the effect types are checked in
+  `--bag`.
+- `--timers`: Timers' jobs with a pretend clock: they follow it, end "while the game is closed", wait when the clock is
+  set back, and never mark the save dirty by the clock alone.
+- `--saves`: loads every sample save and checks nothing is lost. Since H5 it loads the v2 to v5 samples: v4 is
+  upgraded and compared with the step's output, v5 loads unchanged, an empty triangle stays empty, and a second file
+  loaded in the same run inherits nothing.
+- `--h5found` (H5): the 4→5 step case by case, the live Buy purchases, and the four new kinds' entries.
+- `--campg` (`autotest_g2_camp.gd` and `autotest_g2_market.gd`, H5): the Market's tabs by real taps, trade amounts,
+  gates and refusals, the shard trade being gone, Sprig, Lumi, training and the Hearthtree cap, the pet goal's Go
+  opening Pets, the Cottage's old spot being open ground, and a real v4 save upgraded (Market flag, pet level, both
+  looks, mount credit, Market HP floor).
+- `--cards` (H5): the Market's picture grid (cells the same size, at most 3 a row on a phone, none under 44 px, no
+  Button inside a cell, a one-pixel rounding allowed), four bottom icon tabs with names, no footer, neutral payouts on
+  Buys; the synthetic window-kit checks (`autotest_g2_cards_kit.gd`) are kept.
+- Since H5 the older modes (`--layout`, `--hudcheck`, `--taps`, `--bag`, `--topup`, `--homegoals`, `--buildmenu`,
+  `--village`, `--wear`, `--shards`, `--burrowsave`) read the Market, Saddlery and Tailor windows only through
+  `main.hud.windows[<id>]`. A test that needs the old Cottage's ground uses the fixture `(6.4, 0, 3.6)`, never
+  `station_pos("cottage")`.
 - `--pools`: after a wave, pool sizes are steady and no pooled object was freed.
 - Each system keeps its own test mode, plus `--smoke`.
 - **Tests never run in parallel** (they share the test save); light testing as in CLAUDE.md.
@@ -390,17 +585,41 @@ depends on whom, so **there are exactly eight**, each with one job:
 | H10 | the Store with its real and pretend providers; offers as content folders |
 | later | the cat's and mount's own parts, mount skills as abilities, and anything not yet moved, when a step next touches them |
 
-**Where the game is today** (25 November 2026):
-- five autoloads (Events, Data, Save, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades) and
-  `game/content/index.json` (empty for now); the rest is in `game/scripts/`; every number in one `balance.json`;
-- a few very big files: `stations.gd` 2,760 lines, `hud.gd` 2,362, `enemy.gd` 2,352, `fight.gd` 2,184,
-  `burrow_run.gd` 1,897;
-- the Events board has 14 signals; about 730 direct calls through `main` remain until H2;
+**Where the game is today** (27 November 2026, H5 built on `feature/h5-market-saddlery-tailor`, on top of H4):
+- six autoloads (Events, Data, Save, Timers, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades);
+  most other scripts are still in `game/scripts/`;
+- **built so far in `core/`, `parts/`, `commands/`, `ui/` and `content/`:**
+  - Timers (`core/timers.gd`, H3; the jobs live in `Save.timers`: the crops and the cooking pot);
+  - the Bag model (`core/bag.gd`, H3; static functions, the only writer of the Bag's counts);
+  - the effects list (`core/effects.gd`, H3) and the Effects holder (`parts/effects_holder.gd`, on the cat and the
+    mount);
+  - the commands Ride/Walk (H2) and Use potion (H3) in `commands/`;
+  - the HUD under `ui/hud/` (H2), the first windows in `ui/windows/` (the garden and the cooking pot, H3; one window
+    file per building, H4 Stage 1) and the kit in `ui/kit/`: `drag_source.gd` and `drop_slot.gd` (drag-and-drop, H3),
+    `list_row.gd` (a building window's list row: picture, name and badge, up to 4 lines, price, one button; a tap on
+    the picture is its own action), `confirm_window.gd` (the confirm before a rule runs: any title, lines and price;
+    Cancel and Confirm go back to the window it came from, the X closes everything; `hud.confirm`),
+    `card_parts.gd` (the pinned footer, a tab's icon and its "!" dot), `icon_grid.gd` (a grid of big picture cells,
+    each with a name, a price line or a note, an optional one-tap button and a locked look; the build menu uses it,
+    and H5's Market can) and `model_view.gd` (a small turning 3D picture inside a window: its own little world, lit
+    like the Bag's picture of the cat, the camera fitted to what it shows; it draws only while it shows, about 10
+    times a second on Low; the Bow Shop's inspect view uses it, and H5's attachments and the Tailor's Nook can) (H4).
+    The dialog host, its frame and its tabs are `ui/kit/card.gd` (moved there in H4 Stage 3);
+  - content folders: `content/settings/` (H2), `content/crops/` (5) and `content/recipes/` (5) (H3), `content/bows/`
+    (6) and `content/buildings/` (11) (H4), `content/mounts/` (2), `pets/` (2), `outfits/` (3) and `attachments/` (7)
+    (H5), listed by hand in `content/index.json`; the general rules stay in `balance.json`;
+  - the Buy command (`commands/buy.gd`, H5) and the window files for the Market, the Saddlery and the Tailor's Nook
+    (see part 2); `ui/kit/item_popup.gd` and `skill_triangle.gd` (H5);
+- a few very big files: `stations.gd` 1,800 lines (2,672 before H4; the H5 shop rules are thin callers), `enemy.gd` 2,419, `fight.gd` 2,207, `burrow_run.gd` 1,915,
+  `defences.gd` 1,334;
+- the Events board has 21 signals; the HUD listens to Events (H2); many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy
   each physics step;
 - states as words with `match` blocks;
 - MultiMesh already used for grass, trees, props and the dungeon floor;
-- the save at version 3 (the 2→3 step turns old amber, glowstone, heartwood and Hollow keys into leaves), dirty-flag flushing and atomic writes (H1).
+- the save at version 5 (4→5, H5, is in part 10); version 4 (2→3 turns old amber, glowstone, heartwood and Hollow keys into leaves; 3→4, H3, moves the
+  pantry into the Bag, old dishes into Health Potions and old crop growth into Timers jobs), dirty-flag flushing and
+  atomic writes (H1).
 
 ## 14. Decided later, during the steps
 

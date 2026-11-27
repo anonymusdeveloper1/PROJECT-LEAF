@@ -1,0 +1,13 @@
+{
+  "id": "pet_lantern",
+  "name": "Glowworm Lantern",
+  "desc": "Traps and spore bombs glow 0.3 s earlier on expeditions",
+  "icon": "pet",
+  "shop": "stall",
+  "slot": "pet",
+  "scope": "expedition",
+  "price": {"leaves": 2120},
+  "unlock": {"flag": "hollow_open"},
+  "mods": {"trap_warn": 0.3},
+  "_note": "H5 (26 Nov 2026): expedition gear, moved from balance.json attachments (the mods are listed in that block's _note). It helps on expeditions only, one worn per companion, sold at the Market once the Burrows are open (unlock), bought once for its price."
+}

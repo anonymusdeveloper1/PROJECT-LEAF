@@ -1,0 +1,14 @@
+{
+  "id": "tailor",
+  "name": "Tailor's Nook",
+  "desc": "New outfits for the cat · looks only",
+  "icon": "tailor",
+  "price": {"leaves": 1500, "timber": 40},
+  "unlock": {"flag": "shop_open", "building": ["home", 3]},
+  "arrives": "menu",
+  "_note": "23 Nov 2026 (the owner): the cat's outfit shop. Built on the Hearthtree's card once the Hearthtree is at `needs_home` (3). One level, no upgrades. It sells outfits from the top-level `cat_skins` block: looks only, no strength. A normal building: health in building_hp.tailor, it can be ruined and repaired. stand_in: until the owner's model res://assets/props/tailors_nook.glb exists, this prop shows, tinted (delete stand_in when the model comes; the model is used as soon as its file exists).",
+  "levels": [
+    {}
+  ],
+  "stand_in": {"model": "market_stall", "tint": "#B48CE6"}
+}

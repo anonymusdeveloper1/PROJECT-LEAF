@@ -1,0 +1,12 @@
+{
+  "id": "fernmint",
+  "name": "Fernmint",
+  "desc": "Fresh leaves for the Health Potion.",
+  "icon": "herbs",
+  "model": "fernmint",
+  "gives": "herbs",
+  "yield": 2,
+  "grow_s": 300,
+  "price": {"leaves": 12},
+  "unlock": {}
+}

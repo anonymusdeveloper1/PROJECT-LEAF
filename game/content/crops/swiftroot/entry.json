@@ -1,0 +1,12 @@
+{
+  "id": "swiftroot",
+  "name": "Swiftroots",
+  "desc": "Quick roots for the Speed Potion.",
+  "icon": "roots",
+  "model": "swiftroot",
+  "gives": "roots",
+  "yield": 2,
+  "grow_s": 420,
+  "price": {"leaves": 18},
+  "unlock": {}
+}

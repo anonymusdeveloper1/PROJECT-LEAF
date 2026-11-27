@@ -154,11 +154,17 @@ func _stir_message() -> void:
 
 
 # ---------------------------------------------------------------- how big: the camp grows the raids
+## How big the camp is, for the raids' level (gloom_raids.camp_score). H5: the old Mushroom Cottage's and Market's
+## levels are the pet's level and the mount's level now, each per_station_level, the mount's no higher than
+## mount_level_cap (the old Market's top), so a raid is as strong as before; the one-level Market and the Saddlery's own
+## level are not counted again.
 func camp_score() -> int:
 	var cs: Dictionary = cfg()["camp_score"]
 	var s := float(cs["per_home_level"]) * (Save.camp_level - 1)
-	for id in ["target", "bench", "well", "cottage", "stall"]:
+	for id in ["target", "bench", "well"]:
 		s += float(cs["per_station_level"]) * int(Save.stations.get(id, 0))
+	s += float(cs["per_station_level"]) * Data.pet_level()
+	s += float(cs["per_station_level"]) * mini(Data.mount_level(), int(cs.get("mount_level_cap", 3)))
 	for p in main.defences.pieces:
 		if p["type"] == "tower":
 			s += float(cs["per_tower"])
@@ -541,7 +547,7 @@ func on_wave_begins(_w: int, _last: bool) -> void:
 
 
 func on_leader(e) -> void:
-	main.hud.boss = e
+	Events.boss_changed.emit(e)
 	var id := String(e.id)
 	main.hud.banner("%s!" % leader_name(id), Color(0.85, 0.55, 1.0), "Defeat every raider to hold the camp")
 
@@ -551,7 +557,7 @@ func on_building_hit(id: String) -> void:
 	if main.fight.mode != "raid" or _alerts.has(id):
 		return
 	_alerts[id] = float(cfg()["alert_every_s"])
-	main.hud.toast("%s is under attack!" % (Data.camp_name(true) if id == "home" else "The %s" % String(Data.b["stations"][id]["name"])))
+	main.hud.toast("%s is under attack!" % (Data.camp_name(true) if id == "home" else "The %s" % String(Data.building(id).get("name", id))))
 
 
 ## A raid wave was held: the damage so far is saved now (wear, wrecks, the fire), not only at the end.
@@ -1015,7 +1021,7 @@ func damage_text(cc: Dictionary) -> String:
 		if k >= 2:
 			bits.append("more worn")
 			break
-		var nm := Data.camp_name() if id == "home" else String(Data.b["stations"][id]["name"]).to_lower()
+		var nm := Data.camp_name() if id == "home" else String(Data.building(id).get("name", id)).to_lower()
 		bits.append("%s worn %d%%" % [nm, int(round(float(cc["wear"][id]) * 100.0))])
 		k += 1
 	return " · ".join(bits)
@@ -1163,13 +1169,5 @@ func set_fire_look(id: String) -> void:
 	main.on_purchase()
 
 
-## Bramble buys Gloom shards (so they are never useless): 5 for 100 leaves.
-func trade_shards() -> void:
-	var st: Dictionary = cfg()["shard_trade"]
-	if not Data.pay({"shards": int(st["shards"])}):
-		return
-	Save.add_leaves(int(st["leaves"]))
-	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
-	main.on_purchase()
-	main.hud.toast("Sold %d Gloom shards · now %d · leaves %d" % [int(st["shards"]), Save.shards, Save.leaves])
+# H5 (27 Nov 2026, CLAUDE.md: purple shards are the paid currency): Bramble no longer buys Gloom shards. The old
+# trade_shards() (5 shards for 100 leaves) is gone; scripts/market_trade.gd refuses any shard sale.

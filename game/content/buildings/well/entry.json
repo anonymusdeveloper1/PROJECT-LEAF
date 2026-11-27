@@ -1,0 +1,14 @@
+{
+  "id": "well",
+  "name": "Wishing Well",
+  "desc": "Mends the camp by itself, a little at a time",
+  "icon": "well",
+  "price": {"leaves": 80},
+  "unlock": {"flag": "shop_open", "building": ["home", 3]},
+  "arrives": "menu",
+  "levels": [
+    {},
+    {"leaves": 250},
+    {"leaves": 700, "timber": 25}
+  ]
+}

@@ -2,6 +2,11 @@ extends Node
 ## Save (autoload): everything the player owns, kept in user://leaf_save.json. Purchases and checkpoints can save
 ## immediately. Other changes wait for a flush. `-- --fresh` starts from nothing. Tests use a separate save.
 ## New load fixes go in core/save_upgrades.gd. The existing load fixes still run here and in their owning systems.
+## H5 (27 Nov 2026): the save is version 5. What the shops sold is `owned` (owned[kind][id] = {"level": n}: mounts,
+## pets, outfits, attachments), the pet has one level (`pet_level`), the Market one level (stations.stall 0 or 1) and
+## the health an old upgraded Market earned (`market_hp_floor`), the Saddlery's `saddlery` holds the learned skills, the
+## three skill circles, the one worn attachment and the mount's carried tier; there is no Mushroom Cottage. An older
+## file is brought over by core/save_upgrades.gd (4 -> 5: core/save_upgrade_v5.gd) before it is read here.
 ## Follow-up: move the frequent writes in raids.gd (_add meter steps and _save_run_state checkpoints),
 ## burrow_run.gd (on_cat_hurt), fishing.gd (catches), and main.gd (ride toggles) to mark_dirty().
 
@@ -38,8 +43,11 @@ var timber := 0:
 		timber = v
 		_currency_changed("timber", v)
 var camp_level := 1
-var stations := {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0,
-	"saddlery": 0, "tailor": 0}                        # 0 = not there yet (23 Nov 2026: the Tailor's Nook, "tailor")
+## 0 = not there yet (23 Nov 2026: the Tailor's Nook, "tailor"). H5: the Market ("stall") is 0 or 1 (one level), and the
+## Mushroom Cottage is gone. load_game starts from these every time, then puts the file's levels over them.
+const STATIONS_DEFAULT := {"target": 0, "bench": 0, "well": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 0,
+	"saddlery": 0, "tailor": 0}
+var stations := STATIONS_DEFAULT.duplicate()
 var stats := {"damage": 0, "draw": 0, "range": 0, "health": 0, "speed": 0, "magnet": 0}
 var bows := {"twig": 1}                             # bows owned and their level
 var bow := "twig"                                   # the one in the cat's paw
@@ -68,20 +76,23 @@ var mission_run := {}                              # campaign raid: wave_done is
                                                    # start from, "gain": leaves gained since that chapter began (see
                                                    # leaves; an older save has none: 0)}, saved at every chapter
                                                    # break; {} = none
-# Phase C: the Moss Warden, the garden, cooking and fishing. No timestamps anywhere: nothing moves on while the game is
-# closed (plants grow per wave held, a dish lasts one chapter).
+# Phase C: the Moss Warden, the garden, cooking and fishing. H3 (26 Nov 2026): only timers keep running while the game
+# is closed (the owner's rule): the crops and the cooking pot are real-time jobs in `timers` (core/timers.gd). Nothing
+# else moves on while the game is closed.
 var guardian_look := "moss_warden"                 # which look fills the guardian slot (same numbers for all)
 var guardian_skin := "natural"
 var guardian_post := -1                            # -1 guards the camp, 0-3 holds that trail
-var garden: Array = _empty_garden()                # 6 plots: {"crop": id or "", "grow": steps, "wet": waves left}
-var pantry := {"berries": 0, "herbs": 0, "honey": 0, "fish": 0, "goldfish": 0}
-var snack_choice := "auto"                         # the quick-heal food, or the configured automatic order
-var meal_ready := ""                               # the dish waiting in the pot (a recipe id)
-var meal_on := ""                                  # the dish eaten this chapter
+var garden: Array = _empty_garden()                # 6 plots: {"crop": id or ""}; a plot's growth is the Timers job "crop:<i>"
+## H3: the Bag's food, fish and potions, {id: count} (core/bag.gd writes it; towers and spikes stay in items, amber in
+## mats). Unknown ids are kept.
+var bag := {}
+## H3: the Timers jobs (core/timers.gd writes them): {"seen": the highest clock reading (Unix s), "jobs": {id: {"start",
+## "len", "data", "told"}}}.
+var timers := {"seen": 0.0, "jobs": {}}
 var fish_log := {}                                 # catch id -> how many caught
 var fish_dry := 0                                  # catches since the last rare one (the pity counter)
-# Phase D: the Gloom Raids. No timestamps anywhere: the meter fills only while the game runs, and a raid that was
-# coming (or under way) comes back at its warning.
+# Phase D: the Gloom Raids. The only timestamps are the Timers jobs (`timers`, above): the raid meter fills only while the
+# game runs, and a raid that was coming (or under way) comes back at its warning.
 var shards := 0:                                   # Gloom shards: earned in play only, never sold
 	set(v):
 		if v == shards:
@@ -97,22 +108,35 @@ var fire_look := ""                                # "" or "shardfire"
 var save_v := Upgrades.CURRENT_VERSION             # format version written by save_game()
 ## Version read from disk before upgrades. Zero means no save was loaded.
 var loaded_v := 0
-# Phase E: the Burrows. No timestamps anywhere: a run in progress waits at the Hollow while the game is closed.
+# Phase E: the Burrows. No timestamps here (only the Timers jobs have them): a run in progress waits at the Hollow
+# while the game is closed.
 var mats := {"amber": 0}                           # the expedition materials (H1: amber only; an older save's glowstone and
                                                    # heartwood became leaves, core/save_upgrades.gd 2 -> 3)
 var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}
 var burrow_run := {}                               # a run under way (burrow.gd); {} = none
-var attach := {"owned": [], "mount": "", "pet": ""}   # attachments for the mount and the pet (Burrows only), bought in play
-# G4: the Saddlery. What the mount has learned and wears, id -> level (1-5): "skills" (stomp, ram, pounce, bellow) and
-# "attach" (fire_spitter, saddle, saddlebags). A save from before G4 (no "saddlery" key in its file) is brought over
-# once by migrate_saddlery(): the free Stomp and the old Burrows saddle and bags.
+## The expedition gear worn by the mount and the pet (Burrows only), "" for none. H5: what is owned is owned.attachments.
+var attach := {"mount": "", "pet": ""}
+# G4: the Saddlery. "skills": what the mount has learned, id -> level (1-5: stomp, ram, pounce, bellow). H5 (the v5
+# save): "skill_slots", the skills in the three circles, in order ("" for an empty one; every mount shares them; a
+# learned skill outside them keeps its level and is not used); "mount_credit", the mount tier an old save's Market had
+# paid for (the owner's Q2 A; 0 otherwise). The attachments bought are owned.attachments. A save from before G4 was
+# brought over once by the 4 -> 5 step (the free Stomp and the old Burrows saddle and bags).
 # 22 Nov 2026 (the owner's rule): "worn" is the one attachment the mount wears ("" for none); only that one acts and
 # shows. A save with none of its owned ones marked worn wears its best one (settle_worn).
-var saddlery := {"skills": {}, "attach": {}, "worn": ""}
-# 23 Nov 2026: the cat's outfits (balance.json cat_skins; the Tailor's Nook). Looks only. "original" is always owned and
-# the default; an older save without these keys loads with them.
+var saddlery := {"skills": {}, "skill_slots": ["", "", ""], "worn": "", "mount_credit": 0}
+# 23 Nov 2026: the cat's outfits (content/outfits; the Tailor's Nook). Looks only. "original" is always owned and the
+# default. H5: the outfits owned are owned.outfits.
 var cat_skin := "original"                         # the outfit she wears
-var cat_skins_owned: Array = ["original"]          # the outfits bought (the original always in it)
+## H5 (the v5 save, docs/ARCHITECTURE.md part 10): what the shops sold the player, by content kind (mounts, pets,
+## outfits, attachments): owned[kind][id] = {"level": n}: 1 for a look, an outfit or expedition gear, the bought level
+## for a Saddlery attachment. A record's other fields, unknown kinds and unknown ids are kept but ignored. Thistle and
+## Bramblewool come with the built Market without a record (Data.owned_level).
+var owned: Dictionary = {"outfits": {"original": {"level": 1}}}
+## H5: the pet's one shared level (every pet look): 0 before Sprig is bought, then 1-3 (Data.pet_level).
+var pet_level: int = 0
+## H5 (the owner's Q5 A): the building health an old save's upgraded Market had earned (340 or 500); 0 for a Market
+## built since (200, its one level). Data.building_hp reads it.
+var market_hp_floor: int = 0
 var endgame_slot := false                          # debug builds: the separate "endgame" test save is in use (never the real one)
 const ENDGAME_PATH := "user://leaf_save_endgame.json"
 const ENDGAME_MARK := "user://endgame_slot.txt"   # while this exists, a debug build keeps opening the endgame slot
@@ -134,7 +158,7 @@ const RAID_INTS := ["renown", "held", "lost", "perfect", "streak", "best_streak"
 static func _empty_garden() -> Array:
 	var g: Array = []
 	for i in 6:
-		g.append({"crop": "", "grow": 0, "wet": 0})
+		g.append({"crop": ""})
 	return g
 
 
@@ -212,8 +236,12 @@ func load_game() -> void:
 	leaves = int(d.get("leaves", 0))
 	timber = int(d.get("timber", 0))
 	camp_level = int(d.get("camp_level", 1))
-	for k in d.get("stations", {}):
-		stations[k] = int(d["stations"][k])
+	# H5: from the defaults every time, so a second file loaded in this run never keeps the first one's buildings
+	stations = STATIONS_DEFAULT.duplicate()
+	var std: Variant = d.get("stations", {})
+	if std is Dictionary:
+		for k: Variant in std:
+			stations[String(k)] = _whole((std as Dictionary)[k])
 	for k in d.get("stats", {}):
 		stats[k] = int(d["stats"][k])
 	bows = {}
@@ -221,7 +249,7 @@ func load_game() -> void:
 	for k in saved_bows:
 		bows[k] = int(saved_bows[k])
 	bow = String(d.get("bow", "twig"))
-	if not (Data.b["bows"] as Dictionary).has(bow):
+	if not Data.has_bow(bow):
 		bow = "twig"
 		if not bows.has(bow):
 			bows[bow] = 1
@@ -274,22 +302,17 @@ func load_game() -> void:
 	if typeof(gd) == TYPE_ARRAY:
 		for i in mini(gd.size(), 6):
 			if typeof(gd[i]) == TYPE_DICTIONARY:
-				garden[i] = {"crop": String(gd[i].get("crop", "")), "grow": int(gd[i].get("grow", 0)), "wet": int(gd[i].get("wet", 0))}
-				garden[i].merge(gd[i])
-	var pd = d.get("pantry", {})
-	if typeof(pd) == TYPE_DICTIONARY:
-		for k in pd:
-			pantry[String(k)] = int(pd[k])
-	snack_choice = String(d.get("snack_choice", "auto"))
-	if snack_choice != "auto" and Data.snack(snack_choice).is_empty():
-		snack_choice = "auto"
-	meal_ready = String(d.get("meal_ready", ""))
-	meal_on = String(d.get("meal_on", ""))
-	if meal_on != "" and not mission_run.has("wave_done"):
-		# Legacy chapter checkpoints restart the chapter; new wave checkpoints keep its active dish.
-		if meal_ready == "":
-			meal_ready = meal_on
-		meal_on = ""
+				garden[i] = {"crop": String(gd[i].get("crop", ""))}
+				garden[i].merge(gd[i])                   # other keys are kept (a plot with an unknown crop keeps its old form)
+	# H3: the Bag and the Timers jobs (a v3 save got them from core/save_upgrades.gd 3 -> 4)
+	bag = {}
+	var bgd: Variant = d.get("bag", {})
+	if bgd is Dictionary:
+		for k: Variant in bgd:
+			var v: Variant = (bgd as Dictionary)[k]
+			if v is int or v is float:
+				bag[String(k)] = maxi(0, int(v))
+	timers = _load_timers(d.get("timers", {}))
 	fish_log = {}
 	var fl = d.get("fish_log", {})
 	if typeof(fl) == TYPE_DICTIONARY:
@@ -328,40 +351,39 @@ func load_game() -> void:
 	var rd = d.get("burrow_run", {})
 	if typeof(rd) == TYPE_DICTIONARY:
 		burrow_run = rd                                # burrow.gd checks it (version, step) when the game starts
-	attach = {"owned": [], "mount": "", "pet": ""}
-	var ad = d.get("attach", {})
-	if typeof(ad) == TYPE_DICTIONARY:
-		for a in ad.get("owned", []):
-			attach["owned"].append(String(a))
-		attach["mount"] = String(ad.get("mount", ""))
-		attach["pet"] = String(ad.get("pet", ""))
+	# H5 (the v5 save): what the shops sold, the pet's level and the old Market's health; each from its default
+	owned = _load_owned(d.get("owned", {}))
+	pet_level = maxi(0, _whole(d.get("pet_level", 0)))
+	market_hp_floor = maxi(0, _whole(d.get("market_hp_floor", 0)))
+	# the expedition gear worn (H5: what is owned is owned.attachments)
+	attach = {"mount": "", "pet": ""}
+	var ad: Variant = d.get("attach", {})
+	if ad is Dictionary:
+		for slot: String in ["mount", "pet"]:
+			var worn: Variant = (ad as Dictionary).get(slot, "")
+			attach[slot] = worn if worn is String else ""
 		attach.merge(ad)
-	# G4: the Saddlery (a file without the key is from before G4: it is brought over once, then saved with the key)
-	saddlery = {"skills": {}, "attach": {}, "worn": ""}
-	var sd = d.get("saddlery", null)
-	if typeof(sd) == TYPE_DICTIONARY:
-		for part in ["skills", "attach"]:
-			var pd2 = sd.get(part, {})
-			if typeof(pd2) == TYPE_DICTIONARY:
-				for k in pd2:
-					if Data.saddle_info(part, String(k)).is_empty():
-						saddlery[part][k] = pd2[k]
-						continue
-					var lv := clampi(int(pd2[k]), 0, 5)
-					if lv > 0:
-						saddlery[part][String(k)] = lv
-		saddlery["worn"] = String(sd.get("worn", ""))
+	# G4: the Saddlery's skills, H5: its circles, the worn attachment and the carried mount tier (a file from before
+	# G4 was brought over by the 4 -> 5 step, so every file read here has the key; without it the defaults stay)
+	saddlery = _fresh_saddlery()
+	var sd: Variant = d.get("saddlery", null)
+	if sd is Dictionary:
+		var pd2: Variant = (sd as Dictionary).get("skills", {})
+		if pd2 is Dictionary:
+			for k: Variant in pd2:
+				if Data.saddle_info("skills", String(k)).is_empty():
+					saddlery["skills"][k] = (pd2 as Dictionary)[k]  # an unknown skill is kept as it is
+					continue
+				var lv := clampi(_whole((pd2 as Dictionary)[k]), 0, 5)
+				if lv > 0:
+					saddlery["skills"][String(k)] = lv
+		saddlery["skill_slots"] = _load_slots((sd as Dictionary).get("skill_slots", []))
+		var sw: Variant = (sd as Dictionary).get("worn", "")
+		saddlery["worn"] = sw if sw is String else ""
+		saddlery["mount_credit"] = maxi(0, _whole((sd as Dictionary).get("mount_credit", 0)))
 		saddlery.merge(sd)
-	else:
-		migrate_saddlery()
 	settle_worn()
-	# 23 Nov 2026: the outfits (an older save has neither key: the original look, owned and worn)
-	cat_skins_owned = ["original"]
-	var so = d.get("cat_skins_owned", [])
-	if typeof(so) == TYPE_ARRAY:
-		for k in so:
-			if not cat_skins_owned.has(String(k)):
-				cat_skins_owned.append(String(k))
+	# 23 Nov 2026: the outfit she wears (an older save without it: the original); H5: owned.outfits says what she owns
 	cat_skin = String(d.get("cat_skin", "original"))
 	settle_cat_skin()
 	_loading = false
@@ -387,67 +409,105 @@ func _currency_changed(id: String, total: int) -> void:
 	Events.currency_changed.emit(id, total)
 
 
-## 23 Nov 2026: she wears an outfit she owns that the game still sells (balance.json cat_skins), else the original.
+## 23 Nov 2026: she wears an outfit she owns that the game still has (content/outfits), else the original. H5: the
+## original is always in owned.outfits.
 func settle_cat_skin() -> void:
-	if not cat_skins_owned.has("original"):
-		cat_skins_owned.push_front("original")
-	if cat_skin == "" or not cat_skins_owned.has(cat_skin) or Data.cat_skin(cat_skin).is_empty():
-		cat_skin = "original"
+	var outfits: Variant = owned.get("outfits")
+	if not outfits is Dictionary:
+		outfits = {}
+		owned["outfits"] = outfits
+	if not (outfits as Dictionary).has(Data.CAT_SKIN_DEFAULT):
+		(outfits as Dictionary)[Data.CAT_SKIN_DEFAULT] = {"level": 1}
+	if cat_skin == "" or not Data.cat_skin_owned(cat_skin) or Data.cat_skin(cat_skin).is_empty():
+		cat_skin = Data.CAT_SKIN_DEFAULT
 
 
 ## 22 Nov 2026: the mount wears one attachment at a time. When none of the ones it owns is marked worn (a save from
 ## before that rule, which wore all of them), it wears the highest-level one it owns, the Saddlebags first on a tie
-## (Data.best_owned_attach); "" when it owns none.
+## (Data.best_owned_attach); "" when it owns none. H5: what it owns is owned.attachments (Data.attach_level).
 func settle_worn() -> void:
-	var w := String(saddlery.get("worn", ""))
-	if w != "" and not Data.saddle_info("attach", w).is_empty() and int((saddlery["attach"] as Dictionary).get(w, 0)) >= 1:
+	var worn: Variant = saddlery.get("worn", "")
+	var w: String = worn if worn is String else ""
+	if w != "" and not Data.saddle_info("attach", w).is_empty() and Data.attach_level(w) >= 1:
 		return
 	saddlery["worn"] = Data.best_owned_attach()
 
 
-## G4: a save from before the Saddlery is brought over (load_game calls this when its file has no "saddlery" key):
-##   a save that had won mission saddlery.free_stomp.mission (8) gets that skill (Stomp) at its level (1), free, so the
-##   mount keeps the Thump it had (flag "g4_free_stomp"; the camp says so once, stations.catch_up_gifts)
-##   each old Burrows mount attachment it owned (saddlery.old_attachments: the Mossweave Saddle, the Saddlebags) becomes
-##   that Saddlery attachment at the level given there (flag "g4_old_attach"); one worn in the mount slot comes off
-##   (the slot keeps working for the Thunder Shoes)
-## It runs once: the next save writes the "saddlery" key.
-func migrate_saddlery() -> void:
-	var cfg: Dictionary = Data.b.get("saddlery", {})
-	var fs: Dictionary = cfg.get("free_stomp", {})
-	var mi := int(fs.get("mission", 8)) - 1
-	if not fs.is_empty() and mi >= 0 and mi < Data.mission_count() and missions_done.has(String(Data.mission(mi)["id"])):
-		var sid := String(fs.get("skill", "stomp"))
-		saddlery["skills"][sid] = maxi(int(saddlery["skills"].get(sid, 0)), int(fs.get("level", 1)))
-		set_flag("g4_free_stomp")
-	var old: Dictionary = cfg.get("old_attachments", {})
-	var owned: Array = attach.get("owned", [])
-	for oid in old:
-		var to: Array = old[oid]
-		if to.size() < 2:
+## H5: the Saddlery part of a fresh camp: nothing learned or worn, every circle empty, no carried mount tier.
+static func _fresh_saddlery() -> Dictionary:
+	return {"skills": {}, "skill_slots": _load_slots([]), "worn": "", "mount_credit": 0}
+
+
+## H5: the saved skill circles, one skill id per circle ("" for an empty one), as many circles as the Saddlery has
+## (balance.json saddlery.skill_slot_count, 3). Anything that is not text is an empty circle; Data.skill_slots() still
+## empties an unknown or repeated id when it reads them.
+static func _load_slots(v: Variant) -> Array:
+	var saved: Array = v if v is Array else []
+	var out: Array = []
+	for i in maxi(0, int(Data.saddlery_cfg().get("skill_slot_count", 3))):
+		out.append(saved[i] if i < saved.size() and saved[i] is String else "")
+	return out
+
+
+## H5: owned from the file: each kind's records, a record's level as a whole number of 0 or more. A record's other
+## fields, unknown kinds and unknown ids are kept as they are (ignored by the shops, never lost).
+static func _load_owned(v: Variant) -> Dictionary:
+	var out: Dictionary = {}
+	if not v is Dictionary:
+		return out
+	for kind: Variant in v:
+		var shelf: Variant = (v as Dictionary)[kind]
+		if not shelf is Dictionary:
+			out[String(kind)] = shelf
 			continue
-		if owned.has(String(oid)):
-			var nid := String(to[0])
-			saddlery["attach"][nid] = maxi(int(saddlery["attach"].get(nid, 0)), clampi(int(to[1]), 1, 5))
-			set_flag("g4_old_attach")
-		if String(attach.get("mount", "")) == String(oid):
-			attach["mount"] = ""
+		var records: Dictionary = {}
+		for id: Variant in shelf:
+			var rec: Variant = (shelf as Dictionary)[id]
+			if rec is Dictionary and _is_num((rec as Dictionary).get("level")):
+				var r: Dictionary = (rec as Dictionary).duplicate(true)
+				r["level"] = maxi(0, _whole(r["level"]))
+				rec = r
+			records[String(id)] = rec
+		out[String(kind)] = records
+	return out
+
+
+## A JSON number as a whole number (cut like int()); anything else, or a number that is not finite, is 0.
+static func _whole(v: Variant) -> int:
+	if v is int:
+		return v as int
+	if v is float and is_finite(v as float):
+		return int(v as float)
+	return 0
+
+
+static func _is_num(v: Variant) -> bool:
+	return v is int or v is float
 
 
 ## The debug endgame start: a camp as if all 15 missions were won (home level 5, a grown cat, some leaves, timber and
 ## shards, the Burrows open). The Moss Warden is not there: it is found in the Burrows, as in a real game. Phase F: the
 ## Training Target and the Bow Bench at 5 and every other building at the top home 5 allows, so the new caps (stats and
-## bows by the Target's and the Bench's level) never hold the endgame tester back.
+## bows by the Target's and the Bench's level) never hold the endgame tester back. H5: the Market built (one level),
+## the pet at its top level, both H4 mount looks and both H4 pet looks owned (balance.json save_upgrades.to_v5), the
+## original outfit; the mount's level follows the Saddlery's (Data.mount_level), no carried tier.
 func _endgame_seed() -> void:
 	leaves = 8000
 	timber = 300
 	camp_level = 5
-	stations = {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 1, "saddlery": 0,
-		"tailor": 0}
-	var st: Dictionary = Data.b.get("stations", {})
+	stations = STATIONS_DEFAULT.duplicate()
+	stations["fishing"] = 1
 	# G4: the Saddlery built, nothing learned; 23 Nov 2026: the Tailor's Nook built, only the original outfit owned
-	for id in ["target", "bench", "well", "cottage", "stall", "garden", "saddlery", "tailor"]:
-		stations[id] = mini(camp_level, (st.get(id, {}).get("levels", [{}, {}, {}]) as Array).size())
+	for id in ["target", "bench", "well", "stall", "garden", "saddlery", "tailor"]:
+		stations[id] = mini(camp_level, Data.building_levels(id).size())
+	var to: Dictionary = (Data.b.get("save_upgrades", {}) as Dictionary).get("to_v5", {})
+	owned = {"mounts": {}, "pets": {}, "outfits": {Data.CAT_SKIN_DEFAULT: {"level": 1}}, "attachments": {}}
+	for pair: Array in [["mounts", "mount_looks"], ["pets", "pet_looks"]]:
+		for id: Variant in to.get(pair[1], []):
+			if id is String:
+				owned[pair[0]][id] = {"level": 1}
+	pet_level = Data.pet_top()
+	market_hp_floor = 0
 	stats = {"damage": 9, "draw": 9, "range": 6, "health": 9, "speed": 8, "magnet": 5}
 	bows = {"twig": 10, "sunwood": 9, "volley": 6}
 	bow = "sunwood"
@@ -467,7 +527,9 @@ func _endgame_seed() -> void:
 	for f in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done", "told_horn", "told_chapter", "told_go_out",
 			"told_barricade", "told_ride", "told_hide", "told_garden", "told_cook", "told_fish", "told_feed", "told_raids", "hollow_open"]:
 		flags[f] = true
-	pantry = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3, "goldfish": 0}
+	bag = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3}   # H3: the Bag (was the pantry)
+	timers = {"seen": 0.0, "jobs": {}}
+	garden = _empty_garden()
 	shards = 60
 	raids = RAIDS_DEFAULT.duplicate(true)
 	raids["meter"] = 20.0
@@ -475,10 +537,9 @@ func _endgame_seed() -> void:
 	mats = {"amber": 0}
 	burrows = {}
 	burrow_run = {}
-	attach = {"owned": [], "mount": "", "pet": ""}
-	saddlery = {"skills": {}, "attach": {}, "worn": ""}
-	cat_skin = "original"
-	cat_skins_owned = ["original"]
+	attach = {"mount": "", "pet": ""}
+	saddlery = _fresh_saddlery()
+	cat_skin = Data.CAT_SKIN_DEFAULT
 
 
 ## A Burrow's counters (made with zeros the first time it is asked for).
@@ -568,6 +629,36 @@ func _load_raids(rd) -> Dictionary:
 	return r
 
 
+## H3: the Timers jobs from the save. Each job needs a number "start" and "len" (else it is dropped); "data" (a
+## Dictionary) and "told" get their defaults; seen is never below 0. Other keys are kept.
+static func _load_timers(td: Variant) -> Dictionary:
+	var out := {"seen": 0.0, "jobs": {}}
+	if not td is Dictionary:
+		return out
+	var t: Dictionary = td
+	var sv: Variant = t.get("seen", 0.0)
+	out["seen"] = maxf(0.0, float(sv)) if (sv is float or sv is int) else 0.0
+	var jobs: Dictionary = {}
+	var jd: Variant = t.get("jobs", {})
+	if jd is Dictionary:
+		for id: Variant in jd:
+			var j: Variant = (jd as Dictionary)[id]
+			if not j is Dictionary:
+				continue
+			var s: Variant = (j as Dictionary).get("start")
+			var l: Variant = (j as Dictionary).get("len")
+			if not (s is float or s is int) or not (l is float or l is int):
+				continue
+			var data: Variant = (j as Dictionary).get("data", {})
+			var job := {"start": float(s), "len": maxf(0.0, float(l)), "data": data if data is Dictionary else {},
+				"told": (j as Dictionary).get("told", false) == true}
+			job.merge(j)
+			jobs[String(id)] = job
+	out["jobs"] = jobs
+	out.merge(t)
+	return out
+
+
 func mark_dirty() -> void:
 	if not _dirty:
 		_dirty = true
@@ -613,12 +704,13 @@ func save_game(quiet := false) -> void:
 		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "def_levels": def_levels, "flags": flags, "best_night": best_night,
 		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
 		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,
-		"pantry": pantry, "snack_choice": snack_choice, "meal_ready": meal_ready, "meal_on": meal_on, "fish_log": fish_log, "fish_dry": fish_dry,
+		"bag": bag, "timers": timers, "fish_log": fish_log, "fish_dry": fish_dry,
 		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look,
 		"save_v": save_v,
 		"mats": mats, "burrows": burrows, "burrow_run": burrow_run, "attach": attach,
 		"saddlery": saddlery,
-		"cat_skin": cat_skin, "cat_skins_owned": cat_skins_owned,
+		"cat_skin": cat_skin,
+		"owned": owned, "pet_level": pet_level, "market_hp_floor": market_hp_floor,   # H5: the v5 save
 	}
 	# Write current values for fields this version owns, and carry other top-level fields through.
 	d.merge(_loaded_fields)

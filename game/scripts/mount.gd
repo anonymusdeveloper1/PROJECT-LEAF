@@ -1,27 +1,45 @@
 extends Node3D
 ## Thistle, the giant meadow hare that came for the Market's carrots (or its look Bramblewool: looks only, the same
 ## numbers). Tap Ride and it bounds over to the cat, which hops into the leaf saddle: the cat runs faster (balance.json
-## "mount", by the Market's level), keeps shooting, can't hide in the grass, and the mount takes the hits meant for it.
+## "mount", by the mount's level), keeps shooting, can't hide in the grass, and the mount takes the hits meant for it.
 ## Tap Walk and it hops back to the Market.
+## H5 (27 Nov 2026): the mount's level is Data.mount_level() (since the v5 save: the Saddlery's level, or the tier an old
+## Market already paid for, the owner's Q2 A); its health reads Data.mount_base_hp_at, the same table the Saddlery's
+## Upgrade confirm shows. Its model is its content entry's (content/mounts/<look>, Data.companion_model).
 ## G4 (21 Nov 2026): no built-in move any more. A mount alone carries the cat and takes the hits; its fighting comes only
 ## from what it learned and wears at the Saddlery (Data.skill_level / Data.attach_level, Save.saddlery):
 ##   skills       Stomp, Ram, Pounce, Bellow (balance.json mount_skills): while the cat rides it in a fight (a mission,
 ##                a raid, the Burrows) it uses each by itself, each on its own timer (cooldowns), never two at once
-##                (a shared gap, saddlery.gap_s); the first ready one whose moment has come goes (mount_skills.priority)
+##                (a shared gap, saddlery.gap_s); the first ready one whose moment has come goes (mount_skills.priority).
+##                H5 (the owner's Q3): only the skills in the three circles fight (Data.active_skill_level: 0 to 3 of
+##                them, shared by every mount; the Saddlery's Skills tab). A learned skill outside them keeps its level
+##                and its timer but never goes, neither by itself (_try_moves) nor through try_move. The circles' order
+##                does not change the priority. The Fire-spitter is an attachment: it keeps its own clock (worn_level)
 ##   attachments  the Fire-spitter (splash flame balls at the cat's pace, independent of the skill gap), the Mossweave Saddle (max_hp) and
 ##                the Saddlebags (Data.saddlebag_leaves, read by the kills). 22 Nov 2026 (the owner's rule): it may own all
 ##                three but wears one at a time, or none (Data.worn_attach); only the worn one acts and shows
 ## Ram and Pounce move the mount and the cat on it by code (_move_*); the clip of each move is played if the model has it
 ## ("Stomp", "Ram", "Pounce", "Bellow"), else "Thump". Timers run on frame time (clamped) and stop while main.frozen.
-## Model: res://assets/companions/<look>/<look>.glb with its json (clips Idle, Run, Thump and the skills'; "saddle_bone"
-## or "saddle_height_m"); until it exists a faceted placeholder stands in.
+## Model: its content entry's "model" (res://assets/companions/<look>/<look>.glb, Data.companion_model) with the json
+## beside it (clips Idle, Run, Thump and the skills'; "saddle_bone" or "saddle_height_m"); until it exists a faceted
+## placeholder stands in.
 ## 22 Nov 2026: the attachment it wears (Data.worn_attach) shows its model on it when the file exists:
 ## res://assets/companions/attachments/<id>_<look>.glb (id fire_spitter, saddle or saddlebags; look thistle or
-## bramblewool), made in the saddle bone's frame and hung on a BoneAttachment3D on that bone with no offset, coloured
-## with Props.apply_vc_glow (refresh_gear: on load, on a look change, on a purchase). No file: nothing shown. The
-## Fire-spitter's firing unit pivots at fire_aim while its harness stays fixed. Shots start at marker_nozzle along +Z.
+## bramblewool; H5: its content entry's "model" with {mount} filled in, Data.gear_model), made in the saddle bone's
+## frame and hung on a BoneAttachment3D on that bone with no offset, coloured with Props.apply_vc_glow (refresh_gear:
+## on load, on a look change, on a purchase). No file: nothing shown. The Fire-spitter's firing unit pivots at fire_aim
+## while its harness stays fixed. Shots start at marker_nozzle along +Z. gear_frame() gives that bone's frame for the
+## Saddlery's turning picture of an attachment (ui/windows/attachment_inspect.gd).
+## H3 (26 Nov 2026): the Mount Health Potion replaces Feed (the owner, Q1). Knocked out in a mission or a run, it stays
+## out until a Mount Health Potion brings it back (revive, at the potion's share of its health: full) or the next
+## chapter break; outside them it rests and gets up by itself, as before. Raw fish, the Golden Carp (heal) and Cooked
+## Fish (heal over time, its Effects holder: parts/effects_holder.gd, the child "Effects") mend it while it stands,
+## ridden or not, also with the stall in ruins (Effects, commands/use_potion.gd). No dish boosts any more.
+
+const EffectsHolder := preload("res://parts/effects_holder.gd")
 
 var main
+var effects: EffectsHolder                        # H3: its running effects (Cooked Fish), the child "Effects"
 var model: Node3D
 var anim: AnimationPlayer
 var meta: Dictionary = {}
@@ -72,12 +90,19 @@ func setup(m, at: Vector3) -> void:
 	_load_model()
 	hp = max_hp()
 	Fx.blob(self, 0.62)
+	effects = EffectsHolder.new()                     # H3: Cooked Fish mends it over time here
+	effects.name = "Effects"
+	effects.main = m
+	effects.max_hp = max_hp
+	effects.heal = heal
+	add_child(effects)
 
 
 func _load_model() -> void:
-	var base := "res://assets/companions/%s/%s" % [Save.mount_look, Save.mount_look]
-	if ResourceLoader.exists(base + ".glb"):
-		model = (load(base + ".glb") as PackedScene).instantiate()
+	var glb := Data.companion_model("mount", Save.mount_look)   # H5: its entry's model ("" when the file is missing)
+	var base := glb.get_basename()
+	if glb != "":
+		model = (load(glb) as PackedScene).instantiate()
 		if FileAccess.file_exists(base + ".json"):
 			var j = JSON.parse_string(FileAccess.get_file_as_string(base + ".json"))
 			if typeof(j) == TYPE_DICTIONARY:
@@ -162,10 +187,11 @@ func _find(n: Node, type: String) -> Node:
 	return null
 
 
-## A different look for the same mount (the Stable at the Market): only the model changes.
+## A different look for the same mount (H5: the Market's Mounts tab; before, its Stable): only the model changes.
 func set_look() -> void:
 	for c in get_children():
-		c.queue_free()
+		if c != effects:                              # H3: its running effects stay with it
+			c.queue_free()
 	model = null
 	anim = null
 	meta = {}
@@ -185,9 +211,19 @@ func set_look() -> void:
 
 
 # ---------------------------------------------------------------- 22 Nov 2026: the attachments' models
-## Where attachment id's model for mount look `look` would be.
+## Where attachment id's model for mount look `look` would be (the tests read it; refresh_gear asks Data.gear_model,
+## the entry's own "model", which is this same path for the shipped attachments).
 static func gear_path(id: String, look: String) -> String:
 	return "res://assets/companions/attachments/%s_%s.glb" % [id, look]
+
+
+## H5: the frame an attachment's file is made in (the saddle bone at rest), in the mount's own space (the mount faces
+## +Z there), so the Saddlery's turning picture of an attachment (ui/windows/attachment_inspect.gd) stands it the way
+## it sits on this mount. The identity for a mount without a saddle bone (the placeholder).
+func gear_frame() -> Transform3D:
+	if _skel == null or _saddle < 0 or not is_instance_valid(_skel) or not _skel.is_inside_tree() or not is_inside_tree():
+		return Transform3D.IDENTITY
+	return global_transform.affine_inverse() * _skel.global_transform * _skel.get_bone_global_rest(_saddle)
 
 
 ## Shows the model of the attachment it wears (see the top), for the look in use; takes away any other (one taken off
@@ -208,8 +244,8 @@ func refresh_gear() -> void:
 	for id in Data.saddle_items("attach"):
 		if Data.worn_attach() != String(id):
 			continue
-		var p := gear_path(String(id), Save.mount_look)
-		if not ResourceLoader.exists(p):
+		var p := Data.gear_model(String(id), Save.mount_look)   # H5: "" when the file for this look is missing
+		if p == "":
 			continue
 		var ps := load(p) as PackedScene
 		if ps != null:
@@ -408,14 +444,16 @@ func saddle_tilt() -> Quaternion:
 	return Quaternion(Vector3.UP, up)
 
 
-## Its health: by the Market's level (balance.json mount.hp_by_level), x the Mossweave Saddle (G4, Data.mount_hp_mult)
-## and x any Burrows help (run_mods.mount_hp).
+## Its health: its base health at the mount's level (Data.mount_base_hp_at: balance.json mount.hp_by_level, the table
+## the Saddlery's Upgrade confirm reads), x the Mossweave Saddle (G4, Data.mount_hp_mult) and x any Burrows help
+## (run_mods.mount_hp).
 func max_hp() -> int:
-	return roundi(Data.pick("mount", "hp_by_level", Data.mount_level()) * (1.0 + float(Data.run_mods.get("mount_hp", 0.0))) * Data.mount_hp_mult())
+	return roundi(float(Data.mount_base_hp_at(Data.mount_level())) * (1.0 + float(Data.run_mods.get("mount_hp", 0.0))) * Data.mount_hp_mult())
 
 
-## A hit meant for the rider. Out of health: it throws the cat off. In a mission it stays out until the cat feeds it
-## (the HUD's Feed button) or the next chapter break; outside one it rests and gets up by itself.
+## A hit meant for the rider. Out of health: it throws the cat off and its running effects end. In a mission or a run it
+## stays out until a Mount Health Potion brings it back (the HUD's potion button in row 2) or the next chapter break;
+## outside them it rests and gets up by itself.
 func hurt(amount: int, _from: Vector3) -> void:
 	if hp <= 0:
 		return
@@ -426,31 +464,62 @@ func hurt(amount: int, _from: Vector3) -> void:
 	main.shake(0.1)
 	if hp <= 0:
 		resting = float(Data.b["mount"]["rest_s"])
+		effects.clear()
 		main.set_riding(false)
 		Fx.dust(main, global_position, 8, 1.2)
 		if main.fight.active or main.get("area") != null:
-			main.hud.toast("%s is knocked out! Feed it to bring it back" % Data.mount_name())
+			var potion := Data.item_name(Effects.hud_potion("mount"), 1)
+			main.hud.toast("%s is knocked out! A %s brings it back" % [Data.mount_name(), potion])
 			if not Save.flag("told_feed"):
 				Save.set_flag("told_feed")
-				main.hud.tip("%s is out. Tap Feed (%s from your garden) to bring it back, or it gets up at the next chapter break." % [
-					Data.mount_name(), main.feed_text()], null)
+				main.hud.tip("%s is out. A %s (cooked at the pot) brings it back, or it gets up at the next chapter break." % [
+					Data.mount_name(), potion], null)
 		else:
 			main.hud.toast("%s is hurt and runs home to rest" % Data.mount_name())
-		main.hud.refresh_build()
+		Events.mount_down_changed.emit(true)
 
 
-## Knocked out: it cannot be ridden until it is fed, a chapter break comes, or (outside missions) it has rested.
+## H3: health back while it stands (raw fish, the Golden Carp: Effects "heal"; Cooked Fish over time, its Effects
+## holder): never past its max health, never while it is knocked out. A "+N" floats up.
+func heal(points: int) -> void:
+	if points <= 0 or resting > 0.0 or hp <= 0:
+		return
+	var before := hp
+	hp = mini(hp + points, max_hp())
+	if hp > before:
+		Fx.text(main, global_position + Vector3(0, 1.3, 0), "+%d" % (hp - before), Color(0.5, 1.0, 0.5))
+
+
+## H3: a Mount Health Potion (Effects "revive"): a knocked-out mount gets up with `share` of its health (at least 1; the
+## share comes from the potion's entry), then as Feed did before it: it bounds over and the cat hops on, or with the
+## stall in ruins it comes to the cat.
+func revive(share: float) -> void:
+	if resting <= 0.0 and hp > 0:
+		return
+	resting = 0.0
+	_regen_t = 0.0
+	var top := maxi(1, max_hp())
+	hp = clampi(roundi(float(top) * share), 1, top)
+	Events.mount_down_changed.emit(false)
+	if not Save.ruined.has("stall"):
+		main.set_riding(true, false)                   # it bounds over (come_to) and the cat hops on
+	else:
+		come_to(main.player.global_position)
+
+
+## Knocked out: it cannot be ridden until a Mount Health Potion brings it back, a chapter break comes, or (outside
+## missions and runs) it has rested.
 func out() -> bool:
 	return resting > 0.0
 
 
-## Back to full (chapter breaks, the end of a mission, a meal).
+## Back to full (chapter breaks, the end of a mission, resting in the camp).
 func refill() -> void:
 	var was_out := resting > 0.0
 	resting = 0.0
 	hp = max_hp()
-	if was_out and main != null and main.hud != null:
-		main.hud.refresh_build()
+	if was_out:
+		Events.mount_down_changed.emit(false)
 
 
 func come_to(at: Vector3) -> void:
@@ -476,7 +545,7 @@ func _process(delta: float) -> void:
 		if global_position.distance_to(home) > 8.0:
 			global_position = home
 	if resting > 0.0:
-		if not main.fight.active and not below:       # in a mission or a run it stays out until fed (or a chapter break)
+		if not main.fight.active and not below:       # in a mission or a run it stays out until a potion (or a chapter break)
 			resting -= dt
 			if resting <= 0.0:
 				resting = 0.01
@@ -561,10 +630,12 @@ func _fighting() -> bool:
 
 
 ## Skills share their gap and respect an active charge/leap. The worn Fire-spitter has its own faster firing clock.
+## H5: only a skill in one of the three circles goes (Data.active_skill_level: 0 for a learned skill left in the grid);
+## the order they are tried in stays mount_skills.priority, whatever circle each sits in.
 func _try_moves() -> void:
 	if gap <= 0.0 and _move_kind == "":
 		for id in Data.skill_priority():
-			var lv := Data.skill_level(String(id))
+			var lv := Data.active_skill_level(String(id))
 			if lv > 0 and float(cooldowns.get(id, 0.0)) <= 0.0 and _use(String(id), lv):
 				break
 	var fl := Data.worn_level("fire_spitter")             # only when it is the one worn (22 Nov 2026)
@@ -572,10 +643,11 @@ func _try_moves() -> void:
 		_spit_fire(fl, false)
 
 
-## Tests and tools: make move id now if it is owned (the Fire-spitter: worn) and its moment has come (an enemy where it
-## needs one), whatever its timer and the gap say. True when it went.
+## Tests and tools: make move id now if it is owned (the Fire-spitter: worn; H5: a skill only while it is in one of the
+## circles, Data.active_skill_level) and its moment has come (an enemy where it needs one), whatever its timer and the
+## gap say. True when it went.
 func try_move(id: String) -> bool:
-	var lv := Data.worn_level(id) if id == "fire_spitter" else Data.skill_level(id)
+	var lv := Data.worn_level(id) if id == "fire_spitter" else Data.active_skill_level(id)
 	if lv <= 0 or (_move_kind != "" and id != "fire_spitter") or not main.player.riding:
 		return false
 	return _use(id, lv)
@@ -632,11 +704,6 @@ func _fwd() -> Vector3:
 	return Vector3(sin(rotation.y), 0.0, cos(rotation.y))
 
 
-## Companions hit harder after a Honey Cake (the meal's "friends" boost), as the Thump did.
-func _friends() -> float:
-	return 1.0 + Data.meal_boost("friends")
-
-
 ## The move's clip: its own ("Stomp", "Ram", "Pounce", "Bellow") when the model has it, else "Thump", else a squash.
 func _play(info: Dictionary) -> void:
 	var clip := String(info.get("clip", "Thump"))
@@ -671,7 +738,7 @@ func _stomp(lv: int) -> bool:
 	if not near:
 		return false
 	var r := float(info.get("radius_m", 2.0))
-	var dmg := Data.skill_damage("stomp", lv) * _friends() * (1.0 + float(Data.run_mods.get("thump_mult", 0.0)))
+	var dmg := Data.skill_damage("stomp", lv) * (1.0 + float(Data.run_mods.get("thump_mult", 0.0)))
 	_went("stomp", info)
 	_play(info)
 	Fx.shockwave(main, global_position, r + 0.4, Color(1.0, 0.9, 0.6))
@@ -704,7 +771,7 @@ func _ram(lv: int) -> bool:
 		return false
 	var secs := float(info.get("dash_s", 0.35))
 	_begin_move("ram", fwd * float(info.get("dash_m", 3.0)), secs, lv)
-	_move_dmg = Data.skill_damage("ram", lv) * _friends()
+	_move_dmg = Data.skill_damage("ram", lv)
 	_went("ram", info, secs)
 	_play(info)
 	_shout(info, Color(1.0, 0.85, 0.5))
@@ -782,7 +849,7 @@ func _pounce(lv: int) -> bool:
 func _pounce_land(lv: int) -> void:
 	var info := Data.saddle_info("skills", "pounce")
 	var r := float(info.get("blast_m", 2.5))
-	var dmg := Data.skill_damage("pounce", lv) * _friends()
+	var dmg := Data.skill_damage("pounce", lv)
 	var stun := Data.skill_stun("pounce", lv)
 	var boss_stun := minf(stun, float(info.get("boss_stun_s", 0.5)))
 	Fx.shockwave(main, global_position, r + 0.3, Color(1.0, 0.8, 0.5))
@@ -847,7 +914,7 @@ func _spit_fire(lv: int, instant := true) -> bool:
 	ball.set_script(Fireball)
 	main.add_child(ball)
 	var aim := _fire_aim_at()
-	ball.launch(main, from[0], aim, info, Data.fire_damage(lv) * _friends(), Data.fire_burn_per_s(lv) * _friends())
+	ball.launch(main, from[0], aim, info, Data.fire_damage(lv), Data.fire_burn_per_s(lv))
 	return true
 
 

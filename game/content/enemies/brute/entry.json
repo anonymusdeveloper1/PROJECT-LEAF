@@ -1,0 +1,23 @@
+{
+  "id": "brute",
+  "name": "Toadstool Brute",
+  "desc": "A slow, sturdy fighter.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "brute",
+  "role": "tank",
+  "height": 1.45,
+  "radius": 0.55,
+  "color": "#D9443A",
+  "parts": {
+    "health": {"max": 120},
+    "armour": {"share": 0.20},
+    "mover": {"speed": 0.7},
+    "attack": {"damage": 2, "gate_damage": 14, "reach": 0.75, "attack_every": 1.6},
+    "status": {},
+    "loot": {"leaves": 8},
+    "health_bar": {},
+    "brain": {"aggro": 1.6}
+  }
+}

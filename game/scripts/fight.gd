@@ -99,6 +99,8 @@ var _burst_left := 0             # enemies still to come in this burst
 var _burst_n := 0                # the size of this burst
 var _prev_hp := 0.0              # the planned health of the wave before (no easy waves; 0 = none)
 var _wave_n := 0                 # enemies in this wave (the quick clear)
+var _wave_summons := 0           # boss summons that came into this mission wave (they join the bar's total)
+var _planned := false            # true while a queued enemy is being spawned (not a summon)
 var _ruined_snap: Array = []     # buildings already in ruins when the wave started (the intact bonus)
 var _down_snap: Dictionary = {}  # defence pieces already down when the wave started: {piece id: true}
 var _fire_out_wave := false      # the campfire went out during this wave
@@ -196,16 +198,15 @@ func tank_weight(kind: String) -> float:
 	var tw = _sub("wave_limits").get("tank_weight", {})
 	if not (tw is Dictionary):
 		return 0.0
-	var e = (Data.b["enemies"] as Dictionary).get(kind, {})
-	if e is Dictionary and bool(e.get("boss", false)):
+	var e: Dictionary = Data.enemy(kind)
+	if bool(e.get("boss", false)):
 		return 0.0
 	return float(tw.get(kind, 0.0))
 
 
 ## A kind's planned health (its hp before the wave's strength).
 func _kind_hp(kind: String) -> float:
-	var e = (Data.b["enemies"] as Dictionary).get(kind, {})
-	return float(e.get("hp", 0.0)) if e is Dictionary else 0.0
+	return float(Data.enemy(kind).get("hp", 0.0))                  # the unarmoured base health: wave planning never sees armour
 
 
 ## A wave foe on the field that is its boss: a boss kind, or one of the last wave's `boss` enemies (_spawn_next marks
@@ -213,8 +214,7 @@ func _kind_hp(kind: String) -> float:
 func _is_boss_foe(e) -> bool:
 	if e.has_meta("wave_boss"):
 		return true
-	var d = (Data.b["enemies"] as Dictionary).get(String(e.get("id")), {})
-	return d is Dictionary and bool(d.get("boss", false))
+	return bool(Data.enemy(String(e.get("id"))).get("boss", false))
 
 
 ## Phase G1: the wave's foes on the field now (the bonus runners left out): {"n": how many, "tank": their summed tank
@@ -268,7 +268,6 @@ func start_mission(i: int) -> void:
 	total_t = 0.0
 	_endgame_run = Data.raids_open()
 	_ruined_at_start = Save.ruined.duplicate()
-	Data.set_meal(Save.meal_on)                       # a wave checkpoint retains the dish already being eaten
 	gate_max = float(Data.fire_hp())
 	gate_hp = gate_max
 	_first = mission == 0 and not Save.missions_done.has(String(info()["id"]))
@@ -351,6 +350,7 @@ func _start_wave(w: int) -> void:
 	if mode != "raid":
 		_wave_news(elite, last)
 		Events.wave_started.emit(w)
+	_emit_fight_progress()
 
 
 ## One seeded raid roster. Groups use different shuffled trails; they overlap in time, without round breaks.
@@ -395,6 +395,7 @@ func _raid_queue(_w: int, _last: bool) -> void:
 			member += 1
 		group += 1
 	_wave_n = _queue.size()
+	_wave_summons = 0
 	var summons: Array = Save.raids.get("run", {}).get("summons", [])
 	for i in summons.size():
 		var id := total + i
@@ -412,6 +413,7 @@ func _mission_queue(w: int, elite: bool, last: bool) -> void:
 	_queue = q["kinds"]
 	_qinfo = q["info"]
 	_wave_n = _queue.size()
+	_wave_summons = 0
 	_burst_left = 0
 	_say = []
 	_say_t = -1.0
@@ -587,16 +589,12 @@ func squad_rules() -> Dictionary:
 
 ## A kind's role in a squad (balance.json enemy_roles: "light", "fighter", "tank", "support", "leader"; "" when none).
 func role_of(kind: String) -> String:
-	var roles = Data.b.get("enemy_roles", {})
-	var r = roles.get(kind, "") if roles is Dictionary else ""
-	return String(r) if r is String else ""
+	return Data.enemy_role(kind)
 
 
 ## Squad id's data (balance.json squads: "members" [{"kind", "n": [min, max]}], "from_mission", "elite"); {} when none.
 func squad_def(id: String) -> Dictionary:
-	var sq = Data.b.get("squads", {})
-	var d = sq.get(id, {}) if sq is Dictionary else {}
-	return d if d is Dictionary else {}
+	return Data.squad(id)
 
 
 ## The chapter's squads for wave w, [[id, weight], ...] (only the ones balance.json defines). `first`: the chapter's
@@ -629,7 +627,7 @@ func _light_kinds(list: Array) -> Array:
 func _roll_kinds(id: String, how := "") -> Array:
 	var kinds: Array = []
 	for m in squad_def(id).get("members", []):
-		if not (m is Dictionary) or not (Data.b["enemies"] as Dictionary).has(String(m.get("kind", ""))):
+		if not (m is Dictionary) or not Data.enemy_has(String(m.get("kind", ""))):
 			continue
 		var nn: Array = m.get("n", [1, 1])
 		var lo := int(nn[0]) if not nn.is_empty() else 1
@@ -686,8 +684,7 @@ func squad_leader_index(kinds: Array) -> int:
 
 ## A kind's body radius (balance.json enemies).
 func _kind_radius(kind: String) -> float:
-	var e = (Data.b["enemies"] as Dictionary).get(kind, {})
-	return float(e.get("radius", 0.4)) if e is Dictionary else 0.4
+	return float(Data.enemy(kind).get("radius", 0.4))
 
 
 ## Each member's spot in its squad's formation, in its leader's frame (x: to the side, z: forward; the leader's is
@@ -737,12 +734,9 @@ func squad_offsets(kinds: Array, lead: int) -> Array:
 
 ## The elite squad (balance.json squads with "elite": true) that has kind among its members; "" when none.
 func _elite_band(kind: String) -> String:
-	var sq = Data.b.get("squads", {})
-	if not (sq is Dictionary):
-		return ""
-	for id in sq:
-		var d = sq[id]
-		if d is Dictionary and bool(d.get("elite", false)) and _roll_kinds(String(id), "min").has(kind):
+	for id in Data.squad_ids():                       # in the catalogue's (H5) order: the first elite squad that has kind
+		var d: Dictionary = Data.squad(id)
+		if bool(d.get("elite", false)) and _roll_kinds(String(id), "min").has(kind):
 			return String(id)
 	return ""
 
@@ -1366,7 +1360,7 @@ func _next_spawn() -> int:
 		var has_boss := false
 		for j in range(k, end):
 			var kind := String(_queue[j])
-			if _queued_tag(j) == "boss" or bool(((Data.b["enemies"] as Dictionary).get(kind, {}) as Dictionary).get("boss", false)):
+			if _queued_tag(j) == "boss" or bool(Data.enemy(kind).get("boss", false)):
 				has_boss = true
 			else:
 				tw += tank_weight(kind)
@@ -1442,7 +1436,9 @@ func _spawn_next(k := 0) -> void:
 		var rs: Array = plan.get("roads", info()["lanes"])
 		ln = int(rs.pick_random()) if not rs.is_empty() else 0
 	lane = ln
-	var foe = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln)
+	_planned = true
+	var foe = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln, -1, q.size() > 2 and String(q[2]) == "boss")
+	_planned = false
 	if q.size() > 2 and String(q[2]) == "boss" and foe != null and is_instance_valid(foe):
 		foe.set_meta("wave_boss", true)             # the wave's boss: it never counts as a tank, and holds the others back
 	if float(q[1]) != 1.0 and foe != null and is_instance_valid(foe) and foe.get("speed") != null:
@@ -1530,7 +1526,9 @@ func _spawn_squad(k: int) -> void:
 ## did not come).
 func _spawn_member(row: Array, at: Vector3, ln: int, rot: float, leader, off: Vector3):
 	var q: Array = row[1]
-	var foe = spawn(String(row[0]), at, ln)
+	_planned = true
+	var foe = spawn(String(row[0]), at, ln, -1, q.size() > 2 and String(q[2]) == "boss")
+	_planned = false
 	if foe == null or not is_instance_valid(foe):
 		return null
 	foe.rotation.y = rot
@@ -1564,7 +1562,7 @@ func _wave_extras(dt: float) -> void:
 ## it run off after its time). Returns it (null if the kind is missing).
 func spawn_grub():
 	var kind := String(_sub("golden_grub").get("kind", "golden_grub"))
-	if not (Data.b["enemies"] as Dictionary).has(kind):
+	if not Data.enemy_has(kind):
 		return null
 	var ln := randi() % maxi(1, Data.patch_count())
 	var e = spawn(kind, main.world.spawn_point(ln, randf_range(-0.12, 0.12)), ln)
@@ -1578,14 +1576,17 @@ func spawn_grub():
 func spawn_totem(ln: int):
 	var tt := _sub("totem")
 	var kind := String(tt.get("kind", "gloom_totem"))
-	if not (Data.b["enemies"] as Dictionary).has(kind) or ln < 0 or ln >= main.world.trails.size():
+	if not Data.enemy_has(kind) or ln < 0 or ln >= main.world.trails.size():
 		return null
 	var at: Vector3 = main.world.trail_point(ln, float(main.world.trail_length(ln)) * float(tt.get("s", 0.35)))
+	_planned = true
 	var e = spawn(kind, at, ln)
+	_planned = false
 	if e == null or not is_instance_valid(e):
 		return null
 	_quiet_t = 0.0
 	_wave_n += 1
+	_emit_fight_progress()
 	if not Save.flag("told_totem"):
 		Save.set_flag("told_totem")
 		main.hud.banner("A Gloom Totem!", Color(0.8, 0.55, 1.0), "Break it: it makes them stronger")
@@ -1594,9 +1595,12 @@ func spawn_totem(ln: int):
 	return e
 
 
-func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
+## `mission_boss`: this one is a mission's boss from the wave queue (_spawn_next, _spawn_member): like a raid's leader
+## and a Burrow's room boss it is not armoured (enemy.setup's last argument).
+func spawn(kind: String, at: Vector3, p: int, raid_member := -1, mission_boss := false) -> Node3D:
 	if main.area != null and main.area.owns(at):
 		return main.area.spawn(kind, at, {"summon": true})   # Phase E: a summon below ground (the room's strength, the cap)
+	var summoned := false
 	if mode == "raid" and active and raid_member < 0:
 		# Boss summons share the same total and live limits; they cannot create an endless extra wave.
 		if raid_total() >= int(raid["assault"]["max_enemies"]) or _wave_foe_count() >= _max_alive():
@@ -1606,6 +1610,7 @@ func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 		raid_member = int(raid["enemy_count"]) + summons.size()
 		summons.append({"kind": kind, "lane": p})
 		run["summons"] = summons
+		summoned = true
 	var e := Node3D.new()
 	e.set_script(EnemyScript)
 	e.main = main
@@ -1617,19 +1622,27 @@ func spawn(kind: String, at: Vector3, p: int, raid_member := -1) -> Node3D:
 	var leader: bool = mode == "raid" and String(raid.get("leader", "")) != "" and kind == String(raid.get("leader", ""))
 	if leader:
 		st *= float(raid.get("leader_mult", 1.0))
-	e.setup(kind, p, st)
+	e.setup(kind, p, st, not (leader or mission_boss))
 	if leader:
 		e.set_meta("leader", true)
 		main.raids.on_leader(e)                     # its own banner and the boss bar
 	elif bool(Data.enemy(kind).get("boss", false)):
 		main.hud.banner("%s is coming!" % Data.enemy(kind)["name"], Color(0.85, 0.55, 1.0))
-		main.hud.boss = e
+		Events.boss_changed.emit(e)
+	if active and in_wave and mode != "raid" and not _planned and not bool(Data.enemy(kind).get("bonus", false)):
+		_wave_summons += 1
+		summoned = true
+	if summoned:
+		_emit_fight_progress()
 	return e
 
 
 func on_enemy_died(e: Node3D) -> void:
 	_quiet_t = 0.0
-	_record_raid_member(e)
+	if mode == "raid":
+		_record_raid_member(e)
+	else:
+		_emit_fight_progress()
 
 
 func _record_raid_member(enemy) -> void:
@@ -1642,6 +1655,7 @@ func _record_raid_member(enemy) -> void:
 		defeated.append(member)
 	run["assault_format"] = 1
 	run["defeated"] = defeated
+	_emit_fight_progress()
 
 
 ## Something is happening in the wave (an enemy hit a building, a defence, the campfire or the cat): no fleeing yet.
@@ -1684,16 +1698,36 @@ func _stragglers_flee() -> void:
 		Fx.petals(main, e.global_position + Vector3(0, 0.5, 0))
 		e.queue_free()
 	main.hud.toast("The last %d fled into the woods" % left.size())
+	_emit_fight_progress()
 
 
 func on_escaped(e) -> void:
-	_record_raid_member(e)
+	if mode == "raid":
+		_record_raid_member(e)
+	else:
+		e.remove_from_group("foes")                # it is freed at the end of the frame: stop counting it now, as a death does
+		_emit_fight_progress()
 	main.hud.toast("A Bandit got away with leaves!")
 
 
 ## Enemies of this wave still to beat (on the field and still to come; never a bonus runner).
 func left_in_wave() -> int:
 	return _queue.size() + _wave_foe_count()
+
+
+## The total roster of the current Raid Mission wave, including any Gloom Totem.
+func wave_total() -> int:
+	return _wave_n + _wave_summons
+
+
+func _emit_fight_progress() -> void:
+	if not active or not in_wave:
+		return
+	if mode == "raid":
+		var defeated: Array = Save.raids["run"].get("defeated", [])
+		Events.fight_progress.emit(defeated.size(), raid_total())
+	else:
+		Events.fight_progress.emit(maxi(0, wave_total() - left_in_wave()), wave_total())
 
 
 func raid_total() -> int:
@@ -1713,7 +1747,6 @@ func _wave_cleared() -> void:
 	_totem_at = -1.0                            # a totem not grown yet is dropped
 	_say = []
 	_say_t = -1.0
-	main.on_wave_held()                         # the garden grows a step for every wave held
 	var bonus := wave_leaves()
 	var extra := _active_pay(bonus)             # [quick, intact]
 	var more := int(extra[0]) + int(extra[1])
@@ -1826,8 +1859,6 @@ func _chapter_done(bonus: int, wave_tim := 0) -> void:
 		last_stand = false
 		main.world.set_fire_out(false)
 		main.stations.set_fire_out(false)
-	if main.cooking:
-		main.cooking.finish(true)                 # the chapter's dish is used up
 	gate_hp = gate_max
 	_save_run(c + 1)
 	Fx.flower_ring(main, Vector3.ZERO, 1.6)
@@ -1835,9 +1866,12 @@ func _chapter_done(bonus: int, wave_tim := 0) -> void:
 	main.hud.banner("Wave %d of %d held!" % [wave, waves()], Color(1.0, 0.9, 0.5),
 		"Supply chest · +%d golden leaves · +%d timber · saved\nStart wave %d at the signpost when ready" % [leaves, timber, wave + 1])
 	main.on_chapter_done()
-	# the boss comes in the last chapter: a nudge to cook for it
-	if c + 2 == chapters() and not (info().get("boss", []) as Array).is_empty() and Save.meal_ready == "" and Data.garden_level() > 0:
-		main.hud.tip_after("The boss comes in the last chapter: cook a dish at the pot first!", main.stations.rings.get("pot"))
+	# the boss comes in the last chapter: a nudge to brew Health Potions for it (the potion the HUD's button uses,
+	# balance.json potions.hud.cat), when there are none in the Bag and the garden is built
+	var boss_potion := String(Data.b.get("potions", {}).get("hud", {}).get("cat", ""))
+	if c + 2 == chapters() and not (info().get("boss", []) as Array).is_empty() and boss_potion != "" and Bag.count(boss_potion) == 0 \
+			and Data.garden_level() > 0:
+		main.hud.tip_after("The boss comes in the last chapter: brew Health Potions at the pot first!", main.stations.rings.get("pot"))
 
 
 ## Every next wave starts only from the player's action. Waiting and repeated taps never pay extra leaves.
@@ -1868,13 +1902,13 @@ func status_text() -> String:
 		var nm := title()
 		if not in_wave:
 			return "%s ready · Defend Camp at the signpost" % nm
-		return "%s · %d raiders left" % [nm, left_in_wave()]
+		return nm                                   # H2: the raid bar shows the progress (no count of who is left)
 	if not in_wave:
 		var pv := preview_text()
 		if pv != "":                                # one slim line: the title gives way to where they come from
 			return "Wave %d of %d ready · %s" % [wave + 1, waves(), pv]
 		return "%s · wave %d of %d ready · start at the signpost" % [title(), wave + 1, waves()]
-	return "%s · wave %d of %d · %d left" % [title(), wave, waves(), left_in_wave()]
+	return "%s · wave %d of %d" % [title(), wave, waves()]    # H2: the raid bar shows how much of the wave is beaten
 
 
 func _first_mission_unlocks() -> void:
@@ -1882,7 +1916,7 @@ func _first_mission_unlocks() -> void:
 	if wave == 1 and not Save.flag("shop_target"):
 		Save.set_flag("shop_open")
 		Save.set_flag("shop_target")
-		main.hud.tip("%s's shop is open! Build a Training Target to hit harder." % Data.camp_name(true), st.rings["shop"])
+		main.hud.tip(Data.word("tip_build_target") % Data.camp_name(true), null)   # H4 (Q17 (a)): the build icon, no arrow
 	elif wave == chapter_waves() and not Save.flag("home"):
 		Save.set_flag("home")
 		main.hud.tip("%s's shop now sells upgrades for the cat itself." % Data.camp_name(true), st.rings["shop"])
@@ -1904,7 +1938,7 @@ func damage_fire(amount: int, from: Vector3) -> void:
 	var fire = main.stations.nodes.get("campfire")
 	if fire:
 		Fx.boing(fire, 0.1)
-	main.hud.gate_hit()
+	Events.campfire_hit.emit()
 	if gate_hp <= 0.0:
 		if rebuilt:
 			camp_falls()                                # the second time in a chapter: the camp falls
@@ -2068,8 +2102,6 @@ func _win(extra_leaves := 0, extra_timber := 0) -> void:
 func _end(won: bool) -> void:
 	if mode == "mission":
 		Save.hold_flush = false
-	if main.cooking:
-		main.cooking.finish(won)                  # won: the dish is used up; the camp fell: it goes back into the pot
 	active = false
 	in_wave = false
 	on_break = false
@@ -2087,7 +2119,7 @@ func _end(won: bool) -> void:
 		main.world.set_fire_out(false)
 		main.stations.set_fire_out(false)
 	last_stand = false
-	main.hud.boss = null
+	Events.boss_changed.emit(null)
 	main.on_stage_end(won)
 	if mode == "mission":
 		Save.flush()
@@ -2142,7 +2174,6 @@ func _raid_wave_cleared() -> void:
 		Save.add_leaves(leaves)
 		Save.timber += timber
 		last_pay = {"wave": wave, "bonus": leaves, "quick": 0, "intact": 0, "timber": timber}
-		main.on_wave_held()
 		main.raids.on_wave_held(wave)
 	_raid_over(true)                                     # no intermediate wave or rest state
 

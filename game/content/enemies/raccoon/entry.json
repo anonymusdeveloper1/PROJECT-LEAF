@@ -1,0 +1,22 @@
+{
+  "id": "raccoon",
+  "name": "Raccoon Bandit",
+  "desc": "A fast bandit that steals leaves.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "raccoon",
+  "role": "light",
+  "height": 1.2,
+  "radius": 0.3,
+  "color": "#7D7480",
+  "parts": {
+    "health": {"max": 30},
+    "mover": {"speed": 2.4},
+    "attack": {"damage": 1, "gate_damage": 0, "reach": 0.5, "attack_every": 0.8},
+    "status": {},
+    "loot": {"leaves": 5, "steals": 25},
+    "health_bar": {},
+    "brain": {"aggro": 1.2}
+  }
+}

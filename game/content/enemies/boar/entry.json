@@ -1,0 +1,22 @@
+{
+  "id": "boar",
+  "name": "Bramble Boar",
+  "desc": "A boar that charges.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "boar",
+  "role": "fighter",
+  "height": 1.0,
+  "radius": 0.45,
+  "color": "#8E3B26",
+  "parts": {
+    "health": {"max": 70},
+    "mover": {"speed": 1.0},
+    "attack": {"damage": 2, "gate_damage": 22, "reach": 0.8, "attack_every": 1.3, "charge_speed": 5.5, "windup": 0.8, "charge_time": 1.4, "charge_every": 5.0, "fence_damage": 90},
+    "status": {"miss_daze": 1.0, "daze_hurt": 1.5},
+    "loot": {"leaves": 6},
+    "health_bar": {},
+    "brain": {"aggro": 7.0}
+  }
+}

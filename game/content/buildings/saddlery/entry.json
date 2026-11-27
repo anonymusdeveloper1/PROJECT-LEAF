@@ -1,0 +1,26 @@
+{
+  "id": "saddlery",
+  "name": "Saddlery",
+  "desc": "Skills and attachments for {mount}",
+  "icon": "saddlery",
+  "price": {"leaves": 900, "timber": 30},
+  "unlock": {"flag": "shop_open", "building": ["home", 2], "missions_won": 8},
+  "arrives": "menu",
+  "_note": "G4 (21 Nov 2026): the mount's building. Built on the Hearthtree's card once `needs_missions` missions are won and the Hearthtree is at `needs_home` (level 2, from 21 Nov 2026); levels 1-5, never above the Hearthtree's level; its level caps the level of every skill and attachment (mount_skills, mount_attachments). Its other rules are in the top-level `saddlery` block.",
+  "model": "saddlery",
+  "layout": {
+    "position": [5, 0, 8],
+    "foot_radius": 0.8,
+    "ring_offset": [0, 0, 1.05],
+    "village": {"r": 1.3, "ring_r": 0.9},
+    "path": {"points": [[0.35, 0, 4.6], [1.2, 0, 6.45], [2.1, 0, 6.95], [2.9, 0, 7.6], [3.1, 0, 8.6], [3.9, 0, 9.25], [5, 0, 9.05]], "smooth": 6, "half_mult": 0.85},
+    "stand_in": {"models": ["bow_bench_1", "bow_bench_2", "bow_bench_3", "bow_bench_3", "bow_bench_3"], "tint": "#B98A5C"}
+  },
+  "levels": [
+    {},
+    {"leaves": 1500, "timber": 50},
+    {"leaves": 3000, "timber": 80},
+    {"leaves": 5000, "timber": 120},
+    {"leaves": 8000, "timber": 160}
+  ]
+}

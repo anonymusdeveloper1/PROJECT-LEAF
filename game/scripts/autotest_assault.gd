@@ -142,7 +142,7 @@ func run() -> void:
 		same_remaining = same_remaining and not defeated.has(member) and f._queue[i] == full_queue[member] and f._qinfo[i] == full_info[member]
 	_x("resume restores only remaining raiders with the same kinds and arrival plan", same_remaining and f._queue.size() == initial - defeated.size())
 	_x("resume preserves campfire damage and building losses", is_equal_approx(f.gate_hp / f.gate_max, 0.65) and f.raid_losses == 2)
-	_x("active raid status shows remaining raiders without wave numbers", f.status_text().contains("raiders left") and not f.status_text().contains("wave"))
+	_x("active raid status shows the raid's name, no count and no wave numbers (H2: the raid bar shows the progress)", f.status_text() == f.title() and not f.status_text().contains("wave"))
 	main.hud.show_card(main.stations.rings["sign"])
 	await t._wait(0.6)
 	await t._shot("assault_in_progress")

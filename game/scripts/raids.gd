@@ -154,16 +154,22 @@ func _stir_message() -> void:
 
 
 # ---------------------------------------------------------------- how big: the camp grows the raids
+## How big the camp is, for the raids' level (gloom_raids.camp_score). H5: the old Mushroom Cottage's and Market's
+## levels are the pet's level and the mount's level now, each per_station_level, the mount's no higher than
+## mount_level_cap (the old Market's top), so a raid is as strong as before; the one-level Market and the Saddlery's own
+## level are not counted again.
 func camp_score() -> int:
 	var cs: Dictionary = cfg()["camp_score"]
 	var s := float(cs["per_home_level"]) * (Save.camp_level - 1)
-	for id in ["target", "bench", "well", "cottage", "stall"]:
+	for id in ["target", "bench", "well"]:
 		s += float(cs["per_station_level"]) * int(Save.stations.get(id, 0))
+	s += float(cs["per_station_level"]) * Data.pet_level()
+	s += float(cs["per_station_level"]) * mini(Data.mount_level(), int(cs.get("mount_level_cap", 3)))
 	for p in main.defences.pieces:
 		if p["type"] == "tower":
 			s += float(cs["per_tower"])
 	for t in ["barricade", "tower", "spikes"]:
-		s += float(cs["per_defence_level"]) * (main.defences.level(t) - 1)
+		s += float(cs["per_defence_level"]) * (main.defences.best_level(t) - 1)
 	s += float(cs["per_guardian_level"]) * Data.guardian_level()
 	return int(round(s))
 
@@ -276,15 +282,14 @@ func _pick_lanes(t: Dictionary, level: int) -> Array:
 func spec_for(plan: Dictionary) -> Dictionary:
 	var t: Dictionary = cfg()["types"][String(plan["type"])]
 	var lv := int(plan["level"])
-	var enemies: Dictionary = Data.b["enemies"]
 	var pool: Array = []
 	for pair in t["pool"]:
-		if enemies.has(String(pair[0])):
+		if Data.enemy_has(String(pair[0])):
 			pool.append([String(pair[0]), int(pair[1])])
 	if pool.is_empty():
 		pool = [["thornling", 1]]
 	var leader := String(plan.get("leader", ""))
-	if not enemies.has(leader):
+	if not Data.enemy_has(leader):
 		leader = ""                                 # no leader model yet
 	var assault: Dictionary = cfg()["assault"]
 	var count_rng := RandomNumberGenerator.new()
@@ -363,7 +368,7 @@ func type_name(plan: Dictionary) -> String:
 
 
 func leader_name(id: String) -> String:
-	if id == "" or not Data.b["enemies"].has(id):
+	if id == "" or not Data.enemy_has(id):
 		return "the Gloom"
 	var n := String(Data.enemy(id)["name"])
 	return "The " + n if id == "herald" else n
@@ -541,7 +546,7 @@ func on_wave_begins(_w: int, _last: bool) -> void:
 
 
 func on_leader(e) -> void:
-	main.hud.boss = e
+	Events.boss_changed.emit(e)
 	var id := String(e.id)
 	main.hud.banner("%s!" % leader_name(id), Color(0.85, 0.55, 1.0), "Defeat every raider to hold the camp")
 
@@ -551,7 +556,7 @@ func on_building_hit(id: String) -> void:
 	if main.fight.mode != "raid" or _alerts.has(id):
 		return
 	_alerts[id] = float(cfg()["alert_every_s"])
-	main.hud.toast("%s is under attack!" % (Data.camp_name(true) if id == "home" else "The %s" % String(Data.b["stations"][id]["name"])))
+	main.hud.toast("%s is under attack!" % (Data.camp_name(true) if id == "home" else "The %s" % String(Data.building(id).get("name", id))))
 
 
 ## A raid wave was held: the damage so far is saved now (wear, wrecks, the fire), not only at the end.
@@ -678,7 +683,7 @@ func finish(won: bool, perfect: bool, held: int) -> void:
 		main.hud.tip_after("Mend the camp before the next raid.", main.stations.rings.get("sign"))
 	if first_shards:
 		Save.set_flag("told_shards")
-		main.hud.tip_after("Gloom shards! Spend them on Shardstone defences at %s, or on the Watch's Lookout and Tracker." % Data.camp_name(), main.stations.rings.get("shop"))
+		main.hud.tip_after("Gloom shards! Spend them on the Watch's Lookout and Tracker.", main.stations.rings.get("shop"))
 
 
 # ---------------------------------------------------------------- nothing happens while the game is closed
@@ -790,8 +795,12 @@ func camp_check() -> Dictionary:
 	for id in worn:
 		wear[id] = float(Save.wear[id])
 		items.append({"kind": "wear", "id": id, "cost": st.patch_cost(id)})
+	# H6: `items` is everything broken (wrecks too: the counts, run.ready, the tips and the burrow warning read it); `pay` is
+	# what Mend all and Mend some can pay: ruins and wear only. A broken defence is repaired on its own card (the Well mends
+	# the standing ones), so it never joins the price.
+	var pay: Array = items.filter(func(it): return String(it["kind"]) != "wreck")
 	var cost := {"leaves": 0, "timber": 0}
-	for it in items:
+	for it in pay:
 		cost["leaves"] += int(it["cost"].get("leaves", 0))
 		cost["timber"] += int(it["cost"].get("timber", 0))
 	# the camp's condition: the home weighs 2, every other building 1, each barricade and tower 0.5
@@ -808,7 +817,7 @@ func camp_check() -> Dictionary:
 			continue
 		weight += 0.5
 		sum += 0.5 * (clampf(float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0) if p["wrecked"] else 1.0)
-	return {"ruins": ruins, "wrecks": wrecks, "wear": wear, "cost": cost, "items": items,
+	return {"ruins": ruins, "wrecks": wrecks, "wear": wear, "cost": cost, "items": items, "pay": pay,
 		"condition": sum / weight if weight > 0.0 else 1.0}
 
 
@@ -973,11 +982,11 @@ func coming_text() -> String:
 	for pair in pool:
 		if names.size() >= 3:
 			break
-		if Data.b["enemies"].has(String(pair[0])):
+		if Data.enemy_has(String(pair[0])):
 			names.append(String(Data.enemy(String(pair[0]))["name"]) + "s")
 	var leader := String(plan.get("leader", ""))
 	var bits: Array = [", ".join(names)]
-	if Data.b["enemies"].has(leader):
+	if Data.enemy_has(leader):
 		bits.append("led by %s" % _the(leader_name(leader)))
 	bits.append("level %d" % int(plan["level"]))
 	return " · ".join(bits)
@@ -989,7 +998,7 @@ func _mend_plan(cc: Dictionary) -> Dictionary:
 	var timber := Save.timber
 	var fix: Array = []
 	var cost := {"leaves": 0, "timber": 0}
-	for it in cc["items"]:
+	for it in cc["pay"]:
 		var l := int(it["cost"].get("leaves", 0))
 		var t := int(it["cost"].get("timber", 0))
 		if l <= leaves and t <= timber:
@@ -1015,7 +1024,7 @@ func damage_text(cc: Dictionary) -> String:
 		if k >= 2:
 			bits.append("more worn")
 			break
-		var nm := Data.camp_name() if id == "home" else String(Data.b["stations"][id]["name"]).to_lower()
+		var nm := Data.camp_name() if id == "home" else String(Data.building(id).get("name", id)).to_lower()
 		bits.append("%s worn %d%%" % [nm, int(round(float(cc["wear"][id]) * 100.0))])
 		k += 1
 	return " · ".join(bits)
@@ -1027,11 +1036,14 @@ func camp_row(cc: Dictionary) -> Dictionary:
 		return _row("The camp is in good shape", "Nothing to mend · camp %d%%" % int(round(float(cc["condition"]) * 100.0)))
 	var wave_on: bool = main.fight.active and main.fight.in_wave
 	var note := damage_text(cc)
+	if (cc["pay"] as Array).is_empty():
+		# only broken defences are left: no button here, each is repaired on its own card (the Well mends the standing ones)
+		return _row(Data.word("broken_defences"), note + " · " + Data.word("mend_defences_own_cards"))
 	var all: Dictionary = cc["cost"]
 	if Data.can_afford(all):
 		return {"text": "Mend all", "note": note, "cost": _clean(all), "label": "Mend all", "enabled": not wave_on, "action": mend_all}
 	var mp := _mend_plan(cc)
-	var left := (cc["items"] as Array).size() - (mp["items"] as Array).size()
+	var left := (cc["pay"] as Array).size() - (mp["items"] as Array).size()
 	if (mp["items"] as Array).is_empty():
 		return {"text": "Mend the camp", "note": note + " · not enough to mend any of it yet", "cost": _clean(all), "label": "Mend all", "enabled": false, "action": mend_all}
 	return {"text": "Mend some", "note": note + " · %d thing%s left after" % [left, "" if left == 1 else "s"], "cost": _clean(mp["cost"]),
@@ -1065,9 +1077,6 @@ func mend_all() -> void:
 			"ruin":
 				st.mend_ruin(String(it["id"]))
 				spots.append([st.nodes.get(String(it["id"])), main.world.station_pos(String(it["id"])), 1.4])
-			"wreck":
-				main.defences.mend_piece(it["piece"], true, false)
-				spots.append([it["piece"]["node"], it["piece"]["pos"], 0.9])
 			"wear":
 				st.mend_wear(String(it["id"]))
 				spots.append([st.nodes.get(String(it["id"])), main.world.station_pos(String(it["id"])), 1.2])
@@ -1081,11 +1090,13 @@ func mend_all() -> void:
 			if sp[0] != null and is_instance_valid(sp[0]):
 				Fx.boing(sp[0], 0.3)
 			Fx.flower_ring(main, sp[1], float(sp[2])))
-	var left := (cc["items"] as Array).size() - done.size()
-	if left == 0:
+	var left := (cc["pay"] as Array).size() - done.size()
+	if left == 0 and (cc["wrecks"] as Array).is_empty():
 		main.hud.banner("The camp is mended!", Color(1.0, 0.9, 0.5), "Ready for the next raid")
+	elif left == 0:
+		main.hud.banner("Buildings mended!", Color(1.0, 0.9, 0.5), Data.word("mend_defences_own_cards"))
 	else:
-		main.hud.banner("Mended %d of %d" % [done.size(), (cc["items"] as Array).size()], Color(1.0, 0.9, 0.5), "Gather more leaves for the rest")
+		main.hud.banner("Mended %d of %d" % [done.size(), (cc["pay"] as Array).size()], Color(1.0, 0.9, 0.5), "Gather more leaves for the rest")
 	main.on_purchase()
 
 
@@ -1163,13 +1174,5 @@ func set_fire_look(id: String) -> void:
 	main.on_purchase()
 
 
-## Bramble buys Gloom shards (so they are never useless): 5 for 100 leaves.
-func trade_shards() -> void:
-	var st: Dictionary = cfg()["shard_trade"]
-	if not Data.pay({"shards": int(st["shards"])}):
-		return
-	Save.add_leaves(int(st["leaves"]))
-	Save.save_game()
-	Fx.sparkle(main, main.world.station_pos("stall") + Vector3(0, 1.2, 0))
-	main.on_purchase()
-	main.hud.toast("Sold %d Gloom shards · now %d · leaves %d" % [int(st["shards"]), Save.shards, Save.leaves])
+# H5 (27 Nov 2026, CLAUDE.md: purple shards are the paid currency): Bramble no longer buys Gloom shards. The old
+# trade_shards() (5 shards for 100 leaves) is gone; scripts/market_trade.gd refuses any shard sale.

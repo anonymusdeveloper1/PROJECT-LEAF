@@ -11,12 +11,16 @@ extends Node
 ##   --dungeontreasure  a map that ends in a treasure clearing (data/dungeons/test_glade.json)
 ##   --dungeonlevels    what each level fills the fights with (pools, sizes, snappers, elites, the boss)
 ##   --dungeonstand     how hard (19 Nov 2026): the endgame cat walks level 1 and just stands and shoots (no dodging,
-##                      lunches or mount): it must be knocked out before the end; =god gives it 1,000 extra health to
-##                      measure the health each fight takes and Mossback's time to kill; =items: it also rides Thistle,
-##                      feeds it and eats its lunches, but still never dodges
-##   --dungeoncareful   the same cat played with care: it rides Thistle and feeds it, eats lunches, steps out of the
-##                      telegraphs and dashes through them, backs away from melee: it must win, with effort
+##                      potions or mount): it must be knocked out before the end; =god gives it 1,000 extra health to
+##                      measure the health each fight takes and Mossback's time to kill; =items: it also rides Thistle
+##                      and uses its potions (H3: 3 Health and 3 Mount Health Potions), but still never dodges
+##   --dungeoncareful   the same cat played with care: it rides Thistle, uses its potions (a Mount Health Potion when
+##                      Thistle is knocked out, a Health Potion at half health), steps out of the telegraphs and dashes
+##                      through them, backs away from melee: it must win, with effort (H3, the owner's Q2: no food is
+##                      eaten below ground any more, so this may fail on balance; that is reported, not retuned)
 ##   kept from Phase E: --burrowsave, --hollow, --dash, --traps, --burrowfoes, --topup, --burrowhooks
+
+const UsePotion := preload("res://commands/use_potion.gd")
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _veteran, _go_straight, _press, _log)
 var main
@@ -418,7 +422,7 @@ func _dungeon() -> void:
 			await t._shot("dungeon_15_boss_fight")
 	var fell: bool = r._boss_down
 	if not fell:
-		r._boss.hit(Vector3.FORWARD, r._boss.hp + 1.0)
+		r._boss.hit(Vector3.FORWARD, r._boss.hp * 10.0 + 100.0)
 		await t._wait(1.0)
 	_x("the boss (about %d health) falls in a long but sane time (40-160 s): %.1f s" % [int(hp_was), bt], fell and bt >= 40.0 and bt <= 160.0, {"secs": bt, "hp": hp_was})
 	_x("the cat stayed in the arena while the roots were closed", gate_held)
@@ -543,7 +547,7 @@ func _dungeonshots() -> void:
 		main.hud.hide_card()
 	# the boss down: the seal at the north edge
 	if r._boss != null and is_instance_valid(r._boss):
-		r._boss.hit(Vector3.FORWARD, r._boss.hp + 1.0)
+		r._boss.hit(Vector3.FORWARD, r._boss.hp * 10.0 + 100.0)
 		await t._wait(1.2)
 	if m.parts.has("seal_ring"):
 		main.player.global_position = m.parts["seal_ring"].global_position + Vector3(0, 0, 1.6)
@@ -743,7 +747,7 @@ func _boss() -> void:
 	_x("its adds are in the arena, at most %d" % cap, mins.size() <= cap and mins.size() >= 3 and mins.all(func(e): return m.in_arena(e.global_position, -0.5)), {"adds": mins.size()})
 	await t._shot("boss_03_adds")
 	for e in mins:
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 	await t._wait(0.4)
 	# the Gloom Dash into a standing stone
 	var st: Array = Data.dungeon("old_hollow")["stones"][1]
@@ -777,7 +781,7 @@ func _boss() -> void:
 		if is_instance_valid(bo) and bo.enraged:
 			enraged = true
 	if not r._boss_down:
-		bo.hit(Vector3.FORWARD, bo.hp + 1.0)
+		bo.hit(Vector3.FORWARD, bo.hp * 10.0 + 100.0)
 		await t._wait(0.8)
 	t._log("boss_time", {"secs": bt, "hp": full, "arrow": Data.arrow_damage()})
 	_x("Mossback (%d health at level 1) falls in 40-160 s: %.1f s" % [int(full), bt], bt >= 40.0 and bt <= 160.0, {"secs": bt})
@@ -931,8 +935,10 @@ func _dungeonlevels() -> void:
 
 # ---------------------------------------------------------------- Phase E modes, on the dungeon map
 ## Phase D: a pending raid blocks the Hollow; the meter never moves during a run; a finished run adds 15 points (never
-## past 95); a raid held pays its leaves (H1: no Hollow key any more). Phase C: a dish in the pot goes
-## down with the cat (its boost applies), is used up when the run ends, and is back in the pot after a quit mid-run.
+## past 95); a raid held pays its leaves (H1: no Hollow key any more). H3 (the owner's Q1 and Q2): no dish goes down
+## with the cat any more and no food is eaten below ground. In a Burrow a knocked-out mount stays out, the Mount Health
+## Potion button shows (no Feed), and the potion brings it back with its share of health (full); a Health Potion (its
+## button shows while the cat is hurt) heals the cat there.
 func _burrowhooks() -> void:
 	await _endgame_camp()
 	main.raids.test_awake = true
@@ -947,25 +953,14 @@ func _burrowhooks() -> void:
 	Save.raids["pending"] = false
 	main.raids.manual = false
 	Save.raids["meter"] = 40.0
-	Save.pantry["berries"] = 6
-	Save.meal_ready = String(Data.b["cooking"]["recipes"][0]["id"])
-	var dish := Save.meal_ready
+	Bag.add("berries", 6, true)
 	await b.enter("old_hollow", 1)
 	await t._wait(0.5)
-	_x("the dish went down with the cat and is eaten", Save.meal_on == dish and Save.meal_ready == "" and String(r.run["meal"]) == dish, {"on": Save.meal_on})
 	var m0 := float(Save.raids["meter"])
 	await t._wait(3.0)
 	_x("the meter does not fill during a run", absf(float(Save.raids["meter"]) - m0) < 0.01, {"meter": Save.raids["meter"]})
-	b.persist()
-	Save.load_game()
-	_x("after a quit mid-run the dish is back in the pot", Save.meal_ready == dish and Save.meal_on == "")
-	Data.set_meal("")
-	Save.meal_on = dish
-	Save.meal_ready = ""
-	Data.set_meal(dish)
 	await r._leave("back")
 	await t._wait(0.4)
-	_x("the run's end uses the dish up", Save.meal_on == "" and Save.meal_ready == "")
 	_x("a finished run adds 15 to the meter", absf(float(Save.raids["meter"]) - (m0 + 15.0)) < 0.5, {"meter": Save.raids["meter"], "was": m0})
 	Save.raids["meter"] = 90.0
 	main.raids.add_gloom("burrow_run")
@@ -981,24 +976,61 @@ func _burrowhooks() -> void:
 	var sf: Variant = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
 	var no_key: bool = sf is Dictionary and not (sf as Dictionary).has("burrow_keys") and not "burrow_keys" in Save and not pay.has("keys")
 	_x("H1: a raid held pays its leaves, and no Hollow key", Save.leaves - l0 == raid_leaves and no_key, {"got": Save.leaves - l0, "raid": raid_leaves, "pay": pay})
-	Save.pantry = {"berries": 4, "herbs": 0, "honey": 0, "fish": 1, "goldfish": 0}
+	# H3: the potions below ground (the owner's Q1: the Mount Health Potion replaces Feed; Q2: Health Potions only)
+	var hp_id := Effects.hud_potion("cat")
+	var mp_id := Effects.hud_potion("mount")
+	_bag_to(hp_id, 1)
+	_bag_to(mp_id, 1)
+	_bag_to("fish", 1)
+	_bag_to("berries", 4)
 	await b.enter("old_hollow", 1)
 	await t._wait(0.5)
 	var mt = main.mount
+	var acts = main.hud.p_actions
 	mt.hurt(99999, mt.global_position)
 	await t._wait(2.0)
 	var feed_btn := false
 	for bt in main.hud.build_buttons():
 		if String(bt.get_meta("label", "")).begins_with("Feed"):
 			feed_btn = true
-	_x("in a Burrow a knocked-out mount stays out, and the Feed button shows", mt.resting > 0.0 and feed_btn, {"resting": mt.resting})
-	main.feed_mount()
+	_x("in a Burrow a knocked-out mount stays out, and the Mount Health Potion button shows (no Feed)", mt.resting > 0.0
+		and main.hud.build_buttons().has(acts.mount_potion_button) and not feed_btn and not main.has_method("feed_mount"),
+		{"resting": mt.resting, "label": acts.mount_potion_button.get_meta("label", "")})
+	var share := _share(mp_id, "revive")
+	var ok: bool = UsePotion.new(mp_id).run(main)
 	await t._wait(0.3)
-	_x("fed (2 Sunberries): it is up and whole", mt.resting <= 0.0 and mt.hp == mt.max_hp() and int(Save.pantry["berries"]) == 2)
+	var want_mt := clampi(roundi(float(mt.max_hp()) * share), 1, maxi(1, mt.max_hp()))
+	_x("the Mount Health Potion brings it back with its share of health (%.0f%%), one potion used" % (share * 100.0), ok and mt.resting <= 0.0
+		and mt.hp == want_mt and Bag.count(mp_id) == 0 and not main.hud.build_buttons().has(acts.mount_potion_button),
+		{"hp": mt.hp, "want": want_mt, "left": Bag.count(mp_id)})
 	main.player.hp = 2
-	main.eat_snack()
-	_x("a snack (the fish first) heals the cat", main.player.hp == mini(6, Data.cat_max_hp()) and int(Save.pantry["fish"]) == 0, {"hp": main.player.hp})
+	await t._wait(0.4)
+	_x("no food is eaten below ground: the cat stays hurt, the Bag keeps its fish and berries, and the Health Potion button shows",
+		main.player.hp == 2 and Bag.count("fish") == 1 and Bag.count("berries") == 4 and not main.has_method("eat_snack")
+		and main.hud.build_buttons().has(acts.potion_button), {"hp": main.player.hp, "fish": Bag.count("fish")})
+	var total := maxi(1, roundi(float(Data.cat_max_hp()) * _share(hp_id, "heal_over_time")))
+	ok = UsePotion.new(hp_id).run(main)
+	main.player.effects.step(10.0)                         # the potion's whole time at once (synchronous: nothing else moves)
+	_x("a Health Potion heals the cat below ground (its share over time), one potion used", ok
+		and main.player.hp == mini(2 + total, Data.cat_max_hp()) and Bag.count(hp_id) == 0, {"hp": main.player.hp, "total": total})
 	await r._leave("back")
+
+
+## The Bag holds exactly n of id (taken out or put in by force).
+func _bag_to(id: String, n: int) -> void:
+	var have := Bag.count(id)
+	if have > n:
+		Bag.take(id, have - n)
+	elif have < n:
+		Bag.add(id, n - have, true)
+
+
+## The share of id's first effect of the given type (its entry in content or balance.json bag.use), 0 when none.
+func _share(id: String, type: String) -> float:
+	for e: Variant in Bag.effects(id):
+		if e is Dictionary and String((e as Dictionary).get("type", "")) == type:
+			return float((e as Dictionary).get("share", 0.0))
+	return 0.0
 
 
 # ---------------------------------------------------------------- rewards and the top upgrades
@@ -1010,6 +1042,14 @@ func _row_texts(card: Dictionary) -> String:
 			if String(rw.get(k, "")) != "":
 				bits.append(String(rw[k]))
 		return " · ".join(bits)))
+
+
+## Every word on every tab of the Hearthtree's window (H4: the old single shop card is Hearthtree, Cat and Defences tabs).
+func _tabs_texts(w) -> String:
+	var bits: Array = []
+	for tid in w.tab_ids():
+		bits.append(_row_texts(w.tab_spec(String(tid))))
+	return " || ".join(bits)
 
 
 func _topup() -> void:
@@ -1025,21 +1065,34 @@ func _topup() -> void:
 	# Phase F: the Training Target and the Bow Shop have 5 levels each, capping stats and bows at 4/6/8/9/10
 	# (stat_cap_by_station_level, bow_cap_by_bench_level); only at level 5 (10) do the Burrows add mastery (11-12). This
 	# test was written when level 3 allowed 10, so both are at their top level here.
-	Save.stations["bench"] = (Data.b["stations"]["bench"]["levels"] as Array).size()
-	Save.stations["target"] = (Data.b["stations"]["target"]["levels"] as Array).size()
-	Save.def_levels = {"barricade": 4, "tower": 4, "spikes": 4}
+	Save.stations["bench"] = Data.building_levels("bench").size()
+	Save.stations["target"] = Data.building_levels("target").size()
 	main.stations.free_guardian()
 	Save.stations["stone"] = 3
 	Save.leaves = 60000
 	Save.timber = 500
 	await t._wait(0.5)
 	var st = main.stations
+	# H6: levels live on the placed pieces. A tower and a row stand at level 4; the Workshop (level 4) lets them get there.
+	Save.stations["workshop"] = 4
+	st.refresh("all")
+	var d = main.defences
+	var e0: Vector3 = main.world.edge_point(0)
+	var tw: Dictionary = d._spawn("tower", e0 * 1.9 + Vector3(-e0.z, 0, e0.x).normalized() * 3.2, 0.0, [], 4)
+	var tid := int(tw["id"])
+	var none := Vector2i(-1, -1)
+	var pad: Vector2i = t.build_any_row()
+	t.level_pieces("barricade", 4)
+	var hw = main.hud.windows["shop"]                 # H4: the Hearthtree (tabs), the Bow Shop, the Target, the stone and the Market are windows
+	var bw = main.hud.windows["bench"]
 	_x("before the Burrows: stats capped at 10", Data.stat_cap("damage") == 10 and Data.stat_cap("health") == 10)
-	_x("before the Burrows: no level-5 row, no Foxfire Bow", not _row_texts(st._card_shop()).contains("Amber") and not _row_texts(st._card_bench()).contains("Foxfire"),
-		{"shop": _row_texts(st._card_shop())})
-	_x("before the Burrows: the stone's level 4 shows max", _row_texts(st._card_stone()).contains("max level"), {"stone": _row_texts(st._card_stone())})
-	st._upgrade_defence("tower")
-	_x("level 5 refused before the Burrows open", main.defences.level("tower") == 4)
+	_x("before the Burrows: no level-5 row on any Hearthtree tab, no Foxfire Bow", not _tabs_texts(hw).contains("Amber") and not _row_texts(bw.spec()).contains("Foxfire"),
+		{"shop": _tabs_texts(hw)})
+	var stone_foot: Dictionary = main.hud.windows["stone"].spec().get("footer", {})
+	_x("before the Burrows: the stone's level 4 shows max (its footer's note, no button)", String(stone_foot.get("note", "")) == String(Data.word("max_for_now"))
+		and (stone_foot.get("buttons", []) as Array).is_empty(), {"stone": stone_foot})
+	_x("level 5 refused before the Burrows open", not d.upgrade_placed("tower", tid, none, 4) and d.piece_level(d.piece_at(tid)) == 4
+		and d.upgrade_quote("tower", tid, none, 4)["reason"] != "")
 	main.burrows.open_hollow(false)
 	Save.mats = {"amber": 400}
 	Save.leaves += 400 * 60 + 250 * 120 + 40 * 400       # H1: the glowstone and heartwood (and amber) this test gave, as leaves
@@ -1059,23 +1112,26 @@ func _topup() -> void:
 			mastery += int(c["leaves"])
 	_x("H1: mastery paid in leaves only, no amber taken", int(Save.mats["amber"]) == int(m0["amber"]) and lm0 - Save.leaves == mastery,
 		{"mats": Save.mats, "paid": lm0 - Save.leaves, "want": mastery})
-	_x("the Training Target card shows mastery done", _row_texts(st._card_target()).contains("Damage · Max"), {"rows": _row_texts(st._card_target())})
+	var target_texts := _row_texts(main.hud.windows["target"].spec())
+	_x("the Training Target window shows mastery done (Damage, badge Max)", target_texts.contains("Damage · Max"), {"rows": target_texts})
 	st._upgrade_bow()
 	st._upgrade_bow()
 	_x("the bow to 12", int(Save.bows["sunwood"]) == 12, {"bows": Save.bows})
 	st._craft("foxfire")
 	_x("the Foxfire Bow is hidden from the Bow Shop for now (22 Nov 2026): not on the card, not sold", not Save.bows.has("foxfire") and Save.bow == "sunwood"
-		and not _row_texts(st._card_bench()).contains("Foxfire"))
+		and not _row_texts(bw.spec()).contains("Foxfire"))
 	Save.camp_level = 4
-	st._upgrade_defence("tower")
-	_x("tower level 5 refused at home level 4", main.defences.level("tower") == 4)
+	_x("Burrows open, but a level-4 Workshop caps pieces at 4: the tower stays", d.piece_cap("tower") == 4 and not d.upgrade_placed("tower", tid, none, 4)
+		and d.piece_level(d.piece_at(tid)) == 4, {"cap": d.piece_cap("tower")})
 	Save.camp_level = 5
-	var shop := _row_texts(st._card_shop())
-	_x("the shop offers the Amber Tower", shop.contains("Towers: Amber"), {"shop": shop})
-	st._upgrade_defence("tower")
-	st._upgrade_defence("barricade")
-	_x("tower and barricade at level 5 with their models", main.defences.level("tower") == 5 and main.defences.model("tower", 5) == "acorn_tower_5"
-		and main.defences.model("barricade", 5) == "barricade_heartwood")
+	var wl := Data.station_level("workshop")
+	_x("the Workshop to level 5 (the Burrows are open)", st.upgrade_workshop(wl) and Data.station_level("workshop") == 5 and d.piece_cap("tower") == 5)
+	var row5: Dictionary = d.row_at(pad.x, pad.y)
+	_x("level 5 is a leaves-only price (no timber, no shards)", (d.upgrade_quote("tower", tid, none, 4)["price"] as Dictionary).keys() == ["leaves"], {"q": d.upgrade_quote("tower", tid, none, 4)})
+	var up_t: bool = d.upgrade_placed("tower", tid, none, 4)
+	var up_b: bool = d.upgrade_placed("barricade", -1, pad, d.row_level(row5))
+	_x("tower and barricade at level 5 with their models", up_t and up_b and d.piece_level(d.piece_at(tid)) == 5 and d.row_level(d.row_at(pad.x, pad.y)) == 5
+		and main.defences.model("tower", 5) == "acorn_tower_5" and main.defences.model("barricade", 5) == "barricade_heartwood")
 	var l0 := Save.leaves
 	st._upgrade_station("stone")
 	_x("the Warden to level 4 (paid in leaves and timber)", int(Save.stations["stone"]) == 4 and l0 - Save.leaves == 2500 and absf(Data.guardian_max_hp() - 1800.0 * Data.guardian_power()) < 1.0,
@@ -1102,17 +1158,24 @@ func _topup() -> void:
 	main.player.global_position = Vector3(0.0, 0, 2.6)
 	await t._wait(1.2)
 	await t._shot("topup_home8")
-	var stall := _row_texts(st._card_stall())
-	_x("the Stable sells attachments (G4: the Thunder Shoes; the saddle and bags moved to the Saddlery)", stall.contains("Thunder Shoes") and not stall.contains("Saddle"), {"rows": stall})
+	# H5: the Market's Mounts and Pets tabs sell the expedition gear (the old Stable card is gone); the Pets tab needs Sprig.
+	var mw = main.hud.windows["stall"]
+	st._buy_companion("pet", "sprig")
+	var mounts_tab := _row_texts(mw.tab_spec("mounts"))
+	var pets_tab := _row_texts(mw.tab_spec("pets"))
+	_x("the Market's Mounts tab sells the Thunder Shoes and its Pets tab the Dew Bell (G4: the saddle and bags are the Saddlery's)",
+		mounts_tab.contains("Thunder Shoes") and pets_tab.contains("Dew Bell") and not mounts_tab.contains("Saddle") and not pets_tab.contains("Saddle"),
+		{"mounts": mounts_tab, "pets": pets_tab})
 	st._buy_attach("mount_shoes")
 	st._buy_attach("pet_bell")
-	_x("bought and worn", Save.attach["mount"] == "mount_shoes" and Save.attach["pet"] == "pet_bell")
+	_x("bought and worn", Save.attach["mount"] == "mount_shoes" and Save.attach["pet"] == "pet_bell"
+		and Data.owned_level("attachments", "mount_shoes") == 1 and Data.owned_level("attachments", "pet_bell") == 1)
 	# G4: the Mossweave Saddle is a Saddlery attachment (+15% a level) and works everywhere, camp and runs alike.
 	# 22 Nov 2026 (the owner's rule): the mount wears one attachment at a time and only the worn one acts, so it is worn here.
 	var mmax: int = main.mount.max_hp()
 	var cmax: int = Data.cat_max_hp()
 	var worn0: Variant = Save.saddlery.get("worn", "")
-	Save.saddlery["attach"]["saddle"] = 2
+	Save.owned.get_or_add("attachments", {})["saddle"] = {"level": 2}
 	Save.saddlery["worn"] = "saddle"
 	var hm := 1.0 + float(Data.saddle_info("attach", "saddle")["hp_per_level"]) * 2.0
 	var msaddle: int = main.mount.max_hp()
@@ -1125,7 +1188,7 @@ func _topup() -> void:
 	await r._leave("back")
 	await t._wait(0.4)
 	_x("back at camp: no Burrows help (the saddle stays: it is the Saddlery's)", main.mount.max_hp() == msaddle and Data.cat_max_hp() == cmax)
-	Save.saddlery["attach"].erase("saddle")
+	(Save.owned.get("attachments", {}) as Dictionary).erase("saddle")
 	Save.saddlery["worn"] = worn0
 	await t._shot("topup_stall_card")
 
@@ -1587,7 +1650,8 @@ func _burrowsave() -> void:
 	Save.mats = {"amber": 7}
 	Save.burrow_stats("old_hollow")["depth"] = 2
 	Save.burrow_stats("old_hollow")["runs"] = 5
-	Save.attach = {"owned": ["mount_saddle"], "mount": "mount_saddle", "pet": ""}
+	Save.attach = {"mount": "mount_shoes", "pet": ""}      # H5: owned gear is Save.owned.attachments; attach is only what is worn
+	Save.owned.get_or_add("attachments", {})["mount_shoes"] = {"level": 1}
 	Save.burrow_run = {"v": 2, "burrow": "old_hollow", "level": 2, "checkpoint": "moonwell"}
 	Save.save_game()
 	Save.mats = {}
@@ -1596,7 +1660,7 @@ func _burrowsave() -> void:
 	Save.burrow_run = {}
 	Save.load_game()
 	_x("fields kept through save and load", int(Save.mats["amber"]) == 7 and Data.burrow_depth("old_hollow") == 2 and int(Save.burrow_stats("old_hollow")["runs"]) == 5
-		and Save.attach["mount"] == "mount_saddle" and String(Save.burrow_run.get("checkpoint", "")) == "moonwell",
+		and Save.attach["mount"] == "mount_shoes" and Data.owned_level("attachments", "mount_shoes") == 1 and String(Save.burrow_run.get("checkpoint", "")) == "moonwell",
 		{"mats": Save.mats, "burrows": Save.burrows, "attach": Save.attach, "run": Save.burrow_run})
 	var d = JSON.parse_string(FileAccess.get_file_as_string(Save.path))
 	for k in ["mats", "burrows", "burrow_run", "attach"]:
@@ -1606,7 +1670,7 @@ func _burrowsave() -> void:
 	f.close()
 	Save.load_game()
 	_x("an old save loads with the defaults", int(Save.mats["amber"]) == 0 and Data.burrow_depth("old_hollow") == 0 and Save.burrow_run.is_empty()
-		and (Save.attach["owned"] as Array).is_empty(), {"mats": Save.mats})
+		and String(Save.attach.get("mount", "x")) == "" and String(Save.attach.get("pet", "x")) == "", {"mats": Save.mats})
 	Save.save_game()
 	await _burrowsave_open()
 
@@ -1659,21 +1723,28 @@ func _burrowsave_open() -> void:
 
 # ---------------------------------------------------------------- how hard (19 Nov 2026): the standing and the careful cat
 ## The cat the debug endgame save gives (Save._endgame_seed): mission-15 stats, the Sunwood Longbow at 9, Sprig and
-## Thistle at level 3 (the Mushroom Cottage and the Market Stall at 3), its pantry. No key, no dish.
+## Thistle at level 3 (H5: the pet at level 3 and the one-level Market), its Bag (H3: the food Save._endgame_seed gives,
+## no potion). No key, no dish.
 func _endgame_cat() -> void:
 	_strong_cat()
-	Save.stations["stall"] = 3
-	Save.stations["cottage"] = 3
-	Save.pantry = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3, "goldfish": 0}
-	Save.meal_ready = ""
+	Save.stations["stall"] = 1                      # H5: the Market has one level; the pet's level is Save.pet_level
+	Save.pet_level = 3
+	Save.owned.get_or_add("mounts", {})["thistle"] = {"level": 1}
+	Save.owned.get_or_add("pets", {})["sprig"] = {"level": 1}
+	Save.bag = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3}
+	Events.bag_changed.emit()
 	main.player.hp = Data.cat_max_hp()
+
+
+## H3: the careful cat's (and =items') potions: 3 Health and 3 Mount Health Potions (the owner's Q2: no food below ground).
+const STAND_POTIONS := 3
 
 
 var _seg := "walk"                   # where the health went: a fight's id, "logs", "boss", "walk"
 var _rep := {}
 var _last_hp := 0
 var _careful := false
-var _items := false                  # rides, feeds and snacks (the careful cat, and --dungeonstand=items)
+var _items := false                  # rides and uses potions (the careful cat, and --dungeonstand=items)
 var _mount_last := 0
 var _strike_seen := 0
 
@@ -1698,19 +1769,22 @@ func _alive() -> bool:
 	return _r().active and not _r().leaving and main.player.hp > 0
 
 
-## The careful cat, every tenth of a second: lunches and the mount, then the telegraphs (dash out of a slam ring, a
-## charge's line or a spore bomb), then backing away from what is about to bite.
+## The careful cat, every tenth of a second: its potions and the mount (H3: a Health Potion at half health, a Mount
+## Health Potion when Thistle is knocked out, through the Use-potion command as the HUD's buttons send it), then the
+## telegraphs (dash out of a slam ring, a charge's line or a spore bomb), then backing away from what is about to bite.
 func _careful_tick() -> void:
 	var p = main.player
 	var r = _r()
-	if p.hp <= int(Data.cat_max_hp() * 0.5) and not main.snack_pick().is_empty():
-		var before: int = p.hp
-		main.eat_snack()
-		if p.hp > before:
-			_rep["snacks"] = int(_rep.get("snacks", 0)) + 1
-	if main.mount != null and main.mount.resting > 0.0 and Data.has_items(Data.b["mount"].get("revive_food", {"berries": 2})):
-		main.feed_mount()
-		_rep["feeds"] = int(_rep.get("feeds", 0)) + 1
+	var hp_id := Effects.hud_potion("cat")
+	var mp_id := Effects.hud_potion("mount")
+	if p.hp <= int(Data.cat_max_hp() * 0.5) and UsePotion.new(hp_id).can_run(main) == "":
+		if UsePotion.new(hp_id).run(main):
+			_rep["potions"] = int(_rep.get("potions", 0)) + 1
+			_rep["heals"] = int(_rep.get("heals", 0)) + 1
+	if main.mount != null and main.mount.resting > 0.0 and UsePotion.new(mp_id).can_run(main) == "":
+		if UsePotion.new(mp_id).run(main):
+			_rep["potions"] = int(_rep.get("potions", 0)) + 1
+			_rep["revives"] = int(_rep.get("revives", 0)) + 1
 	elif main.mount != null and main.mount.resting <= 0.0 and not p.riding:
 		main.set_riding(true, false)
 	if not _careful:
@@ -1818,6 +1892,9 @@ func _dungeonstand(mode: String) -> void:
 	var r = _r()
 	_careful = mode == "careful"
 	_items = mode in ["careful", "items"]
+	if _items:                                            # H3: the potions it brings (by force: the Bag's room is not the test)
+		Bag.add(Effects.hud_potion("cat"), STAND_POTIONS, true)
+		Bag.add(Effects.hud_potion("mount"), STAND_POTIONS, true)
 	main.set_riding(false, false)
 	await main.burrows.enter("old_hollow", 1)
 	await t._wait(0.8)
@@ -1893,7 +1970,8 @@ func _dungeonstand(mode: String) -> void:
 	_rep["boss_down"] = boss_down
 	_rep["boss_enraged_at_s"] = snappedf(enraged_at, 0.1)
 	_rep["hp_at_boss"] = hp_at_boss - (1000 if mode == "god" else 0)
-	_rep["pantry_left"] = Save.pantry.duplicate()
+	_rep["potions_left"] = {"cat": Bag.count(Effects.hud_potion("cat")), "mount": Bag.count(Effects.hud_potion("mount"))}
+	_rep["bag_left"] = Save.bag.duplicate()
 	var total := 0
 	for k in _rep["lost"]:
 		total += int(_rep["lost"][k])
@@ -1904,7 +1982,7 @@ func _dungeonstand(mode: String) -> void:
 		f.store_string(JSON.stringify(_rep, "  "))
 	match mode:
 		"real":
-			_x("the standing cat (no dodging, lunches or mount) is knocked out before the end of level 1", out and not boss_down,
+			_x("the standing cat (no dodging, potions or mount) is knocked out before the end of level 1", out and not boss_down,
 				{"out_at": _rep["out_at"], "lost": _rep["lost"]})
 		"god":
 			_x("standing, it takes more health than the cat has (%d) before the boss is down" % int(_rep["max_hp"]),
@@ -1912,11 +1990,12 @@ func _dungeonstand(mode: String) -> void:
 			_x("Mossback takes 55-150 s to fall to a standing endgame cat: %.1f s" % boss_t, boss_down and boss_t >= 55.0 and boss_t <= 150.0,
 				{"secs": boss_t, "hp": boss_hp0})
 		"careful":
-			_x("the careful cat (mount, lunches, dodging) beats level 1", boss_down and not out, {"out_at": _rep["out_at"], "lost": _rep["lost"]})
-			_x("... with effort: Thistle was knocked out and fed, or lunches were eaten", int(_rep.get("feeds", 0)) + int(_rep.get("snacks", 0)) > 0,
-				{"feeds": _rep.get("feeds", 0), "snacks": _rep.get("snacks", 0), "mount_lost": _rep.get("mount_lost", 0)})
+			_x("the careful cat (mount, potions, dodging) beats level 1", boss_down and not out, {"out_at": _rep["out_at"], "lost": _rep["lost"],
+				"potions_left": _rep["potions_left"]})
+			_x("... with effort: potions were used (a Health Potion, or a Mount Health Potion for a knocked-out Thistle)", int(_rep.get("potions", 0)) > 0,
+				{"heals": _rep.get("heals", 0), "revives": _rep.get("revives", 0), "mount_lost": _rep.get("mount_lost", 0)})
 		"items":
-			_x("standing on Thistle with its lunches but never dodging, it still falls before the end", out and not boss_down,
+			_x("standing on Thistle with its potions but never dodging, it still falls before the end", out and not boss_down,
 				{"out_at": _rep["out_at"], "lost": _rep["lost"], "mount_lost": _rep.get("mount_lost", 0)})
 	await t._wait(0.5)
 	if r.active:

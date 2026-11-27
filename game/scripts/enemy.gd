@@ -1,4 +1,5 @@
 extends Node3D
+class_name EnemyNode
 ## One enemy. It walks its patch's trail from the woods to the camp gate and fights whatever is in the way.
 ## The model is res://assets/enemies/<id>/<id>.glb with its <id>.json (clips, events, speeds, spring chains); until
 ## that exists a faceted placeholder stands in. Behaviour by kind:
@@ -38,11 +39,28 @@ extends Node3D
 ## leader is gone, or the cat comes for it; then it acts on its own as before (_keep_formation, _squad_steer). Support
 ## members keep behind; a Frog Shaman still heals and a Crow Drummer still drums on the march. The leader walks its
 ## trail as before. Bosses and raid enemies have no squad.
+## H6 Stage 1 (27 Nov 2026): this script is the enemy's face to the rest of the game. Inside, it is built from parts
+## (child nodes: Health, Armour, Mover, Attack, Heal, Status, Loot, HealthBar, Brain; parts/) and the Brain runs one small
+## state script per `state` word (states/enemy/). The old private functions are one-line forwarders to the parts. All
+## damage goes through _apply_damage (hit, burn and the thorn patches' hurt_spikes); the enemy grid (main.enemy_grid)
+## is told where it is at the end of setup, after every frame, and when it dies or leaves the scene.
 ## H1 (the event board, Events): every hit that lands and every burn tick announce damage_dealt(self, amount); its
 ## health reaching 0 announces enemy_died(id, where), once per enemy (_die).
 
-const BoltScript := preload("res://scripts/bolt.gd")
 const SlimeScript := preload("res://scripts/slime.gd")
+# H6 Stage 1 (27 Nov 2026, docs/ARCHITECTURE.md part 4): the parts an enemy is built from. Each is a child Node made at
+# the top of setup() and bound to this enemy once; none has a process callback (this script calls them, so the frame
+# order is unchanged). Their old private functions below are one-line forwarders, so tests keep their names.
+const HealthPart := preload("res://parts/health.gd")
+const ArmourPart := preload("res://parts/armour.gd")
+const EnemyGridScript := preload("res://core/enemy_grid.gd")
+const MoverPart := preload("res://parts/enemy_mover.gd")
+const AttackPart := preload("res://parts/enemy_attack.gd")
+const HealPart := preload("res://parts/enemy_heal.gd")
+const StatusPart := preload("res://parts/status.gd")
+const LootPart := preload("res://parts/enemy_loot.gd")
+const HealthBarPart := preload("res://parts/health_bar.gd")
+const BrainPart := preload("res://parts/enemy_brain.gd")
 const TOTEM_GLOOM := 0.32                     # the faint violet a foe near a Gloom Totem shows (the shader's gloom)
 static var _ring_mat: StandardMaterial3D      # a Gloom Totem's reach ring on the ground (one material for all)
 
@@ -54,8 +72,35 @@ var info: Dictionary
 var meta: Dictionary = {}
 var patch := 0
 var mult := 1.0
-var hp := 10.0
-var max_hp := 10.0
+# hp and max_hp live in the Health part once setup has made it (before that, in the plain fallbacks)
+var _hp0 := 10.0
+var _max_hp0 := 10.0
+var hp: float:
+	get:
+		return _health.hp if _health != null else _hp0
+	set(value):
+		if _health != null:
+			_health.set_hp(value)
+		else:
+			_hp0 = value
+var max_hp: float:
+	get:
+		return _health.max_hp if _health != null else _max_hp0
+	set(value):
+		if _health != null:
+			_health.set_max_hp(value)
+		else:
+			_max_hp0 = value
+var _health: HealthPart                             # the parts (see setup); each is a child named like its role
+var _armour: ArmourPart
+var _mover: MoverPart
+var _attack: AttackPart
+var _heal: HealPart
+var _status: StatusPart
+var _loot: LootPart
+var _bar: HealthBarPart
+var _brain: BrainPart
+var _grid: EnemyGridScript                   # main.enemy_grid, found by _the_grid()
 var speed := 1.0
 var damage := 1
 var gate_damage := 1
@@ -145,7 +190,8 @@ var _scan_t := 0.0                            # ... next look round for foes to 
 var _pulse: Node3D                            # ... its crystals, breathing slowly
 var _sq_on := false                           # Phase G1b: keeping its squad's formation now (_think decides, _squad_steer steers)
 var _sq_prev := Vector3.INF                   # ... where its leader was the frame before (the leader's pace)
-var last_dealt := 0.0                         # G3: the damage the last hit() really did (after shields, dazes, totems)
+var last_dealt := 0.0                         # G3: the damage the last hit() really did (after shields, dazes, totems, armour)
+var last_raw := 0.0                           # H6: the damage the last hit() asked for after shields, dazes and totems, before armour
 var burn_t := 0.0                             # G3, the Ember Bow: seconds it still burns (ignite)
 var burn_per_s := 0.0                         # ... the damage it takes each second while burning
 var burn_ticks := 0                           # ... burn damage dealt so far: how many times (for the tests)
@@ -163,7 +209,11 @@ var _frost_fx: CPUParticles3D                 # ... snow sparkles round it (Fx.f
 var _ice: MeshInstance3D                      # ... its ice shell while frozen (Fx.ice_shell)
 
 
-func setup(kind: String, patch_index: int, strength: float) -> void:
+## `armoured`: false for a mission boss, a raid's leader and an expedition room's boss (the callers know; the entry's own
+## boss flag is checked here too): they keep their plain health and damage. Anything else takes the armour share of its
+## entry (parts.armour.share, none in Stage 1) off its health and its hits.
+func setup(kind: String, patch_index: int, strength: float, armoured := true) -> void:
+	_make_parts()                                   # first: every health write below goes through the Health part
 	id = kind
 	info = Data.enemy(kind)
 	patch = patch_index
@@ -171,7 +221,10 @@ func setup(kind: String, patch_index: int, strength: float) -> void:
 	_model_id = String(info.get("model", kind))
 	_scale = float(info.get("scale", 1.0))
 	boss = bool(info.get("boss", false))
-	max_hp = float(info["hp"]) * mult
+	var armour_cfg = (info.get("parts", {}) as Dictionary).get("armour", {})
+	if armoured and not boss and armour_cfg is Dictionary:
+		_armour.set_share(float((armour_cfg as Dictionary).get("share", 0.0)))
+	max_hp = float(info["hp"]) * mult * _armour.factor()
 	hp = max_hp
 	speed = float(info["speed"]) * randf_range(0.92, 1.08)
 	damage = maxi(1, int(round(float(info["damage"]) * (1.0 + (mult - 1.0) * 0.5))))
@@ -204,6 +257,36 @@ func setup(kind: String, patch_index: int, strength: float) -> void:
 		_grub_setup()
 	elif _ai == "totem":
 		_totem_setup()
+	var grid = _the_grid()                          # H6: the enemy grid answers "who is near"; it knows this one from now on
+	if grid != null:
+		grid.add(self)
+
+
+## The parts (see the consts above): made once, bound once, before the first health write.
+func _make_parts() -> void:
+	_health = _new_part(HealthPart, "Health") as HealthPart
+	_armour = _new_part(ArmourPart, "Armour") as ArmourPart
+	_mover = _new_part(MoverPart, "Mover") as MoverPart
+	_attack = _new_part(AttackPart, "Attack") as AttackPart
+	_heal = _new_part(HealPart, "Heal") as HealPart
+	_status = _new_part(StatusPart, "Status") as StatusPart
+	_loot = _new_part(LootPart, "Loot") as LootPart
+	_bar = _new_part(HealthBarPart, "HealthBar") as HealthBarPart
+	_brain = _new_part(BrainPart, "Brain") as BrainPart
+	_health.hp = _hp0
+	_health.max_hp = _max_hp0
+	for part in [_mover, _attack, _heal, _status, _loot, _brain]:
+		part.bind_enemy(self)
+	_bar.bind_health(_health)
+	_health.died.connect(_loot.on_died)             # the loot is worked out where _die emits `died`
+
+
+func _new_part(script: GDScript, node_name: String) -> Node:
+	var part := Node.new()
+	part.set_script(script)
+	part.name = node_name
+	add_child(part)
+	return part
 
 
 ## Phase E: this monster is in a Burrow (the Burrow's map owns where it stands).
@@ -263,19 +346,7 @@ func start_emerge(at: Vector3) -> void:
 
 
 func _do_emerge(delta: float) -> void:
-	_act_t += delta
-	if not _act_done and _act_t >= float(info.get("emerge_warn", 0.8)):
-		_act_done = true
-		_body.visible = true
-		_play(_clip_or(["Emerge", "Idle"]), 0.05)
-		Fx.dust(main, global_position, 10, 1.0)
-		Fx.boing(_body, 0.3)
-		var p = main.player
-		if p.hp > 0 and Vector2(p.global_position.x - _emerge_at.x, p.global_position.z - _emerge_at.z).length() < float(info.get("emerge_r", 0.6)):
-			p.hurt(_emerge_at, int(info.get("emerge_damage", 1)))
-	if _act_t >= float(info.get("emerge_warn", 0.8)) + 0.35:
-		state = "walk"
-		_think_t = 0.0
+	_mover.do_emerge(delta)
 
 
 ## A charge stopped by a standing stone or the edge of a Burrow: "Bonk!", dazed, and it takes extra damage for a moment
@@ -525,8 +596,17 @@ func _event(clip: String, ev: String, fallback: float) -> float:
 
 # ---------------------------------------------------------------- per frame
 func _physics_process(delta: float) -> void:
+	_tick(delta)
+	var grid = _the_grid()                              # H6: the grid learns where it is now, whichever way _tick ended
+	if grid != null and not dead:
+		grid.move(self)
+
+
+## One physics frame of this enemy (the H5 _physics_process).
+func _tick(delta: float) -> void:
 	if dead or main.frozen:
 		return
+	var frame_dt := delta                               # unscaled by chill: the spikes' lingering slow runs on it
 	if burn_t > 0.0:
 		_burn_tick(minf(delta, 0.1))                    # G3: Ember fire (frame time, never a clock)
 		if dead:
@@ -550,9 +630,10 @@ func _physics_process(delta: float) -> void:
 	_cd4 = maxf(0.0, _cd4 - delta)
 	_boost_t = maxf(0.0, _boost_t - delta)
 	if not awake:
-		_sleep_tick(delta)
+		_brain.sleep_step(delta)                        # the Sleep state: _sleep_tick
 		return
-	_slow = main.defences.slow_at(global_position) if main.defences else 0.0
+	var contact_slow: float = main.defences.slow_at(global_position) if main.defences else 0.0
+	_slow = _status.step_thorn_slow(contact_slow, minf(frame_dt, 0.1), _thorn_linger())
 	buff_t = maxf(0.0, buff_t - delta)
 	totem_t = maxf(0.0, totem_t - delta)
 	if (totem_t > 0.0) != _totem_on:
@@ -563,63 +644,7 @@ func _physics_process(delta: float) -> void:
 	_knock = _knock.lerp(Vector3.ZERO, 1.0 - exp(-8.0 * delta))
 	_hit_flash = maxf(0.0, _hit_flash - delta)
 	Props.set_param(_body, "flash", clampf(_hit_flash * 8.0 + (Fx.CHILL_FLASH if chill_t > 0.0 else 0.0), 0.0, 1.0))
-	match state:
-		"attack", "slam", "roar", "grab", "spores", "heal", "cast", "orbs", "hex", "summon", "spit", "burst", "drum", "lob", "bite":
-			_do_action(delta)
-		"blink":
-			_do_blink(delta)
-		"dig":
-			_do_dig(delta)
-		"pounce":
-			_do_pounce(delta)
-		"dash_windup":
-			_act_t += delta
-			var to_cat: Vector3 = main.player.global_position - global_position
-			to_cat.y = 0.0
-			if _act_t < 0.55 and to_cat.length() > 0.5:
-				_charge_dir = to_cat.normalized()
-			_face(_charge_dir, delta, 8.0)
-			if _act_t >= 1.0:
-				state = "dash"
-				_act_t = 0.0
-				_play("Walk", 0.05)
-				main.shake(0.15)
-		"dash":
-			_do_dash(delta)
-		"emerge":
-			_do_emerge(delta)
-		"windup":
-			_act_t += delta
-			_face(_charge_dir, delta, 10.0)
-			if fmod(_act_t, 0.18) < delta:
-				Fx.dust(main, global_position + _charge_dir * radius, 4, 0.8)
-			if _act_t >= float(info.get("windup", 0.8)):
-				state = "charge"
-				_act_t = 0.0
-				_play("Charge" if anim and anim.has_animation("Charge") else "Run")
-		"charge":
-			_do_charge(delta)
-		"daze":
-			_act_t += delta
-			if _act_t > 0.8:
-				state = "walk"
-		"flee":
-			_do_flee(delta, spd)
-			if _boost_t > 0.0 and fmod(_t, 0.1) < delta:
-				Fx.dust(main, global_position, 2, 0.6)
-		_:
-			if _ai == "golden_grub":
-				_do_grub(delta, spd)
-			elif _ai == "totem":
-				_do_totem(delta)
-			else:
-				_think_t -= delta
-				if _think_t <= 0.0:
-					_think_t = 0.2
-					_think()
-				if _sq_on:
-					spd = _squad_steer(delta, spd)      # Phase G1b: to its spot in the formation, at the leader's pace
-				_walk(delta, spd)
+	spd = _brain.step(delta, spd)                    # the state for `state` runs (states/enemy/); the squad steering may change spd
 	if _ai == "totem":
 		pass                                        # a crystal: it only breathes (_do_totem)
 	elif anim == null:
@@ -653,6 +678,13 @@ func _physics_process(delta: float) -> void:
 		anim.speed_scale *= 1.0 - chill_slow            # 22 Nov 2026: chilled, its clips play slower too (set afresh above every frame)
 
 
+## Seconds a thorn slow lingers after it steps off the patch: only once Deep thorns is learned (0 before, as in H5).
+func _thorn_linger() -> float:
+	if Data.specialisation_level("deep_thorns") <= 0:
+		return 0.0
+	return float(((Data.specialisation_info("deep_thorns") as Dictionary).get("tuning", {}) as Dictionary).get("linger_s", 0.0))
+
+
 ## How fast it walks now: spikes slow it; a Raccoon's smoke sprint, a Crow Drummer's beat and a Gloom Totem nearby
 ## (Phase F) speed it up.
 func _speed_now() -> float:
@@ -684,18 +716,7 @@ func _sleep_tick(delta: float) -> void:
 
 
 func _wobble() -> void:
-	# the placeholder hops and squashes as it goes
-	var moving := state == "walk" or state == "chase" or state == "flee" or state == "charge"
-	var f := 9.0 if id == "thornling" else (12.0 if state == "charge" else 6.0)
-	var hop := absf(sin(_t * f)) if moving else 0.25 + 0.25 * sin(_t * 3.0)
-	_body.position.y = 0.06 * hop * _scale
-	var k := 0.08
-	_body.scale = Vector3(1.0 + k * (1.0 - hop), 1.0 - k + 2.0 * k * hop, 1.0 + k * (1.0 - hop)) * _scale
-	if state == "attack" or state == "slam":
-		var a := clampf(_act_t / maxf(_act_event, 0.05), 0.0, 1.0)
-		_body.rotation.x = -0.5 * a if _act_t < _act_event else 0.4 * maxf(0.0, 1.0 - (_act_t - _act_event) * 4.0)
-	else:
-		_body.rotation.x = lerpf(_body.rotation.x, 0.0, 0.2)
+	_mover.wobble()
 
 
 func _cat_reachable(range_m: float) -> bool:
@@ -719,292 +740,18 @@ func head_to_campfire() -> bool:
 	return true
 
 
-func _think() -> void:
-	if patch >= 0 and main.world.trails.size() > patch:
-		s = main.world.trail_progress(patch, global_position)
-	if not awake:
-		return
-	if _camp_approach == CampApproach.DIRECT or _camp_approach == CampApproach.TRAIL:
-		var fire: Vector3 = main.world.station_pos("campfire")
-		var touch: float = float(main.stations.foot("campfire")) + radius + float(info["reach"])
-		if global_position.distance_to(fire) > touch:
-			state = "walk"
-			_goal = fire
-			if _camp_approach == CampApproach.TRAIL and s + radius < float(main.world.trail_length(patch)):
-				_goal = _trail_goal()
-			return
-		_camp_approach = CampApproach.ARRIVED
-	var p = main.player
-	var reach := float(info["reach"]) + radius + 0.3
-	# Phase G1b: a squad member on the march keeps formation (a Frog Shaman still heals, a Crow Drummer still drums)
-	_sq_on = _keep_formation()
-	if _sq_on:
-		if (_ai == "frog" and _try_heal()) or (_ai == "crow" and _try_drum()):
-			return
-		state = "walk"
-		return
-	match _ai:                                      # "ai" lets a kind think like another (the Gloom Herald drums)
-		"raccoon":
-			if carried < int(info.get("steals", 20)):
-				var leaf = main.nearest_pickup(global_position, 14.0)
-				if leaf != null:
-					_goal = leaf.global_position
-					state = "chase"
-					if global_position.distance_to(_goal) < 0.55:
-						_start_action("grab", leaf)
-					return
-			if carried > 0:
-				state = "flee"
-				_play("Run")
-				return
-			if _cat_reachable(9.0):
-				_goal = p.global_position
-				state = "chase"
-				if global_position.distance_to(_goal) < reach and _cd <= 0.0:
-					_start_action("attack", p)
-				return
-		"boar":
-			if _cd2 <= 0.0 and _cat_reachable(float(info["aggro"])) \
-					and not main.world.blocked_between(global_position, p.global_position):
-				_charge_dir = (p.global_position - global_position)
-				_charge_dir.y = 0.0
-				_charge_dir = _charge_dir.normalized()
-				state = "windup"
-				_act_t = 0.0
-				_play("Windup" if anim and anim.has_animation("Windup") else "Idle")
-				Fx.telegraph_line(main, global_position, _charge_dir, float(info["charge_speed"]) * float(info.get("charge_time", 1.4)),
-					radius * 2.0, float(info.get("windup", 0.8)))
-				Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.3, 0), "!", Color(1, 0.4, 0.3))
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		"bear":
-			if _cd3 <= 0.0:
-				_start_action("roar", null)
-				return
-			if _cd4 <= 0.0 and _cat_reachable(10.0) and not _cat_reachable(3.2) \
-					and not main.world.blocked_between(global_position, p.global_position):
-				_start_dash()
-				return
-			if _cd2 <= 0.0 and _cat_reachable(float(info["slam_range"]) * 0.8):
-				_start_action("slam", p)
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		"moth":
-			if _cd4 <= 0.0 and _cat_reachable(float(info["aggro"])) and not _cat_reachable(0.9):
-				_start_pounce(p.global_position, 2.6, -0.75, 0.5)
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-			if _cat_reachable(float(info["aggro"])):
-				_goal = p.global_position
-				state = "chase"
-				return
-			# straight over barricades and buildings at the camp's towers, buildings and campfire (or at the cat,
-			# once the fire is out, or below ground)
-			if main.fight.last_stand or _in_area():
-				_hunt(p, reach)
-				return
-			state = "walk"
-			if _siege(true):
-				return
-			_goal = Vector3.ZERO
-			return
-		"frog":
-			if _try_heal():
-				return
-			if _cd <= 0.0 and _cat_reachable(float(info["cast_range"])):
-				_start_action("cast", p)
-				return
-			if _cat_reachable(float(info["cast_range"]) * 0.9):
-				state = "walk"
-				_goal = global_position                  # stands its ground and keeps casting
-				return
-		"beetle":
-			if _cd4 <= 0.0 and _cat_reachable(2.2) and not _cat_reachable(0.9):
-				_start_pounce(p.global_position, 2.0, 0.0, 0.32)
-				_cd4 = float(info.get("bash_every", 6.0))
-				_power = true
-				Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.3, 0), "Bash!", Color(0.6, 0.9, 1.0))
-				return
-			if _cat_reachable(float(info["aggro"])):
-				_goal = p.global_position
-				state = "chase"
-				if global_position.distance_to(_goal) < reach and _cd <= 0.0:
-					_start_action("attack", p)
-				return
-		"snail":
-			if _cd2 <= 0.0 and _cat_reachable(float(info["slam_range"])):
-				_start_action("slam", p)
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		"owl":
-			if _cd3 <= 0.0:
-				_start_action("summon", null)
-				return
-			if _cd5 <= 0.0 and _cat_reachable(11.0) and not _cat_reachable(2.5):
-				_start_blink()
-				return
-			if _cd2 <= 0.0 and _cat_reachable(7.0):
-				_start_action("hex", p)
-				return
-			if _cd4 <= 0.0 and _cat_reachable(9.0):
-				_start_action("orbs", p)
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		"stump", "mole":
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		"pitcher":
-			# the cat near: spit at it; else the camp's structures from afar (_standoff, below)
-			var rng := float(info["spit_range"])
-			if _cd <= 0.0 and _cat_reachable(rng):
-				_start_action("spit", p)
-				return
-			if _cat_reachable(rng):
-				state = "walk"
-				_goal = global_position
-				return
-		"puffball":
-			if _cat_reachable(radius + 0.6):
-				_start_action("burst", p)
-				return
-		"crow":
-			if _try_drum():
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		"stag":
-			if _cd3 <= 0.0:
-				_start_action("roar", null)
-				return
-			if _cd2 <= 0.0 and _cat_reachable(float(info["aggro"])) and not _cat_reachable(3.0) \
-					and not main.world.blocked_between(global_position, p.global_position):
-				_charge_dir = (p.global_position - global_position)
-				_charge_dir.y = 0.0
-				_charge_dir = _charge_dir.normalized()
-				state = "windup"
-				_act_t = 0.0
-				_play("Windup" if anim and anim.has_animation("Windup") else "Idle")
-				Fx.telegraph_line(main, global_position, _charge_dir, float(info["charge_speed"]) * float(info.get("charge_time", 1.4)),
-					radius * 2.0, float(info.get("windup", 0.8)), Color(0.75, 0.35, 1.0, 0.35))
-				Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.3, 0), "!!", Color(0.9, 0.5, 1.0))
-				return
-			if _cd4 <= 0.0 and _cat_reachable(float(info["slam_range"]) * 0.8):
-				_cd4 = float(info.get("slam_every", 6.0))
-				_start_action("slam", p)
-				_cd2 = maxf(_cd2, 2.0)
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		# Phase E: the Burrows' own kinds (stand-in models until the user's Meshy models come)
-		"glowcap":
-			var dist: float = global_position.distance_to(p.global_position)
-			if _cd <= 0.0 and _cat_reachable(float(info["lob_range"])):
-				_start_action("lob", p)
-				return
-			if _cat_reachable(float(info["keep_away"])):
-				var away: Vector3 = global_position - p.global_position
-				away.y = 0.0
-				_goal = global_position + (away.normalized() if away.length() > 0.01 else Vector3.FORWARD) * 2.0
-				state = "walk"
-				return
-			if _cat_reachable(float(info["aggro"])):
-				_goal = p.global_position if dist > 6.5 else global_position
-				state = "chase" if dist > 6.5 else "walk"
-				return
-		"snapper":
-			var to: Vector3 = p.global_position - global_position
-			to.y = 0.0
-			_goal = global_position
-			if to.length() > 0.01 and p.hp > 0:
-				rotation.y = rotate_toward(rotation.y, atan2(to.x, to.z), float(info.get("turn_rate", 2.0)) * 0.2)
-			var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
-			if _cd <= 0.0 and _cat_reachable(float(info["reach"])) and to.length() > 0.01 \
-					and rad_to_deg(fwd.angle_to(to.normalized())) < float(info.get("bite_cone_deg", 35.0)):
-				_start_action("bite", p)
-				return
-			state = "walk"
-			return
-		"amber_grub":
-			_goal = main.area.flee_point(p.global_position) if _in_area() else global_position
-			state = "chase"
-			return
-		"brute":
-			if _cd4 <= 0.0 and _cat_reachable(2.6):
-				_start_action("spores", p)
-				return
-			if _cat_reachable(reach) and _cd <= 0.0:
-				_start_action("attack", p)
-				return
-		_:
-			if _cd4 <= 0.0 and _cat_reachable(2.8) and not _cat_reachable(1.1):
-				_start_pounce(p.global_position)
-				return
-			if _cat_reachable(float(info["aggro"])):
-				_goal = p.global_position
-				state = "chase"
-				if global_position.distance_to(_goal) < reach and _cd <= 0.0:
-					_start_action("attack", p)
-				return
-	state = "walk"
-	if _in_area():
-		_hunt(p, reach)                             # below ground there is no camp to siege: they hunt the cat
-		return
-	# the Moss Warden is in the way: fight it (every kind still tries the cat first, in its own branch above)
-	var g = main.guardian
-	if g != null and gate_damage > 0 and not flyer and not main.fight.last_stand and g.taunts(self):
-		_fight_guardian(g)
-		return
-	if main.fight.last_stand:
-		_hunt(p, reach)
-		return
-	# near the camp, or near a tower: go and knock it down (ranged kinds shoot it from siege_range m: Phase F)
-	if gate_damage > 0:
-		var sr := float(info.get("siege_range", info.get("spit_range", 0.0)))
-		if sr > 0.0:
-			if _standoff(sr):
-				return
-		elif _siege(false):
-			return
-	_goal = _trail_goal()
-
-
 func _trail_goal() -> Vector3:
 	return main.world.trail_point(patch, s + 1.4) if patch >= 0 and main.world.trails.size() > patch else main.world.edge_point(clampi(patch, 0, 3))
 
 
 ## A Frog Shaman heals when its heal is ready and a wounded enemy is near. True when it started.
 func _try_heal() -> bool:
-	if _cd4 > 0.0:
-		return false
-	for f in get_tree().get_nodes_in_group("foes"):
-		if not f.dead and f.hp < f.max_hp * 0.9 and f.global_position.distance_to(global_position) < float(info["heal_range"]):
-			_start_action("heal", null)
-			return true
-	return false
+	return _heal.try_heal()
 
 
 ## A Crow Drummer drums when its drum is ready and another enemy is near. True when it started.
 func _try_drum() -> bool:
-	if _cd4 > 0.0:
-		return false
-	for f in get_tree().get_nodes_in_group("foes"):
-		if f != self and not f.dead and f.global_position.distance_to(global_position) < float(info["drum_range"]):
-			_start_action("drum", null)
-			return true
-	return false
+	return _heal.try_drum()
 
 
 # ---------------------------------------------------------------- Phase G1b: squads
@@ -1280,53 +1027,16 @@ func _standoff(sr: float) -> bool:
 ## A Puffball bursts: everything round it gets hurt (buildings, towers, barricades, the campfire, the cat), then it is
 ## gone.
 func _burst() -> void:
-	var r := float(info["burst_range"])
-	var me := global_position
-	Fx.shockwave(main, me, r + 0.3, Color(0.95, 0.65, 0.35))
-	Fx.spores(main, me, r)
-	Fx.kill(main, me + Vector3(0, 0.4, 0), _color)
-	main.shake(0.3)
-	for b in main.stations.building_targets():
-		if me.distance_to(b[1]) - float(b[2]) < r:
-			main.stations.hurt_building(String(b[0]), gate_damage)
-	for h in main.defences.near(me, r + 1.0):
-		h.hurt(gate_damage)
-	if main.guardian != null:
-		main.guardian.blast(me, r, gate_damage)
-	if Vector2(me.x, me.z).length() < r + 0.8:
-		main.fight.damage_fire(gate_damage, me)
-	if _cat_reachable(r):
-		main.player.hurt(me, damage)
-	hp = 0.0
-	_die()
+	_attack.burst()
 
 
 ## A Mole Sapper meets a barricade: it burrows under it and pops up on the other side.
 func _start_dig() -> void:
-	state = "dig"
-	_act_t = 0.0
-	_act_done = false
-	var past: float = main.world.trail_progress(patch, global_position) + 3.0 if main.world.trails.size() > patch else 0.0
-	_dig_to = main.world.trail_point(patch, past) if main.world.trails.size() > patch else global_position
-	_play(_clip_or(["Dig", "Attack"]), 0.05)
-	Fx.dust(main, global_position, 10, 1.2)
-	Fx.text(main, global_position + Vector3(0, 1.4, 0), "Digging!", Color(0.85, 0.7, 0.5))
+	_mover.start_dig()
 
 
 func _do_dig(delta: float) -> void:
-	_act_t += delta
-	if not _act_done and _act_t >= 0.8:
-		_act_done = true
-		_body.visible = false
-		global_position = Vector3(_dig_to.x, 0, _dig_to.z)
-		_last_pos = global_position
-	if _act_t >= 1.5 and not _body.visible:
-		_body.visible = true
-		_play(_clip_or(["Emerge", "Idle"]), 0.05)
-		Fx.dust(main, global_position, 12, 1.3)
-	if _act_t >= 2.1:
-		state = "walk"
-		_think_t = 0.0
+	_mover.do_dig(delta)
 
 
 ## Last Stand: no fire to put out, so every enemy goes for the cat. A hidden cat they cannot see: then they mill
@@ -1349,488 +1059,64 @@ func _hunt(p, reach: float) -> void:
 
 
 func _walk(delta: float, spd: float) -> void:
-	var goal := _goal
-	if not flyer and _in_area():
-		# a Burrow's path bends: round the trees, not into them (checked 4 times a second; a clear line uses the live goal)
-		_steer_t -= delta
-		if _steer_t <= 0.0:
-			_steer_t = 0.25
-			var st: Vector3 = main.area.steer(global_position, _goal)
-			_steer_on = st.distance_to(_goal) > 0.01
-			_steer_to = st
-		if _steer_on:
-			goal = _steer_to
-	var to := goal - global_position
-	to.y = 0.0
-	var d := to.length()
-	var want := Vector3.ZERO
-	if d > 0.05:
-		var dir := to / d
-		want = dir * minf(spd * delta, d)
-		position += want
-		_face(dir, delta, 8.0)
-		_play("Run" if id == "raccoon" and anim and anim.has_animation("Run") else "Walk")
-	else:
-		_play("Idle")
-	var before := position - want
-	position = main.world.constrain(position, radius, true, flyer)
-	# walked into a fence piece? hit it
-	if not flyer and want.length() > 0.0005 and (position - before).length() < want.length() * 0.4 and _cd <= 0.0 and main.defences:
-		var fence = main.defences.fence_hit(global_position, radius + 0.25)
-		if fence != null and info.get("digs", false):
-			_start_dig()
-		elif fence != null:
-			_start_action("attack", fence)
-	if _camp_approach != CampApproach.DIRECT and _camp_approach != CampApproach.TRAIL:
-		return
-	if flyer or state != "walk" or want == Vector3.ZERO:
-		return
-	var advance: float = (position - before).dot(want.normalized())
-	if advance > 0.0 and not is_zero_approx(advance):
-		return
-	if _camp_approach == CampApproach.DIRECT and patch >= 0 and patch < main.world.trails.size():
-		# Rejoin this raider's own trail when the straight walk is blocked.
-		s = main.world.trail_progress(patch, global_position)
-		var on_trail: Vector3 = main.world.trail_point(patch, s)
-		global_position = main.world.constrain(on_trail, radius, true)
-		_last_pos = global_position
-		_camp_approach = CampApproach.TRAIL
-		_think_t = 0.0
-	else:
-		# A sideways step gives the walk room to turn around a solid obstacle.
-		position = main.world.constrain(before + want.cross(Vector3.UP), radius, true)
+	_mover.walk(delta, spd)
 
 
 func _face(dir: Vector3, delta: float, rate: float) -> void:
-	if dir.length_squared() > 0.0001:
-		rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), 1.0 - exp(-rate * delta))
+	_mover.face(dir, delta, rate)
 
 
 # ---------------------------------------------------------------- actions with a moment of impact
 func _start_action(kind: String, tgt) -> void:
-	state = kind
-	_act_target = tgt
-	_act_t = 0.0
-	_act_done = false
-	match kind:
-		"attack":
-			_act_len = maxf(_clip_len("Attack", float(info["attack_every"])), 0.4)
-			_act_event = _event("Attack", "hit", _act_len * 0.45)
-			_play("Attack", 0.08)
-			_cd = float(info["attack_every"])
-		"grab":
-			_act_trip = int(tgt.trip) if tgt is Object and is_instance_valid(tgt) else -1   # H1: this drop of the leaf
-			_act_len = _clip_len("Grab", 0.6)
-			_act_event = _event("Grab", "grab", 0.3)
-			_play("Grab" if anim and anim.has_animation("Grab") else "Attack", 0.08)
-		"slam":
-			var c := _clip_or(["Slam", "Attack"])
-			_act_len = maxf(_clip_len(c, 1.4), 0.9)
-			_act_event = _event(c, "impact", _event(c, "hit", 0.7))
-			_play(c, 0.1)
-			_cd2 = float(mods.get("slam_every", info.get("slam_every", 5.0))) * _cdk()
-			Fx.telegraph_ring(main, global_position, float(info["slam_range"]), _act_event)
-		"spit":
-			_act_len = maxf(_clip_len("Attack", 0.9), 0.7)
-			_act_event = _event("Attack", "hit", _act_len * 0.5)
-			_play("Attack", 0.08)
-			_cd = float(info["attack_every"])
-		"burst":
-			_act_len = maxf(_clip_len("Attack", 1.0), 0.7)
-			_act_event = _event("Attack", "hit", _act_len * 0.75)
-			_play("Attack", 0.06)
-			Fx.telegraph_ring(main, global_position, float(info["burst_range"]), _act_event, Color(0.95, 0.6, 0.3, 0.35))
-		"drum":
-			var c0 := _clip_or(["Drum", "Attack"])
-			_act_len = maxf(_clip_len(c0, 1.0), 0.8) * 2.0
-			_act_event = _event(c0, "beat", 0.25)
-			_play(c0, 0.1)
-			_cd4 = float(info["drum_every"])
-		"heal", "cast", "orbs":
-			var c := _clip_or(["Cast", "Attack"])
-			_act_len = maxf(_clip_len(c, 1.0), 0.7)
-			_act_event = _event(c, "cast", _event(c, "hit", _act_len * 0.5))
-			_play(c, 0.08)
-			if kind == "heal":
-				_cd4 = float(info["heal_every"])
-				Fx.telegraph_ring(main, global_position, float(info["heal_range"]), _act_event, Color(0.5, 1.0, 0.45, 0.3))
-			elif kind == "orbs":
-				_cd4 = float(info["orb_every"])
-			else:
-				_cd = float(info["attack_every"])
-		"hex":
-			var c := _clip_or(["Cast", "Attack"])
-			_act_len = maxf(_clip_len(c, 1.0), 1.15)
-			_act_event = 1.0
-			_play(c, 0.08)
-			_cd2 = float(info["hex_every"])
-			_hex_at = main.player.global_position
-			_hex_at.y = 0.0
-			Fx.telegraph_ring(main, _hex_at, float(info["hex_range"]), 1.0, Color(0.8, 0.3, 1.0, 0.4))
-			Fx.text(main, _hex_at + Vector3(0, 1.6, 0), "Hex!", Color(0.85, 0.5, 1.0))
-		"summon":
-			var c := _clip_or(["Roar", "Cast", "Attack"])
-			_act_len = maxf(_clip_len(c, 1.2), 0.9)
-			_act_event = _event(c, "roar", _act_len * 0.45)
-			_play(c, 0.1)
-			_cd3 = float(info.get("summon_every", 15.0))
-		"spores":
-			_act_len = maxf(_clip_len("Attack", 1.0), 0.6)
-			_act_event = _event("Attack", "hit", _act_len * 0.45)
-			_play("Attack", 0.08)
-			_cd4 = 8.0
-			_cd = float(info["attack_every"])
-			Fx.telegraph_ring(main, global_position, 2.6, _act_event, Color(0.6, 0.9, 0.4, 0.3))
-		"roar":
-			_act_len = _clip_len("Roar", 1.5)
-			_act_event = _event("Roar", "roar", 0.5)
-			_play("Roar", 0.1)
-			_cd3 = float(mods.get("roar_every", info.get("roar_every", 14.0))) * _cdk()
-		"lob":
-			var c := _clip_or(["Cast", "Attack"])
-			_act_len = maxf(_clip_len(c, 1.0), 0.8)
-			_act_event = _event(c, "cast", _act_len * 0.45)
-			_play(c, 0.08)
-			_cd = float(info.get("lob_every", 2.6))
-		"bite":
-			_act_len = float(info.get("bite_warn", 0.7)) + 0.4
-			_act_event = float(info.get("bite_warn", 0.7))
-			_play(_clip_or(["Windup", "Idle"]), 0.05)
-			_cd = float(info["attack_every"])
-			var fw := Vector3(sin(rotation.y), 0, cos(rotation.y))
-			_charge_dir = fw
-			Fx.telegraph_line(main, global_position, fw, float(info["reach"]), float(info.get("bite_width", 0.9)), _act_event, Color(1.0, 0.45, 0.3, 0.4))
-	if anim and anim.current_animation != "" and _act_len > 0.0:
-		anim.seek(0.0, true)
+	_attack.start_action(kind, tgt)
 
 
 func _do_action(delta: float) -> void:
-	_act_t += delta
-	if typeof(_act_target) == TYPE_OBJECT and not is_instance_valid(_act_target):
-		_act_target = null
-	_drop_pooled_grab()
-	var tgt = _act_target
-	if tgt is Node3D and is_instance_valid(tgt):
-		var to: Vector3 = (tgt as Node3D).global_position - global_position
-		to.y = 0.0
-		_face(to.normalized(), delta, 10.0)
-	elif tgt is String and tgt == "gate":
-		_face((Vector3.ZERO - global_position).normalized(), delta, 10.0)
-	elif tgt != null and is_instance_valid(tgt) and not (tgt is Node3D):
-		_face(((tgt.global_position as Vector3) - global_position).normalized(), delta, 10.0)
-	if not _act_done and _act_t >= _act_event:
-		_act_done = true
-		_impact()
-	if _act_t >= _act_len:
-		state = "walk"
-		_power = false
-		_think_t = 0.0
+	_attack.do_action(delta)
 
 
 ## H1: a grab's leaf that has gone back to its pool (picked up, swept) is out of the scene: the grab lets it go.
 func _drop_pooled_grab() -> void:
-	if state == "grab" and _act_target is Node and not (_act_target as Node).is_inside_tree():
-		_act_target = null
+	_attack.drop_pooled_grab()
 
 
 func _impact() -> void:
-	if typeof(_act_target) == TYPE_OBJECT and not is_instance_valid(_act_target):
-		_act_target = null
-	_drop_pooled_grab()
-	var tgt = _act_target
-	var reach := float(info["reach"]) + radius + 0.5
-	var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
-	match state:
-		"attack":
-			Fx.swipe(main, global_position + Vector3(0, float(info["height"]) * 0.45, 0) + fwd * radius * 0.6, rotation.y,
-				float(info["reach"]) + radius + 0.25, Color(1.0, 0.85, 0.6) if not _power else Color(0.85, 0.55, 1.0))
-			Fx.hit(main, global_position + fwd * (radius + 0.4) + Vector3(0, 0.3, 0), _color)
-			Fx.dust(main, global_position + fwd * (radius + 0.3), 5, 1.0 + radius)
-			if tgt is String and tgt == "gate":
-				main.fight.damage_fire(gate_damage, global_position)
-			elif tgt == main.player:
-				if _cat_reachable(reach + (0.8 if _power else 0.0)):
-					main.player.hurt(global_position, int(round(damage * (2 if _power else 1) * (1.0 + buff if buff_t > 0.0 else 1.0))))
-					main.shake(0.12 if not _power else 0.3)
-			elif tgt is Object and tgt == main.guardian:
-				if main.guardian.reachable_from(global_position, float(info["reach"]) + radius):
-					main.guardian.hurt(int(maxi(gate_damage, 4) * (1.0 + buff if buff_t > 0.0 else 1.0)))
-			elif tgt != null and is_instance_valid(tgt) and tgt.has_method("hurt"):
-				tgt.hurt(int(maxi(gate_damage, 4) * float(info.get("siege", 1.0)) * (1.0 + buff if buff_t > 0.0 else 1.0)))
-		"grab":
-			# H1: only the drop it reached for (a pooled pickup dropped again elsewhere is a new leaf)
-			if tgt != null and is_instance_valid(tgt) and not tgt.taken and int(tgt.trip) == _act_trip:
-				carried += tgt.steal()
-				Fx.text(main, global_position + Vector3(0, 1.3, 0), "Stolen!", Color(1.0, 0.55, 0.3))
-				Fx.smoke(main, global_position)
-				_boost_t = 1.4
-		"spores":
-			Fx.spores(main, global_position, 2.6)
-			main.shake(0.12)
-			if _cat_reachable(2.8):
-				main.player.hurt(global_position, damage)
-				main.player.slow_t = 1.8
-				Fx.text(main, main.player.global_position + Vector3(0, 1.5, 0), "Slowed!", Color(0.7, 1.0, 0.5))
-		"slam":
-			Fx.shockwave(main, global_position, float(info["slam_range"]))
-			Fx.dust(main, global_position, 18, 2.5)
-			Fx.hit(main, global_position + Vector3(0, 0.3, 0), Color(0.55, 0.8, 0.3))
-			main.shake(0.35)
-			if _cat_reachable(float(info["slam_range"])):
-				main.player.hurt(global_position, int(round(damage * float(mods.get("slam_mult", 1.0)))))
-			if enraged and mods.has("enrage_ring"):
-				_second_ring()
-			for f in main.defences.near(global_position, float(info["slam_range"])):
-				f.hurt(gate_damage)
-			if main.guardian != null:
-				main.guardian.blast(global_position, float(info["slam_range"]), gate_damage)
-		"spit":
-			var b := BoltScript.new()
-			main.add_child(b)
-			var mouth := float(meta["mouth_height_m"]) * _scale if meta.has("mouth_height_m") else float(info.get("height", 1.0)) * 0.75
-			var from: Vector3 = global_position + Vector3(0, mouth, 0) + Vector3(sin(rotation.y), 0, cos(rotation.y)) * (radius + 0.1)
-			if tgt == main.player:
-				var aim: Vector3 = main.player.global_position + Vector3(0, 0.55, 0)
-				b.launch(main, from, aim - from, float(info["bolt_speed"]), damage, Color(0.55, 0.85, 0.3), true, null, 0.0, 0.1, 2.0)
-			elif tgt != null and is_instance_valid(tgt):
-				b.launch(main, from, (tgt.global_position as Vector3) + Vector3(0, 0.7, 0) - from, float(info["bolt_speed"]), float(gate_damage),
-					Color(0.55, 0.85, 0.3), false, null, 0.0, 0.1, 3.0)
-				b.struct_target = tgt
-		"burst":
-			_burst()
-			return
-		"drum":
-			Fx.shockwave(main, global_position, float(info["drum_range"]), Color(1.0, 0.75, 0.4))
-			Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.3, 0), "Boom! Boom!", Color(1.0, 0.75, 0.45))
-			for f in get_tree().get_nodes_in_group("foes"):
-				if not f.dead and f.global_position.distance_to(global_position) < float(info["drum_range"]):
-					f.buff = float(info["drum_buff"])
-					f.buff_t = float(info["drum_time"])
-					Fx.sparkle(main, f.global_position + Vector3(0, f.aim_height * 2.0, 0))
-		"heal":
-			var amt := float(info["heal"]) * mult
-			Fx.shockwave(main, global_position, float(info["heal_range"]), Color(0.5, 1.0, 0.45))
-			for f in get_tree().get_nodes_in_group("foes"):
-				if f.dead or f.global_position.distance_to(global_position) > float(info["heal_range"]):
-					continue
-				if f.hp < f.max_hp:
-					f.hp = minf(f.max_hp, f.hp + amt)
-					Fx.number(main, f.global_position + Vector3(0, f.aim_height * 2.0 + 0.3, 0), amt, Color(0.5, 1.0, 0.5))
-					Fx.sparkle(main, f.global_position + Vector3(0, f.aim_height, 0))
-		"cast":
-			if tgt != null and tgt != main.player and is_instance_valid(tgt):
-				_bolt_at(tgt)                            # a tower, a building or the campfire, from afar (Phase F)
-			else:
-				_bolt(0.0, 0.6)
-		"orbs":
-			var n := int(info.get("orbs", 3))
-			for k in n:
-				_bolt((float(k) - (n - 1) * 0.5) * 0.45, 1.4)
-			main.shake(0.1)
-		"hex":
-			Fx.shockwave(main, _hex_at, float(info["hex_range"]), Color(0.8, 0.35, 1.0))
-			Fx.spores(main, _hex_at, float(info["hex_range"]) * 0.8)
-			main.shake(0.25)
-			var cat: Vector3 = main.player.global_position
-			if Vector2(cat.x - _hex_at.x, cat.z - _hex_at.z).length() < float(info["hex_range"]):
-				main.player.hurt(_hex_at, damage)
-		"summon":
-			main.shake(0.2)
-			Fx.wind_aura(self, 0.9, 1.4)
-			Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.5, 0), "Hoo-hoo!" if id == "owl" else "ROAR!", Color(0.85, 0.5, 1.0))
-			for k in int(info.get("summon", 3)):
-				var a := TAU * k / float(info.get("summon", 3)) + randf()
-				var mk := String(info.get("minion", "moth"))
-				var at := global_position + Vector3(cos(a), 0, sin(a)) * 1.5
-				if _in_area():
-					main.area.spawn(mk, at, {"summon": true, "emerge": mk == "grub"})
-				else:
-					main.fight.spawn(mk, at, patch)
-		"lob":
-			# a spore bomb at the cat's spot, where it will be a moment from now
-			var lead: Vector3 = main.player.get("vel") if main.player.get("vel") != null else Vector3.ZERO
-			var spot: Vector3 = main.player.global_position + lead * float(info.get("lob_lead", 0.5))
-			spot.y = 0.0
-			if _in_area():
-				spot = main.area.constrain(spot, 0.3, false)
-				main.area.strike(spot, float(info.get("lob_radius", 1.1)), float(info.get("lob_warn", 1.1)), damage, float(info.get("slow_s", 2.0)))
-		"bite":
-			Fx.swipe(main, global_position + Vector3(0, 0.6, 0) + _charge_dir * radius, rotation.y, float(info["reach"]), Color(0.9, 0.7, 0.4))
-			var cp: Vector3 = main.player.global_position - global_position
-			cp.y = 0.0
-			var along := cp.dot(_charge_dir)
-			var side := (cp - _charge_dir * along).length()
-			if main.player.hp > 0 and along > -0.2 and along < float(info["reach"]) + 0.3 and side < float(info.get("bite_width", 0.9)) * 0.5 + 0.3:
-				main.player.hurt(global_position, damage)
-				main.shake(0.15)
-		"roar":
-			main.shake(0.25)
-			Fx.shockwave(main, global_position, 4.5, Color(0.85, 0.55, 1.0))
-			Fx.wind_aura(self, 0.8, 1.6)
-			Fx.text(main, global_position + Vector3(0, 3.2, 0), "ROAR!", Color(0.85, 0.5, 1.0))
-			var nm := int(mods.get("roar_minions", info.get("roar_minions", 3)))
-			for k in nm:
-				var a := TAU * k / float(nm) + randf()
-				var at := global_position + Vector3(cos(a), 0, sin(a)) * 1.6
-				if enraged and k < int(mods.get("enrage_gloom_adds", 0)) and _in_area():
-					main.area.spawn(String(info.get("minion", "thornling")), at, {"summon": true, "gloomtouched": true})
-				else:
-					main.fight.spawn(String(info.get("minion", "thornling")), at, patch)
+	_attack.impact()
 
 
 func _do_charge(delta: float) -> void:
-	_act_t += delta
-	var step := _charge_dir * float(info["charge_speed"]) * delta
-	var before := global_position
-	position += step
-	_face(_charge_dir, delta, 20.0)
-	if int(_t * 20.0) % 2 == 0:
-		Fx.dust(main, global_position - _charge_dir * radius, 3, 1.2)
-	# the cat
-	var p = main.player
-	if p.hp > 0 and not main.world.inside_camp(p.global_position) and p.global_position.distance_to(global_position) < radius + 0.4:
-		p.hurt(global_position, damage * 2)
-		Fx.shockwave(main, global_position + _charge_dir * radius, 1.6, Color(1.0, 0.7, 0.4))
-		Fx.hit(main, p.global_position + Vector3(0, 0.5, 0), Color(1.0, 0.5, 0.4))
-		main.shake(0.3)
-		_end_charge()
-		return
-	# the Moss Warden stands its ground: the charge stops there
-	var g = main.guardian
-	if g != null and g.up() and global_position.distance_to(g.global_position) < radius + float(g.radius) + 0.2:
-		g.hurt(gate_damage)
-		g.blocked(global_position)
-		_end_charge(true)
-		return
-	# a fence or the gate
-	var fence = main.defences.fence_hit(global_position, radius + 0.3)
-	if fence != null:
-		fence.hurt(int(info.get("fence_damage", 100)))
-		Fx.shockwave(main, global_position + _charge_dir * radius, 1.6, Color(0.8, 0.6, 0.4))
-		main.shake(0.2)
-		_end_charge(true)
-		return
-	position = main.world.constrain(position, radius, true)
-	if _in_area():
-		if global_position.distance_to(before + step) > 0.05:
-			_daze_long(float(Data.burrow_cfg()["daze_on_block_s"]))   # into a pillar or a wall: dazed, a weak spot
-			return
-		if _act_t > float(info.get("charge_time", 1.4)):
-			_end_charge(true)
-		return
-	if global_position.distance_to(before + step) > 0.05:
-		# rammed something solid: a building or a tower takes the blow
-		for b in main.stations.building_targets():
-			if global_position.distance_to(b[1]) < float(b[2]) + radius + 0.6:
-				main.stations.hurt_building(String(b[0]), gate_damage)
-				main.shake(0.25)
-				break
-		for t in main.defences.tower_targets():
-			if global_position.distance_to(t[1]) < float(t[2]) + radius + 0.6:
-				t[0].hurt(gate_damage)
-				main.shake(0.2)
-				break
-		_end_charge(true)
-		return
-	if _act_t > float(info.get("charge_time", 1.4)) or global_position.length() > main.world.WOODS_R + 2.0:
-		_end_charge(true)
+	_mover.do_charge(delta)
 
 
 ## The charge is over: a short pause. A boar whose charge did not hit the cat (`missed`) is dazed instead (Phase F);
 ## a boss that charges (the Thornstag) only pauses.
 func _end_charge(missed := false) -> void:
-	if missed and not boss and _ai == "boar":
-		_miss_daze()
-		return
-	state = "daze"
-	_act_t = 0.0
-	_cd2 = float(info.get("charge_every", 4.0))
-	_play("Idle")
+	_mover.end_charge(missed)
 
 
 # ---------------------------------------------------------------- specials
 ## Thornling pounce: a hop at the cat that lands with a splash. The same move is the Gloom Moth's dive (arc < 0) and
 ## the Beetle Knight's shield bash (arc 0: a quick shove along the ground).
 func _start_pounce(at: Vector3, max_d := 2.6, arc := 0.65, dur := 0.45) -> void:
-	state = "pounce"
-	_act_t = 0.0
-	_arc = arc
-	_dur = dur
-	_from = global_position
-	var d := at - _from
-	d.y = 0.0
-	_to = _from + d.limit_length(max_d)
-	_cd4 = randf_range(3.5, 5.0)
-	_play("Attack", 0.05)
-	if not flyer:
-		Fx.dust(main, global_position, 4, 0.7)
+	_mover.start_pounce(at, max_d, arc, dur)
 
 
 func _do_pounce(delta: float) -> void:
-	_act_t += delta
-	var t := clampf(_act_t / _dur, 0.0, 1.0)
-	var p := _from.lerp(_to, t)
-	p.y = sin(PI * t) * _arc
-	global_position = p
-	_face((_to - _from).normalized(), delta, 14.0)
-	if t >= 1.0:
-		global_position.y = 0.0
-		position = main.world.constrain(position, radius, true, flyer)
-		if not flyer:
-			Fx.dust(main, global_position, 7, 1.0)
-		Fx.hit(main, global_position + Vector3(0, 0.2 + fly_h * 0.5, 0), _color)
-		if _cat_reachable(0.9 + (0.3 if _power else 0.0)):
-			main.player.hurt(global_position, damage)
-			main.shake(0.1 if not _power else 0.22)
-		_power = false
-		state = "walk"
-		_cd = float(info["attack_every"]) * 0.5
+	_mover.do_pounce(delta)
 
 
 ## Mossback's Gloom Dash: wind gathers round it, a line on the ground shows where it will go, then it rushes the cat
 ## and swipes on arrival with double damage.
 func _start_dash() -> void:
-	state = "dash_windup"
-	_act_t = 0.0
-	var to_cat: Vector3 = main.player.global_position - global_position
-	to_cat.y = 0.0
-	_charge_dir = to_cat.normalized()
-	_cd4 = float(mods.get("dash_every", info.get("dash_every", 8.0))) * _cdk()
-	_play("Roar" if anim and anim.has_animation("Roar") else "Idle", 0.1)
-	Fx.wind_aura(self, 1.8, radius * 1.4)
-	Fx.telegraph_line(main, global_position, _charge_dir, minf(to_cat.length() + 1.0, 9.0), radius * 1.8, 1.0, Color(0.75, 0.35, 1.0, 0.35))
-	Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.4, 0), "!!", Color(0.9, 0.5, 1.0))
+	_mover.start_dash()
 
 
 func _do_dash(delta: float) -> void:
-	_act_t += delta
-	var step := _charge_dir * 9.0 * delta
-	var before := global_position
-	position += step
-	_face(_charge_dir, delta, 20.0)
-	if fmod(_act_t, 0.07) < delta:
-		Fx.dust(main, global_position - _charge_dir * radius, 4, 1.6)
-	var fence = main.defences.fence_hit(global_position, radius + 0.3)
-	if fence != null:
-		fence.hurt(150)
-		Fx.shockwave(main, global_position + _charge_dir * radius, 2.2, Color(0.8, 0.55, 1.0))
-		main.shake(0.3)
-		_end_dash()
-		return
-	position = main.world.constrain(position, radius, true)
-	var reach := float(info["reach"]) + radius + 0.3
-	var blocked := global_position.distance_to(before + step) > 0.05
-	if blocked and _in_area() and not _cat_reachable(reach):
-		_daze_long(float(Data.burrow_cfg()["daze_on_block_s"]))       # the Gloom Dash ends in a pillar or a wall
-		return
-	if _cat_reachable(reach) or blocked or _act_t > 0.8:
-		_end_dash()
+	_mover.do_dash(delta)
 
 
 func _end_dash() -> void:
-	_power = true
-	_start_action("attack", main.player)
-	_cd = float(info["attack_every"])
+	_mover.end_dash()
 
 
 ## A Burrow boss's cooldowns: shorter once it is enraged.
@@ -1855,112 +1141,39 @@ func _enrage() -> void:
 
 ## Enraged: the slam's second ring, wider, a moment after the first (step out of it, or dash through it).
 func _second_ring() -> void:
-	var at := Vector3(global_position.x, 0.0, global_position.z)
-	var r := float(info["slam_range"]) * float(mods.get("enrage_ring", 1.7))
-	var warn := float(mods.get("enrage_ring_warn", 0.7))
-	Fx.telegraph_ring(main, at, r, warn, Color(1.0, 0.45, 0.25, 0.4))
-	get_tree().create_timer(warn).timeout.connect(_ring_now.bind(at, r))
+	_attack.second_ring()
 
 
 func _ring_now(at: Vector3, r: float) -> void:
-	if dead or main.frozen:
-		return
-	Fx.shockwave(main, at, r, Color(1.0, 0.55, 0.3))
-	main.shake(0.3)
-	var p = main.player
-	if p.hp > 0 and Vector2(p.global_position.x - at.x, p.global_position.z - at.z).length() < r:
-		p.hurt(at, int(round(damage * float(mods.get("slam_mult", 1.0)))))
+	_attack.ring_now(at, r)
 
 
 ## A Gloom bolt at the cat (Frog Shaman, Owl Witch's orbs), `turn` radians off the aim.
 func _bolt(turn: float, homing: float) -> void:
-	var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
-	var from := global_position + Vector3(0, float(info["height"]) * 0.6, 0) + fwd * (radius + 0.15)
-	var aim: Vector3 = main.player.global_position + Vector3(0, 0.55, 0)
-	var d := (aim - from).rotated(Vector3.UP, turn)
-	var b := BoltScript.new()
-	main.add_child(b)
-	b.launch(main, from, d, float(info.get("bolt_speed", 5.0)), damage, Color(0.78, 0.35, 1.0), true, main.player if homing > 0.0 else null, homing, 0.13, 3.2)
+	_attack.bolt(turn, homing)
 
 
 ## Phase F: a Gloom bolt at a tower, a building or the campfire (a Frog Shaman's siege from afar). It flies home to it
 ## and hurts it by the frog's gate damage.
 func _bolt_at(tgt) -> void:
-	var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
-	var from := global_position + Vector3(0, float(info["height"]) * 0.6, 0) + fwd * (radius + 0.15)
-	var spd := maxf(float(info.get("bolt_speed", 5.0)), 0.5)
-	var b := BoltScript.new()
-	main.add_child(b)
-	b.launch(main, from, (tgt.global_position as Vector3) + Vector3(0, 0.7, 0) - from, spd, float(gate_damage),
-		Color(0.78, 0.35, 1.0), false, null, 0.0, 0.13, (float(info.get("siege_range", 8.0)) + 4.0) / spd)
-	b.struct_target = tgt
+	_attack.bolt_at(tgt)
 
 
 ## The Owl Witch vanishes in a puff of feathers and comes out of another next to the cat.
 func _start_blink() -> void:
-	state = "blink"
-	_act_t = 0.0
-	_act_done = false
-	_cd5 = float(info.get("blink_every", 9.0))
-	Fx.smoke(main, global_position)
-	Fx.kill(main, global_position + Vector3(0, 1.0, 0), Color(0.6, 0.4, 0.85))
-	var a := randf() * TAU
-	var to: Vector3 = main.player.global_position + Vector3(cos(a), 0, sin(a)) * 3.0
-	_blink_to = main.world.constrain(to, radius, true)
-	_body.visible = false
+	_mover.start_blink()
 
 
 func _do_blink(delta: float) -> void:
-	_act_t += delta
-	if not _act_done and _act_t >= 0.45:
-		_act_done = true
-		global_position = _blink_to
-		_last_pos = global_position
-		_body.visible = true
-		Fx.smoke(main, global_position)
-		Fx.shockwave(main, global_position, 1.6, Color(0.8, 0.45, 1.0))
-		Fx.boing(_body, 0.3)
-		var to: Vector3 = main.player.global_position - global_position
-		to.y = 0.0
-		if to.length() > 0.01:
-			rotation.y = atan2(to.x, to.z)
-	if _act_t >= 0.8:
-		state = "walk"
-		_think_t = 0.0
+	_mover.do_blink(delta)
 
 
 func _stride(delta: float) -> void:
-	# rigged walkers lean into their stride and kick up a little dust as they go
-	var moved := global_position - _last_pos
-	moved.y = 0.0
-	_last_pos = global_position
-	var v := moved.length() / maxf(delta, 0.0001)
-	var lean := clampf(v * 0.045, 0.0, 0.2) if state in ["walk", "chase", "flee", "charge", "dash"] else 0.0
-	model.rotation.x = lerpf(model.rotation.x, lean, 1.0 - exp(-8.0 * delta))
-	_step_d += moved.length()
-	var step_len := maxf(0.45, radius * 1.6)
-	if _step_d > step_len:
-		_step_d = 0.0
-		if v > 0.4 and not flyer and global_position.distance_to(main.player.global_position) < 11.0:
-			Fx.dust(main, global_position, 2 if id == "thornling" else 3, 0.5 + radius)
+	_mover.stride(delta)
 
 
 func _do_flee(delta: float, spd: float) -> void:
-	if _in_area():
-		state = "walk"                              # nowhere to flee below ground
-		return
-	var out: Vector3 = main.world.spawn_point(patch, 0.0)
-	var to := out - global_position
-	to.y = 0.0
-	if to.length() < 1.0:
-		main.fight.on_escaped(self)
-		queue_free()
-		return
-	var dir := to.normalized()
-	position += dir * spd * 1.15 * delta
-	_face(dir, delta, 10.0)
-	_play("Run")
-	position = main.world.constrain(position, radius, true)
+	_mover.do_flee(delta, spd)
 
 
 # ---------------------------------------------------------------- Phase F: the Golden Grub and the Gloom Totem
@@ -2004,64 +1217,12 @@ func _grub_setup() -> void:
 ## into the firelight, veers away from a cat within _shy_r m (not a hidden one), and once life_t runs out it makes for
 ## the nearest woods. In the woods it is gone (_grub_away).
 func _do_grub(delta: float, spd: float) -> void:
-	state = "chase"
-	life_t -= delta
-	var w = main.world
-	var me := Vector3(global_position.x, 0, global_position.z)
-	var r := me.length()
-	if r < w.WOODS_R - 0.5:
-		_run_in = true
-	if r > w.WOODS_R + 0.8 and (_run_in or life_t <= 0.0):
-		_grub_away()
-		return
-	var a := atan2(me.x, -me.z)
-	var goal: Vector3
-	if life_t <= 0.0:
-		goal = me / maxf(r, 0.01) * (w.WOODS_R + 2.0)                 # time is up: into the nearest woods
-	else:
-		var left := fposmod((_run_a - a) * _run_dir, TAU)             # how far round it still has to go
-		if _run_in and (left < 0.4 or left > TAU - 0.3):
-			_run_out = true
-		if _run_out:
-			goal = Vector3(sin(_run_a), 0, -cos(_run_a)) * (w.WOODS_R + 2.0)
-		else:
-			var ca := a + _run_dir * 0.55                            # a point a little further round the run
-			goal = Vector3(sin(ca), 0, -cos(ca)) * _run_r
-	var dir := goal - me
-	dir /= maxf(dir.length(), 0.01)
-	var p = main.player
-	if p.hp > 0 and not main.cat_hidden():
-		var off: Vector3 = me - Vector3(p.global_position.x, 0, p.global_position.z)
-		var dc := off.length()
-		if dc < _shy_r and dc > 0.01:
-			var side := Vector3(-off.z, 0, off.x) / dc                # round the cat, the side it was going anyway
-			if side.dot(dir) < 0.0:
-				side = -side
-			dir = (dir + (off / dc + side) * (2.0 * (1.0 - dc / _shy_r) + 0.5)).normalized()
-	position += dir * spd * delta
-	_face(dir, delta, 10.0)
-	_play("Run" if anim and anim.has_animation("Run") else "Walk")
-	# never into the firelight; round buildings and the lake (it slips under barricades)
-	var keep: float = float(w.camp_r) + radius + 0.3
-	var q := Vector2(position.x, position.z)
-	if q.length() < keep:
-		q = q / maxf(q.length(), 0.01) * keep
-		position.x = q.x
-		position.z = q.y
-	if q.length() < w.MOVE_R - 0.4:
-		position = w.constrain(position, radius, false)
+	_mover.do_grub(delta, spd)
 
 
 ## The Golden Grub reached the woods: gone, quietly (no pay, nothing counted).
 func _grub_away() -> void:
-	dead = true
-	remove_from_group("enemies")
-	remove_from_group("foes")
-	remove_from_group("bonus")
-	main.hud.toast("The Golden Grub got away!")
-	var tw := create_tween()
-	tw.tween_property(self, "scale", Vector3.ONE * 0.02, 0.25)
-	tw.tween_callback(queue_free)
+	_mover.grub_away()
 
 
 ## A Gloom Totem: it never moves or attacks. It grows with a puff of Gloom.
@@ -2123,43 +1284,19 @@ func _totem_look() -> void:
 ## The Gloom Totem stands where it grew (the crowd's pushing never moves it) and breathes slowly. A few times a second it
 ## strengthens every other foe within its reach for a moment (totem_t): faster and tougher. Not bonus runners.
 func _do_totem(delta: float) -> void:
-	global_position = _home
-	if _pulse != null:
-		_pulse.scale = Vector3.ONE * (1.0 + 0.05 * sin(_t * 2.4))
-	_scan_t -= delta
-	if _scan_t > 0.0:
-		return
-	_scan_t = 0.3
-	var cfg := _mcfg("totem")
-	var r := float(cfg.get("radius", 4.0))
-	var sb := float(cfg.get("speed_buff", 0.25))
-	var ar := clampf(float(cfg.get("armor", 0.25)), 0.0, 0.9)
-	for f in get_tree().get_nodes_in_group("foes"):
-		if f == self or f.dead or f.is_in_group("totems") or f.is_in_group("bonus"):
-			continue
-		var d: Vector3 = f.global_position - _home
-		if d.x * d.x + d.z * d.z < r * r:
-			f.totem_t = 0.5
-			f.totem_buff = sb
-			f.totem_armor = ar
+	_status.do_totem(delta)
 
 
 ## A Gloom Totem broken: a burst of Gloom, and the foes round it lose its strength at once (another totem near them
 ## gives its own back at its next look).
 func _totem_burst() -> void:
-	var at := Vector3(global_position.x, 0, global_position.z)
-	Fx.shockwave(main, at, 2.6, Color(0.75, 0.4, 1.0))
-	Fx.text(main, at + Vector3(0, float(info["height"]) + 0.4, 0), "Shattered!", Color(0.85, 0.6, 1.0))
-	main.shake(0.2)
-	var r := float(_mcfg("totem").get("radius", 4.0)) + 0.5
-	for f in get_tree().get_nodes_in_group("foes"):
-		if not f.dead and Vector2(f.global_position.x - at.x, f.global_position.z - at.z).length() < r:
-			f.totem_t = 0.0
+	_status.totem_burst()
 
 
 # ---------------------------------------------------------------- getting hit
 func hit(direction: Vector3, amount := 10.0) -> void:
 	last_dealt = 0.0
+	last_raw = 0.0
 	if dead or state == "blink" or ((state == "dig" or state == "emerge") and not _body.visible):
 		return
 	if has_meta("squad_leader") and main.player != null:
@@ -2167,35 +1304,16 @@ func hit(direction: Vector3, amount := 10.0) -> void:
 		var pc: Vector3 = main.player.global_position
 		if Vector2(pc.x - global_position.x, pc.z - global_position.z).length() < float(_squad_rules().get("hit_break_r", 4.0)):
 			leave_squad()
-	if info.has("shield_block") and amount > 0.0 and not (state in ["attack", "pounce", "daze"]):
-		var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
-		var incoming := -direction
-		incoming.y = 0.0
-		if incoming.length() > 0.01 and fwd.dot(incoming.normalized()) > cos(deg_to_rad(float(info.get("shield_cone_deg", 65.0)))):
-			amount *= 1.0 - float(info["shield_block"])
-			Fx.hit(main, global_position + fwd * (radius + 0.1) + Vector3(0, aim_height, 0), Color(0.75, 0.9, 1.0))
-			if _block_t <= 0.0:
-				_block_t = 0.7
-				Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.35, 0), "Block!", Color(0.65, 0.9, 1.0))
-	if _vuln_t > 0.0:
-		amount *= _vuln_k                               # dazed by a pillar or a missed charge: the weak spot
-	if bellow_t > 0.0:
-		amount *= 1.0 + bellow_k                        # G4: shaken by a mount's Bellow
-	if totem_t > 0.0:
-		amount *= 1.0 - totem_armor                     # a Gloom Totem nearby (Phase F)
-	if not awake:
-		wake()
-	hp -= amount
-	last_dealt = maxf(amount, 0.0)
-	if amount > 0.0:
-		Events.damage_dealt.emit(self, amount)
-	if not enraged and mods.has("enrage_at") and hp > 0.0 and hp <= max_hp * float(mods["enrage_at"]):
-		_enrage()
+	var dealt := _apply_damage(direction, amount, "hit")
+	last_dealt = dealt
+	if dealt > 0.0:
+		Events.damage_dealt.emit(self, dealt)
+	_brain.check_enrage()
 	_hit_flash = 0.12
 	Sfx.play("hit", -9.0, 0.05)
 	Fx.hit(main, global_position + Vector3(0, aim_height, 0), _color)
-	if amount > 0.0:
-		Fx.number(main, global_position + Vector3(0, aim_height * 2.0 + 0.3, 0), amount, Color(1, 1, 1) if amount < max_hp * 0.5 else Color(1, 0.85, 0.3))
+	if dealt > 0.0:
+		Fx.number(main, global_position + Vector3(0, aim_height * 2.0 + 0.3, 0), dealt, Color(1, 1, 1) if dealt < max_hp * 0.5 else Color(1, 0.85, 0.3))
 	if id == "raccoon" and carried > 0 and _boost_t <= 0.0 and hp > 0.0:
 		Fx.smoke(main, global_position)
 		_boost_t = 1.2
@@ -2208,12 +1326,59 @@ func hit(direction: Vector3, amount := 10.0) -> void:
 		pass
 	elif anim == null:
 		Fx.boing(_body, 0.15)
-	elif not boss and (state == "walk" or state == "chase") and anim.has_animation("Hit") and amount >= max_hp * 0.3:
+	elif not boss and (state == "walk" or state == "chase") and anim.has_animation("Hit") and dealt >= max_hp * 0.3:
 		_play("Hit", 0.05)
 		state = "daze"
 		_act_t = 0.55
 	if hp <= 0.0:
 		_die()
+
+
+## H6: the one place damage is worked out. `source` is "hit" (an arrow, a blow, a bolt, a blast), "burn" (an Ember tick) or
+## "spikes" (a thorn patch's tick). In order: a hit meets the beetle's shield, then the daze's weak spot; a hit or a burn
+## meets a mount's Bellow; a hit meets a Gloom Totem's shrug; the amount before armour is kept (last_raw, hits only);
+## armour takes its share; a hit wakes a sleeper; then the Health part subtracts. Returns what was taken. It starts no
+## effect of its own: the callers keep their own flash, sound, number, event, enrage and death.
+func _apply_damage(direction: Vector3, amount: float, source: String) -> float:
+	if source == "hit":
+		if info.has("shield_block") and amount > 0.0 and not (state in ["attack", "pounce", "daze"]):
+			var fwd := Vector3(sin(rotation.y), 0, cos(rotation.y))
+			var incoming := -direction
+			incoming.y = 0.0
+			if incoming.length() > 0.01 and fwd.dot(incoming.normalized()) > cos(deg_to_rad(float(info.get("shield_cone_deg", 65.0)))):
+				amount *= 1.0 - float(info["shield_block"])
+				Fx.hit(main, global_position + fwd * (radius + 0.1) + Vector3(0, aim_height, 0), Color(0.75, 0.9, 1.0))
+				if _block_t <= 0.0:
+					_block_t = 0.7
+					Fx.text(main, global_position + Vector3(0, float(info["height"]) + 0.35, 0), "Block!", Color(0.65, 0.9, 1.0))
+		if _vuln_t > 0.0:
+			amount *= _vuln_k                               # dazed by a pillar or a missed charge: the weak spot
+	if source != "spikes" and bellow_t > 0.0:
+		amount *= 1.0 + bellow_k                            # G4: shaken by a mount's Bellow
+	if source == "hit" and totem_t > 0.0:
+		amount *= 1.0 - totem_armor                         # a Gloom Totem nearby (Phase F)
+	var raw := maxf(amount, 0.0)
+	if source == "hit":
+		last_raw = raw
+	amount = _armour.reduce(raw)
+	if source == "hit" and not awake:
+		wake()
+	return _health.apply_damage(amount)
+
+
+## A thorn patch's tick of damage (defences.gd): quiet, no flash, sound or number. A lethal tick ends in the same zero hit as
+## before, so the kill still wakes it, flashes it and pays once.
+func hurt_spikes(amount: float) -> void:
+	if dead:
+		return
+	_apply_damage(Vector3.ZERO, amount, "spikes")
+	if hp <= 0.0:
+		hit(Vector3.ZERO, 0.0)
+
+
+## A heal that is not a hit (the Frog Shaman's): `amount` is scaled by the armour factor, never past max health.
+func heal_raw(amount: float) -> void:
+	_health.heal(amount * _armour.factor())
 
 
 # ---------------------------------------------------------------- G3: Ember fire
@@ -2233,45 +1398,27 @@ func ignite(seconds: float, per_s: float) -> void:
 ## The burn's frame time (clamped, and not called while the game is frozen): one tick of burn_per_s each whole second;
 ## when it runs out, the part of a second left over hurts its share, so a full burn deals seconds x per_s.
 func _burn_tick(dt: float) -> void:
-	var step := minf(dt, burn_t)
-	burn_t -= step
-	_burn_acc += step
-	while _burn_acc >= 1.0 and not dead:
-		_burn_acc -= 1.0
-		_burn_hurt(burn_per_s)
-	if burn_t <= 0.0:
-		burn_t = 0.0
-		if _burn_acc > 0.001 and not dead:
-			_burn_hurt(burn_per_s * _burn_acc)
-		_burn_acc = 0.0
-		_burn_look(false)
+	_status.burn_tick(dt)
 
 
 func _burn_hurt(amount: float) -> void:
 	if dead or amount <= 0.0:
 		return
-	if bellow_t > 0.0:
-		amount *= 1.0 + bellow_k                        # G4: shaken by a mount's Bellow
-	hp -= amount
+	amount = _apply_damage(Vector3.ZERO, amount, "burn")    # Bellow, armour, then the Health part
 	burn_dealt += amount
 	burn_ticks += 1
 	Events.damage_dealt.emit(self, amount)
 	_hit_flash = maxf(_hit_flash, 0.06)
 	if amount >= 0.5:
 		Fx.number(main, global_position + Vector3(0, aim_height * 2.0 + 0.3, 0), amount, Color(1.0, 0.6, 0.25))
-	if not enraged and mods.has("enrage_at") and hp > 0.0 and hp <= max_hp * float(mods["enrage_at"]):
-		_enrage()
+	_brain.check_enrage()
 	if hp <= 0.0:
 		_die()
 
 
 ## The flames on a burning enemy (Fx.embers, a few rising sparks, scaled by the graphics level).
 func _burn_look(on: bool) -> void:
-	if on and (_burn_fx == null or not is_instance_valid(_burn_fx)):
-		_burn_fx = Fx.flames(self, radius * 0.55, 10, 0.55, clampf(radius * 1.8, 0.3, 0.85))
-		_burn_fx.position = Vector3(0, aim_height, 0)
-	if _burn_fx != null and is_instance_valid(_burn_fx):
-		_burn_fx.emitting = on
+	_status.burn_look(on)
 
 
 # ---------------------------------------------------------------- 22 Nov 2026: the Frost Bow's ice
@@ -2307,68 +1454,46 @@ func is_boss() -> bool:
 
 ## The ice's frame time (clamped by the caller): the freeze runs out, then the chill; the count is lost with the chill.
 func _frost_tick(dt: float) -> void:
-	freeze_t = maxf(0.0, freeze_t - dt)
-	chill_t = maxf(0.0, chill_t - dt)
-	if chill_t <= 0.0:
-		chill_hits = 0
-	_frost_look()
+	_status.frost_tick(dt)
 
 
 ## A frame frozen solid: no step, no push, no clip; a pale icy sheen (and a hit's flash on top).
 func _frozen_frame(delta: float) -> void:
-	_knock = Vector3.ZERO
-	_hit_flash = maxf(0.0, _hit_flash - delta)
-	Props.set_param(_body, "flash", clampf(Fx.FROZEN_FLASH + _hit_flash * 8.0, 0.0, 1.0))
-	if anim:
-		anim.speed_scale = 0.0
+	_status.frozen_frame(delta)
 
 
 ## Its own tint without the ice's (a stand-in model's balance.json tint, a Gloom Totem's violet).
 func _base_tint() -> Color:
-	if info.has("tint"):
-		return Color.html(String(info["tint"]))
-	if _ai == "totem" and not ResourceLoader.exists("res://assets/enemies/%s/%s.glb" % [_model_id, _model_id]):
-		return Color(0.88, 0.72, 1.0)
-	return Color(1, 1, 1)
+	return _status.base_tint()
 
 
 ## The ice's look, changed only when it changes: chilled (a frosty blue tint and snow sparkles), frozen (paler and icy,
 ## an ice shell popping on), neither (its own colours; a thawing enemy's shell shatters).
 func _frost_look() -> void:
-	var want := 2 if freeze_t > 0.0 else (1 if chill_t > 0.0 else 0)
-	if want == _frost_on or _body == null:
-		return
-	var was := _frost_on
-	_frost_on = want
-	var tint := _base_tint()
-	Props.set_param(_body, "tint", tint * (Fx.FROZEN_TINT if want == 2 else (Fx.CHILL_TINT if want == 1 else Color(1, 1, 1))))
-	if want > 0 and (_frost_fx == null or not is_instance_valid(_frost_fx)):
-		_frost_fx = Fx.frost_motes(self, radius * 0.7, 6)
-		_frost_fx.position = Vector3(0, aim_height, 0)
-	if _frost_fx != null and is_instance_valid(_frost_fx):
-		_frost_fx.emitting = want > 0
-	if want == 2:
-		if _ice == null or not is_instance_valid(_ice):
-			_ice = Fx.ice_shell(self, radius, float(info.get("height", 0.6)))
-			_ice.position.y = fly_h if flyer else 0.0
-		Fx.hit_burst(main, global_position + Vector3(0, aim_height, 0), Vector3.FORWARD, {"hit": "ice", "hit_n": 10,
-			"hit_colors": ["#FFFFFF", "#BFEAFF", "#7CC8F0"]})
-		if anim:
-			anim.speed_scale = 0.0
-	elif was == 2:
-		if _ice != null and is_instance_valid(_ice):
-			_ice.queue_free()
-		_ice = null
-		Fx.shatter(main, global_position + Vector3(0, aim_height, 0), radius)
-	Props.set_param(_body, "flash", [0.0, Fx.CHILL_FLASH, Fx.FROZEN_FLASH][want])   # (its frames keep it up, a hit's flash on top)
+	_status.frost_look()
 
 
 ## Gone: the ice comes off at once (a frozen one shatters).
 func _frost_clear() -> void:
-	chill_t = 0.0
-	freeze_t = 0.0
-	chill_hits = 0
-	_frost_look()
+	_status.frost_clear()
+
+
+## The enemy grid forgets this enemy (it died, or it leaves the scene).
+func _grid_remove() -> void:
+	var grid = _the_grid()
+	if grid != null:
+		grid.remove(self)
+
+
+## main.enemy_grid (core/enemy_grid.gd), looked up once and kept; null when main has none (a bare test scene).
+func _the_grid() -> EnemyGridScript:
+	if _grid == null or not is_instance_valid(_grid):
+		_grid = main.get("enemy_grid") as EnemyGridScript if main != null and is_instance_valid(main) else null
+	return _grid
+
+
+func _exit_tree() -> void:
+	_grid_remove()
 
 
 func _die() -> void:
@@ -2381,17 +1506,10 @@ func _die() -> void:
 	remove_from_group("foes")
 	remove_from_group("bonus")
 	remove_from_group("totems")
+	_grid_remove()
+	_brain.enter_down()
 	main.fight.on_enemy_died(self)
-	if _in_area():
-		main.area.on_enemy_died(self)               # in a Burrow: the run pays (leaves, amber, dew) and counts the fight
-	else:
-		var value := Data.saddlebag_leaves(int(info["leaves"]))
-		if main.fight.active:
-			value = roundi(value * float(Data.b["mission"]["enemy_leaf_mult"]))
-			## Apply the bonus to fresh leaves after the existing camp drop is worked out.
-			value = roundi(value * float(Data.b["kill_leaf_bonus"]))
-		value += carried                           # returned stolen leaves are never multiplied
-		main.drop_leaves(global_position, value)
+	_health.died.emit()                             # the Loot part pays: a Burrow's run, or the leaves in the camp (enemy_loot.gd)
 	if first:
 		Events.enemy_died.emit(id, global_position)
 	Sfx.play("pop", -6.0)

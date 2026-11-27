@@ -6,28 +6,39 @@ extends Node3D
 ##              Each piece has its own health and is hit on its own: whole, cracked below crack_at (darker, leaning),
 ##              broken at 0 (it falls flat by a little rubble pile, and enemies walk through the gap it leaves). Tap a
 ##              row to repair it: repair_share of the row's cost for each broken piece, half that for each cracked one.
-##   tower      an acorn tower, bought in the shop and placed with the build button anywhere you like; how many you can
-##              have is set by the home level. Enemies go for towers right after barricades. Knocked down, it tips over
-##              and shows a repair marker: the leaves "Mend the defences" would ask for that tower stand it up again
-##              (mend_price, since 21 Nov 2026).
+##   tower      an acorn tower, bought in the shop into the Bag (H3) and placed from the Bag (its Place button, or the
+##              row-2 defence button) anywhere the ghost is green; how many you can have is set by the home level.
+##              Enemies go for towers right after barricades. Knocked down, it tips over and shows a repair marker: the
+##              leaves "Mend the defences" would ask for that tower stand it up again (mend_price, since 21 Nov 2026).
 ##   spikes     a thorn trap, bought and placed the same way, that hurts and slows whatever walks over it.
+## H3 (26 Nov 2026): the counts of towers and spikes not placed yet go through the Bag (core/bag.gd; they stay in
+## Save.items). A placed piece drops in with a bounce and a puff of dust.
 ## Broken in a mission, barricades and towers are mended for free when the mission is won; when the camp falls, or
 ## after a Gloom Raid, the damage is kept ("wrecked") until mended (a row's or a tower's card, the shop, the Watch's
 ## "Mend all"). The Wishing Well mends what is not broken (well_mend). The markers show in the camp (not below ground);
-## in a wave only the built rows' markers stay (a row's repair works at any time, 22 Nov 2026). Every piece of a kind shares one level, upgraded on the Hearthtree's card and capped by its
-## level. Old saves: fences are refunded as leaves; placed barricades become rows at their road spots, and barricade
-## pieces left in the bag are refunded as leaves (each its old price, barricade.piece).
+## in a wave only the built rows' markers stay (a row's repair works at any time, 22 Nov 2026).
+## H6 Stage 2 (27 Nov 2026): every tower, patch and row has its OWN level (defence_levels.gd), upgraded one at a time from
+## its card at the Defence Workshop's cap; every tower and patch has a marker (tapping the piece opens its card).
+## H6 Stage 1 (27 Nov 2026): this file is the FACADE. The game plays as in H5, but the work is split by job:
+##   scripts/defence_placement.gd  the ghost, Place, Undo and the Bag/Save transaction (B0); start_placing,
+##                                  stop_placing, place_here, placing, ghost, ghost_ok, _ghost_pos, _valid forward to it
+##   scripts/defence_persistence.gd old-save clean-up, wrecks into Save.placed, relink after a reload (B1; static)
+##   scripts/defence_markers.gd     the road-spot and tower markers and their cards (_spots, _card_spot ... forward)
+## What stays here: the pieces and rows, levels, repair and Well mending, what enemies ask, and the towers' and spikes'
+## work. Towers find foes through main.enemy_grid; spikes hurt through enemy.hurt_spikes (one damage path).
+## Ids only grow (_next is never reset), so an old receipt can never match a new piece.
 
 const TowerScript := preload("res://scripts/tower.gd")
 const RowScript := preload("res://scripts/barricade_row.gd")
-const MarkerScript := preload("res://scripts/marker.gd")
-const AHEAD := 1.6
+const MarkersScript := preload("res://scripts/defence_markers.gd")
+const PlacementScript := preload("res://scripts/defence_placement.gd")
+const LevelsScript := preload("res://scripts/defence_levels.gd")
+const DefencePersistence := preload("res://scripts/defence_persistence.gd")
+const UndoPlaceDefence := preload("res://commands/undo_place_defence.gd")
+const AHEAD := 1.6                  # how far in front of the cat the ghost stands (defence_placement.gd reads it here)
 const TYPES := ["barricade", "tower", "spikes"]
 const PIECE_R := 0.3                # a barricade piece's collision half-thickness (it stops enemies only)
-const MARK_SIDE := 1.15             # a road spot's marker stands this far from its row: where the cat stands to use it
-const TOWER_MARK := 1.05            # a downed tower's marker: this far in front of it (on the camera's side)
-const MARK_COL := Color(1.0, 0.82, 0.3)
-const FIX_COL := Color(1.0, 0.55, 0.35)
+const SPIKE_R := 0.8                # a thorn patch hurts and slows what is this close to it (m)
 const WOOD := Color(0.55, 0.38, 0.22)
 
 var main
@@ -37,51 +48,74 @@ var pieces: Array = []          # {"id", "type", "pos", "rot", "node", "hp", "ma
                                 # (whole, cracked, broken) and "a", "b" (the ends of its collision)
 var rows: Array = []            # {"slot": [road, spot], "root": its barricade_row.gd node, "pieces": [...], "src": its
                                 # Save.placed entry {"type": "barricade", "slot", "row": pieces, "wrecks": [...]}}
-var placing := ""               # the kind being placed ("tower" or "spikes"), "" when not placing
-var ghost: Node3D
-var ghost_ok := false
-var _ghost_pos := Vector3.ZERO
-var _ghost_rot := 0.0
-var _next := 0
+var _next := 0                  # the next piece id: only grows, never reset (a cleared camp keeps counting)
 var _by_id := {}                # piece id -> piece
-var _spots := {}                # "road:spot" -> its marker
-var _tower_marks := {}          # tower piece id -> its repair marker (shown while it is down)
-var _marks := -1                # what the markers last showed for (_marks_state)
 var _crack := 0.5               # barricade.crack_at
 var _half := 0.5                # half a barricade piece's length
 var _dirty := false             # the Well mended a wrecked piece: its Save.placed entry is written soon (not saved)
 var _sync_t := 0.0
+var _markers: MarkersScript                  # defence_markers.gd: the road-spot and tower markers and the cards
+var _placement: PlacementScript                # defence_placement.gd (B0): the ghost and the Place/Undo transaction
+var _levels: LevelsScript                      # defence_levels.gd (B2): levels, quotes, upgrades, caps, repair and pad words
+var _win_piece := Callable()    # H6: the windows' card builders (use_window_builders): looked up when a marker is tapped
+var _win_row := Callable()
+var _win_pad := Callable()
+
+# What the placement helper holds, read through here (the tests and the HUD read these names on defences).
+var placing: String:
+	get:
+		return String(_placement.placing) if _placement != null else ""
+	set(v):
+		if _placement != null:
+			_placement.placing = v
+var ghost: Node3D:
+	get:
+		return _placement.ghost if _placement != null else null
+var ghost_ok: bool:
+	get:
+		return bool(_placement.ghost_ok) if _placement != null else false
+var _ghost_pos: Vector3:
+	get:
+		return _placement.ghost_pos if _placement != null else Vector3.ZERO
+
+# What the markers helper holds (the autotests read these names on defences).
+var _spots: Dictionary:
+	get:
+		return _markers.spots
+var _tower_marks: Dictionary:
+	get:
+		return _markers.tower_marks
 
 
 func build(m) -> void:
 	main = m
-	_make_spot_marks()
+	_levels = LevelsScript.new()
+	_levels.setup(self)
+	_markers = MarkersScript.new()
+	_markers.setup(self)
+	_placement = PlacementScript.new(self)
+	_markers.make_spot_marks()
 	load_saved()
 	if not Save.changed.is_connected(_update_pulses):
 		Save.changed.connect(_update_pulses)
 
 
 ## Builds every placed defence from the save (at the start; the tests call it again after changing the save). Old saves
-## are brought up to date first: fences refunded, barricade pieces turned into rows, the bag's barricades refunded.
+## are brought up to date first (DefencePersistence: fences refunded, barricade pieces turned into rows, the bag's
+## barricades refunded). The order is the H5 order: config, clear (it stops placing), clean-up, move blocked, spawn.
 func load_saved() -> void:
 	_read_cfg()
 	_clear()
-	_refund_fences()
-	var changed := _rows_from_old()
-	if _absorb_bag(true) > 0 or changed:
+	var norm: Dictionary = DefencePersistence.normalise_saved()
+	for n in norm.get("notes", []):
+		_note(String(n))
+	var changed := bool(norm.get("save", false))
+	if changed:
 		Save.save_game()
 	_move_blocked()
 	for sp in Save.placed:
-		if String(sp.get("type", "")) == "barricade":
-			_spawn_row_saved(sp)
-			continue
-		var p := _spawn_saved(sp)
-		if p.is_empty():
-			continue
-		p["src"] = sp
-		if sp.has("wreck"):
-			_wreck(p, float(sp["wreck"]))
-	_marks = -1
+		spawn_placement(sp)
+	_markers.marks = -1
 	_refresh_marks()
 
 
@@ -102,18 +136,11 @@ func _clear() -> void:
 	for row in rows:
 		if is_instance_valid(row["root"]):
 			(row["root"] as Node3D).queue_free()
-	for id in _tower_marks:
-		var mk = _tower_marks[id]
-		main.unregister_ring(mk)
-		mk.queue_free()
-	_tower_marks = {}
+	_markers.reset()
 	pieces = []
 	rows = []
 	_by_id = {}
-	for s in main.world.barricade_slots():
-		_attach_spot(int(s[2]), int(s[3]))
-	for key in _spots:
-		_spots[key].pulse = false
+	_markers.reset_spots()
 
 
 func _note(msg: String) -> void:
@@ -123,120 +150,54 @@ func _note(msg: String) -> void:
 		main.hud_note = msg if main.hud_note == "" else main.hud_note + "\n" + msg
 
 
-## Fences are gone: any left in an old save are refunded as leaves.
-func _refund_fences() -> void:
-	var piece := int(Data.defence_info("fence")["piece"])
-	var refund := int(Save.items.get("fence", 0)) * piece
-	Save.items.erase("fence")
-	var keep: Array = []
-	for sp in Save.placed:
-		if String(sp.get("type", "")) == "fence":
-			refund += piece
-			continue
-		keep.append(sp)
-	Save.placed = keep
-	if refund > 0:
-		Save.leaves += refund
-		Save.set_flag("fence_refund")
-		Save.save_game()
-		_note("Fences are gone: you got %d leaves back. Block the roads with barricades now." % refund)
-
-
-## Phase G2: a placed barricade piece of an older save becomes a row at its road spot (two at one spot: one row); a
-## wrecked one keeps its wreck in each of the row's pieces. True if the save changed.
-func _rows_from_old() -> bool:
-	var keep: Array = []
-	var seen := {}
-	var changed := false
-	var turned := 0
-	for sp in Save.placed:
-		if String(sp.get("type", "")) != "barricade":
-			keep.append(sp)
-			continue
-		var sl = sp.get("slot", [])
-		if typeof(sl) != TYPE_ARRAY or (sl as Array).size() != 2:
-			keep.append(sp)                          # no road spot: kept as it was (it never showed)
-			continue
-		var key := _key(int(sl[0]), int(sl[1]))
-		if seen.has(key):
-			changed = true                           # a second piece at the same spot: one row
-			continue
-		seen[key] = true
-		if not sp.has("row"):
-			sp["slot"] = [int(sl[0]), int(sl[1])]
-			sp["row"] = pieces_per_row()
-			if sp.has("wreck"):
-				if not sp.has("wrecks"):
-					var f := clampf(float(sp["wreck"]), 0.0, 1.0)
-					var w: Array = []
-					for k in pieces_per_row():
-						w.append(f)
-					sp["wrecks"] = w
-				sp.erase("wreck")
-			turned += 1
-			changed = true
-		keep.append(sp)
-	if changed:
-		Save.placed = keep
-	if turned > 0:
-		_note("Barricades stand in rows of %d now, and each piece breaks on its own. Tap a row on the road to repair it." % pieces_per_row())
-	return changed
-
-
-## Barricade pieces in the bag (an older save, or a gift of pieces): each is refunded at its old price and the bag keeps
-## no barricades, so the build button never offers one. Returns the leaves given back. Saves unless `at_load`.
-func _absorb_bag(at_load := false) -> int:
+## Barricade pieces in the bag (an older save, or a gift of pieces) are refunded as leaves (DefencePersistence does the
+## sum and the words). True if leaves were given. At load the caller saves; later this saves and refreshes the build menu.
+func _absorb_gift(at_load := false) -> bool:
 	if not Save.items.has("barricade"):
-		return 0
-	var n := int(Save.items.get("barricade", 0))
-	Save.items.erase("barricade")
-	if n <= 0:
-		return 0
-	var refund := n * int(Data.defence_info("barricade").get("piece", 30))
-	Save.leaves += refund
-	_note("Barricades are built at the road spots now: %d barricade piece%s became %d leaves." % [n, "s" if n > 1 else "", refund])
-	if not at_load:
-		Save.save_game()
-		if main.hud != null:
-			main.hud.refresh_build()
-	return refund
+		return false
+	var r: Dictionary = DefencePersistence.absorb_bag()
+	var leaves := int(r.get("leaves", 0))
+	if leaves <= 0:
+		return false
+	var msg := String(r.get("note", ""))
+	if msg != "":
+		_note(msg)
+	if not at_load and main.hud != null:
+		main.hud.refresh_build()
+	return true
 
 
 ## Phase C (and E: round a Burrow's hollow; and the camp's buildings round the fire since 18 Nov 2026): towers and
-## spikes on the ground kept for the stone, the garden, the fishing spot or a building and its ring go back to the bag
-## (older saves could place them anywhere off the roads).
+## spikes on the ground kept for the stone, the garden, the fishing spot or a building and its ring go back to the Bag
+## (older saves could place them anywhere off the roads). H3: through Bag.add with force (a piece already paid for
+## always goes back, even into a full Bag). The rule is off_limits(), the one the placing ghost uses too.
 func _move_blocked() -> void:
 	var moved := 0
+	var by_kind := {}
 	var keep2: Array = []
 	for sp in Save.placed:
 		var t := String(sp.get("type", ""))
 		var at := Vector3(float(sp.get("x", 0.0)), 0, float(sp.get("z", 0.0)))
-		if (t == "tower" or t == "spikes") and sp.has("x") and sp.has("z") \
-				and (main.world.in_reserved(at, 0.6) or main.world.in_hollow_clear(at) or main.world.near_hollow(at, _hollow_keep())
-				or main.world.in_village(at, 0.6) or main.world.near_home(at, 0.6) or main.world.lake_dist(at) < 0.6):
-			Save.items[t] = int(Save.items.get(t, 0)) + 1
+		if (t == "tower" or t == "spikes") and sp.has("x") and sp.has("z") and off_limits(at):
+			Bag.return_defence(t, DefencePersistence.carried_record(sp), false)    # forced: keeps its level and wear
+			by_kind[t] = int(by_kind.get(t, 0)) + 1
 			moved += 1
 			continue
 		keep2.append(sp)
 	if moved > 0:
+		for t in by_kind:
+			Bag.defence_changed(String(t), int(by_kind[t]))
 		Save.placed = keep2
 		_note("%d defence piece%s stood where the camp needs room: place %s again" % [moved, "s" if moved > 1 else "", "them" if moved > 1 else "it"])
 		Save.save_game()
 
 
-func _spawn_saved(sp: Dictionary) -> Dictionary:
-	var type := String(sp.get("type", ""))
-	if not (type in ["tower", "spikes"]) or not sp.has("x") or not sp.has("z"):
-		return {}
-	return _spawn(type, Vector3(float(sp["x"]), 0, float(sp["z"])), float(sp.get("rot", 0.0)))
-
-
 ## A saved row: built at its road spot, each piece's kept wreck (Save.placed "wrecks": its share of health, -1 whole).
-func _spawn_row_saved(sp: Dictionary) -> Dictionary:
+func _spawn_row_saved(sp: Dictionary, lv := 0) -> Dictionary:
 	var sl = sp.get("slot", [])
 	if typeof(sl) != TYPE_ARRAY or (sl as Array).size() != 2:
 		return {}
-	var row := _spawn_row(int(sl[0]), int(sl[1]), sp)
+	var row := _spawn_row(int(sl[0]), int(sl[1]), sp, lv if lv > 0 else 1)
 	if row.is_empty():
 		return {}
 	var w = sp.get("wrecks", [])
@@ -246,6 +207,43 @@ func _spawn_row_saved(sp: Dictionary) -> Dictionary:
 			if k < (w as Array).size() and float(w[k]) >= 0.0:
 				_wreck(p, float(w[k]))
 	return row
+
+
+## Builds one placed thing from its Save.placed record: a tower or patch (returns the piece, with p["src"] = record and
+## its kept wreck applied) or a row (returns the row). {} when the record can't be built. It never touches Save.placed
+## or the Bag: whoever calls it (load_saved, the placement helper) owns those. The piece's level is the record's own
+## (clamped to the kind's tiers; a record without one is level 1).
+func spawn_placement(record: Dictionary) -> Dictionary:
+	var type := String(record.get("type", ""))
+	if type == "barricade":
+		return _spawn_row_saved(record, _levels.clamp_level("barricade", int(record.get("level", 1))))
+	if not (type in ["tower", "spikes"]) or not record.has("x") or not record.has("z"):
+		return {}
+	var p := _spawn(type, Vector3(float(record["x"]), 0, float(record["z"])), float(record.get("rot", 0.0)), [],
+		_levels.clamp_level(type, int(record.get("level", 1))))
+	p["src"] = record
+	if record.has("wreck"):
+		_wreck(p, float(record["wreck"]))
+	return p
+
+
+## A tower or patch taken back out of the camp (an undone placement): its node, collision and repair marker go, and so
+## does its place in pieces and _by_id. It never touches Save.placed or the Bag. False if there is no such piece (or it
+## is a barricade piece: rows are not placed this way).
+func remove_placement(id: int) -> bool:
+	var p: Dictionary = _by_id.get(id, {})
+	if p.is_empty() or String(p["type"]) == "barricade":
+		return false
+	if is_instance_valid(p["node"]):
+		(p["node"] as Node3D).queue_free()
+	main.world.remove_tag("piece_%d" % id)
+	_markers.remove_piece_mark(id)
+	for i in pieces.size():
+		if int(pieces[i]["id"]) == id:
+			pieces.remove_at(i)
+			break
+	_by_id.erase(id)
+	return true
 
 
 ## The camp grew and the trails moved a little: rows (and their markers) follow their road spots.
@@ -261,26 +259,15 @@ func rebuild() -> void:
 			p["rot"] = float(s[1])
 			_set_seg(p)
 			_collide(p)
-	for s in main.world.barricade_slots():
-		var mk = _spots.get(_key(int(s[2]), int(s[3])))
-		if mk != null:
-			var at := _spot_pos(s)
-			mk.global_position = Vector3(at.x, 0.03, at.z)
-			_attach_spot(int(s[2]), int(s[3]))
+	_markers.follow_spots()
 
 
-func level(type: String) -> int:
-	return clampi(int(Save.def_levels.get(type, 1)), 1, (Data.defence_info(type)["levels"] as Array).size())
-
-
+## The model of a kind at a level: the tier's own "model" (defence_info levels[].model). A level whose model is not made
+## yet shows the one before it.
 func model(type: String, lv: int) -> String:
-	var name := ""
-	match type:
-		"barricade": name = String(Data.defence_info("barricade")["levels"][lv - 1].get("model", ""))
-		"tower": name = "acorn_tower_%d" % lv
-		"spikes": name = "thorn_spikes_%d" % lv
+	var name := String(Data.defence_level_info(type, lv).get("model", ""))
 	if lv > 1 and (name == "" or not Props.has(name)):
-		return model(type, lv - 1)                  # a level whose model is not made yet shows the one before it
+		return model(type, lv - 1)
 	return name
 
 
@@ -288,8 +275,9 @@ func unlocked(type: String) -> bool:
 	return Data.progress() >= int(Data.defence_info(type).get("unlock_missions", 0))
 
 
+## How many of a kind the camp has: in the Bag (H3: Bag.count) and placed.
 func _count(type: String) -> int:
-	var n := int(Save.items.get(type, 0))
+	var n := Bag.count(type)
 	for p in pieces:
 		if p["type"] == type:
 			n += 1
@@ -317,54 +305,56 @@ func room_note(type: String) -> String:
 	return ""
 
 
-func _max_hp(type: String) -> float:
-	if type == "spikes":
-		return 1.0
-	return float(Data.defence_info(type)["levels"][level(type) - 1].get("hp", 1))
+## A piece's health at a level (lv 0: level 1), with Reinforced barricades' share on a row's sections.
+func _max_hp(type: String, lv := 0) -> float:
+	return _levels.max_hp(type, lv if lv > 0 else 1)
 
 
-## A tower or spikes (placed with the build button). A barricade asked for at a road spot (older tests) is its row's
-## first piece (the row is built if there is none).
-func _spawn(type: String, pos: Vector3, rot: float, slot: Array = []) -> Dictionary:
+## A tower or spikes (placed with the build button) at level `lv` (0: level 1: older tests pass none). A
+## barricade asked for at a road spot (older tests) is its row's first piece (the row is built if there is none).
+func _spawn(type: String, pos: Vector3, rot: float, slot: Array = [], lv := 0) -> Dictionary:
+	var at_level := _levels.clamp_level(type, lv if lv > 0 else 1)
 	if type == "barricade":
 		if slot.size() != 2:
 			return {}
 		var have := row_at(int(slot[0]), int(slot[1]))
-		var row := have if not have.is_empty() else _spawn_row(int(slot[0]), int(slot[1]), null)
+		var row := have if not have.is_empty() else _spawn_row(int(slot[0]), int(slot[1]), null, at_level)
 		return row["pieces"][0] if not row.is_empty() else {}
-	var node := Props.instance(model(type, level(type)))
+	var node := Props.instance(model(type, at_level))
 	node.position = pos
 	node.rotation.y = rot
 	add_child(node)
-	var p := {"id": _next, "type": type, "pos": pos, "rot": rot, "node": node, "hp": 1.0, "max_hp": _max_hp(type), "cd": 0.0,
-		"wrecked": false, "broken": false, "slot": slot, "src": null}
+	var p := {"id": _next, "type": type, "pos": pos, "rot": rot, "node": node, "hp": 1.0, "max_hp": _max_hp(type, at_level), "cd": 0.0,
+		"wrecked": false, "broken": false, "slot": slot, "src": null, "level": at_level}
 	_next += 1
 	p["hp"] = p["max_hp"]
 	pieces.append(p)
 	_by_id[int(p["id"])] = p
 	_collide(p)
 	if type == "tower":
-		_setup_tower(p)
-		_make_tower_mark(p)
+		_setup_tower(p, at_level)
+	_markers.make_piece_mark(p)
 	return p
 
 
-## A row of barricade pieces at a road spot (none there yet). src: its Save.placed entry (null: not saved, tests).
-func _spawn_row(lane: int, idx: int, src) -> Dictionary:
+## A row of barricade pieces at a road spot (none there yet) at level `lv` (0: level 1). src: its
+## Save.placed entry (null: not saved, tests). The row and each of its sections carry the level.
+func _spawn_row(lane: int, idx: int, src, lv := 0) -> Dictionary:
 	var s: Array = main.world.barricade_slot(lane, idx)
 	if s.is_empty() or not row_at(lane, idx).is_empty():
 		return {}
+	var at_level := _levels.clamp_level("barricade", lv if lv > 0 else 1)
 	var n := pieces_per_row()
 	var root = RowScript.new()
 	add_child(root)
 	root.setup(lane, idx, s[0], float(s[1]), n, float(Data.defence_info("barricade").get("length", 3.0)))
-	var row := {"slot": [lane, idx], "root": root, "pieces": [], "src": src}
-	var mx := _max_hp("barricade")
-	var nm := model("barricade", level("barricade"))
+	var row := {"slot": [lane, idx], "root": root, "pieces": [], "src": src, "level": at_level}
+	var mx := _max_hp("barricade", at_level)
+	var nm := model("barricade", at_level)
 	for k in n:
 		var p := {"id": _next, "type": "barricade", "pos": root.piece_pos(k), "rot": float(s[1]), "node": root.set_model(k, nm),
 			"hp": mx, "max_hp": mx, "cd": 0.0, "wrecked": false, "broken": false, "slot": [lane, idx], "src": src,
-			"root": root, "k": k, "look": "whole", "a": Vector3.ZERO, "b": Vector3.ZERO}
+			"root": root, "k": k, "look": "whole", "a": Vector3.ZERO, "b": Vector3.ZERO, "level": at_level}
 		_next += 1
 		_set_seg(p)
 		pieces.append(p)
@@ -372,7 +362,7 @@ func _spawn_row(lane: int, idx: int, src) -> Dictionary:
 		(row["pieces"] as Array).append(p)
 		_collide(p)
 	rows.append(row)
-	_attach_spot(lane, idx)
+	_markers.attach_spot(lane, idx)
 	return row
 
 
@@ -401,35 +391,32 @@ func _set_seg(p: Dictionary) -> void:
 	p["b"] = (p["pos"] as Vector3) + along * b
 
 
-## A new level for every piece of a kind (bought on the Hearthtree's card): new models and health. Damage kept after a
-## raid or a camp fall keeps its share; the rest is whole.
-func relevel(type: String) -> void:
-	for p in pieces:
-		if p["type"] != type:
-			continue
-		var share := clampf(float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0)
-		p["max_hp"] = _max_hp(type)
-		if p["wrecked"]:
-			p["hp"] = float(p["max_hp"]) * share
-			p["broken"] = float(p["hp"]) <= 0.0
-		else:
-			p["hp"] = p["max_hp"]
-			p["broken"] = false
-		if type == "barricade":
-			p["node"] = p["root"].set_model(int(p["k"]), model(type, level(type)))
-		else:
-			(p["node"] as Node3D).queue_free()
-			var node := Props.instance(model(type, level(type)))
-			node.position = p["pos"]
-			node.rotation.y = p["rot"]
-			add_child(node)
-			p["node"] = node
-			if type == "tower":
-				_setup_tower(p)
-		_show(p)
-		_collide(p)
-		Fx.boing(p["node"], 0.3)
-	_refresh_marks()
+## A piece wears the model of a level: a barricade section gets it from its row, a tower or patch frees its node and
+## makes a new one (a tower's crossbow set up again at that level).
+func _swap_model(p: Dictionary, lv: int) -> void:
+	var type := String(p["type"])
+	if type == "barricade":
+		p["node"] = p["root"].set_model(int(p["k"]), model(type, lv))
+		return
+	if is_instance_valid(p["node"]):
+		(p["node"] as Node3D).queue_free()
+	var node := Props.instance(model(type, lv))
+	node.position = p["pos"]
+	node.rotation.y = p["rot"]
+	add_child(node)
+	p["node"] = node
+	if type == "tower":
+		_setup_tower(p, lv)
+
+
+## Writes a level on a row or a piece (and its Save.placed record); _restat then makes the piece match it.
+func _apply_level(target: Dictionary, lv: int) -> void:
+	_levels.apply_level(target, lv)
+
+
+## One piece at its level: full health, standing, its model, looks, collision and marker.
+func _restat(p: Dictionary) -> void:
+	_levels.restat(p)
 
 
 ## How a piece looks: a barricade piece whole, cracked or broken (barricade_row.gd; `anim`: it falls over); a downed
@@ -459,7 +446,7 @@ func piece_stage(p: Dictionary) -> String:
 func _stage_of(hp: float, mx: float) -> String:
 	if hp <= 0.0:
 		return "broken"
-	return "cracked" if hp < mx * _crack else "whole"
+	return "cracked" if hp < mx * _levels.crack_at(_crack) else "whole"
 
 
 ## A won mission: everything broken in the fight is mended (damage kept after a Gloom Raid or a camp fall is not: see
@@ -502,71 +489,16 @@ func _save_wrecks(quiet := false) -> void:
 	Save.save_game(quiet)
 
 
-## The wrecks into the Save.placed entries (not saved yet): a row's "wrecks" holds each piece's share of health (-1:
-## not wrecked; its "wreck" the weakest one's, for older readers: loading uses "wrecks"), a tower's "wreck" its own.
+## The wrecks into the Save.placed entries (not saved yet): DefencePersistence does it (a row's "wrecks" holds each
+## piece's share of health, -1 not wrecked; a tower's "wreck" its own).
 func _write_wrecks() -> void:
-	for row in rows:
-		var sp = _row_src(row)
-		if sp == null:
-			continue
-		var worst := 2.0
-		for p in row["pieces"]:
-			if p["wrecked"]:
-				worst = minf(worst, float(p["hp"]) / maxf(float(p["max_hp"]), 1.0))
-		if worst > 1.5:
-			sp.erase("wrecks")
-			sp.erase("wreck")
-			continue
-		var w: Array = []
-		for p in row["pieces"]:
-			w.append(snappedf(float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0001) if p["wrecked"] else -1.0)
-		sp["wrecks"] = w
-		sp["wreck"] = worst
-	for p in pieces:
-		if p["type"] == "barricade":
-			continue
-		var sp2 = p.get("src")
-		if sp2 == null:
-			continue
-		if p["wrecked"]:
-			sp2["wreck"] = float(p["hp"]) / float(p["max_hp"])
-		else:
-			sp2.erase("wreck")
-
-
-## A row's Save.placed entry (an older test sets it on the row's first piece).
-func _row_src(row: Dictionary):
-	if row["src"] == null:
-		for p in row["pieces"]:
-			if p.get("src") != null:
-				row["src"] = p["src"]
-				break
-	return row["src"]
+	DefencePersistence.write_wrecks(pieces, rows)
 
 
 ## Points every row and piece at its Save.placed entry again (after the save was read back in while the camp stands:
 ## tests).
 func relink_saved() -> void:
-	for row in rows:
-		row["src"] = null
-		for sp in Save.placed:
-			if String(sp.get("type", "")) != "barricade":
-				continue
-			var sl = sp.get("slot", [])
-			if typeof(sl) == TYPE_ARRAY and (sl as Array).size() == 2 and int(sl[0]) == int(row["slot"][0]) and int(sl[1]) == int(row["slot"][1]):
-				row["src"] = sp
-				break
-		for p in row["pieces"]:
-			p["src"] = row["src"]
-	for p in pieces:
-		if p["type"] == "barricade":
-			continue
-		p["src"] = null
-		for sp in Save.placed:
-			if String(sp.get("type", "")) == String(p["type"]) and sp.has("x") \
-					and absf(float(sp["x"]) - (p["pos"] as Vector3).x) < 0.01 and absf(float(sp["z"]) - (p["pos"] as Vector3).z) < 0.01:
-				p["src"] = sp
-				break
+	DefencePersistence.relink_saved(pieces, rows)
 
 
 ## What it costs to mend every wrecked piece (0 when nothing is).
@@ -612,7 +544,7 @@ func _endgame_mend(p: Dictionary) -> int:
 	var r: Dictionary = Data.gr()["repair"]
 	var t := String(p["type"])
 	var missing := clampf(1.0 - float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0)
-	var c := float(Data.defence_info(t)["piece"]) * (1.0 + float(r["mend_per_level"]) * (level(t) - 1)) * float(r["mend_share"]) * missing
+	var c := float(Data.defence_info(t)["piece"]) * (1.0 + float(r["mend_per_level"]) * (piece_level(p) - 1)) * float(r["mend_share"]) * missing
 	return maxi(1, int(ceil(c - 0.0001)))
 
 
@@ -647,13 +579,13 @@ func lane_guard(ln: int) -> float:
 	if ln < 0 or ln >= w.trails.size():
 		return 0.0
 	var mid: Vector3 = w.trail_point(ln, 0.5 * w.trail_length(ln))
-	var rng := float(Data.defence_info("tower")["levels"][level("tower") - 1]["range"]) + float(cfg["tower_reach_bonus"])
+	var bonus := float(cfg["tower_reach_bonus"])
 	for p in pieces:
 		if float(p["hp"]) <= 0.0:
 			continue
 		if p["type"] == "barricade" and (p["slot"] as Array).size() == 2 and int(p["slot"][0]) == ln:
 			g += float(p["hp"])
-		elif p["type"] == "tower" and (p["pos"] as Vector3).distance_to(mid) <= rng:
+		elif p["type"] == "tower" and (p["pos"] as Vector3).distance_to(mid) <= float(Data.defence_level_info("tower", piece_level(p)).get("range", 5.0)) + bonus:
 			g += float(cfg["tower"])
 	return g
 
@@ -674,6 +606,113 @@ func repair_raid() -> void:
 		Fx.boing(p["node"], 0.25)
 	_save_wrecks()
 	_refresh_marks()
+
+
+# ---------------------------------------------------------------- the level API (H6)
+## Every tower, patch and row has its own level (defence_levels.gd holds the rules). -1 means "no piece" for an id and
+## Vector2i(-1, -1) "no slot": a tower or patch passes (id, Vector2i(-1, -1)), a barricade row passes (-1, Vector2i(lane, pad)).
+
+## The piece with an id ({} when there is none: a piece taken back, or an id that never was).
+func piece_at(id: int) -> Dictionary:
+	return _by_id.get(id, {})
+
+
+func piece_level(p: Dictionary) -> int:
+	return _levels.piece_level(p)
+
+
+func row_level(row: Dictionary) -> int:
+	return _levels.row_level(row)
+
+
+## The best level of a kind among placed pieces and what the Bag holds (at least 1).
+func best_level(kind: String) -> int:
+	return _levels.best_level(kind)
+
+
+## How many of a kind stand in the camp (placed, downed ones too): a row counts once.
+func placed_count(kind: String) -> int:
+	if kind == "barricade":
+		return rows.size()
+	var n := 0
+	for p in pieces:
+		if p["type"] == kind:
+			n += 1
+	return n
+
+
+## The highest level a piece of a kind may be upgraded to now (the Workshop, 3 before the raids, 4 before the Burrows);
+## workshop_level -1: the standing Workshop (none or ruined: 0). Reads the save, so it works before stations.build.
+func piece_cap(kind: String, workshop_level := -1) -> int:
+	return _levels.piece_cap(kind, workshop_level)
+
+
+## A kind's numbers at a level with the specialisations applied: {hp, damage, every, range, dps, slow, price}.
+func level_stats(kind: String, level_at: int) -> Dictionary:
+	return _levels.level_stats(kind, level_at)
+
+
+## The level a row built now would start at (the barricade credit of an old save, else 1).
+func new_row_level() -> int:
+	return _levels.new_row_level()
+
+
+## "" when a row can be built at this pad (money aside), else a word: later, the pad opens later, a wave, below ground.
+func pad_reason(lane: int, pad: int) -> String:
+	return _levels.pad_reason(lane, pad)
+
+
+## What upgrading one placed piece or row would take: {"next_level" (0: none), "price", "reason" ("" = eligible)}.
+func upgrade_quote(kind: String, id: int, slot: Vector2i, expected_level: int) -> Dictionary:
+	return _levels.quote(kind, id, slot, expected_level)
+
+
+## Upgrades one placed piece or row (a stale or missing target, or a reason, spends nothing).
+func upgrade_placed(kind: String, id: int, slot: Vector2i, expected_level: int) -> bool:
+	return _levels.upgrade(kind, id, slot, expected_level)
+
+
+## The Repair button of a placed piece: {"show", "price", "reason"}.
+func repair_quote(kind: String, id: int, slot: Vector2i) -> Dictionary:
+	return _levels.repair_quote(kind, id, slot)
+
+
+func repair_placed(kind: String, id: int, slot: Vector2i) -> bool:
+	return _levels.repair_placed(kind, id, slot)
+
+
+## Does the row have a broken (down) section?
+func row_broken(row: Dictionary) -> bool:
+	return _levels.row_broken(row)
+
+
+## The marker of a placed piece or row (null when it is gone).
+func piece_marker(kind: String, id: int, slot: Vector2i) -> Node:
+	return _markers.piece_marker(kind, id, slot)
+
+
+## The marker to walk the cat to for a level goal: a placed piece or row below min_level, the highest level first, the
+## lowest id on a tie. Null when there is none or its marker is not visible.
+func goal_marker(kind: String, min_level: int) -> Node:
+	return _markers.goal_marker(kind, min_level)
+
+
+## The open, empty road pad nearest the camp (its marker), or null.
+func empty_pad_marker() -> Node:
+	return _markers.empty_pad_marker()
+
+
+## A specialisation was learned or raised: Reinforced barricades recomputes the rows' health (each section keeps its share).
+func refresh_specialisation(id: String) -> void:
+	_levels.refresh_specialisation(id)
+
+
+## The windows hand over how to build the piece, row and pad cards. The markers look them up each time they are tapped
+## (defences.build runs before the HUD, so they do not exist yet at load).
+func use_window_builders(piece: Callable, row: Callable, pad: Callable) -> void:
+	_win_piece = piece
+	_win_row = row
+	_win_pad = pad
 
 
 # ---------------------------------------------------------------- barricade rows (Phase G2)
@@ -750,9 +789,11 @@ func build_row(lane: int, idx: int) -> bool:
 	var s: Array = main.world.barricade_slot(lane, idx)
 	if s.is_empty() or not Data.pay(row_cost()):
 		return false
-	var sp := {"type": "barricade", "slot": [lane, idx], "row": pieces_per_row()}
+	var lv := new_row_level()                       # an old save's credit sets the first row's level; paid first, then taken
+	DefencePersistence.take_credit("barricade")
+	var sp := {"type": "barricade", "slot": [lane, idx], "row": pieces_per_row(), "level": lv}
 	Save.placed.append(sp)
-	var row := _spawn_row(lane, idx, sp)
+	var row := _spawn_row(lane, idx, sp, lv)
 	Save.save_game()
 	for p in row.get("pieces", []):
 		Fx.boing(p["node"], 0.35)
@@ -791,7 +832,7 @@ func repair_row_cost(row: Dictionary) -> Dictionary:
 
 ## Repairs a row (its card's Repair): paid, every piece back to full health and standing. True if done.
 func repair_row(row: Dictionary) -> bool:
-	if row.is_empty() or not row_damaged(row):         # any time, in a wave too (22 Nov 2026)
+	if row.is_empty() or not row_broken(row):          # needs a broken section; any time, in a wave too (22 Nov 2026, H6)
 		return false
 	if not Data.pay(repair_row_cost(row)):
 		return false
@@ -849,8 +890,8 @@ func well_mend(dt: float, regen_share: float, cap_share: float) -> void:
 	var d := minf(dt, 0.1)
 	var top := clampf(cap_share, 0.0, 1.0)
 	for p in pieces:
-		if p["type"] == "spikes":
-			continue
+		if p["type"] == "spikes" and not p["wrecked"]:
+			continue                                    # a patch has no combat wear: only carried wear mends
 		var hp: float = p["hp"]
 		if hp <= 0.0:
 			continue
@@ -862,7 +903,7 @@ func well_mend(dt: float, regen_share: float, cap_share: float) -> void:
 		p["hp"] = hp
 		if p["wrecked"]:
 			_dirty = true                           # its Save.placed entry is written within a second (_process)
-			if hp >= mx - 0.5:
+			if hp >= mx - minf(0.5, mx * 0.01):
 				p["wrecked"] = false
 				_show(p)                            # 22 Nov 2026 review: a mended tower loses its dark wrecked look too
 				continue
@@ -874,299 +915,118 @@ func _wave_on() -> bool:
 	return main.fight != null and main.fight.active and main.fight.in_wave
 
 
-# ---------------------------------------------------------------- the markers: road spots and downed towers
+# ---------------------------------------------------------------- the markers and cards (defence_markers.gd)
 static func _key(lane: int, idx: int) -> String:
 	return "%d:%d" % [lane, idx]
 
 
-## A small marker at every road spot (the "barricade" badge): its card builds a row there, or shows the row's pieces
-## and repairs it.
-func _make_spot_marks() -> void:
-	for s in main.world.barricade_slots():
-		var lane := int(s[2])
-		var idx := int(s[3])
-		var mk = MarkerScript.new()
-		add_child(mk)
-		mk.setup("road_%d_%d" % [lane, idx], _spot_pos(s), 0.75, _card_spot.bind(lane, idx), MARK_COL)
-		mk.visible = false
-		main.register_ring(mk)
-		_spots[_key(lane, idx)] = mk
-		_attach_spot(lane, idx)
-
-
-## Where the cat stands to use a road spot: beside the row on the camp's side, or on the woods' side when the camp's
-## side is away from the camera (so the row never hides the cat).
-func _spot_pos(s: Array) -> Vector3:
-	var rot := float(s[1])
-	var woods := Vector3(sin(rot), 0.0, cos(rot))
-	var side := -woods
-	if side.z < -0.3:
-		side = woods
-	return (s[0] as Vector3) + side * MARK_SIDE
-
-
-## A spot's badge floats over its row (tapping the row opens it too), or over the empty spot.
-func _attach_spot(lane: int, idx: int) -> void:
-	var mk = _spots.get(_key(lane, idx))
-	if mk == null:
-		return
-	var row := row_at(lane, idx)
-	if not row.is_empty():
-		mk.attach(row["root"], "barricade", 1.45)
-		return
-	var s: Array = main.world.barricade_slot(lane, idx)
-	var at: Vector3 = s[0] if not s.is_empty() else mk.global_position
-	mk.attach(null, "barricade", 1.2, Vector3(at.x - mk.global_position.x, 0.0, at.z - mk.global_position.z))
-
-
-## A tower's repair marker (the "repair" badge), shown while it is knocked down.
-func _make_tower_mark(p: Dictionary) -> void:
-	var id := int(p["id"])
-	var mk = MarkerScript.new()
-	add_child(mk)
-	mk.setup("tower_%d" % id, (p["pos"] as Vector3) + Vector3(0, 0, TOWER_MARK), 0.75, _card_tower.bind(id), FIX_COL)
-	mk.visible = false
-	main.register_ring(mk)
-	_tower_marks[id] = mk
-
-
-## 0: no markers (the cat is below ground); 1: the downed towers' only; 2: the open road pads' too (once barricades are
-## open); 3: a wave is on: only the built rows' markers (their repair works in a wave). Include the Hearthtree level
-## because pads on individual roads can open even when the number of open rings stays the same.
-func _marks_state() -> int:
-	var base := 1
-	if main.area != null:
-		base = 0
-	elif _wave_on():
-		base = 3 if unlocked("barricade") else 0        # in a wave: only the built rows' markers (to repair them)
-	elif unlocked("barricade"):
-		base = 2
-	return base + 10 * Save.camp_level
-
-
 func _refresh_marks() -> void:
-	var full := _marks_state()
-	_marks = full
-	var st := full % 10
-	for key in _spots:
-		var parts: PackedStringArray = String(key).split(":")
-		var ln := int(parts[0])
-		var ix := int(parts[1])
-		var built := not row_at(ln, ix).is_empty()
-		# a built row's marker always shows (even on a pad not open yet: an older save); an empty pad's only when open
-		_spots[key].visible = (st == 2 and (built or pad_open(ln, ix))) or (st == 3 and built)
-	for id in _tower_marks:
-		var mk = _tower_marks[id]
-		var p: Dictionary = _by_id.get(id, {})
-		var show := (st == 1 or st == 2) and not p.is_empty() and float(p["hp"]) <= 0.0
-		if show and (not is_instance_valid(mk.obj) or mk.obj != p["node"]):
-			mk.attach(p["node"], "repair")             # over the tipped tower (a new level: its new model)
-		mk.visible = show
-	_update_pulses()
+	_markers.refresh_marks()
 
 
-## The "!" on a marker: a cracked or broken row, or a downed tower, that can be repaired now.
 func _update_pulses() -> void:
-	for row in rows:
-		var mk = _spots.get(_key(int(row["slot"][0]), int(row["slot"][1])))
-		if mk == null:
-			continue
-		var need := false
-		for p in row["pieces"]:
-			if piece_stage(p) != "whole":
-				need = true
-		mk.pulse = need and Data.can_afford(repair_row_cost(row))
-	for id in _tower_marks:
-		var p: Dictionary = _by_id.get(id, {})
-		_tower_marks[id].pulse = not p.is_empty() and float(p["hp"]) <= 0.0 and Data.can_afford(tower_repair_cost(p))
+	_markers.update_pulses()
 
 
-# ---------------------------------------------------------------- the cards (shop-style tiles: hud.gd)
-func _camp_name() -> String:
-	return String(Data.call("camp_name")) if Data.has_method("camp_name") else "the Hearthtree"
-
-
-func _tile(icon: String, title: String, text: String, cost: Dictionary, label: String, ok: bool, action: Callable,
-		badge := "", stats: Array = []) -> Dictionary:
-	var t := {"kind": "item", "icon": icon, "title": title, "text": text, "cost": cost, "label": label,
-		"enabled": ok and label != "" and action.is_valid() and Data.can_afford(cost), "action": action}
-	if badge != "":
-		t["badge"] = badge
-	if not stats.is_empty():
-		t["stats"] = stats
-	return t
-
-
-## A health bar's share: this much health against the top barricade level's.
-func _hp_bar(hp: float) -> float:
-	var lv: Array = Data.defence_info("barricade")["levels"]
-	return clampf(hp / maxf(float(lv[lv.size() - 1].get("hp", hp)), 1.0), 0.05, 1.0)
-
-
-## "90 leaves and 5 timber": a price in words.
-func _price_words(cost: Dictionary) -> String:
-	var bits: Array = []
-	for k in Data.CURRENCIES:
-		var n := int(cost.get(k, 0))
-		if n > 0:
-			bits.append("%d %s" % [n, Data.mat_name(String(k)) if k in Data.MATS else String(k)])
-	if bits.size() <= 1:
-		return "".join(bits)
-	return ", ".join(bits.slice(0, bits.size() - 1)) + " and " + String(bits[bits.size() - 1])
-
-
-## A road pad's card: build a row there, or (built) the row's own card. When Build can't be pressed the tile says why.
 func _card_spot(lane: int, idx: int) -> Dictionary:
-	var row := row_at(lane, idx)
-	if not row.is_empty():
-		return _card_row(row)
-	var s: Array = main.world.barricade_slot(lane, idx)
-	var at: Vector3 = s[0] if not s.is_empty() else Vector3.ZERO
-	var mx := _max_hp("barricade")
-	var cost := row_cost()
-	var can := unlocked("barricade") and pad_open(lane, idx) and not _wave_on() and main.area == null
-	var it := _tile("barricade", "Barricade row", "%d pieces across the road · %d health each" % [pieces_per_row(), int(mx)],
-		cost, "Build", can, build_row.bind(lane, idx), "", [["Health", _hp_bar(mx)]])
-	if not unlocked("barricade"):
-		it["text"] = "Barricades open later"
-	elif not pad_open(lane, idx):
-		it["text"] = "This pad opens as the %s grows" % _camp_name().trim_prefix("the ")
-	elif _wave_on():
-		it["text"] = "A wave is on: build between waves"
-	elif not Data.can_afford(cost):
-		it["text"] = "Needs %s" % _price_words(cost)
-	return {"title": "Road spot", "sub": "Barricade row on this road", "anchor": at + Vector3(0, 1.4, 0),
-		"rows": [{"kind": "section", "text": "Block the road"}, it]}
+	return _markers.card_spot(lane, idx)
 
 
-## A built row's card: each piece's health and look, and Repair while any piece is damaged.
 func _card_row(row: Dictionary) -> Dictionary:
-	var ps: Array = row["pieces"]
-	var list: Array = [{"kind": "section", "text": "Pieces"}]
-	var standing := 0
-	for p in ps:
-		var st := piece_stage(p)
-		if st != "broken":
-			standing += 1
-		var share := clampf(float(p["hp"]) / maxf(float(p["max_hp"]), 1.0), 0.0, 1.0)
-		var txt := "Whole"
-		var badge := ""
-		if st == "cracked":
-			txt = "Cracked: it will break soon"
-			badge = "Cracked"
-		elif st == "broken":
-			txt = "Broken: enemies get through"
-			badge = "Broken"
-		list.append(_tile("barricade", "Piece %d" % (int(p["k"]) + 1), txt, {}, "", false, Callable(), badge, [["Health", share]]))
-	if row_damaged(row):
-		list.append({"kind": "section", "text": "Repair"})
-		list.append(_tile("repair", "Repair the row", "Every piece back to full health", repair_row_cost(row), "Repair", true,
-			repair_row_at.bind(int(row["slot"][0]), int(row["slot"][1]))))
-	var root := row["root"] as Node3D
-	return {"title": "Barricade row", "sub": "Level %d · %d of %d pieces standing" % [level("barricade"), standing, ps.size()],
-		"anchor": root.position + Vector3(0, 1.4, 0), "rows": list}
+	return _markers.card_row(row)
 
 
-## A knocked-down tower's card: Repair stands it up again.
 func _card_tower(id: int) -> Dictionary:
-	var p: Dictionary = _by_id.get(id, {})
-	var title := String(Data.defence_info("tower").get("name", "Acorn Tower"))
-	if p.is_empty():
-		return {"title": title, "sub": "", "rows": []}
-	var at: Vector3 = (p["pos"] as Vector3) + Vector3(0, 2.2, 0)
-	if float(p["hp"]) > 0.0:
-		return {"title": title, "sub": "Standing and shooting", "rows": [], "anchor": at}
-	var it := _tile("repair", "Repair the tower", "It stands up at full health and shoots again", tower_repair_cost(p), "Repair",
-		not _wave_on(), repair_tower_id.bind(id), "Broken", [["Health", 0.0]])
-	return {"title": title, "sub": "Knocked down by the Gloom", "anchor": at, "rows": [{"kind": "section", "text": "Repair"}, it]}
+	return _markers.card_tower(id)
 
 
-# ---------------------------------------------------------------- placing (towers and spikes)
+## What a tapped tower or patch opens: the window's card (use_window_builders), or the old tower card before the HUD is up.
+func _card_piece(id: int) -> Dictionary:
+	return _markers.card_piece(id)
+
+
+## What a tapped road marker opens: the built row's card, or the empty pad's.
+func _card_road(lane: int, idx: int) -> Dictionary:
+	return _markers.card_road(lane, idx)
+
+
+# ---------------------------------------------------------------- placing (defence_placement.gd, B0)
 func start_placing(type: String) -> void:
-	if type == "barricade" or int(Save.items.get(type, 0)) <= 0:
-		return                                      # barricades are built in rows at the road spots (their markers)
-	stop_placing()
-	placing = type
-	ghost = Props.instance(model(type, level(type)))
-	add_child(ghost)
-	main.hud.refresh_build()
+	_placement.start_placing(type)
 
 
 func stop_placing() -> void:
-	if ghost:
-		ghost.queue_free()
-	ghost = null
-	placing = ""
-	if main != null and main.hud:
-		main.hud.refresh_build()
+	if _placement != null:
+		_placement.stop_placing()
+
+
+## Places the piece where the ghost is green, taking one from the Bag.
+func place_here() -> void:
+	_placement.place_here()
+
+
+## The ghost is green here (see defence_placement.gd; kind "": the kind being placed).
+func _valid(pos: Vector3, kind := "") -> bool:
+	return _placement.valid(pos, kind)
+
+
+func placement_reason(kind: String, at: Vector3) -> String:
+	return _placement.placement_reason(kind, at)
+
+
+func commit_placement(kind: String, at: Vector3, yaw: float) -> int:
+	return _placement.commit(kind, at, yaw)
+
+
+func undo_reason(id: int) -> String:
+	return _placement.undo_reason(id)
+
+
+func revert_placement(id: int) -> bool:
+	return _placement.revert(id)
+
+
+func can_undo_place() -> bool:
+	return _placement.can_undo()
+
+
+func undo_place() -> bool:
+	if not _placement.can_undo():
+		return false
+	if not UndoPlaceDefence.new(_placement.undo_id()).run(main):
+		return false
+	Save.save_game()
+	return true
+
+
+## How many held pieces would go back to the Bag if a building of this id were built on its ground (the Workshop's build).
+func return_blocked_for_station(id: String) -> int:
+	return _placement.return_blocked_for_station(id)
+
+
+## The ground towers and spikes keep off: the ground kept for the camp's stations and buildings (built or not) and the
+## village, a Burrow's hollow and its path (Phase E), the home, and the lake's shore. One rule for the placing ghost
+## (_valid) and the start-up check (_move_blocked), so a piece the ghost lets you place is never sent back to the Bag
+## (H3, the owner's yes to Q25, 26 Nov 2026: the ghost used to miss the home and the lake).
+func off_limits(pos: Vector3) -> bool:
+	var w = main.world
+	return w.in_reserved(pos, 0.6) or w.in_village(pos, 0.6) or w.in_hollow_clear(pos) or w.near_hollow(pos, _hollow_keep()) \
+		or w.near_home(pos, 0.6) or w.lake_dist(pos) < 0.6
 
 
 func _process(delta: float) -> void:
 	if main == null:
 		return
 	if Save.items.has("barricade"):
-		_absorb_bag()                               # a gift of pieces (an older mission reward): refunded as leaves
-	if _marks_state() != _marks:
-		_refresh_marks()                            # a wave started or ended, the cat went below ground or came up
+		_absorb_gift()                              # a gift of pieces (an older mission reward): refunded as leaves
+	_markers.tick()                                 # a wave started or ended, the cat went below ground or came up
 	if _dirty:
 		_sync_t += minf(delta, 0.1)
 		if _sync_t >= 1.0:
 			_sync_t = 0.0
 			_dirty = false
 			_write_wrecks()
-	if placing == "" or ghost == null:
-		return
-	var t := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.008)
-	var cat: Vector3 = main.player.global_position
-	var f: float = main.player.facing
-	_ghost_pos = cat + Vector3(sin(f), 0, cos(f)) * AHEAD
-	_ghost_pos.y = 0.0
-	_ghost_rot = f
-	ghost_ok = _valid(_ghost_pos)
-	ghost.position = _ghost_pos + Vector3(0, 0.02, 0)
-	ghost.rotation.y = _ghost_rot
-	Props.set_param(ghost, "tint", Color(0.7, 1.25, 0.7) if ghost_ok else Color(1.3, 0.45, 0.4))
-	Props.set_param(ghost, "flash", 0.15 + 0.15 * t)
-
-
-func _valid(pos: Vector3) -> bool:
-	var r := Vector2(pos.x, pos.z).length()
-	if r < 1.5 or r > main.world.MOVE_R - 0.3:
-		return false
-	if main.world.in_reserved(pos, 0.6) or main.world.in_village(pos, 0.6):
-		return false                                   # the ground kept for the camp's stations, built or not
-	if main.world.in_hollow_clear(pos) or main.world.near_hollow(pos, _hollow_keep()):
-		return false                                   # Phase E: the Burrows' hollows and their paths stay clear
-	var q := Vector2(pos.x, pos.z)
-	for c in main.world.circles:
-		if String(c[2]).begins_with("piece_"):
-			continue
-		if q.distance_to(c[0]) < float(c[1]) + 0.6:
-			return false
-	for p in pieces:
-		if (p["pos"] as Vector3).distance_to(pos) < 0.9:
-			return false
-	return main.world.path_strength(pos) < 0.5 or placing == "spikes"
-
-
-func place_here() -> void:
-	if placing == "" or not ghost_ok or int(Save.items.get(placing, 0)) <= 0:
-		return
-	Save.items[placing] = int(Save.items[placing]) - 1
-	var sp := {"type": placing, "x": _ghost_pos.x, "z": _ghost_pos.z, "rot": _ghost_rot}
-	Save.placed.append(sp)
-	var p := _spawn(placing, _ghost_pos, _ghost_rot)
-	p["src"] = sp
-	Save.save_game()
-	Fx.boing(p["node"], 0.35)
-	Fx.flower_ring(main, _ghost_pos, 1.0)
-	Sfx.play("buy", -6.0)
-	if int(Save.items[placing]) <= 0:
-		stop_placing()
-	else:
-		var keep := placing
-		stop_placing()
-		start_placing(keep)
+	_placement.update_ghost()                        # last: the ghost follows the cat (nothing when not placing)
 
 
 # ---------------------------------------------------------------- what enemies ask
@@ -1222,10 +1082,11 @@ func near(pos: Vector3, r: float) -> Array:
 
 
 func slow_at(pos: Vector3) -> float:
+	var best := 0.0
 	for p in pieces:
-		if p["type"] == "spikes" and not p["broken"] and (p["pos"] as Vector3).distance_to(pos) < 0.8:
-			return float(Data.defence_info("spikes")["levels"][level("spikes") - 1]["slow"])
-	return 0.0
+		if p["type"] == "spikes" and not p["broken"] and (p["pos"] as Vector3).distance_to(pos) < SPIKE_R:
+			best = maxf(best, float(Data.defence_level_info("spikes", piece_level(p)).get("slow", 0.0)))
+	return best * _levels.slow_mult()               # the strongest patch under it; Deep thorns multiplies it
 
 
 ## A hit on one piece: a barricade piece cracks below crack_at and breaks at 0; a tower is knocked down at 0.
@@ -1262,30 +1123,35 @@ func _break(p: Dictionary) -> void:
 
 
 # ---------------------------------------------------------------- towers and spikes at work
-func _setup_tower(p: Dictionary) -> void:
+func _setup_tower(p: Dictionary, lv: int) -> void:
 	var node = p["node"]
 	node.set_script(TowerScript)
-	node.setup(main, p, level("tower"))
+	node.setup(main, p, lv)
 
 
+## Towers and spikes work every physics frame, in the order of `pieces`. Who is near comes from the enemy grid: a
+## tower asks for the foes in a box its range wide (tower.tick keeps its own exact range and nearest-first rule, the
+## first in line wins a tie), a patch asks for a box of SPIKE_R, then checks the exact distance and hurts through
+## enemy.hurt_spikes (the one damage path: quiet, with the old lethal wake-up).
 func _physics_process(delta: float) -> void:
 	if main == null or main.frozen:
 		return
-	var foes := get_tree().get_nodes_in_group("foes")
+	var grid = main.enemy_grid
 	for p in pieces:
 		if p["broken"] or float(p["hp"]) <= 0.0:
 			continue
+		var at: Vector3 = p["pos"]
 		match String(p["type"]):
 			"tower":
-				var tower = p["node"]
-				tower.tick(delta, foes)
+				var reach := float(Data.defence_level_info("tower", piece_level(p)).get("range", 5.0))      # its own range
+				var foes: Array = grid.candidates(Vector2(at.x - reach, at.z - reach), Vector2(at.x + reach, at.z + reach), &"foes")
+				p["node"].tick(delta, foes)
 			"spikes":
-				var l2: Dictionary = Data.defence_info("spikes")["levels"][level("spikes") - 1]
-				for e in foes:
-					if not e.dead and (e.global_position as Vector3).distance_to(p["pos"]) < 0.8:
-						e.hp -= float(l2["dps"]) * delta
-						if e.hp <= 0.0:
-							e.hit(Vector3.ZERO, 0.0)
+				var dps := float(Data.defence_level_info("spikes", piece_level(p)).get("dps", 0))            # its own damage
+				var under: Array = grid.candidates(Vector2(at.x - SPIKE_R, at.z - SPIKE_R), Vector2(at.x + SPIKE_R, at.z + SPIKE_R), &"foes")
+				for e in under:
+					if not e.dead and (e.global_position as Vector3).distance_to(at) < SPIKE_R:
+						e.hurt_spikes(dps * delta)
 
 
 ## Phase E: how far placed defences keep from a Burrow's hollow.

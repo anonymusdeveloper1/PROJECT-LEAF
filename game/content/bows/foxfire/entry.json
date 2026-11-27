@@ -1,0 +1,32 @@
+{
+  "id": "foxfire",
+  "name": "Foxfire Bow",
+  "desc": "Goes through two enemies, +1 m range",
+  "icon": "bow",
+  "price": {"leaves": 5120},
+  "unlock": {"building": ["bench", 3], "flag": "hollow_open"},
+  "damage": 1.45,
+  "arrows": 1,
+  "spread_deg": 0,
+  "pierce": 2,
+  "range_bonus": 1.0,
+  "hidden": true,
+  "tint": "#7FF0D8",
+  "fx": {
+    "color": "#9FF6E2",
+    "burst": "sparks",
+    "burst_colors": ["#E6FFF8", "#7FF0D8", "#3FC8B0"],
+    "burst_n": 8,
+    "trail": "tint",
+    "trail_len": 1.0,
+    "trail_w": 0.035,
+    "trail_alpha": 0.5,
+    "hit": "flash",
+    "hit_colors": ["#E6FFF8", "#7FF0D8", "#3FC8B0"],
+    "hit_n": 8
+  },
+  "per_level": 0.1,
+  "cost": [58, 84, 117, 162, 221, 225, 300, 410, 545, 730],
+  "mastery": [{"leaves": 1200}, {"leaves": 2100}],
+  "draw_mult": 1.0
+}

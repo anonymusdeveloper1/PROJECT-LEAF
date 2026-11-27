@@ -1,0 +1,24 @@
+{
+  "id": "sprig",
+  "name": "Sprig the leaf dragon",
+  "short": "Sprig",
+  "desc": "A baby leaf dragon who flies beside the cat and spits seed sparks at enemies",
+  "icon": "pet",
+  "picture": "res://content/pets/sprig/icon.png",
+  "model": "res://assets/companions/sprig/sprig.glb",
+  "price": {"leaves": 160},
+  "unlock": {"building": ["stall", 1]},
+  "shop": "stall",
+  "flies": true,
+  "spark": [0.75, 1.0, 0.35],
+  "fur": [0.222, 0.07],
+  "skins": [
+    {"id": "natural", "name": "Natural", "to": [-1, 1, 1]},
+    {"id": "frost", "name": "Frost", "to": [0.53, 0.7, 1.15]},
+    {"id": "ember", "name": "Ember", "to": [0.03, 1.1, 0.95]},
+    {"id": "golden", "name": "Golden", "to": [0.115, 0.85, 1.08]},
+    {"id": "midnight", "name": "Midnight", "to": [0.6, 0.6, 0.65]},
+    {"id": "gloomlit", "name": "Gloomlit", "to": [0.76, 0.75, 0.9], "shards": 60}
+  ],
+  "_note": "H5 (26 Nov 2026): a pet look, moved from balance.json looks.pet. Bought at the Market's Pets tab for its price (the old Mushroom Cottage's 160 leaves): buying it gives the pet, at level 1. Every pet look fights the same at the one shared pet level (balance.json pet: damage_by_level, every_by_level, level_prices; Data.pet_level). flies: it flies (else it runs); spark: its sparks' colour. An old save that had the Mushroom Cottage owns it for free."
+}

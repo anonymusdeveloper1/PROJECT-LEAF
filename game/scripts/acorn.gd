@@ -1,6 +1,7 @@
 extends Node3D
 ## The tower's enlarged Twig Bow arrow: straight flight, a visible trail and swept collision, one impact only.
 const ArrowScript := preload("res://scripts/arrow.gd")
+const ExplosiveAcorns := preload("res://abilities/explosive_acorns.gd")
 static var _materials := {}
 var main
 var direction := Vector3.BACK
@@ -16,7 +17,7 @@ var _model: Node3D
 
 
 static func make(lv: int) -> Node3D:
-	var data: Dictionary = Data.defence_info("tower")["levels"][lv - 1]
+	var data: Dictionary = _level_data(lv)
 	var model := ArrowScript.make("twig")
 	model.scale = Vector3.ONE * float(data["arrow_scale"])
 	if not _materials.has(lv):
@@ -31,6 +32,12 @@ static func make(lv: int) -> Node3D:
 	return model
 
 
+## The tower level's row, level clamped to 1..levels (a bad level from an old save must not crash a shot).
+static func _level_data(lv: int) -> Dictionary:
+	var count: int = (Data.defence_info("tower").get("levels", []) as Array).size()
+	return Data.defence_level_info("tower", clampi(lv, 1, maxi(count, 1)))
+
+
 static func _apply(node: Node, mat: Material) -> void:
 	if node is MeshInstance3D:
 		(node as MeshInstance3D).material_override = mat
@@ -40,9 +47,9 @@ static func _apply(node: Node, mat: Material) -> void:
 
 func launch(game, start: Vector3, aim: Vector3, lv: int) -> void:
 	main = game
-	level = lv
 	var cfg := Data.defence_info("tower")
-	var data: Dictionary = cfg["levels"][level - 1]
+	level = clampi(lv, 1, maxi((cfg.get("levels", []) as Array).size(), 1))
+	var data: Dictionary = _level_data(level)
 	direction = aim.normalized()
 	damage = float(data["damage"])
 	speed = float(cfg["projectile_speed"])
@@ -75,20 +82,31 @@ func _physics_process(delta: float) -> void:
 	var end := global_position + direction * (step + length)
 	var first = null
 	var closest := INF
-	for foe in get_tree().get_nodes_in_group("foes"):
+	var pad := float(Data.defence_info("tower")["projectile_radius"])
+	var box_lo := Vector2(minf(global_position.x, end.x) - pad, minf(global_position.z, end.z) - pad)
+	var box_hi := Vector2(maxf(global_position.x, end.x) + pad, maxf(global_position.z, end.z) + pad)
+	for foe in main.enemy_grid.candidates(box_lo, box_hi, &"foes"):       # H6: only the foes near the sweep, in group order
 		if not is_instance_valid(foe) or foe.dead:
 			continue
 		var center: Vector3 = foe.global_position + Vector3(0, foe.aim_height, 0)
 		var segment := end - global_position
 		var along := clampf((center - global_position).dot(segment) / maxf(segment.length_squared(), 0.000001), 0.0, 1.0)
 		var point := global_position + segment * along
-		if point.distance_to(center) <= float(foe.radius) + float(Data.defence_info("tower")["projectile_radius"]) and along < closest:
+		if point.distance_to(center) <= float(foe.radius) + pad and along < closest:
 			first = foe
 			closest = along
 	if first != null:
 		_spent = true
+		var impact := global_position.lerp(end, closest)
+		var lv := Data.specialisation_level("explosive_acorns")
 		first.hit(direction, damage)
-		Fx.hit_burst(main, global_position.lerp(end, closest), direction, Data.bow_fx("twig"))
+		# H6: the blast is worked out from what the hit did (last_raw is set inside hit, even when it kills). A miss or an
+		# absorbed hit (a blink) gives raw 0 and so no blast. The acorn is spent, so the blast never chains.
+		var raw = first.get("last_raw")
+		var raw_damage := float(raw) if raw != null else 0.0
+		Fx.hit_burst(main, impact, direction, Data.bow_fx("twig"))
+		if raw_damage > 0.0 and lv > 0:
+			ExplosiveAcorns.burst(main, impact, first, raw_damage, lv)
 		_gone()
 		return
 	global_position += direction * step

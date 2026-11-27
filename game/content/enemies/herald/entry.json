@@ -1,0 +1,24 @@
+{
+  "id": "herald",
+  "name": "Gloom Herald",
+  "desc": "A raid leader that drums for nearby enemies.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "crow",
+  "boss": true,
+  "height": 1.6,
+  "radius": 0.55,
+  "color": "#4A3566",
+  "scale": 1.25,
+  "_note": "Gloom Raid leader (Phase D). model crow at scale 1.25 is the placeholder until the Meshy Herald exists: then model herald and drop scale. ai crow: it drums like the Crow Drummer.",
+  "parts": {
+    "health": {"max": 450},
+    "mover": {"speed": 0.6},
+    "attack": {"damage": 2, "gate_damage": 10, "reach": 0.7, "attack_every": 1.6},
+    "status": {"drum_range": 5.0, "drum_buff": 0.25, "drum_time": 4.0},
+    "loot": {"leaves": 40},
+    "health_bar": {},
+    "brain": {"aggro": 3.0, "ai": "crow", "drum_every": 7.0}
+  }
+}

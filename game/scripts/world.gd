@@ -291,56 +291,111 @@ func spawn_point(i: int, jitter: float) -> Vector3:
 
 
 ## Where things stand in the camp. The campfire is the centre; the home (the shed, later the hut and the treehouse)
-## stands next to it; the buildings go round them (SPOTS).
+## stands next to it; the buildings go round them. H6 (Stage 1): each building's spot, ring, ground, path and footprint
+## now live in its content entry (content/buildings/<id>/entry.json, "layout"; Data.building_layout), read through _geo.
 func station_pos(id: String) -> Vector3:
 	match id:
 		"campfire": return Vector3.ZERO
-		# the home stands in one spot at every level, with open ground between it and the fire (HOME_SPOT)
-		"home": return HOME_SPOT
 		"sign": return Vector3(0.0, 0, -camp_r + 0.75)
-		"bench", "target", "well", "cottage", "stall", "saddlery", "tailor": return SPOTS[id]
-		# Phase C
-		"stone": return Vector3(8.0, 0, 0.75)       # east, just past the biggest firelight, south of the Bandit Thicket road
-		"garden": return Vector3(0.5, 0, 8.4)       # south, behind the end of the village lane
-		"fishing": return Vector3(-8.7, 0, 7.6)     # the lake's south shore
 		"pot": return Vector3(0.7071, 0, -0.7071) * float(POT_R[clampi(Save.camp_level, 1, POT_R.size()) - 1])   # the fire's north-east rim
-	return Vector3.ZERO
+	var g: Dictionary = _geo(id)
+	if bool(g["has"]):
+		return g["pos"]
+	return HOME_SPOT if id == "home" else Vector3.ZERO     # the home stands in one spot at every level (HOME_SPOT)
+
+
+## One building's layout as plain numbers, read once from its entry (Data.building_layout) and kept: the lists below are
+## read in the hide spots' and decorations' loops, so they must not be rebuilt on every call. Keys: has (the entry has
+## a layout), pos, ring (the ring's offset from pos, a zero vector when none), village_r / village_ring_r (-1 when the
+## building keeps no village ground), reserved_c / reserved_r (r -1 when none), path (points, empty when none), smooth,
+## half_mult, peak (-1 when none).
+var _geo_cache := {}
+
+
+func _geo(id: String) -> Dictionary:
+	if _geo_cache.has(id):
+		return _geo_cache[id]
+	var lay: Dictionary = Data.building_layout(id)
+	var g := {"has": not lay.is_empty(), "pos": Vector3.ZERO, "ring": Vector3.ZERO,
+		"village_r": -1.0, "village_ring_r": -1.0, "reserved_c": Vector3.ZERO, "reserved_r": -1.0,
+		"path": PackedVector3Array(), "smooth": 6, "half_mult": 0.85, "peak": -1.0, "trunk_of": "", "fork_at": Vector3.ZERO}
+	if not lay.is_empty():
+		g["pos"] = _v3(lay.get("position", [0, 0, 0]))
+		if lay.has("ring_offset"):
+			g["ring"] = _v3(lay["ring_offset"])
+		if lay.has("village"):
+			var vl: Dictionary = lay["village"]
+			g["village_r"] = float(vl.get("r", 1.3))
+			g["village_ring_r"] = float(vl.get("ring_r", 0.9))
+		if lay.has("reserved"):
+			var rs: Dictionary = lay["reserved"]
+			var o: Array = rs.get("offset", [0, 0, 0])
+			var pp: Array = lay.get("position", [0, 0, 0])
+			g["reserved_c"] = Vector3(float(pp[0]) + float(o[0]), float(pp[1]) + float(o[1]), float(pp[2]) + float(o[2]))   # summed in float64, as H5's literals
+			g["reserved_r"] = float(rs.get("r", 0.0))
+		if lay.has("path"):
+			var pl: Dictionary = lay["path"]
+			var pts := PackedVector3Array()
+			for q in pl.get("points", []):
+				pts.append(_v3(q))
+			g["path"] = pts
+			g["trunk_of"] = String(pl.get("trunk_of", ""))      # H6: a branch path forks off another building's path (the Workshop's off the Tailor's)
+			if pl.has("fork_at"):
+				g["fork_at"] = _v3(pl["fork_at"])
+			g["smooth"] = int(pl.get("smooth", 6))
+			g["half_mult"] = float(pl.get("half_mult", 0.85))
+			if pl.has("peak"):       # a number, or true for the worn-trail peak (WALK_PEAK, the well's path)
+				g["peak"] = WALK_PEAK if typeof(pl["peak"]) == TYPE_BOOL and bool(pl["peak"]) else float(pl["peak"])
+	_geo_cache[id] = g
+	return g
+
+
+func _v3(a) -> Vector3:
+	return Vector3(float(a[0]), float(a[1]), float(a[2]))
 
 
 const POT_R := [0.78, 0.98, 0.98, 0.98, 1.13, 1.08, 1.08, 1.08]   # the campfire's foot by home level + 0.18
 const FISH_RING := Vector3(-7.98, 0, 7.58)               # the Fishing Spot's ring, 0.8 m from the water
-## Ground kept for the guardian stone, the garden and the fishing spot, built yet or not (Phase C).
-const RESERVED := [[Vector3(8.0, 0, 1.0), 1.7], [Vector3(0.5, 0, 7.9), 2.0], [Vector3(-8.2, 0, 7.65), 1.3]]
+## Ground kept for the guardian stone, the garden and the fishing spot, built yet or not (Phase C). H6: each one's
+## layout.reserved (its entry), checked in this order.
+const RESERVED_IDS := ["stone", "garden", "fishing"]
 
 
 func in_reserved(p: Vector3, margin: float) -> bool:
-	for z in RESERVED:
-		if Vector2(p.x - z[0].x, p.z - z[0].z).length() < float(z[1]) + margin:
+	for id in RESERVED_IDS:
+		var g: Dictionary = _geo(id)
+		if float(g["reserved_r"]) < 0.0:
+			continue
+		var c: Vector3 = g["reserved_c"]
+		if Vector2(p.x - c.x, p.z - c.z).length() < float(g["reserved_r"]) + margin:
 			return true
 	return false
 
 
-const VILLAGE := ["well", "cottage", "stall"]
+## The village buildings standing round the fire today (H5: the Wishing Well and the Market; the Mushroom Cottage has
+## left the camp): grass.gd keeps its grass off each once it is built. The hide spots' map keeps the old village
+## (OLD_VILLAGE, with the Cottage) for its seeded sequence only.
+const VILLAGE := ["well", "stall"]
 ## The camp's layout (the user's call, 18 Nov 2026): the campfire is the centre, with open ground all round it, and the
 ## home beside it (station_pos). The other buildings stand round them, a little apart and not in a ring, each on its own
-## path from the fire: the Training Target and the Bow Bench east of the fire, the Mushroom Cottage and the Market Stall
-## further round to the south-east (the north is the four trails, the west the home and the lake, the south the Burrows'
-## path and the garden), and the Wishing Well on the lake's near shore. Each ring is on the camera's side of its
-## building, so a building never hides the cat at its ring, nothing tall stands just south of where the cat walks, and
-## the ground straight south of the fire stays open. The same at every home level. See docs/PHASE_A_PROGRESS.md,
-## "Camp layout and HUD".
+## path from the fire: the Training Target and the Bow Bench east of the fire, the Market Stall further round to the
+## south-east (the north is the four trails, the west the home and the lake, the south the Burrows' path and the
+## garden), and the Wishing Well on the lake's near shore. Each ring is on the camera's side of its building, so a
+## building never hides the cat at its ring, nothing tall stands just south of where the cat walks, and the ground
+## straight south of the fire stays open. The same at every home level. See docs/PHASE_A_PROGRESS.md, "Camp layout and
+## HUD".
 ## G4 (21 Nov 2026): the Saddlery stands south-east, past the Market, on its own path (the Market's lane, then round the
-## Saddlery's west side to its ring on the camera's side). It keeps clear of the Market's and the Cottage's rings and
-## paths (even its biggest stand-in, bow_bench_3, 2.3 m tall, hides none of them), of the garden's ground, the Burrow's
-## path and the lake.
-## 23 Nov 2026: the Tailor's Nook (the cat's outfits) stands east-south-east, past the Mushroom Cottage, on its own path
-## (the Cottage's lane, then on past the Cottage's ring to the Nook's ring on the camera's side, 1.95 m out).
+## Saddlery's west side to its ring on the camera's side). It keeps clear of the Market's ring and path (even its
+## biggest stand-in, bow_bench_3, 2.3 m tall, hides none of them), of the garden's ground, the Burrow's path and the lake.
+## 23 Nov 2026: the Tailor's Nook (the cat's outfits) stands east-south-east, on its own path (the lane the Mushroom
+## Cottage had, then on south-east to the Nook's ring on the camera's side, 1.95 m out; its entry's layout.path keeps
+## every point of it).
 ## The owner's model is about 2.6 m wide and 1.77 m tall. At the cat's height (0.1 to 0.6 m), the counter corners reach
 ## 1.47 m from the centre. The footprint is capped at 1.35 m to leave 0.60 m to the ring.
-## The spot is clear of the Cottage, the Saddlery and the Guardian Stone's ground, and far from the roads, barricade
-## pads, lake and garden. The Stone's ring is 3.3 m north and the Cottage's ring is west of it.
-const SPOTS := {"target": Vector3(2.5, 0, -0.5), "bench": Vector3(4.5, 0, 0.6), "cottage": Vector3(6.4, 0, 3.6),
-	"stall": Vector3(3.0, 0, 5.6), "well": Vector3(-4.2, 0, 6.2), "saddlery": Vector3(5.0, 0, 8.0), "tailor": Vector3(8.9, 0, 5.2)}
+## The spot is clear of the Saddlery and the Guardian Stone's ground, and far from the roads, barricade pads, lake and
+## garden. The Stone's ring is 3.3 m north.
+## H5 (27 Nov 2026): the Mushroom Cottage's spot (6.4, 0, 3.6), its ring and its path are gone: that ground is open
+## meadow now (grass, decorations and defences may use it). Only the hide spots' map remembers the old village's Cottage.
 ## The home's one spot at every level 1-8 (the user, 18 Nov 2026: "each home should be in the same place and not too
 ## close to the campfire"): west of the fire, 4.6 m out, so even the level-6 tree leaves open ground round the fire
 ## (1.8 m between their footprints). The trails all come from the north and leave no gap a growing tree fits in, so it
@@ -350,14 +405,25 @@ const HOME_SPOT := Vector3(-4.6, 0, 0.25)
 ## Where the home stood before, by home level (it stepped back as it grew): only the hide spots' map reads it.
 const OLD_HOME := [Vector3.ZERO, Vector3(-2.1, 0, -0.9), Vector3(-2.6, 0, -1.1), Vector3(-3.1, 0, -1.6),
 	Vector3(-3.4, 0, -1.8), Vector3(-3.7, 0, -2.0), Vector3(-4.0, 0, -2.2)]
-## Each one's ring, from its building: in front of it, toward the camera.
-const SPOT_RING := {"target": Vector3(0, 0, 1.25), "bench": Vector3(0, 0, 1.05), "cottage": Vector3(0, 0, 1.45),
-	"stall": Vector3(0, 0, 1.2), "well": Vector3(0, 0, 1.05), "saddlery": Vector3(0, 0, 1.05), "tailor": Vector3(0, 0, 1.95)}
-const MOVED := ["target", "bench", "cottage", "stall", "well", "saddlery", "tailor"]
+## The buildings that can keep village ground and a path from the fire, in the order the paths are laid (H6: only the
+## ids; the rest is each entry's layout, and a building takes part only where its layout says "village" / "path").
+const CAMP_ORDER := ["target", "bench", "stall", "well", "saddlery", "tailor", "workshop"]
 ## The village as it stood before, right south of the campfire, and the bench and the target (they grew outward with the
 ## home). Only the hide spots' seeded sequence still reads them (with their old paths in path_img_base), so the tall
-## grass and the bushes stay where they were.
+## grass and the bushes stay where they were. H5: the Cottage stays in this old map only (no marker, path, collision or
+## defence ground anywhere else); its old door path shows in that map while the pet is owned (_legacy_built), as it
+## did while the Cottage stood.
 const OLD_VILLAGE := {"well": Vector3(0.0, 0, 3.3), "cottage": Vector3(-2.1, 0, 3.9), "stall": Vector3(2.5, 0, 4.7)}
+const OLD_DOOR := {"well": 1.0, "cottage": 1.25, "stall": 1.2}   # each old building's door, that far in front of it
+
+
+## A building of the old village stands, for the hide spots' map only: its station is built; H5: the old Cottage
+## (gone from the camp) counts while the pet is owned, as the pet came with the Cottage before, so the hide spots stay
+## where they were.
+func _legacy_built(id: String) -> bool:
+	if id == "cottage":
+		return Data.pet_level() > 0
+	return int(Save.stations.get(id, 0)) > 0
 
 
 func _old_spot(id: String) -> Vector3:
@@ -365,22 +431,39 @@ func _old_spot(id: String) -> Vector3:
 	return Vector3(2.3, 0, -1.0) * k if id == "bench" else Vector3(2.1, 0, 1.5) * k
 
 
-## Where a building's ring is (the target, bench, cottage, stall, well and, G4, the Saddlery; the Tailor's Nook).
+## Where a building's ring is: its position plus its layout.ring_offset (the target, bench, stall, well, Saddlery,
+## Tailor's Nook, stone and garden). The fishing spot's ring is FISH_RING.
 func spot_ring(id: String) -> Vector3:
-	return SPOTS[id] + SPOT_RING[id]
+	if id == "fishing":
+		return FISH_RING
+	var g: Dictionary = _geo(id)
+	return (g["pos"] as Vector3) + (g["ring"] as Vector3)
 
 
-## True if p is on the ground kept for the camp's buildings round the fire (each one and its ring), built yet or not.
+## True if p is on the ground kept for the camp's buildings round the fire (each one and its ring), built yet or not:
+## the buildings whose layout has "village" (not the home, the stone, the garden or the fishing spot).
 func in_village(p: Vector3, margin: float) -> bool:
-	for id in MOVED:
-		if p.distance_to(SPOTS[id]) < 1.3 + margin or p.distance_to(spot_ring(id)) < 0.9 + margin:
+	for id in CAMP_ORDER:
+		var g: Dictionary = _geo(id)
+		if float(g["village_r"]) < 0.0:
+			continue
+		if p.distance_to(g["pos"]) < float(g["village_r"]) + margin or p.distance_to(spot_ring(id)) < float(g["village_ring_r"]) + margin:
 			return true
 	return false
 
 
+## True if p is within `margin` of one building's footprint or ring ground (the same two circles in_village uses), for
+## the placement ghost and the save's returns (H6). False for a building without village ground.
+func on_station_ground(id: String, p: Vector3, margin: float) -> bool:
+	var g: Dictionary = _geo(id)
+	if float(g["village_r"]) < 0.0:
+		return false
+	return p.distance_to(g["pos"]) < float(g["village_r"]) + margin or p.distance_to(spot_ring(id)) < float(g["village_ring_r"]) + margin
+
+
 ## The same test for the old village ground (the hide spots' loops only, see OLD_VILLAGE).
 func _in_old_village(p: Vector3, margin: float) -> bool:
-	for id in VILLAGE:
+	for id in OLD_VILLAGE:
 		var c: Vector3 = OLD_VILLAGE[id]
 		if p.distance_to(c) < 1.3 + margin or p.distance_to(c + Vector3(0, 0, 1.2)) < 0.9 + margin:
 			return true
@@ -398,8 +481,11 @@ func camp_view(p: Vector3) -> bool:
 
 ## True if one of the camp's buildings stands within d of p (the decorations keep clear of them).
 func near_village(p: Vector3, d: float) -> bool:
-	for id in MOVED:
-		if int(Save.stations.get(id, 0)) > 0 and p.distance_to(SPOTS[id]) < d:
+	for id in CAMP_ORDER:
+		var g: Dictionary = _geo(id)
+		if float(g["village_r"]) < 0.0:
+			continue
+		if int(Save.stations.get(id, 0)) > 0 and p.distance_to(g["pos"]) < d:
 			return true
 	return false
 
@@ -471,9 +557,9 @@ func _build_trails() -> void:
 ## dirt and cobblestones with a ragged grassy edge; the grass and the decorations keep off it.
 func rebuild_paths(force := false) -> void:
 	var key := "%d|%d|%d|%d|%d|%d" % [Save.camp_level, int(Save.stations.get("target", 0)), int(Save.stations.get("bench", 0)),
-		int(Save.stations.get("well", 0)), int(Save.stations.get("cottage", 0)), int(Save.stations.get("stall", 0))]
-	key += "|%d|%d|%d|%d|%d" % [int(Save.stations.get("stone", 0)), int(Save.stations.get("garden", 0)), int(Save.stations.get("fishing", 0)),
-		int(Save.stations.get("saddlery", 0)), int(Save.stations.get("tailor", 0))]
+		int(Save.stations.get("well", 0)), int(_legacy_built("cottage")), int(Save.stations.get("stall", 0))]
+	key += "|%d|%d|%d|%d|%d|%d" % [int(Save.stations.get("stone", 0)), int(Save.stations.get("garden", 0)), int(Save.stations.get("fishing", 0)),
+		int(Save.stations.get("saddlery", 0)), int(Save.stations.get("tailor", 0)), int(Save.stations.get("workshop", 0))]
 	if key == _path_key and not force:
 		return
 	_path_key = key
@@ -487,8 +573,8 @@ func rebuild_paths(force := false) -> void:
 	var old_home_path := _smooth(PackedVector3Array([Vector3(-1.1, 0, 0.4), (old_home + Vector3(-1.1, 0, 0.4)) * 0.5 + Vector3(0, 0, 0.35), old_home]), 5)
 	# the lane from the campfire south to the garden
 	var any_village := false
-	for id in VILLAGE:
-		if int(Save.stations.get(id, 0)) > 0:
+	for id in OLD_VILLAGE:
+		if _legacy_built(String(id)):
 			any_village = true
 	var has_garden := int(Save.stations.get("garden", 0)) > 0
 	var old_lane := _smooth(PackedVector3Array([Vector3(0.0, 0, 1.0), Vector3(0.55, 0, 2.6), Vector3(0.75, 0, 4.2), Vector3(0.3, 0, 5.4)]), 5)
@@ -506,12 +592,12 @@ func rebuild_paths(force := false) -> void:
 		legacy.append([_smooth(PackedVector3Array([Vector3(1.1, 0, -0.3), (bn + Vector3(1.1, 0, -0.3)) * 0.5 + Vector3(0.1, 0, 0.25), bn]), 5), CAMP_PATH_HALF])
 	if any_village and not has_garden:
 		legacy.append([old_lane, CAMP_PATH_HALF])
-	for id in VILLAGE:
-		if int(Save.stations.get(id, 0)) > 0:
-			var door: Vector3 = OLD_VILLAGE[id] + Vector3(0, 0, {"well": 1.0, "cottage": 1.25, "stall": 1.2}[id])
+	for id in OLD_VILLAGE:
+		if _legacy_built(String(id)):
+			var door: Vector3 = OLD_VILLAGE[id] + Vector3(0, 0, float(OLD_DOOR[id]))
 			var from := Vector3(0.7, 0, clampf(door.z, 2.6, 5.2))
 			legacy.append([_smooth(PackedVector3Array([from, (from + door) * 0.5 + Vector3(0, 0, 0.2), door]), 5), CAMP_PATH_HALF * 0.85])
-	# the paths to the camp's buildings (STATION_PATHS), and the Phase E path to each Burrow's hollow, always there (the
+	# the paths to the camp's buildings (each entry's layout.path), and the Phase E path to each Burrow's hollow, always there (the
 	# sealed hollow is a teaser from the start): the lane's trunk south, then round the west side of the garden. Stamped
 	# after the map for the hide spots is kept, so their seeded sequence stays as it was.
 	var base_n := lines.size()
@@ -587,34 +673,52 @@ func _stamp(data: PackedByteArray, line: Array) -> void:
 ## The paths from the campfire to each building's ring, as built (points from the fire out; smoothed). Each leaves the
 ## fire's dirt and reaches the ring from the camera's side, and passes clear of the other rings. The well's is a short
 ## stepping-stone path from the lane to the lake (_stepping_stones).
-const STATION_PATHS := {
-	"target": [Vector3(1.15, 0, 0.95), Vector3(1.85, 0, 1.1), Vector3(2.5, 0, 0.75)],
-	"bench": [Vector3(1.15, 0, 0.95), Vector3(2.6, 0, 1.95), Vector3(3.7, 0, 2.05), Vector3(4.5, 0, 1.65)],
-	"cottage": [Vector3(1.15, 0, 0.95), Vector3(2.6, 0, 1.95), Vector3(4.0, 0, 2.6), Vector3(4.55, 0, 3.6),
-		Vector3(4.6, 0, 4.8), Vector3(5.5, 0, 5.35), Vector3(6.4, 0, 5.05)],
-	"stall": [Vector3(0.35, 0, 4.6), Vector3(1.2, 0, 6.45), Vector3(2.1, 0, 6.95), Vector3(3.0, 0, 6.8)],
-	"well": [Vector3(-0.6, 0, 5.95), Vector3(-1.9, 0, 6.9), Vector3(-3.1, 0, 7.45), Vector3(-4.2, 0, 7.25)],
-	# G4: the Market's lane to its fork, then south past the Market's ring and round the Saddlery's west side
-	"saddlery": [Vector3(0.35, 0, 4.6), Vector3(1.2, 0, 6.45), Vector3(2.1, 0, 6.95), Vector3(2.9, 0, 7.6), Vector3(3.1, 0, 8.6),
-		Vector3(3.9, 0, 9.25), Vector3(5.0, 0, 9.05)],
-	# 23 Nov 2026: the Cottage's lane, then south-east past the Cottage's ring and round to the Nook's ring from the south
-	"tailor": [Vector3(1.15, 0, 0.95), Vector3(2.6, 0, 1.95), Vector3(4.0, 0, 2.6), Vector3(4.55, 0, 3.6),
-		Vector3(4.6, 0, 4.8), Vector3(5.5, 0, 5.35), Vector3(6.5, 0, 6.45), Vector3(7.7, 0, 7.3), Vector3(8.9, 0, 7.15)]}
 const WALK_PEAK := 0.55                     # the well's path: a worn trail with stepping stones, not a road
 
 
 ## The built buildings' paths: [points, half width, (peak)].
 func _station_lines() -> Array:
 	var out: Array = []
-	for id in ["target", "bench", "cottage", "stall", "well", "saddlery", "tailor"]:
+	for id in CAMP_ORDER:
 		if int(Save.stations.get(id, 0)) <= 0:
 			continue
-		var pts := PackedVector3Array(STATION_PATHS[id])
-		if id == "well":
-			out.append([_smooth(pts, 6), CAMP_PATH_HALF * 0.75, WALK_PEAK])
+		var g: Dictionary = _geo(id)
+		var pts: PackedVector3Array = g["path"]
+		if pts.is_empty():
+			continue
+		if String(g["trunk_of"]) != "":
+			# H6: a branch (the Workshop's) forks off its trunk building's path. When that building stands, its whole line is
+			# stamped already (it comes earlier in CAMP_ORDER); when it does not, the trunk is stamped up to the fork.
+			var tg: Dictionary = _geo(String(g["trunk_of"]))
+			if int(Save.stations.get(String(g["trunk_of"]), 0)) <= 0:
+				var cut := _trunk_to_fork(tg, g["fork_at"])
+				if cut.size() >= 2:
+					out.append([cut, CAMP_PATH_HALF * float(tg["half_mult"])])
+			if pts[0].distance_to(g["fork_at"]) > 0.05:
+				var from_fork := PackedVector3Array([g["fork_at"]])
+				from_fork.append_array(pts)
+				pts = from_fork
+		if float(g["peak"]) >= 0.0:
+			out.append([_smooth(pts, int(g["smooth"])), CAMP_PATH_HALF * float(g["half_mult"]), float(g["peak"])])
 		else:
-			out.append([_smooth(pts, 6), CAMP_PATH_HALF * 0.85])
+			out.append([_smooth(pts, int(g["smooth"])), CAMP_PATH_HALF * float(g["half_mult"])])
 	return out
+
+
+## A trunk building's smoothed path from the fire up to the fork point (up to the point of the smoothed line nearest it).
+func _trunk_to_fork(trunk_geo: Dictionary, fork: Vector3) -> PackedVector3Array:
+	var pts: PackedVector3Array = trunk_geo["path"]
+	if pts.size() < 2:
+		return PackedVector3Array()
+	var sm := _smooth(pts, int(trunk_geo["smooth"]))
+	var best := 0
+	var best_d := INF
+	for k in sm.size():
+		var d := sm[k].distance_to(fork)
+		if d < best_d:
+			best_d = d
+			best = k
+	return sm.slice(0, best + 1)
 
 
 var _stones: MultiMeshInstance3D

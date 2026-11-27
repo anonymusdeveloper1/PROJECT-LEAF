@@ -1,0 +1,13 @@
+{
+  "id": "shield_wall",
+  "name": "Shield Wall",
+  "desc": "Beetle Knight, Mole Sapper",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 10,
+  "members": [
+    {"kind": "beetle", "n": [2, 2]},
+    {"kind": "mole", "n": [2, 2]}
+  ]
+}

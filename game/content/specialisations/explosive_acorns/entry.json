@@ -1,0 +1,11 @@
+{
+  "id": "explosive_acorns",
+  "name": "Explosive acorns",
+  "desc": "Acorns burst on a hit and hurt nearby enemies.",
+  "icon": "tower",
+  "kind": "tower",
+  "unlock": {"missions_won": 2},
+  "effect": "explosive_acorns",
+  "price": {"leaves": 250, "timber": 10},
+  "upgrades": [{"leaves": 550, "timber": 20}, {"leaves": 1100, "timber": 35}]
+}

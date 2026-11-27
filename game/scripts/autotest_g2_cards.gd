@@ -10,10 +10,17 @@ extends Node
 ##   (b) the tiles' buttons: an affordable one runs its action and the card refreshes; an unaffordable or a disabled one
 ##       is grey and does nothing; a free one runs; the plain row's button still works
 ##   (c) the real cards opened by a tap, one by one, with screenshots (a veteran save with them all built): the
-##       Hearthtree, the Training Target, the Bow Shop, the Market and the Wishing Well: each fits the phone, shows
-##       tiles, its tiles the same size and 2 a row, their buttons a thumb wide
+##       Hearthtree, the Training Target, the Bow Shop, the Market and the Wishing Well; each fits the phone. H4 (26 Nov
+##       2026, the windows' new shape): H5 (27 Nov): the Market shows its wares as a grid of picture cells (the same size, 2 a row, no button), Buys pays a neutral amount, four round icon tabs sit at its bottom and it has no footer; the old tiles remain in the synthetic card; their
+##       buttons a thumb wide; the Hearthtree's tab shows no tiles, its Cat and Defences tabs, the Target and the Bow
+##       Shop show list rows, as wide as the list, their buttons a thumb wide; the Well is only its footer (no rows);
+##       each footer's Upgrade sits inside the dialog and the screen, out of the list that scrolls. Then the confirm
+##       window (from the Well's Upgrade) and the build menu (a real tap on the build icon) fit the phone too
 ##   (d) every icon id gives a picture (made once; every SVG loaded), an unknown id a plain round one, a texture is used
 ##       as it is; a sheet of them all (cards_icons.png)
+##   (e) H4, the window kit (run after (b)): in its own file, autotest_g2_cards_kit.gd, which calls the helpers here
+##       (_x, _grids, _texts, _list_rows, _on_card_and_screen and FakeRing). Moved out on 26 Nov 2026 (house rule 1: one
+##       job a file, under about 800 lines); its checks did not change. Screenshots: cards_kit_*.png.
 
 var t                     # autotest.gd (its helpers: _wait, _shot, _expect, _until, _veteran, _at_ring, _press, _tap_close...)
 var main
@@ -24,7 +31,9 @@ var _ring                 # the test card's stand-in marker (kept while its card
 const UiIcons := preload("res://scripts/ui_icons.gd")
 const ICON_IDS := ["bow", "target", "damage", "draw", "range", "heart", "speed", "magnet", "timber", "leaves", "berries",
 	"herbs", "honey", "fish", "goldfish", "shard", "amber", "tower", "barricade", "spikes", "well",
-	"home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair", "settings"]
+	"home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair", "settings",
+	# H3 (the owner's Q6 a): the stand-ins for the new ingredients and the recipes (a bottle per potion in its colour)
+	"peppers", "roots", "health_potion", "mount_potion", "cooked_fish", "damage_potion", "speed_potion"]
 
 
 ## A stand-in for a marker: all the dialog needs from one is its card builder.
@@ -42,6 +51,14 @@ func run() -> bool:
 	await t._wait(0.6)
 	await _test_card()
 	await _buttons()
+	var kit = load("res://scripts/autotest_g2_cards_kit.gd").new()   # (e): the H4 window kit's checks
+	kit.t = t
+	kit.main = main
+	kit.g = self
+	kit._lay = _lay
+	add_child(kit)
+	await kit.run()
+	kit.queue_free()
 	await _real_cards()
 	await _icons()
 	return true
@@ -150,6 +167,52 @@ func _tile_problems() -> Array:
 					bad.append("%s's button is small %s" % [x.get_meta("title", "?"), (b as Control).size])
 		if tl.size() >= 2 and int(g.columns) >= 2 and absf((tl[0] as Control).position.y - (tl[1] as Control).position.y) > 0.5:
 			bad.append("the first two tiles are not side by side")
+	return bad
+
+
+# ---------------------------------------------------------------- H4: list rows and the footer (the kit file and (c) use these)
+func _list_rows() -> Array:
+	var out: Array = []
+	var list = main.hud._card_list
+	if main.hud._card == null or list == null or not is_instance_valid(list):
+		return out
+	for c in list.get_children():
+		if c.has_meta("list_row") and not c.is_queued_for_deletion():
+			out.append(c)
+	return out
+
+
+## A control shows inside the dialog and inside the screen between the phone's bars.
+func _on_card_and_screen(c: Control) -> bool:
+	var hud = main.hud
+	var v := _view()
+	var r := c.get_global_rect()
+	var top: float = hud._safe.x
+	var bottom: float = v.y - hud._safe.y
+	var screen := Rect2(0.0, top, v.x, bottom - top)
+	return c.is_visible_in_tree() and hud._card.get_global_rect().grow(0.5).encloses(r) and screen.grow(0.5).encloses(r)
+
+
+## (c) The list rows of the open card: [as wide as the list, inside the dialog sideways, buttons a thumb wide (44 px, as
+## the tiles' check)] -> the problems.
+func _list_problems() -> Array:
+	var bad: Array = []
+	var hud = main.hud
+	if hud._card == null or hud._card_list == null:
+		return ["no card is open"]
+	var cr: Rect2 = hud._card.get_global_rect()
+	var lw: float = hud._card_list.size.x
+	for r in _list_rows():
+		var rc := r as Control
+		var nm := String(r.get_meta("title", "?"))
+		if absf(rc.size.x - lw) > 1.0:
+			bad.append("%s is %.0f wide, the list %.0f" % [nm, rc.size.x, lw])
+		var gr := rc.get_global_rect()
+		if gr.position.x < cr.position.x - 0.5 or gr.end.x > cr.end.x + 0.5:
+			bad.append("%s sticks out of the dialog" % nm)
+		for b in _buttons_in(r):
+			if (b as Control).size.y < 44.0 or (b as Control).size.x < 44.0:
+				bad.append("%s's button is small %s" % [nm, (b as Control).size])
 	return bad
 
 
@@ -277,11 +340,19 @@ func _buttons() -> void:
 
 
 # ---------------------------------------------------------------- (c) the real cards
+## H4: each real card's marker, its name in the checks and its shape: "grid" (H5: the Market's picture cells, bottom icon
+## tabs and no footer), "plain" (the
+## Hearthtree's own tab: its goals and the Graphics row, no tiles; its Cat and Defences tabs are "list"), "list" (list
+## rows: the Training Target, the Bow Shop) or "footer" (the Wishing Well: no rows, only its pinned Upgrade).
+const REAL := [["shop", "hearthtree", "plain"], ["target", "target", "list"], ["bench", "bench", "list"],
+	["stall", "market", "grid"], ["well", "well", "footer"]]
+
+
 func _real_cards() -> void:
 	var hud = main.hud
 	hud.hide_card()
 	t._veteran(6)
-	for id in ["target", "bench", "well", "stall", "cottage", "garden"]:
+	for id in ["target", "bench", "well", "stall", "garden"]:
 		Save.stations[id] = maxi(int(Save.stations.get(id, 0)), 1)
 	Save.leaves = 3000
 	Save.timber = 60
@@ -289,7 +360,7 @@ func _real_cards() -> void:
 	main.stations.refresh("all")
 	await t._wait(1.2)
 	var st = main.stations
-	for pair in [["shop", "hearthtree"], ["target", "target"], ["bench", "bench"], ["stall", "market"], ["well", "well"]]:
+	for pair in REAL:
 		var ring = st.rings.get(pair[0])
 		if ring == null or not is_instance_valid(ring) or not ring.is_visible_in_tree():
 			_x("the %s's marker is there" % pair[1], false)
@@ -300,12 +371,11 @@ func _real_cards() -> void:
 			continue
 		await t._shot("cards_" + pair[1])
 		_lay._card_fits(pair[1])
-		var n := 0
-		for g in _grids():
-			n += _tiles(g).size()
-		_x("the %s card shows its wares as tiles" % pair[1], n > 0, {"title": hud.card_title(), "tiles": n})
-		var probs := _tile_problems()
-		_x("the %s card's tiles: the same size, 2 a row, buttons a thumb wide" % pair[1], probs.is_empty(), {"bad": probs.slice(0, 5)})
+		_card_shape(pair[1], pair[2])
+		if pair[2] == "grid":
+			await _market_grid(pair[1])                  # H5: Sells, the Buys tab's neutral payout, the bottom icon tabs, no footer
+		else:
+			_footer_inside(pair[1])
 		var sc: ScrollContainer = hud._card_scroll
 		if sc != null and hud._card_list != null and hud._card_list.size.y > sc.size.y + 40.0:
 			sc.scroll_vertical = int(sc.size.y * 0.85)    # a long card: one more shot further down
@@ -315,8 +385,205 @@ func _real_cards() -> void:
 				sc.scroll_vertical = int(sc.size.y * 1.7)
 				await t._wait(0.3)
 				await t._shot("cards_%s_more2" % pair[1])
-		await t._tap_close()
+		if pair[1] == "hearthtree":
+			await _hearthtree_tabs()
+		elif pair[1] == "well":
+			await _confirm_from("well")
+		await t._tap_close()                             # the confirm's X closes everything too (Q3 (a))
 		await t._wait(0.2)
+	await _build_menu()
+
+
+## The open card's shape (see REAL). Each check fails on the old shape: tiles where a list should be, rows on the Well.
+func _card_shape(what: String, shape: String) -> void:
+	var hud = main.hud
+	var tiles := 0
+	for g in _grids():
+		tiles += _tiles(g).size()
+	var rows := _list_rows()
+	match shape:
+		"tiles":
+			_x("the %s card shows its wares as tiles" % what, tiles > 0, {"title": hud.card_title(), "tiles": tiles})
+			var probs := _tile_problems()
+			_x("the %s card's tiles: the same size, 2 a row, buttons a thumb wide" % what, probs.is_empty(), {"bad": probs.slice(0, 5)})
+		"grid":
+			var cells := _cells()
+			_x("the %s card shows its wares as picture cells (a grid)" % what, cells.size() > 0, {"title": hud.card_title(), "cells": cells.size()})
+			var cp := _cell_problems()
+			_x("the %s card's cells: the same size, inside the dialog, no buttons" % what, cp.is_empty(), {"bad": cp.slice(0, 5)})
+		"plain":
+			_x("the %s card shows its rows and no tiles" % what, tiles == 0 and hud._card_list.get_child_count() > 0,
+				{"tiles": tiles, "children": hud._card_list.get_child_count()})
+		"list":
+			_x("the %s card shows list rows and no tiles" % what, rows.size() > 0 and tiles == 0,
+				{"rows": rows.size(), "tiles": tiles})
+		"footer":
+			_x("the %s card is only its footer: no rows, no tiles" % what, rows.is_empty() and tiles == 0
+				and not hud._card_body.visible, {"rows": rows.size(), "tiles": tiles, "body": hud._card_body.visible})
+	if not rows.is_empty():
+		var lp := _list_problems()
+		_x("the %s card's list rows: as wide as the list, buttons a thumb wide" % what, lp.is_empty(),
+			{"rows": rows.size(), "bad": lp.slice(0, 5)})
+
+
+## H5: the picture cells of the open card's grids (ui/kit/icon_grid.gd marks each with "cell").
+func _cells() -> Array:
+	var out: Array = []
+	for g in _grids():
+		out.append_array(g.get_children().filter(func(c): return c.has_meta("cell") and not c.is_queued_for_deletion()))
+	return out
+
+
+## H5: the cells of the open card: [all the same size, at most 3 a row, inside the dialog, a thumb big, no button in a cell]
+## -> the problems. A cell is tapped as a whole (its popup or detail view).
+func _cell_problems() -> Array:
+	var bad: Array = []
+	var cr: Rect2 = main.hud._card.get_global_rect() if main.hud._card != null else Rect2()
+	for g in _grids():
+		var cl: Array = g.get_children().filter(func(c): return c.has_meta("cell") and not c.is_queued_for_deletion())
+		if cl.is_empty():
+			continue
+		if _view().x < 800.0 and (g as GridContainer).columns > 3:
+			bad.append("%d a row" % (g as GridContainer).columns)
+		for x in cl:
+			if ((x as Control).size - (cl[0] as Control).size).length() > 1.5:   # a column is a whole pixel wider when the width does not divide
+				bad.append("%s is %s, not %s" % [x.get_meta("title", "?"), (x as Control).size, (cl[0] as Control).size])
+			var r: Rect2 = (x as Control).get_global_rect()
+			if r.position.x < cr.position.x - 0.5 or r.end.x > cr.end.x + 0.5:
+				bad.append("%s sticks out of the dialog" % x.get_meta("title", "?"))
+			if r.size.x < 44.0 or r.size.y < 44.0:
+				bad.append("%s is too small to tap %s" % [x.get_meta("title", "?"), r.size])
+			if not _buttons_in(x).is_empty():
+				bad.append("%s holds a button" % x.get_meta("title", "?"))
+		if cl.size() >= 2 and int(g.columns) >= 2 and absf((cl[0] as Control).position.y - (cl[1] as Control).position.y) > 0.5:
+			bad.append("the first two cells are not side by side")
+	return bad
+
+
+## H5: the Market's own shape. Sells' prices are checked amounts; Buys pays a neutral amount (never red, never a check);
+## four round icon tabs sit under the grid, each with its word as its name and its tab id; and no footer.
+func _market_grid(what: String) -> void:
+	var hud = main.hud
+	var win = hud.windows["stall"]
+	var tabs: Array = _tab_buttons_of_card()
+	var want: Array = win.tab_ids()
+	var ids: Array = tabs.map(func(b): return String(b.get_meta("tab_id", "")))
+	_x("the %s has four bottom tabs: Sells, Buys, Mounts, Pets" % what, tabs.size() == 4 and ids == want, {"tabs": ids, "want": want})
+	var icon_only := not tabs.is_empty()
+	var named := not tabs.is_empty()
+	var thumb := not tabs.is_empty()
+	for b in tabs:
+		icon_only = icon_only and String((b as Button).text) == ""
+		named = named and String(b.get_meta("tab_name", "")) != ""
+		thumb = thumb and (b as Control).size.y >= 44.0 and (b as Control).size.x >= 44.0
+	_x("the %s's tabs are icons only, each with its word as its name, a thumb big" % what, icon_only and named and thumb)
+	var sc: ScrollContainer = hud._card_scroll
+	var under: bool = hud._card_tabs != null and sc != null and hud._card_tabs.get_global_rect().position.y >= sc.get_global_rect().end.y - 1.0
+	_x("the %s's tabs sit under the grid, inside the dialog and the screen" % what, under and _on_card_and_screen(hud._card_tabs), {"tabs": hud._card_tabs.get_global_rect()})
+	var ft = hud.p_card.foot
+	var has_foot: bool = ft != null and is_instance_valid(ft) and (ft as Control).visible
+	_x("the %s has no footer and no Upgrade" % what, not has_foot and hud.p_card.footer_button(Data.word("upgrade")) == null and not win.spec().has("footer"),
+		{"foot": has_foot})
+	# Sells' cells carry the price as shop_tiles' checked price line (red when short, no amount_line meta); a neutral
+	# amount_line is a payout and belongs to Buys only.
+	var price_cells := 0
+	var neutral_on_sells := false
+	for cell in _cells():
+		var has_price := false
+		for l in (cell as Node).find_children("*", "HBoxContainer", true, false):
+			if l.has_meta("amount_line"):
+				if bool(l.get_meta("neutral", false)):
+					neutral_on_sells = true
+			elif not (l as Node).find_children("*", "Label", true, false).is_empty():
+				has_price = true
+		if has_price:
+			price_cells += 1
+	_x("Sells shows its prices as checked price lines, no neutral payout", price_cells > 0 and not neutral_on_sells, {"price cells": price_cells, "neutral": neutral_on_sells})
+	win.select("buys")
+	await t._wait(0.4)
+	await t._shot("cards_market_buys")
+	_lay._card_fits("market, Buys tab")
+	var lines: Array = []
+	var red := false
+	for l in hud._card.find_children("*", "HBoxContainer", true, false):
+		if l.has_meta("amount_line"):
+			lines.append(l)
+			for lb in (l as Node).find_children("*", "Label", true, false):
+				if not bool(lb.get_meta("afford", true)):
+					red = true
+	var neutral: bool = not lines.is_empty() and lines.all(func(l): return bool(l.get_meta("neutral", false)))
+	_x("Buys pays a neutral amount: no check, never red", neutral and not red, {"lines": lines.size(), "red": red})
+	var cp := _cell_problems()
+	_x("Buys' cells: the same size, inside the dialog, no buttons", _cells().size() > 0 and cp.is_empty(), {"cells": _cells().size(), "bad": cp.slice(0, 5)})
+	win.select("sells")
+	await t._wait(0.2)
+
+
+## The tab buttons of the open card (marked "card_tab").
+func _tab_buttons_of_card() -> Array:
+	var tabs = main.hud._card_tabs
+	if main.hud._card == null or tabs == null or not is_instance_valid(tabs):
+		return []
+	return tabs.get_children().filter(func(b): return b.has_meta("card_tab") and not b.is_queued_for_deletion())
+
+
+## The open card's pinned footer shows, out of the list that scrolls, with its Upgrade inside the dialog and the screen
+## and a thumb wide (44 px, as the tiles').
+func _footer_inside(what: String) -> void:
+	var hud = main.hud
+	var ft: Control = hud.p_card.foot
+	var up: Button = hud.p_card.footer_button(Data.word("upgrade"))
+	var shown: bool = ft != null and is_instance_valid(ft) and ft.visible and not hud._card_scroll.is_ancestor_of(ft)
+	var inside: bool = up != null and _on_card_and_screen(up) and up.size.x >= 44.0 and up.size.y >= 44.0
+	_x("the %s card's footer: its Upgrade inside the dialog and the screen, a thumb wide, out of the list that scrolls" % what,
+		shown and inside, {"shown": shown, "button": up.get_global_rect() if up != null else Rect2()})
+
+
+## The Hearthtree's other tabs (the Cat's stats, the Defences shelf): list rows, and the dialog still fits.
+func _hearthtree_tabs() -> void:
+	var win = main.hud.windows["shop"]
+	var ids: Array = win.tab_ids()
+	_x("the Hearthtree has its Cat tab (its stats are list rows)", ids.has("cat"), {"tabs": ids})
+	for tid: String in ids:
+		if tid == "hearthtree":
+			continue
+		win.select(tid)
+		await t._wait(0.4)
+		await t._shot("cards_hearthtree_" + tid)
+		_lay._card_fits("hearthtree, %s tab" % tid)
+		_card_shape("hearthtree's %s tab" % tid, "list")
+	win.select("hearthtree")
+	await t._wait(0.2)
+
+
+## H4: the confirm window, from the open card's pinned Upgrade (the Well's: level 1 under a level 3 Hearthtree, so it
+## is on): it opens and fits the phone as every dialog does.
+func _confirm_from(what: String) -> void:
+	var hud = main.hud
+	var up: Button = hud.p_card.footer_button(Data.word("upgrade"))
+	if not _x("the %s's Upgrade is on" % what, up != null and not up.disabled):
+		return
+	up.pressed.emit()
+	await t._wait(0.6)
+	if not _x("the %s's Upgrade opens the confirm window" % what, hud.card_ring() == hud.confirm, {"title": hud.card_title()}):
+		return
+	await t._shot("cards_confirm")
+	_lay._card_fits("confirm, from the %s's Upgrade" % what)
+
+
+## H4: the build menu, opened by a real tap on the build icon next to the Bag: it fits the phone.
+func _build_menu() -> void:
+	var hud = main.hud
+	hud.hide_card()
+	await t._wait(0.3)
+	await t._tap_at(hud._build_icon.get_global_rect().get_center())
+	await t._wait(0.8)                                # the pictures fade in one after another (0.3 s)
+	if not _x("a real tap on the build icon opens the build menu", hud.card_ring() == hud.windows["build"], {"title": hud.card_title()}):
+		return
+	await t._shot("cards_build")
+	_lay._card_fits("build menu")
+	await t._tap_close()
+	await t._wait(0.2)
 
 
 # ---------------------------------------------------------------- (d) the icons

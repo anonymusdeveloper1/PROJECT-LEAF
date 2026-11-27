@@ -1,0 +1,24 @@
+{
+  "id": "glowcap",
+  "name": "Glowcap",
+  "desc": "A spore lobber that slows its target.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "brute",
+  "height": 0.9,
+  "radius": 0.35,
+  "color": "#7FE3E0",
+  "scale": 0.55,
+  "tint": "#7FE3E0",
+  "_note": "Phase E stand-in: the brute, small and tinted teal",
+  "parts": {
+    "health": {"max": 40},
+    "mover": {"speed": 0.6, "keep_away": 4.0},
+    "attack": {"damage": 1, "gate_damage": 0, "reach": 0.5, "attack_every": 1.4, "lob_every": 2.6, "lob_range": 7.0, "lob_warn": 1.1, "lob_radius": 1.1, "lob_lead": 0.5},
+    "status": {"slow_s": 2.0},
+    "loot": {"leaves": 4},
+    "health_bar": {},
+    "brain": {"aggro": 8.0}
+  }
+}

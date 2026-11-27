@@ -1,0 +1,12 @@
+{
+  "id": "moth_cloud",
+  "name": "Moth Cloud",
+  "desc": "Gloom Moth",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 7,
+  "members": [
+    {"kind": "moth", "n": [3, 3]}
+  ]
+}

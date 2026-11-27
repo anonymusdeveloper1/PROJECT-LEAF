@@ -99,7 +99,7 @@ func _live_wave() -> bool:
 	f._queue.clear()
 	f._qinfo.clear()
 	for e in _foes():
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 	var cleared: bool = await t._until(func(): return not f.in_wave, 5.0)
 	ok = t._expect("its enemies beaten, the wave announces wave_ended(1, held)", cleared and _waves.has(["end", 1, true]),
 		{"waves": _waves}) and ok

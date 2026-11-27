@@ -33,11 +33,19 @@ are in `../docs/ASSET_RULES.md`.
 - **Outfits:** the Tailor's Nook sells teal Dusk Ranger and crimson/gold Ember Ranger (formerly Nightfall).
   Existing Nightfall purchases become Ember Ranger. Riding speed is reduced 15% at every Market level.
 
-- **Bag:** tap Bag at the bottom-left for one grid of square item slots with icons and counts. Currency counts sit
-  above it. A preview shows the cat, seated on her current mount while riding. Tap a slot for its uses and actions.
-  Gameplay continues. Garden and cooking cards show owned food, recipes show Have and Need, and gathering and trading
-  show the resulting totals. In a dungeon, choose a quick-heal food or Auto, then use the labelled bottom button or
-  Eat in the Bag. Both share the same cooldown. Materials show At camp and This run amounts.
+- **Bag (H3, 26 Nov 2026):** tap Bag at the bottom-left: 24 square slots, health bars and currencies above them, and a
+  preview of the cat (on her mount while riding). Only owned things take a slot. Food, fish, amber, towers and spikes
+  stack to 20; each potion is one stack up to its limit (Health Potion 3, Mount Health Potion 3, Cooked Fish 10,
+  Damage Potion 1, Speed Potion 2). Tap a slot for its name, count and use: **Use** for potions and fish, **Place**
+  for towers and spikes. A full Bag refuses a purchase before you pay, a catch
+  swims away, a ripe crop stays ripe and a potion waits in the pot; things already paid for always go in. Gameplay
+  continues. Amber below ground shows At camp and This run amounts.
+- **Garden and cooking (H3):** crops grow and the pot cooks in real time, also while the game is closed (`Timers`).
+  In the garden's window drag a seed onto an empty plot (paid on the drop), Water (twice as fast for 5/6/7 min at
+  garden level 1/2/3) and tap a ripe plot to pick. In the pot's window drag or tap ingredients into 3 slots, Cook (30 s
+  to 1 min), then Collect into the Bag. Five recipes: Health Potion, Mount Health Potion, Cooked Fish, Damage Potion and
+  Speed Potion (`content/recipes/`). The Health Potion button shows at the bottom right when the cat is hurt; the Mount
+  Health Potion button takes Ride's place while the mount is knocked out. Feed, snacks and the old dishes are gone.
 - **Mounted aiming:** drag to turn the mount and run in that direction. The cat shoots across a strict 280-degree arc,
   leaving an 80-degree gap behind. Rear-quarter shooting turns her torso and arms while the hips and legs face the mount.
 - **Fire-spitter:** the worn Saddlery attachment fires flame balls at the cat's arrow range and attack pace. Its firing
@@ -57,10 +65,11 @@ are in `../docs/ASSET_RULES.md`.
 - **Fight:** tap the signpost and start the next raid. Enemies come down the trails to the edge of the firelight and try to
   put out the campfire; the cat shoots by itself. Between waves, the signpost calls the next one. Small arrows at the
   screen's edge point toward foes off the screen (one per direction; one pulses when a building is hit from that side).
-- **Build:** buy acorn towers and thorn spikes in the shop. Tap the build button, walk the ghost piece where you
-  want it and tap Place. After raid 1, tap an open road pad between waves to build a three-piece barricade for
-  90 leaves and 5 timber. Gate pads open at Hearthtree 1, middle pads at 3, and far pads at 4 on the right and 5 on
-  the left. Tap a built row to repair it, including during a wave.
+- **Build:** buy acorn towers and thorn spikes in the shop; they go into the Bag (H3). Tap the piece's button above the
+  Bag, or Place in the Bag, walk the ghost piece where you want it and tap Place. It drops in with a bounce and a puff
+  of dust; the ghost is red by the lake and the home. After raid 1, tap an open road pad between waves to build a
+  three-piece barricade for 90 leaves and 5 timber. Gate pads open at Hearthtree 1, middle pads at 3, and far pads at
+  4 on the right and 5 on the left. Tap a built row to repair it, including during a wave.
 - **Upgrades are gated:** the home level (grown in the shop) caps every station and defence, and each station's level
   caps what it sells (see the plan, section 4).
 - **Replays (23 Nov 2026):** completed Raid Missions remain available. Repeat completion pays the configured 50%
@@ -100,8 +109,9 @@ Other modes (add after `--autotest --fresh`):
 - `--patch=N`: start at patch N (0 to 3) as a player who has come that far, and play its 5 waves.
 - Phase C (each logs `EXPECT PASS` / `EXPECT FAIL` lines): `--guardian` (the Moss Warden: freed, its post, fighting,
   wrecking foes first, a charge blocked, knocked down and up again, the Last Stand, the camp falling, the post choice),
-  `--guardianab` (Mossback Wakes with and without the Warden), `--garden`, `--cook`, `--fishing`, `--feed` (feeding a
-  knocked-out mount), `--camplife` (the camp at home levels 1-6 with everything built).
+  `--guardianab` (Mossback Wakes with and without the Warden), `--fishing` (H3: the catch goes into the Bag),
+  `--camplife` (the camp at home levels 1-6 with everything built). `--garden`, `--cook` and `--feed` are H3 modes now
+  (below).
 - Phase D, the Gloom Raids (each logs `EXPECT PASS` / `EXPECT FAIL` lines): `--raid` (a raid held: the warning,
   meeting it early, the leader, every raider fought to the last, the pay), `--raidloss` (a raid lost: only the damage stays), `--meter`
   (the meter fills only from clamped live play and actions), `--raidsave` (closing mid-raid: it comes back at its
@@ -124,11 +134,12 @@ Other modes (add after `--autotest --fresh`):
   fps at the way in, in a pack fight and in the arena beside the camp's), `--dungeontreasure` (a map that ends in a
   treasure clearing: `data/dungeons/test_glade.json`), `--dungeonlevels` (levels 1-5: pools, pack sizes, snappers,
   elites, the boss Gloomtouched from level 4), how hard (19 Nov 2026): `--dungeonstand` (the endgame save's cat walks
-  level 1 and just stands and shoots, no dodging, lunches or mount: it must be knocked out before the end; `=god` adds
-  1,000 health to measure the health each fight takes and Mossback's time to kill; `=items` rides Thistle, feeds it
-  and eats lunches but never dodges: it must still fall), `--dungeoncareful` (the same cat with the mount, lunches,
-  dashes through telegraphs and backing off: it must win); `--floormaps=<dir>` saves the night floor's maps as
-  pictures; kept from Phase E: `--burrowsave` (the save fields, amber as the one material and no
+  level 1 and just stands and shoots, no dodging, potions or mount: it must be knocked out before the end; `=god` adds
+  1,000 health to measure the health each fight takes and Mossback's time to kill; `=items` rides Thistle and uses
+  potions (H3; it was lunches and Feed) but never dodges: it must still fall), `--dungeoncareful` (the same cat with
+  the mount, 3 Health and 3 Mount Health Potions, dashes through telegraphs and backing off: it must win; since H3 it
+  loses at the boss in about 2 runs of 3, a known balance point for H8 and H11); `--floormaps=<dir>` saves the night
+  floor's maps as pictures; kept from Phase E: `--burrowsave` (the save fields, amber as the one material and no
   glowstone, heartwood or keys, costs, old saves, the reveal, a Phase E room run closed kindly with its satchel banked,
   nothing by time), `--hollow` (the
   sealed hollow from the first raid won, the reveal, the clearing and the path, the card's levels), `--dash` (the
@@ -167,10 +178,63 @@ Other modes (add after `--autotest --fresh`):
 - H1 (25 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines): `--saves` (`scripts/autotest_saves.gd`, sample saves in
   `game/tests/saves/`: the v2 sample loads, is backed up and is upgraded to v3, with its amber, glowstone, heartwood,
   Hollow keys and a half-done run's satchel turned into leaves at `save_upgrades.to_v3`'s rates; no double conversion;
-  the v3 sample loads unchanged (leaves, its amber and an unknown material, the run's satchel), with no backup, and is
-  saved back as v3 with no key field; the older-save path; a corrupt main file
-  loads the `.bak` copy) and `--pools` (`scripts/autotest_pools.gd`: after a wave the object pools keep a steady size
-  and no pooled object was freed; the event board).
+  in H1 the v3 sample loaded unchanged (leaves, its amber and an unknown material, the run's satchel), with no backup,
+  and was saved back as v3 with no key field (since H3 it is upgraded to v4, see below); the older-save path; a corrupt
+  main file loads the `.bak` copy) and `--pools` (`scripts/autotest_pools.gd`: after a wave the object pools keep a
+  steady size and no pooled object was freed; the event board). H3: `--saves` now upgrades the v3 sample to v4 (the
+  pantry into the Bag, the old dish into a Health Potion, half-grown crops as Timers jobs) and loads and saves the v4
+  sample unchanged; it holds the Timers clock still for the whole test.
+
+- H3 (26 Nov 2026, food, potions and the Bag; each logs `EXPECT PASS` / `EXPECT FAIL` lines): `--timers`
+  (`scripts/autotest_timers.gd`: jobs with a pretend clock follow it, finish "while the game is closed", wait when the
+  clock is set back, a resume checks them, and the clock alone never marks the save dirty), `--content`
+  (`scripts/autotest_content.gd`: the crop and recipe folders, `content/index.json` lists every entry and nothing else,
+  models and icons exist), `--bag` (also `--inventory`; `scripts/autotest_bag.gd`: the Bag window, 24 slots, stacks of
+  20, potion limits, "Bag full", forced adds, Use and Place, the drop-in, buying with a full Bag, Bramble buying a
+  Golden Carp; at its end it runs the potions checks of `scripts/autotest_potions.gd`), `--feed` (the potions checks
+  only: every effect, Damage and Speed together, pausing and clearing, the stall in ruins, the HUD potion buttons with
+  real taps), `--garden` (`scripts/autotest_garden.gd`: the plots' order, a real drag of a seed, growth by the pretend
+  clock, watering, "grows while closed", picking and "Bag full", one Gloom bump per visit, the ring pulsing when a crop
+  ripens, the Upgrade row), `--cook` (`scripts/autotest_cook.gd`: Cooked Fish hidden until fishing, a real drag, Cook
+  lit only on an exact recipe, the timer, "while closed", Collect and "Bag full", the fire out, the slots emptying when
+  the window closes), and `--saves --startup=1` (with `--fresh`) then `--saves --startup=2` (without `--fresh`): a real
+  first launch with a v3 save on disk.
+
+**H4 (26 Nov 2026):** `--buildmenu` (`scripts/autotest_build_menu.gd`, new): the build menu, its Build buttons, the
+build icon's dot, the camera shot and the rise. `--bowshop`'s window checks are in `scripts/autotest_g3_bow_windows.gd`
+and `--cards`' window-kit checks in `scripts/autotest_g2_cards_kit.gd` (each loaded by its main test file). Tests reach
+a building's window through `main.hud.windows[<id>]`, never through `stations`.
+
+**H5 (27 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines):**
+- `--h5found` (`scripts/autotest_h5_found.gd`, new, 60 checks): the four new content kinds (mounts, pets, outfits,
+  attachments), the Buy command's rules (quantity, caps, a stale level, a failed purchase), Bramble's trade rules and the
+  4 to 5 save step case by case, against the frozen `balance.json save_upgrades.to_v5`.
+- `--campg` (`scripts/autotest_g2_camp.gd`, with the Market's checks in `scripts/autotest_g2_market.gd`, new): the camp
+  without the Cottage, the Market's four tabs by real taps, trade amounts and refusals, no shard trade, Sprig, Lumi,
+  pet training and the Hearthtree's cap, the pet goals' Show and Go, and a real v4 save upgraded.
+- `--saddlery` (`scripts/autotest_g4_saddle.gd`, with the window checks in `scripts/autotest_saddle_window.gd`, new):
+  the Attachments and Skills tabs, the turning detail view, the triangle with a real drag (never four), the Upgrade
+  confirm, and the mount firing only the skills in the circles.
+- `--tailor` (`scripts/autotest_cat_skins.gd`): the Nook's window: grey cards, the try-on, one button, Back.
+- `--cards` also checks the Market's grid, neutral payouts, bottom icon tabs and no footer (`autotest_g2_cards.gd`).
+- `--saves` loads `tests/saves/v5_sample.json` too (v2 to v5 samples); `--content` checks the four new kinds, that the
+  Cottage is gone and the one-level Market.
+- Moved to the new windows: `--layout`, `--hudcheck`, `--taps`, `--bag`, `--topup`, `--burrowsave`, `--homegoals`,
+  `--buildmenu`, `--village`, `--wear` and `--shards`. Run them one after another, never in parallel.
+
+**H6 (27 Nov 2026; each logs `EXPECT PASS` / `EXPECT FAIL` lines):**
+- `--workshop` (`scripts/autotest_workshop.gd`, 123 checks; it runs three parts in one live run:
+  `scripts/autotest_workshop_pieces.gd` for Place, Done and the last-placement Undo, the piece cards' taps, per-piece
+  levels and repair, and `scripts/autotest_workshop_rules.gd` for the three specialisations, armour and the save (v5
+  in, v6 out, held stock, wear, the credit, two loads)). It also runs at the phone's shape:
+  `--workshop --safe-top=73 --safe-bottom=42` at 480x1040.
+- `--workshop --foundation` (14 checks, in the same file): the v5 to v6 converter and the frozen inputs, and the Place and
+  Undo commands. It skips the live run.
+- The Workshop's save part is in `scripts/save_defences.gd` and its rules in `scripts/workshop_rules.gd`; both are
+  checked through `--workshop` and `--saves` (95 checks, with a v6 round trip).
+- Also re-run for H6: `--smoke`, `--content` (48), `--saves` (95), `--rows` (169), `--campg` (110), `--bag` (110),
+  `--layout` (132), `--hudcheck` (130), `--homegoals` (93), `--buildmenu` (48), `--shards` (15), `--topup` (24),
+  `--laststand` (1), `--wear` (11) and `--taps` (22). Run them one after another, never in parallel.
 
 **New (21 Nov 2026, G3):** `--bowshop` (`scripts/autotest_g3_bow.gd`): the Bow Shop card, buying (leaves and timber),
 upgrading, equipping only between waves, Sunwood's pierce, Volley's fan, Ember's burn (and no burn while frozen), each
@@ -183,9 +247,10 @@ that moved to the Saddlery: 15 pass, 8 fail. The 8 are older stat, bow, mastery 
 Phase F's caps, not from G4. H1 (25 Nov 2026): `--topup` was brought up to Phase F's caps and the one-worn
 rule (the Training Target and the Bow Shop at level 5, the saddle worn): 23 pass, 0 fail.
 
-The supplies inventory is covered by `--inventory` (`scripts/autotest_inventory.gd`, 53 PC passes). It checks the shared
-slot grid, currency layout, cat and ridden-mount preview, touch input, food counts, harvesting, cooking, Market purchases,
-live enemy movement, healing, dungeon resume and older saves. Run after `--smoke`, sequentially, with `--disable-vsync` before `--`.
+The Bag is covered by `--bag` (`scripts/autotest_bag.gd`, which replaced `autotest_inventory.gd` in H3; `--inventory`
+runs the same file). It keeps the H2 checks (the button, closing by tap outside, Escape and Back, the bars, the
+preview, the currencies, the phone's safe area, gameplay going on) and adds the H3 Bag (above). Run after `--smoke`,
+sequentially, with `--disable-vsync` before `--`.
 
 Mounted targeting is covered by `--mountedaim` (`scripts/autotest_mounted_aim.gd`, 69 PC passes). It checks real arrows at wide
 bearings on both mounts, torso aiming above a forward-facing root, hips and feet, outfits with different bows,
@@ -197,8 +262,8 @@ mid-shot. The Saddlery mode passed 94 checks, including flame-ball splash, upgra
 The raids and the Burrows open only after all 15 raids are won. To play them at once, start a debug build with
 `--endgame` (on the PC: `... -- --endgame`; on the phone: a line `--endgame` in the app's `files/test_args.txt`, as
 for the other phone test arguments). It opens a **separate save** (`user://leaf_save_endgame.json`), never the real
-one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well, Cottage, Stall and Garden at 3; an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, no Hollow keys (they are gone), food in
-the pantry and the Burrows open (the Moss Warden is not there yet: it is found in the first Burrow). The HUD says
+one: every raid won, home level 5, a grown cat (Target and Bench at 5, Well and Garden at 3, the Market built, the pet at level 3 and the Saddlery at 5 (H5); an older endgame save keeps its levels until `--endgame --fresh`), 8,000 leaves, 300 timber, 60 Gloom shards, no Hollow keys (they are gone), food in
+the Bag and the Burrows open (the Moss Warden is not there yet: it is found in the first Burrow). The HUD says
 "Endgame test save" at the top left. The slot stays on at every launch until a launch with `--endgame-off`; then the
 real save is back, untouched. `--endgame --fresh` starts the endgame save over. Release builds ignore both.
 
@@ -212,7 +277,7 @@ real save is back, untouched. `--endgame --fresh` starts the endgame save over. 
 
 | File | What it does |
 |---|---|
-| `data/balance.json` | Every number: enemies, waves per patch, upgrade prices, caps per station level, bows, defences |
+| `data/balance.json` | The general rules: enemies, waves per patch, upgrade prices, caps per station level, bows, defences, and (H3) the Bag, timers, watering and the pot (the crops and recipes are in `content/`) |
 | `scripts/main.gd` | Builds everything and ties it together: camera, the markers and their cards, leaves, respawn, stage events |
 | `scripts/marker.gd` | A thing the cat can use: the leaf-shaped badge floating over it (its icon drawn from SVG in code), small and dim far away, big and glowing in reach with a rim glow on the thing, a "!" when something there is new; its reach |
 | `scripts/interact.gd` | Taps: a short touch that barely moves picks the marker (or the thing) under it and opens its card, or walks the cat there first |
@@ -225,8 +290,9 @@ real save is back, untouched. `--endgame --fresh` starts the endgame save over. 
 | `scripts/enemy.gd` | All enemies: loads `assets/enemies/<id>/<id>.glb` and its JSON, or a placeholder; their behaviour |
 | `scripts/player.gd` | The Cat Ranger from the prototype, with upgrades, bows, respawn; New (21 Nov 2026, G3): swaps the equipped bow's model into the cat's bow bones |
 | `scripts/arrow.gd` | New (21 Nov 2026, G3): the cat's arrows, one per bow (the Ember Bow's flame trail; `launch(..., burn, bow_id)`); a plain arrow when a bow has no file |
-| `scripts/hud.gd` | Leaves, timber, the fight, banners, tips and the cards (dialogs in the middle of the screen, with a close button) |
-| `scripts/threat_arrows.gd` | The arrows at the screen's edge toward foes off the screen in a wave, a raid or below ground |
+| `ui/hud/hud.gd` (H2: was `scripts/hud.gd`) | The HUD's facade: leaves, timber, the fight, banners, tips and the cards (dialogs in the middle of the screen, with a close button); its parts are beside it in `ui/hud/` |
+| `ui/hud/threat_arrows.gd` | The arrows at the screen's edge toward foes off the screen in a wave, a raid or below ground |
+| `ui/hud/action_buttons.gd` | The bottom buttons: the Bag, the build icon, Ride/Walk, the defences, Place and Done, and (H3) the Health Potion and Mount Health Potion buttons |
 | `scripts/grass.gd` | Grass that bends away from whoever walks through it |
 | `scripts/burrow.gd` | The Burrows in the camp (Phase E): each hollow (sealed, the reveal, its marker and card with the levels); no Hollow keys since H1 |
 | `scripts/burrow_run.gd` | A Burrows run (`main.area` while the cat is in a dungeon): fights (packs and spawners), checkpoints, chests, the Moonwell, boons, the boss and its arena, the satchel, the Moss Warden's seal, the camera, saving and resuming |
@@ -235,8 +301,15 @@ real save is back, untouched. `--endgame --fresh` starts the endgame save over. 
 | `scripts/trap.gd` | Burrows traps in their own frame on the map: rolling logs, thorn plates, falling crystals, spore vents, the Gloom tide |
 | `data/dungeons/old_hollow.json` | The Gloomwood's map (the first Burrow); `test_glade.json` is a tiny treasure-end map for the tests |
 | `scripts/guardian.gd` | The Moss Warden (Phase C): its post, punches and slams, crumbling and pulling itself together, a walk path round the camp |
-| `scripts/garden.gd`, `scripts/cooking.gd` | The garden (grows a step per wave held) and the cooking pot (one dish, eaten when the next chapter starts) |
-| `scripts/fishing.gd`, `scripts/fishing_ui.gd` | Fishing at the lake between waves: cast, wait, tap on the bite, reel in the green |
+| `scripts/garden.gd`, `scripts/cooking.gd` | H3: the garden (plant, water, pick; each plot grows in real time as the Timers job `crop:<plot>`) and the cooking pot (the job `cook:pot`; cook, then collect into the Bag). Every rule is here; the windows only draw |
+| `ui/windows/garden_window.gd`, `ui/windows/cooking_window.gd` | H3: the garden's and the pot's windows inside their cards (drag seeds onto plots, drag or tap ingredients into the pot, the recipe list) |
+| `ui/kit/drag_source.gd`, `ui/kit/drop_slot.gd` | H3: the drag-and-drop pieces the windows use (a short press is a tap) |
+| `scripts/inventory.gd` | H3: the Bag window (24 slots, the details, Use and Place) |
+| `core/timers.gd` | H3: the `Timers` autoload, real-time jobs that keep running while the game is closed (the jobs are saved in `Save.timers`) |
+| `core/bag.gd` | H3: the Bag's counts and stacks (`Save.bag`, plus `Save.items` for towers and spikes and `Save.mats` for amber) |
+| `core/effects.gd`, `parts/effects_holder.gd`, `commands/use_potion.gd` | H3: what a potion or fish does (heal, heal over time, a stat boost, revive), the running effects on the cat and the mount, and the Use-potion command |
+| `content/crops/`, `content/recipes/`, `content/index.json` | H3: the 5 crops and 5 recipes, one folder each (`entry.json`), and the index that lists them |
+| `scripts/fishing.gd`, `scripts/fishing_ui.gd` | Fishing at the lake between waves: cast, wait, tap on the bite, reel in the green; the catch goes into the Bag (H3) |
 | `scripts/fx.gd` | Leaf bursts, confetti, flower rings, petals, damage numbers, the boss's shockwave |
 | `scripts/props.gd` | Loads Blender-made props from `assets/props/` with the shared vertex-colour material, or builds placeholders |
 | `shaders/` | vertex-colour look (with the Gloom tint and hit flash), grass, ground, the markers' rim glow, mist |

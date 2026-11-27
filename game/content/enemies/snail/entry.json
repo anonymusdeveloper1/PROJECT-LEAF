@@ -1,0 +1,23 @@
+{
+  "id": "snail",
+  "name": "Crystal Snail",
+  "desc": "A snail that leaves a trail of slime.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "snail",
+  "role": "tank",
+  "height": 1.1,
+  "radius": 0.6,
+  "color": "#A8D88A",
+  "parts": {
+    "health": {"max": 260},
+    "armour": {"share": 0.30},
+    "mover": {"speed": 0.45},
+    "attack": {"damage": 2, "gate_damage": 25, "reach": 0.8, "attack_every": 2.0, "slam_range": 1.9, "slam_every": 7.0},
+    "status": {"slime_every": 0.9, "slime_life": 7.0},
+    "loot": {"leaves": 14},
+    "health_bar": {},
+    "brain": {"aggro": 1.6}
+  }
+}

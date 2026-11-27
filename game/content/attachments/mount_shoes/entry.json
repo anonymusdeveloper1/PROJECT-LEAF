@@ -1,0 +1,13 @@
+{
+  "id": "mount_shoes",
+  "name": "Thunder Shoes",
+  "desc": "Your mount's Stomp hits 60% harder on expeditions",
+  "icon": "mount",
+  "shop": "stall",
+  "slot": "mount",
+  "scope": "expedition",
+  "price": {"leaves": 3520},
+  "unlock": {"flag": "hollow_open"},
+  "mods": {"thump_mult": 0.6},
+  "_note": "H5 (26 Nov 2026): expedition gear, moved from balance.json attachments (the mods are listed in that block's _note). It helps on expeditions only, one worn per companion, sold at the Market once the Burrows are open (unlock), bought once for its price."
+}

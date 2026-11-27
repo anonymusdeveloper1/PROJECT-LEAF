@@ -3,10 +3,13 @@ extends RefCounted
 ## Placeholder sounds (made by tools/make_sfx.py). A small pool of players hung on the main node; a sound that
 ## repeats very fast (many arrows hitting at once) is thinned out so it never turns into noise.
 
+const SettingsFile := preload("res://core/settings_file.gd")
+
 static var _players: Array = []
 static var _streams := {}
 static var _last := {}
 static var _next := 0
+static var _on := true                  # the sound switch (Settings window); off mutes the Master bus
 
 
 static func init(host: Node) -> void:
@@ -15,6 +18,23 @@ static func init(host: Node) -> void:
 		var p := AudioStreamPlayer.new()
 		host.add_child(p)
 		_players.append(p)
+	_on = bool(SettingsFile.read().get("sound", true))      # an old file without "sound" means on
+	_apply_sound()
+
+
+## The Settings window's sound switch: mutes or unmutes the Master bus (every game sound) and remembers it.
+static func set_sound(on: bool) -> void:
+	_on = on
+	_apply_sound()
+	SettingsFile.write("sound", on)
+
+
+static func sound_on() -> bool:
+	return _on
+
+
+static func _apply_sound() -> void:
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Master"), not _on)
 
 
 static func play(name: String, volume_db := 0.0, min_gap := 0.04) -> void:

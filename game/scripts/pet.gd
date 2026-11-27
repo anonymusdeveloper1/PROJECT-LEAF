@@ -1,8 +1,11 @@
 extends Node3D
-## Sprig, the baby leaf dragon from the Mushroom Cottage. It flutters round the cat's shoulder and spits seed sparks
-## (bolt.gd) at the nearest enemy. While the cat hides it only spits at enemies right next to it, so it never gives
-## the cat away. Its level is the cottage's level (balance.json "pet").
-## Model: res://assets/companions/sprig/sprig.glb with sprig.json (clips Idle, Fly, Attack; spring chains); until it
+## The pet (Sprig the baby leaf dragon, or Lumi the fox kit: a look of the same pet). It flutters (or runs) round the
+## cat's shoulder and spits seed sparks (bolt.gd) at the nearest enemy. While the cat hides it only spits at enemies
+## right next to it, so it never gives the cat away. H5: its level is the one shared pet level (Data.pet_level: bought
+## and trained at the Market's Pets tab; balance.json "pet"), the same for every look. It stays with the cat whatever
+## happens to the Market (a ruined Market stops only the shopping and the training); the Mushroom Cottage is gone.
+## Model: the look's content entry (content/pets/<id>: "model", Data.companion_model), e.g.
+## res://assets/companions/sprig/sprig.glb with sprig.json beside it (clips Idle, Fly, Attack; spring chains); until it
 ## exists a faceted placeholder flies instead.
 
 const BoltScript := preload("res://scripts/bolt.gd")
@@ -29,9 +32,10 @@ func setup(m) -> void:
 
 
 func _load_model() -> void:
-	var base := "res://assets/companions/%s/%s" % [Save.pet_look, Save.pet_look]
-	if ResourceLoader.exists(base + ".glb"):
-		model = (load(base + ".glb") as PackedScene).instantiate()
+	var path := Data.companion_model("pet", Save.pet_look)   # H5: the look's entry names its model ("" when missing)
+	var base := path.get_basename()                          # its .json (clips, springs) sits beside it
+	if path != "":
+		model = (load(path) as PackedScene).instantiate()
 		if FileAccess.file_exists(base + ".json"):
 			var j = JSON.parse_string(FileAccess.get_file_as_string(base + ".json"))
 			if typeof(j) == TYPE_DICTIONARY:
@@ -83,7 +87,7 @@ func _flies() -> bool:
 	return bool(Data.look("pet", Save.pet_look).get("flies", true))
 
 
-## A different look for the same pet (the Nest at the Mushroom Cottage): only the model changes.
+## A different look for the same pet (the Market's Pets tab, or new colours): only the model changes.
 func set_look() -> void:
 	for c in get_children():
 		c.queue_free()
@@ -138,10 +142,6 @@ func _play(clip: String, blend := 0.15) -> void:
 
 func _process(delta: float) -> void:
 	if main.frozen:
-		return
-	visible = not Save.ruined.has("cottage")       # a ruined cottage: Sprig hides
-	if not visible:
-		global_position = main.world.station_pos("cottage") + Vector3(0, 1.0, 0)
 		return
 	_t += delta
 	_cd = maxf(0.0, _cd - delta)
@@ -222,5 +222,5 @@ func _spit(tgt) -> void:
 	var aim: Vector3 = tgt.global_position + Vector3(0, float(tgt.aim_height), 0)
 	var b := BoltScript.new()
 	main.add_child(b)
-	b.launch(main, from, aim - from, float(Data.b["pet"]["bolt_speed"]), Data.pick("pet", "damage_by_level", lv) * (1.0 + Data.meal_boost("friends")) * (1.0 + float(Data.run_mods.get("pet_dmg", 0.0))),
+	b.launch(main, from, aim - from, float(Data.b["pet"]["bolt_speed"]), Data.pick("pet", "damage_by_level", lv) * (1.0 + float(Data.run_mods.get("pet_dmg", 0.0))),
 		_spark_color(), false, tgt, 3.0, 0.07, 1.4)

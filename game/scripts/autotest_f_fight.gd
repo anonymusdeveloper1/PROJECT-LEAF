@@ -671,7 +671,7 @@ func _live_wave() -> void:
 	f._qinfo.clear()
 	var tim0: int = Save.timber
 	for e in _wave_foes():
-		e.hit(Vector3.FORWARD, e.hp + 1.0)
+		e.hit(Vector3.FORWARD, e.hp * 10.0 + 100.0)
 	_x("left_in_wave leaves the grub out", f.left_in_wave() == 0, {"left": f.left_in_wave()})
 	var cleared: bool = await t._until(func(): return not f.in_wave, 5.0)
 	var alive: bool = grub != null and is_instance_valid(grub) and not grub.dead
@@ -720,7 +720,7 @@ func _manual_progress() -> void:
 	var foe = f.spawn("thornling", Vector3(25, 0, 12), 0)
 	var base_drop := Data.saddlebag_leaves(int(foe.info["leaves"]))
 	foe.carried = 7
-	foe.hit(Vector3.FORWARD, float(foe.hp) + 1.0)
+	foe.hit(Vector3.FORWARD, float(foe.hp) * 10.0 + 100.0)
 	var dropped := 0
 	for p in get_tree().get_nodes_in_group("pickups"):
 		dropped += int(p.value)
@@ -751,15 +751,11 @@ func _manual_progress() -> void:
 	_x("Start wave begins wave 2 immediately and a second tap cannot skip it", f.in_wave and f.wave == 2 and Save.leaves == banked)
 	f._clear_foes()
 	f._wave_cleared()
-	Save.meal_on = String(Data.b["cooking"]["recipes"][0]["id"])
-	var meal: String = Save.meal_on
-	Save.save_game()
+	Save.save_game()                            # H3: no dish to keep at a wave checkpoint any more (the dishes are gone)
 	t._reset_fight()
 	Save.load_game()
 	main.defences.relink_saved()
-	_x("save/load retains wave 2 and the active dish", int(Save.mission_run.get("wave_done", -1)) == 2 and Save.meal_on == meal)
-	Save.meal_on = ""
-	Data.set_meal("")
+	_x("save/load retains wave 2", int(Save.mission_run.get("wave_done", -1)) == 2)
 	banked = Save.leaves
 	f.start_mission(0)
 	_x("restart resumes at wave 3 without repeating completed rewards", f.wave == 3 and f.in_wave and Save.leaves == banked)

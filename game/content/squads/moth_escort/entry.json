@@ -1,0 +1,13 @@
+{
+  "id": "moth_escort",
+  "name": "Moth Escort",
+  "desc": "Toadstool Brute, Gloom Moth",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 7,
+  "members": [
+    {"kind": "brute", "n": [1, 1]},
+    {"kind": "moth", "n": [2, 2]}
+  ]
+}

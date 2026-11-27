@@ -77,7 +77,7 @@ func _spot_list() -> Array:
 ## The first shop tile of a card with this button.
 func _item(spec: Dictionary, label: String) -> Dictionary:
 	for r in spec.get("rows", []):
-		if String(r.get("kind", "")) == "item" and String(r.get("label", "")) == label:
+		if String(r.get("kind", "")) in ["item", "list"] and String(r.get("label", "")) == label:   # H6: a piece's own Repair is a list row
 			return r
 	return {}
 
@@ -137,7 +137,6 @@ func _old_save() -> void:
 	Save.camp_level = 1
 	Save.leaves = 100
 	Save.timber = 0
-	Save.def_levels = {"barricade": 1, "tower": 1, "spikes": 1}
 	Save.items = {"barricade": 3, "tower": 0, "spikes": 0}
 	Save.placed = [{"type": "barricade", "slot": [lane, 0]}, {"type": "barricade", "slot": [lane, 1], "wreck": 0.4},
 		{"type": "barricade", "slot": [lane, 0]}]
@@ -238,7 +237,7 @@ func _build() -> void:
 	var spec: Dictionary = mk.builder.call()
 	var it := _item(spec, "Build")
 	_x("its card offers a barricade row, with a plain sub line", not it.is_empty() and bool(it["enabled"]) and _same_cost(it["cost"], cost)
-		and String(spec["sub"]) == "Barricade row on this road" and not it.has("badge"), {"tile": it.get("title", ""), "sub": spec["sub"]})
+		and String(spec["sub"]).begins_with("Level") and not it.has("badge"), {"tile": it.get("title", ""), "sub": spec["sub"]})
 	if not it.is_empty():
 		(it["action"] as Callable).call()
 	main.hud.hide_card()
@@ -258,7 +257,7 @@ func _build() -> void:
 	f.active = true
 	f.in_wave = true
 	var wv := _item(d._card_spot(other, 2), "Build")
-	_x("a wave is on: the tile says to build between waves", not bool(wv["enabled"]) and String(wv["text"]) == "A wave is on: build between waves", {"text": wv.get("text", "")})
+	_x("a wave is on: the tile says to build between waves", not bool(wv["enabled"]) and String(wv["text"]) == Data.word("between_waves"), {"text": wv.get("text", "")})
 	f.active = keep["active"]
 	f.in_wave = keep["in_wave"]
 	var md := Save.missions_done
@@ -520,20 +519,19 @@ func _wave_repair() -> void:
 
 # ---------------------------------------------------------------- (e) a knocked-down tower
 func _tower() -> void:
-	Save.def_levels["tower"] = 2
 	var info: Dictionary = Data.defence_info("tower")
 	var pos := Vector3(2.2, 0.0, float(main.world.camp_r) * 0.42 + 1.4)
-	var sp := {"type": "tower", "x": pos.x, "z": pos.z, "rot": 0.0}
+	var sp := {"type": "tower", "x": pos.x, "z": pos.z, "rot": 0.0, "level": 2}      # H6: this tower is at level 2
 	Save.placed.append(sp)
-	var p: Dictionary = d._spawn("tower", pos, 0.0)
+	var p: Dictionary = d._spawn("tower", pos, 0.0, [], 2)
 	p["src"] = sp
 	var mk = d._tower_marks.get(int(p["id"]))
 	await t._wait(0.2)
-	_x("a standing tower shows no repair marker", mk != null and not mk.visible)
+	_x("a standing tower shows no repair marker", mk != null and not mk.badge_is_visible())
 	d.hurt_piece(int(p["id"]), 999999)
 	await t._wait(0.3)
 	_x("a knocked-down tower tips over and shows its repair marker", float(p["hp"]) <= 0.0 and absf((p["node"] as Node3D).rotation.z) > 0.1
-		and mk.visible and String(mk.icon) == "repair")
+		and mk.badge_is_visible() and String(mk.icon) == "repair")
 	# 21 Nov 2026: the marker's repair costs what "Mend the defences" asks for this tower (leaves only): during the
 	# missions its piece price x raid.repair_share (it is missing all its health), at least 5
 	var share := float(Data.b["raid"]["repair_share"])
@@ -541,19 +539,18 @@ func _tower() -> void:
 	var got: Dictionary = d.tower_repair_cost(p)
 	_x("its repair: the Mend price, %d%% of its piece price in leaves (no timber)" % int(round(share * 100.0)),
 		not Data.raids_open() and _same_cost(got, want), {"got": got, "want": want})
-	var mend := _mend_alone(p)
-	_x("Mend the defences with only this tower wrecked asks the same", mend == int(want["leaves"]), {"mend": mend, "badge": got})
+	_x("a standing tower's card never offers a Repair, a downed one's does (repair_quote)", bool(d.repair_quote("tower", int(p["id"]), Vector2i(-1, -1))["show"]))
 	# after the missions: the endgame mend rule (gloom_raids.repair), the badge and Mend still the same
 	var done0: Array = Save.missions_done.duplicate()
 	Save.missions_done = []
 	for i in Data.mission_count():
 		Save.missions_done.append(String(Data.mission(i)["id"]))
 	var r: Dictionary = Data.gr()["repair"]
-	var want_e := maxi(1, int(ceil(float(info["piece"]) * (1.0 + float(r["mend_per_level"]) * (d.level("tower") - 1)) * float(r["mend_share"]) - 0.0001)))
+	var want_e := maxi(1, int(ceil(float(info["piece"]) * (1.0 + float(r["mend_per_level"]) * (d.piece_level(p) - 1)) * float(r["mend_share"]) - 0.0001)))
 	var got_e: Dictionary = d.tower_repair_cost(p)
-	var mend_e := _mend_alone(p)
-	_x("after the raids: the badge is the endgame Mend price (%d leaves), the same as Mend" % want_e,
-		Data.raids_open() and _same_cost(got_e, {"leaves": want_e}) and mend_e == want_e, {"got": got_e, "mend": mend_e, "want": want_e})
+	_x("after the raids: the badge is the endgame Mend price (%d leaves), the same as the repair quote" % want_e,
+		Data.raids_open() and _same_cost(got_e, {"leaves": want_e}) and int((d.repair_quote("tower", int(p["id"]), Vector2i(-1, -1))["price"] as Dictionary).get("leaves", 0)) == want_e,
+		{"got": got_e, "want": want_e})
 	Save.missions_done = done0
 	await t._at_ring(mk)
 	await t._wait(0.4)
@@ -567,22 +564,9 @@ func _tower() -> void:
 	main.hud.hide_card()
 	await t._wait(0.3)
 	_x("paid: the tower stands up at full health and its marker goes", float(p["hp"]) >= float(p["max_hp"]) - 0.01
-		and absf((p["node"] as Node3D).rotation.z) < 0.01 and not mk.visible and _has_tower_circle(p)
+		and absf((p["node"] as Node3D).rotation.z) < 0.01 and not mk.badge_is_visible() and _has_tower_circle(p)
 		and Save.leaves == l0 - int(want["leaves"]) and Save.timber == t0,
 		{"hp": p["hp"], "leaves": [l0, Save.leaves], "timber": [t0, Save.timber]})
-
-
-## What "Mend the defences" (defences.repair_cost) asks when p is the only wrecked piece: the others' wreck flags are
-## set aside for the sum and put back (nothing else changes).
-func _mend_alone(p: Dictionary) -> int:
-	var flags := {}
-	for q in d.pieces:
-		flags[int(q["id"])] = bool(q["wrecked"])
-		q["wrecked"] = int(q["id"]) == int(p["id"])
-	var c: int = d.repair_cost()
-	for q in d.pieces:
-		q["wrecked"] = flags[int(q["id"])]
-	return c
 
 
 func _has_tower_circle(p: Dictionary) -> bool:

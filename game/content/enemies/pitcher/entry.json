@@ -1,0 +1,22 @@
+{
+  "id": "pitcher",
+  "name": "Pitcher Spitter",
+  "desc": "A plant that spits from a distance.",
+  "icon": "damage",
+  "price": {},
+  "unlock": {},
+  "model": "pitcher",
+  "role": "support",
+  "height": 1.1,
+  "radius": 0.4,
+  "color": "#6FA83A",
+  "parts": {
+    "health": {"max": 45},
+    "mover": {"speed": 0.8},
+    "attack": {"damage": 1, "gate_damage": 8, "reach": 0.5, "attack_every": 2.2, "spit_range": 6.0, "bolt_speed": 7.0, "siege_range": 8.0},
+    "status": {},
+    "loot": {"leaves": 6},
+    "health_bar": {},
+    "brain": {"aggro": 6.0}
+  }
+}

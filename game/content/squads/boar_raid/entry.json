@@ -1,0 +1,13 @@
+{
+  "id": "boar_raid",
+  "name": "Boar Raid",
+  "desc": "Bramble Boar, Thornling",
+  "icon": "sign",
+  "price": {},
+  "unlock": {},
+  "from_mission": 2,
+  "members": [
+    {"kind": "boar", "n": [1, 1]},
+    {"kind": "thornling", "n": [2, 2]}
+  ]
+}

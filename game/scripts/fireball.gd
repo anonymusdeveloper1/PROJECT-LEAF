@@ -45,7 +45,10 @@ func _physics_process(delta: float) -> void:
 	var step := direction * speed * minf(dt, life)
 	var first = null
 	var nearest := INF
-	for foe in get_tree().get_nodes_in_group("foes"):
+	var end := global_position + step                      # H6: only the foes near this frame's flight (grid, group order)
+	var lo := Vector2(minf(global_position.x, end.x) - radius, minf(global_position.z, end.z) - radius)
+	var hi := Vector2(maxf(global_position.x, end.x) + radius, maxf(global_position.z, end.z) + radius)
+	for foe in main.enemy_grid.candidates(lo, hi, &"foes"):
 		if not is_instance_valid(foe) or foe.dead:
 			continue
 		var center: Vector3 = foe.global_position + Vector3(0, foe.aim_height, 0)
@@ -87,7 +90,7 @@ func _burst(at: Vector3) -> void:
 	Fx.fireball_hit(main, at, blast_m)
 	Fx.fire_ground(main, at, blast_m, _info)
 	# There is one damage pass, including the directly hit foe: no double impact damage on the primary target.
-	for foe in get_tree().get_nodes_in_group("foes"):
+	for foe in main.enemy_grid.candidates(Vector2(at.x - blast_m, at.z - blast_m), Vector2(at.x + blast_m, at.z + blast_m), &"foes"):
 		if not is_instance_valid(foe) or foe.dead:
 			continue
 		var center: Vector3 = foe.global_position + Vector3(0, foe.aim_height, 0)

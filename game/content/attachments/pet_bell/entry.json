@@ -1,0 +1,13 @@
+{
+  "id": "pet_bell",
+  "name": "Dew Bell",
+  "desc": "+2 health for the cat on expeditions",
+  "icon": "pet",
+  "shop": "stall",
+  "slot": "pet",
+  "scope": "expedition",
+  "price": {"leaves": 2100},
+  "unlock": {"flag": "hollow_open"},
+  "mods": {"hp": 2},
+  "_note": "H5 (26 Nov 2026): expedition gear, moved from balance.json attachments (the mods are listed in that block's _note). It helps on expeditions only, one worn per companion, sold at the Market once the Burrows are open (unlock), bought once for its price."
+}

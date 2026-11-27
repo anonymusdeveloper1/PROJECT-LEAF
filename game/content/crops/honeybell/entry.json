@@ -1,0 +1,12 @@
+{
+  "id": "honeybell",
+  "name": "Honeybells",
+  "desc": "Golden honey: every potion needs some.",
+  "icon": "honey",
+  "model": "honeybell",
+  "gives": "honey",
+  "yield": 2,
+  "grow_s": 360,
+  "price": {"leaves": 15},
+  "unlock": {}
+}

@@ -13,6 +13,8 @@ extends Node3D
 ## rear-quarter shots on one Shoot clock; the root, seated pelvis and knees follow the mount's heading.
 ## The hood, capelet and skirt are not in the clips: cloth.gd simulates them on top, after the body is posed.
 ## H1: the arrows she shoots come from Pools (arrow.gd POOL, _new_arrow, prewarm_arrows); the nocked one is her own.
+## H3: her running potions live in her Effects holder (parts/effects_holder.gd, the child "Effects", `effects`): it hands
+## Data the Damage and Speed shares (Data.set_effect_mults) and heals her through heal(); it clears when she is knocked out.
 
 ## The hero model to use, without ".glb" (its clips are hero_clips()). 23 Nov 2026: the outfit she wears
 ## (Save.cat_skin, balance.json cat_skins: res://assets/cat/skins/<id>.glb, the same skeleton and clips) when its file
@@ -47,6 +49,7 @@ static func hero_clips() -> String:
 	return original_base() + "_clips.json"
 const ArrowScene := preload("res://assets/cat/CatRanger_Arrow.glb")
 const ArrowScript := preload("res://scripts/arrow.gd")
+const EffectsHolder := preload("res://parts/effects_holder.gd")
 const TwistScript := preload("res://scripts/body_twist.gd")
 const ClothScript := preload("res://scripts/cloth.gd")
 const RideScript := preload("res://scripts/ride_pose.gd")
@@ -135,6 +138,7 @@ var dashes := 0                                         # counted for the tests
 var close_calls := 0
 var _rod_hold: BoneAttachment3D                         # fishing: the rod in the bow paw (Phase C)
 var _rod: Node3D
+var effects: EffectsHolder                              # H3: her running potions (the child "Effects", made in _ready)
 ## The rod in the paw points forward and up, a little out to the side (in the cat's own frame); ROD_XF, the offset on
 ## the bow-hand bone, is worked out from this when the rod is put in the paw, so it fits any pose the hero idles in.
 const ROD_DIR := Vector3(0.2, 0.62, 0.72)               # (out to the bow side, up, forward)
@@ -144,6 +148,13 @@ func _ready() -> void:
 	_build_model()
 	Fx.blob(self, 0.42)
 	hp = Data.cat_max_hp()
+	effects = EffectsHolder.new()                       # H3: the Health, Damage and Speed Potions run here
+	effects.name = "Effects"
+	effects.main = main
+	effects.max_hp = Data.cat_max_hp
+	effects.heal = heal
+	effects.stats_changed = Data.set_effect_mults
+	add_child(effects)
 
 
 ## The hero model (hero_base(): the outfit she wears, or the original) and everything set up on it: the clips' loops,
@@ -543,6 +554,17 @@ func set_hidden_look(on: bool) -> void:
 		_hide_tws.append(tw)
 
 
+## H3: health back from a potion (Effects "heal", the Effects holder's heal over time): never past her max health and
+## never while she is down. A "+N" floats up, as the camp's rest does.
+func heal(points: int) -> void:
+	if points <= 0 or hp <= 0:
+		return
+	var before := hp
+	hp = mini(hp + points, Data.cat_max_hp())
+	if hp > before and main != null:
+		Fx.text(main, global_position + Vector3(0, 1.4, 0), "+%d" % (hp - before), Color(0.5, 1.0, 0.5))
+
+
 func revive(at: Vector3) -> void:
 	hp = Data.cat_max_hp()
 	global_position = at
@@ -828,7 +850,7 @@ func aim_cone() -> float:
 	return deg_to_rad(float(Data.b["mount"]["aim_cone_deg"]))
 
 
-## The current bow's full shooting cycle, including draw upgrades and meal boosts. Attachments use the same pace.
+## The current bow's full shooting cycle, including draw upgrades. Attachments use the same pace.
 func attack_interval() -> float:
 	return SHOOT_LENGTH * Data.bow_draw_mult(Save.bow) / maxf(Data.cat_draw(), 0.001)
 
@@ -1164,6 +1186,7 @@ func hurt(from: Vector3, amount := 1) -> void:
 	_knock = away.normalized() * 4.0
 	main.on_player_hurt()
 	if hp <= 0:
+		effects.clear()                              # H3: her potions end (and Data's Damage and Speed shares go back)
 		main.on_player_down()
 
 

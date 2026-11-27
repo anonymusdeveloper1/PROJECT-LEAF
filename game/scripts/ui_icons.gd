@@ -6,18 +6,24 @@ extends RefCounted
 ## An unknown id gets a plain round disc: a shop tile writes its title's first letter on it (hud.gd).
 ## Some pictures are the marker badges' own art (the same drawings, cropped to their middle): they are copied here, so
 ## this file never depends on marker.gd's insides.
+## H3 (26 Nov 2026, the owner's Q6 (a): stand-ins until the Codex designs): Emberpeppers ("peppers") and Swiftroots
+## ("roots") are drawn here; every recipe (content/recipes, Cooked Fish too) is a small bottle in its entry's "color",
+## found by the entry's "icon" (or its id), so a new potion gets its bottle by itself.
 
 const SIZE := 128                       # pixels; shown at 48-56 HUD px (about 80 on the phone)
-## Every picture drawn here, by id (a shop tile's "icon").
+## Every picture drawn here, by id (a shop tile's "icon"). The potion bottles are not listed: they come from the
+## recipes' entries (_recipe_color).
 const IDS := ["bow", "target", "damage", "draw", "range", "heart", "speed", "magnet", "berries", "herbs", "honey", "fish",
 	"goldfish", "tower", "barricade", "spikes", "well", "home", "pet", "mount", "garden", "pot", "fishing", "grow", "repair",
-	"settings", "market", "stone", "flame", "chest", "sign", "stomp", "ram", "pounce", "bellow", "saddlebags", "tailor", "outfit"]
+	"settings", "market", "stone", "flame", "chest", "sign", "stomp", "ram", "pounce", "bellow", "saddlebags", "tailor", "outfit",
+	"peppers", "roots"]
 ## Other names for the same pictures. G4: the Saddlery's tiles: the skills have their own, the Fire-spitter the flame,
-## the Mossweave Saddle the saddle (the Saddlery's own picture), the Saddlebags their own.
+## the Mossweave Saddle the saddle (the Saddlery's own picture), the Saddlebags their own. H3: the new crops by name.
 const ALIAS := {"health": "heart", "hp": "heart", "stall": "market", "cottage": "pet", "nest": "pet", "saddlery": "mount",
 	"hearthtree": "home", "guardian": "stone", "fire": "flame", "campfire": "flame", "sunberries": "berries",
 	"graphics": "settings", "mend": "repair", "signpost": "sign", "saddle": "mount", "fire_spitter": "flame",
-	"bags": "saddlebags", "needle": "tailor", "cat_skin": "outfit"}
+	"bags": "saddlebags", "needle": "tailor", "cat_skin": "outfit", "emberpepper": "peppers", "swiftroot": "roots"}
+const POTION_FALLBACK := "#C9813A"      # a bottle whose entry has no usable "color" (the plain disc's brown)
 
 ## The marker badges' art (marker.gd's ART, the same drawings), in their 120 x 150 view round (60, 58); the gold fish
 ## is the badge's fish in gold.
@@ -82,20 +88,30 @@ static var _cache := {}                 # id -> its texture
 static var failed: Array = []           # ids whose SVG did not load (the tests check this stays empty)
 
 
-## There is a picture for this id (else texture() gives the plain disc).
+## There is a picture for this id (else texture() gives the plain disc): one drawn here, or a recipe's bottle.
 static func known(id: String) -> bool:
-	return IDS.has(String(ALIAS.get(id, id)))
+	var k := String(ALIAS.get(id, id))
+	return IDS.has(k) or _recipe_color(k) != ""
 
 
 ## The picture for an id, made once (a plain round disc for an unknown one).
 static func texture(id: String) -> Texture2D:
 	var k := String(ALIAS.get(id, id))
+	var bottle := ""
 	if not IDS.has(k):
-		k = "?"
+		bottle = _recipe_color(k)                       # H3: a recipe drawn as a potion bottle in its colour
+		if bottle == "":
+			k = "?"
 	if _cache.has(k):
 		return _cache[k]
 	var view := "28 26 64 64" if MARKER.has(k) else "0 0 64 64"     # the badges' art sits round (60, 58)
-	var art := String(MARKER[k]) if MARKER.has(k) else _art(k)
+	var art := ""
+	if MARKER.has(k):
+		art = String(MARKER[k])
+	elif bottle != "":
+		art = _bottle(bottle)
+	else:
+		art = _art(k)
 	var svg := "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"%d\" height=\"%d\" viewBox=\"%s\">%s</svg>" % [SIZE, SIZE, view, art]
 	var img := Image.new()
 	var err := img.load_svg_from_string(svg, 1.0)
@@ -109,6 +125,40 @@ static func texture(id: String) -> Texture2D:
 	var tex := ImageTexture.create_from_image(img)
 	_cache[k] = tex
 	return tex
+
+
+## H3: the colour ("#rrggbb") of the recipe (content/recipes) whose "icon" (or id) is k: its entry's "color",
+## POTION_FALLBACK when that is missing or not a colour; "" when no recipe has this picture id.
+static func _recipe_color(k: String) -> String:
+	if k == "":
+		return ""
+	for e: Variant in Data.catalog("recipes"):
+		if not e is Dictionary:
+			continue
+		var d := e as Dictionary
+		if String(d.get("icon", "")) == k or String(d.get("id", "")) == k:
+			var c := String(d.get("color", ""))
+			return c if Color.html_is_valid(c) else POTION_FALLBACK
+	return ""
+
+
+## H3: "#rrggbb" of a colour.
+static func _hex(c: Color) -> String:
+	return "#" + c.to_html(false)
+
+
+## H3 (Q6 a, a stand-in): a potion bottle in col ("#rrggbb"): a round glass flask with a cork, the potion filling its
+## lower part, a shine and two bubbles (a 64 x 64 view, the shop pictures' ink #5B3417).
+static func _bottle(col: String) -> String:
+	var c := Color.html(col)
+	return """<path d="M27 13 H37 V24.7 A18 18 0 1 1 27 24.7 Z" fill="#EAF4F6" fill-opacity="0.9"/>
+<path d="M15.03 36 Q32 31 48.97 36 A18 18 0 1 1 15.03 36 Z" fill="%s" stroke="%s" stroke-width="2"/>
+<path d="M18 37.5 Q32 33.5 46 37.5" stroke="%s" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+<path d="M27 13 H37 V24.7 A18 18 0 1 1 27 24.7 Z" fill="none" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<rect x="24.5" y="5" width="15" height="10" rx="3" fill="#B87434" stroke="#5B3417" stroke-width="3"/>
+<path d="M19 44 Q19 51 25 55" stroke="#FFFFFF" stroke-opacity="0.65" stroke-width="3" fill="none" stroke-linecap="round"/>
+<circle cx="39" cy="47" r="2.6" fill="#FFFFFF" fill-opacity="0.5"/><circle cx="34" cy="53" r="1.8" fill="#FFFFFF" fill-opacity="0.45"/>""" % [
+		_hex(c), _hex(c.darkened(0.45)), _hex(c.lightened(0.35))]
 
 
 ## A star's points ("x,y x,y ..."): n tips at r1, the dips between them at r2, the first tip straight up.
@@ -199,6 +249,19 @@ static func _art(k: String) -> String:
 <rect x="23" y="34" width="18" height="14" rx="3" fill="#FFF7E3" stroke="#5B3417" stroke-width="2.5"/>
 <polygon points="32,36.5 36,38.8 36,43.2 32,45.5 28,43.2 28,38.8" fill="#F2B640" stroke="#8A5A12" stroke-width="1.8"/>
 <path d="M21 30 V48" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3" stroke-linecap="round"/>"""
+		"peppers":                                  # H3 stand-in (Q6 a): an Emberpepper, red with an ember-orange tip
+			return """<path d="M34 11 Q35 6 40 4" stroke="#3E6B1F" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+<path d="M29 17 C40 15 48 24 45 37 C42 49 30 58 14 58 C23 52 27 44 27 34 C27 26 25 20 29 17 Z" fill="#E5533F" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M25 16 C29 11 37 10 42 14 C38 19 30 20 25 16 Z" fill="#5DA83A" stroke="#3E6B1F" stroke-width="3" stroke-linejoin="round"/>
+<path d="M37 24 C40 30 38 39 33 45" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M17 56 C21 54.5 24 52 26 48" stroke="#FF8A3B" stroke-width="2.5" fill="none" stroke-linecap="round"/>"""
+		"roots":                                    # H3 stand-in (Q6 a): a pale Swiftroot with its leaves
+			return """<path d="M32 20 C26 14 24 8 26 3 C31 7 34 13 32 20 Z" fill="#7CC447" stroke="#3E6B1F" stroke-width="2.8" stroke-linejoin="round"/>
+<path d="M32 20 C38 13 44 11 49 12 C46 18 39 21 32 20 Z" fill="#8FD656" stroke="#3E6B1F" stroke-width="2.8" stroke-linejoin="round"/>
+<path d="M32 20 C26 16 19 15 15 17 C19 22 26 22 32 20 Z" fill="#5DA83A" stroke="#3E6B1F" stroke-width="2.8" stroke-linejoin="round"/>
+<path d="M21 23 C21 18 43 18 43 23 C43 35 37 47 32 61 C27 47 21 35 21 23 Z" fill="#F2E6CF" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M25 31 H30 M34 38 H39 M27 45 H31" stroke="#B89B72" stroke-width="2.5" stroke-linecap="round"/>
+<path d="M25.5 26 C25.5 32 27.5 38 29.5 43" stroke="#FFFFFF" stroke-opacity="0.7" stroke-width="2.5" fill="none" stroke-linecap="round"/>"""
 		"tower":                                    # the acorn tower: a wooden tower under an acorn cap
 			return """<path d="M19 59 L22.5 30 H41.5 L45 59 Z" fill="#B87434" stroke="#5B3417" stroke-width="3.5" stroke-linejoin="round"/>
 <path d="M21.5 41 H42.5 M20.5 50 H43.5" stroke="#5B3417" stroke-width="2.5"/>

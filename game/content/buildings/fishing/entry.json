@@ -1,0 +1,12 @@
+{
+  "id": "fishing",
+  "name": "Fishing Spot",
+  "desc": "Fish for the pot and the mount",
+  "icon": "fishing",
+  "price": {},
+  "unlock": {},
+  "arrives": "gift",
+  "levels": [
+    {}
+  ]
+}

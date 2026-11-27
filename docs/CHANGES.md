@@ -2,6 +2,129 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 26 Nov 2026 · H4: building windows, part 1 (on `feature/h4-building-windows`, waiting for the owner's phone test)
+
+Built in three stages: `e3fd019` (stage 1: the window kit, bows and buildings as content folders, one window file per
+building; nothing visible changed), `63059eb` (stage 2: the new windows and the build menu) and stage 3 (the old tests
+moved to the new windows, the stations forwarders deleted, `card.gd` moved to `ui/kit/`, these docs). The branch starts
+from `feature/h3-food-bag`, so it merges after H3. Not pushed yet. Backup: `D:\DevCache\backup\pre_h4_2026-11-26`.
+
+- **The Hearthtree window:** tabs at the top (Hearthtree, Cat, Defences); a tab shows once it has something, there is
+  no tab bar with one tab, and the window opens on the Hearthtree tab. A tab gets a "!" when something on it can be
+  bought (the owner's yes). Mend all, Patch it up and "Nothing for sale yet" stay at the top and Graphics at the
+  bottom. Goals have Go or Show buttons.
+- **The pinned Upgrade (the owner's Q1 (c) and Q2 (a)):** the Hearthtree, the Training Target, the Bow Shop, the Well,
+  the Guardian Stone (awake), the garden, the Market, the Mushroom Cottage and the Saddlery end in an Upgrade that never
+  scrolls away. It always opens a confirm window listing what the next level gives; the price is red and Confirm grey
+  when you can't pay. Cancel and Confirm go back to the building's window. Buy, Equip and Build stay one tap.
+- **The Bow Shop (Q10 (a), Q11):** one row per bow. The bow in the paw shows Upgrade with its price, then a grey
+  Equipped when it can't level now; other owned bows show Equip; the rest Buy, or Locked with what they need. A tap on
+  a bow's picture opens its inspect view: the bow turning in 3D with its arrow, its numbers and "Each arrow hits for
+  N", the real damage with the cat's Damage upgrades and any running potion.
+- **The build menu (Q12-Q16):** the build icon next to the Bag opens a grid of building pictures with a Build button
+  on each open one, a detail view, and pictures that fade in one after another. Locked ones are greyed with their
+  needs. A built building leaves the menu. Nothing can be built while the Hearthtree is in ruins. A dot on the build
+  icon replaces the Hearthtree marker's "!" for buildings.
+- **Building:** the camera glides to the new building for about 2 s while it rises out of the ground with dust and the
+  flower ring. The joystick, a wave or going below ground ends the shot at once.
+- **Tips (Q17 (a)):** both building tips say "tap the build icon next to the Bag", with no arrow.
+- **Code:** `ui/windows/` (one file per building, the base `building_window.gd`), `ui/kit/` (`card.gd`, `list_row.gd`,
+  `confirm_window.gd`, `card_parts.gd`, `icon_grid.gd`, `model_view.gd`), `content/bows/` (6) and
+  `content/buildings/` (11). `stations.gd` went from 2,672 to 1,723 lines. List rows show up to 4 lines.
+- **Tests:** new `--buildmenu`; `--homegoals`, `--bowshop` (now also `autotest_g3_bow_windows.gd`) and `--cards` (now
+  also `autotest_g2_cards_kit.gd`) rewritten; every older mode that read the old cards moved to the new windows. All
+  pass on the PC (numbers in `docs/STATUS.md`). `--hudcheck`'s lost-tap flake came from the PC's own mouse moving
+  between a test tap's down and up; the test now ignores the PC's mouse, and it passed 6 runs of 6. `--guardian` had
+  failed since before H4 because the mission gate refused its mission; the test now opens the gate the way
+  `--laststand` does.
+
+## 26 Nov 2026 · H3: food, potions and the Bag (on `feature/h3-food-bag`, waiting for the owner's phone test)
+
+Built in three stages: `f0f181a` (stage 1: timers, the Bag model, crops and recipes, save v4), `09dc171` (stage 2:
+potions, the Bag window, the garden and the cooking pot) and stage 3 (the clean-up, two small fixes, these docs). The
+branch starts from `feature/h2-hud`, so it merges after H2. Not pushed yet. Backup: `D:\DevCache\backup\pre_h3_2026-11-26`.
+
+- **Real time (the owner's rule change of 25 Nov):** crops grow and the pot cooks by the phone's clock, also while the
+  game is closed. Nothing else runs then. If the phone's clock is set back, the jobs wait until it catches up. This is
+  one general timer system (`core/timers.gd`, the `Timers` autoload): a later long job is one entry in `balance.json`
+  `timers.jobs` and a small handler.
+- **The garden:** a window that looks like the bed (plots 3 2 1 over 6 5 4). Drag a seed onto an empty plot and pay on
+  the drop. Two new crops, Emberpeppers (20 leaves, 8 min) and Swiftroots (18 leaves, 7 min), beside Sunberries,
+  Fernmint and Honeybells (4, 5 and 6 min). Water is free: watered plants grow twice as fast for 5, 6 or 7 min at
+  garden level 1, 2 or 3. Tap a ripe plot to pick it into the Bag. The Gloom meter gets +2 once per visit that picks.
+- **The cooking pot:** drag or tap ingredients into 3 slots; Cook lights up on an exact recipe; it cooks for 30–60 s in
+  real time; Collect puts the result in the Bag. A read-only recipe list sits in the window (the owner's yes). The
+  Gloom meter gets +3 on the Cook tap.
+- **5 recipes replace the 7 old dishes:** Health Potion (2 Fernmint, 1 honey: heals the cat 40% over 5 s), Mount
+  Health Potion (2 Sunberries, 1 honey: brings a knocked-out mount back with full health), Cooked Fish (1 fish: mends
+  the mount to full over 10 s), Damage Potion (2 Emberpeppers, 1 honey: arrows +25% for 30 s), Speed Potion (2
+  Swiftroots, 1 honey: the cat +25% faster for 20 s). Crops and recipes are content folders (`game/content/crops/`,
+  `game/content/recipes/`). Raw fish mends a standing mount by 10%, the Golden Carp by 50%, and Bramble buys the Golden
+  Carp for 300 leaves.
+- **The Bag:** 24 slots; food, fish, amber, towers and spikes stack to 20; each potion is one stack up to its limit
+  (Health Potion 3, Mount Health Potion 3, Cooked Fish 10, Damage Potion 1, Speed Potion 2). Tap a slot for **Use**
+  (potions and fish) or **Place** (towers and spikes). A full Bag refuses a
+  purchase before you pay; a catch swims away; a ripe crop stays ripe; a potion waits in the pot. Things already paid
+  for always go in. Eat, Quick heal, Use auto and the "x/20" pantry are gone.
+- **HUD:** the Health Potion button (row 1 right) shows while the cat is hurt and the Bag holds one. The Mount Health
+  Potion button takes Ride's place while the mount is knocked out. A line under the currencies shows a running Damage
+  or Speed Potion ("Damage +25% · 24 s"; the owner's yes).
+- **Gone (the owner's answers):** Feed and its 2 Sunberries (the Mount Health Potion replaces it); eating food below
+  ground and the Snack button (only Health Potions heal the cat there); the dishes and their boosts; growing by waves.
+- **Placing from the Bag:** towers and spikes go into the Bag when bought. Place closes the Bag and shows the ghost; the
+  piece drops in with a bounce and a puff of dust. The ghost is now red by the lake and the home, the same rule as the
+  start-up check (the owner's yes).
+- **Icons:** stand-ins drawn in code for the five potions (a bottle in each recipe's colour), Emberpeppers and
+  Swiftroots (the owner's pick).
+- **Save version 4:** the pantry goes into the Bag; an old dish waiting or eaten becomes a Health Potion (up to 3);
+  half-grown crops keep their share as timer jobs; old watering is dropped. New fields `bag` and `timers`.
+- **Code:** new `core/timers.gd`, `core/bag.gd`, `core/effects.gd`, `parts/effects_holder.gd`,
+  `commands/use_potion.gd`, `ui/windows/garden_window.gd`, `ui/windows/cooking_window.gd`, `ui/kit/drag_source.gd`
+  and `ui/kit/drop_slot.gd` (the game's first drag-and-drop). `garden.gd`, `cooking.gd` and `inventory.gd` are
+  rewritten. Stage 3 removed the legacy names (`Save.pantry`, `snack_choice`, `meal_ready`, `meal_on`, `Data.snack`,
+  `set_meal`, `meal_boost`) and the old balance keys (`garden.crops`, `cooking.recipes`, `burrows.lunch`,
+  `mount.revive_food` and others), and fixed two review points: a refused Use's reason in the Bag clears once it is no
+  longer true, and when a crop ripens and the pot finishes in the same check, one toast says both.
+- **Tests (stage 2, PC, 26 Nov):** new `--timers` 29, `--content` 33, `--bag` 109 (also `--inventory`; it runs the
+  potions checks too), `--garden` 62, `--cook` 53; `--feed` now runs the potions checks; `--saves` 69, plus
+  `--saves --startup=1` then `--startup=2` (a real first launch with a v3 save); `--hudcheck` 128, `--cards` 55,
+  `--fightf` 90, `--campg` 58, `--fishing` 9, `--burrowhooks` 9, `--layoutsave=2` 5, `--smoke` OK; no failures except
+  the known one below. Stage 3 (new checks for its two fixes): `--bag` 110, `--garden` 63, `--cook` 55, `--smoke`
+  OK; `--content`, `--timers`, `--saves` (and `--startup=1/2`), `--fishing`, `--campg`, `--burrowhooks` and
+  `--hudcheck` 128 pass after the clean-up.
+- **Known:** `--dungeoncareful` loses at the boss in about 2 runs of 3 (it passed 1 of 3). The cat has 14 health: in
+  the run it won the boss took 25 health from it, in a run it lost 32, with all 3 Health Potions used both times. Only
+  Health Potions heal below ground now, and the careful cat has 3 Health and 3 Mount Health Potions. The owner's call:
+  noted, not retuned; expeditions are rebuilt in H8 and balanced in H11. The garden's card scrolls about 150 px at
+  540x960 to reach its Upgrade row (the window itself fits); at the phone's shape (480x1040 with safe insets) nothing
+  scrolls. Cooked Fish's light orange bottle is close to the Damage Potion's orange.
+
+## 26 Nov 2026 · H2: the new HUD and Settings (on `feature/h2-hud`, waiting for the owner's phone review)
+
+Built in three commits: `c030041` (part 1), `1d0377c` (parts 2, 4 and 5) and `042d78c` (part 3). Not merged yet.
+
+- **The screen** (from the owner's sketch): top-left only the three currencies, always all three, no dark strip (the
+  satchel follows them below ground); top-right the Settings gear; top-centre the raid bar with no words and no numbers,
+  a thin campfire bar under it in fights, and the words line under that. The boss bar, banners, toasts and status line
+  sit under that group and never reach the middle third.
+- **Raid bar:** a Raid Mission wave fills with the share beaten (empty between waves); a Random Raid shows the Gloom
+  meter, the warning countdown, then the share of the whole attack; the Gloomwood shows its fight pips. It never counts
+  enemies left.
+- **Bottom:** the Bag, a build icon (it opens the Hearthtree's card at its Buildings shelf) and the snack or potion slot;
+  the defence buttons (smaller) above the Bag; Ride/Walk (or Feed) at the right. Place and Done sit centred while
+  placing. Start wave is on the signpost's card only. The Bag shows health as bars and packs the currencies under them.
+- **Buttons** slide and fade over 0.2 s, and stop taking touches the moment they start to leave.
+- **Settings window** (the gear): Graphics Auto, Low, Medium or High, and Sound on or off. Saved in `user://settings.json`
+  (`core/settings_file.gd`), apart from the game save, and never written during autotests.
+- **Code:** `hud.gd` is split into `game/ui/hud/` (facade plus `top_bar`, `fight_bar`, `messages`, `action_buttons`,
+  `card`, `card_signpost`, `shop_tiles`, `hud_icons`, `lifebar`, `threat_arrows`, `health_bars`, `settings_window`,
+  `slide`, `hud_layout`, `hud_style`). The HUD listens to Events (`currency_changed`, `fight_progress`, `riding_changed`,
+  `mount_down_changed`, `placing_changed`, `area_changed`, `boss_changed`, `campfire_hit`, `wave_ended`, `raid_ended`).
+  Ride/Walk sends the Ride command (`commands/ride.gd`). `fight.wave_total()` counts boss summons.
+- **Tests:** new `--settings` (40 checks); `--hudcheck` 121 checks (real taps on Ride, the gear, a graphics row, the Bag
+  and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills); `--inventory` 56. The old
+  `--raidshots` fail ("the Watch card") predates H2.
+
 ## 25-26 Nov 2026 · H1 (merged into `development` on 26 Nov)
 
 All four parts of step H1 are committed and merged into `development` (26 Nov 2026, after the owner's phone review).

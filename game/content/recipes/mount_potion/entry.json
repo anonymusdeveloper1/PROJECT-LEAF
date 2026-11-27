@@ -1,0 +1,15 @@
+{
+  "id": "mount_potion",
+  "name": "Mount Health Potion",
+  "plural": "Mount Health Potions",
+  "desc": "Brings a knocked-out mount back on its feet with full health.",
+  "icon": "mount_potion",
+  "color": "#4f9fd8",
+  "needs": {"berries": 2, "honey": 1},
+  "cook_s": 45,
+  "limit": 3,
+  "unlock": {},
+  "effects": [
+    {"type": "revive", "target": "mount", "share": 1.0}
+  ]
+}

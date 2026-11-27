@@ -1,0 +1,17 @@
+{
+  "id": "bench",
+  "name": "Bow Shop",
+  "desc": "Buy new bows, upgrade and equip them",
+  "icon": "bow",
+  "price": {"leaves": 40},
+  "unlock": {"flag": "shop_bench"},
+  "arrives": "menu",
+  "_note": "G3 (21 Nov 2026): the Bow Bench became the Bow Shop (same id and model): it sells, upgrades and equips the bows in `bows` (each bow: bench_level = the shop level that sells it, craft = its price, burn = Ember fire arrows: seconds, and share_per_s of the hit's damage each second). 22 Nov 2026: hidden = not sold or shown on the shop (a save that owns one still sees and uses it; Thorn Volley and Foxfire for now); frost = Frost Bow ice arrows: each hit slows the enemy by `slow` (moving and attacking) for `seconds` (a new hit restarts it), the `hits_to_freeze`th hit while slowed freezes it for `freeze_s` (bosses `boss_freeze_s`), then the count starts over; fx = the shooting effects (fx.gd: color = the release glint and trail, burst = puff or sparks at release, trail = wind, glint, flame, frost or tint, hit = leaf, flash, fire, ice or tint; *_n = particle counts before the graphics level scales them)",
+  "levels": [
+    {},
+    {"leaves": 200},
+    {"leaves": 700, "timber": 30},
+    {"leaves": 2000, "timber": 60},
+    {"leaves": 4000, "timber": 100}
+  ]
+}

@@ -541,7 +541,7 @@ func on_wave_begins(_w: int, _last: bool) -> void:
 
 
 func on_leader(e) -> void:
-	main.hud.boss = e
+	Events.boss_changed.emit(e)
 	var id := String(e.id)
 	main.hud.banner("%s!" % leader_name(id), Color(0.85, 0.55, 1.0), "Defeat every raider to hold the camp")
 
@@ -551,7 +551,7 @@ func on_building_hit(id: String) -> void:
 	if main.fight.mode != "raid" or _alerts.has(id):
 		return
 	_alerts[id] = float(cfg()["alert_every_s"])
-	main.hud.toast("%s is under attack!" % (Data.camp_name(true) if id == "home" else "The %s" % String(Data.b["stations"][id]["name"])))
+	main.hud.toast("%s is under attack!" % (Data.camp_name(true) if id == "home" else "The %s" % String(Data.building(id).get("name", id))))
 
 
 ## A raid wave was held: the damage so far is saved now (wear, wrecks, the fire), not only at the end.
@@ -1015,7 +1015,7 @@ func damage_text(cc: Dictionary) -> String:
 		if k >= 2:
 			bits.append("more worn")
 			break
-		var nm := Data.camp_name() if id == "home" else String(Data.b["stations"][id]["name"]).to_lower()
+		var nm := Data.camp_name() if id == "home" else String(Data.building(id).get("name", id)).to_lower()
 		bits.append("%s worn %d%%" % [nm, int(round(float(cc["wear"][id]) * 100.0))])
 		k += 1
 	return " · ".join(bits)

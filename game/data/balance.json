@@ -17,6 +17,8 @@
   "stats": {
     "damage": {
       "name": "Damage",
+      "says": "Arrows hit harder",
+      "icon": "damage",
       "station": "target",
       "per_level": 0.12,
       "unit": "x",
@@ -43,6 +45,8 @@
     },
     "draw": {
       "name": "Draw speed",
+      "says": "Shoots faster",
+      "icon": "draw",
       "station": "target",
       "per_level": 0.07,
       "unit": "x",
@@ -69,6 +73,8 @@
     },
     "range": {
       "name": "Range",
+      "says": "Shoots from further away",
+      "icon": "range",
       "station": "target",
       "per_level": 0.2,
       "unit": "m",
@@ -88,6 +94,8 @@
     },
     "health": {
       "name": "Health",
+      "says": "More health for the cat",
+      "icon": "heart",
       "station": "home",
       "per_level": 1,
       "unit": "hp",
@@ -114,6 +122,8 @@
     },
     "speed": {
       "name": "Move speed",
+      "says": "The cat runs faster",
+      "icon": "speed",
       "station": "home",
       "per_level": 0.05,
       "unit": "x",
@@ -140,6 +150,8 @@
     },
     "magnet": {
       "name": "Leaf magnet",
+      "says": "Leaves fly in from further",
+      "icon": "magnet",
       "station": "home",
       "per_level": 0.3,
       "unit": "m",
@@ -174,538 +186,24 @@
     9,
     10
   ],
-  "stations": {
-    "camp": {
-      "name": "Hearthtree",
-      "levels": [
-        {},
-        {
-          "leaves": 500,
-          "timber": 20,
-          "goals": [
-            {
-              "type": "mission",
-              "n": 1
-            },
-            {
-              "type": "station",
-              "id": "target",
-              "level": 1
-            },
-            {
-              "type": "station",
-              "id": "bench",
-              "level": 1
-            },
-            {
-              "type": "stat",
-              "id": "damage",
-              "level": 4
-            },
-            {
-              "type": "stat",
-              "id": "draw",
-              "level": 2
-            },
-            {
-              "type": "stat",
-              "id": "health",
-              "level": 3
-            },
-            {
-              "type": "bow",
-              "id": "twig",
-              "level": 4
-            }
-          ]
-        },
-        {
-          "leaves": 3500,
-          "timber": 40,
-          "goals": [
-            {
-              "type": "mission",
-              "n": 5
-            },
-            {
-              "type": "station",
-              "id": "target",
-              "level": 2
-            },
-            {
-              "type": "station",
-              "id": "bench",
-              "level": 2
-            },
-            {
-              "type": "station",
-              "id": "cottage",
-              "level": 2
-            },
-            {
-              "type": "station",
-              "id": "stall",
-              "level": 2
-            },
-            {
-              "type": "stat",
-              "id": "damage",
-              "level": 6
-            },
-            {
-              "type": "stat",
-              "id": "draw",
-              "level": 5
-            },
-            {
-              "type": "stat",
-              "id": "range",
-              "level": 3
-            },
-            {
-              "type": "stat",
-              "id": "health",
-              "level": 5
-            },
-            {
-              "type": "stat",
-              "id": "speed",
-              "level": 3
-            },
-            {
-              "type": "bow",
-              "id": "sunwood",
-              "level": 4
-            },
-            {
-              "type": "towers",
-              "count": 3,
-              "level": 1
-            },
-            {
-              "type": "defence",
-              "id": "barricade",
-              "level": 2
-            }
-          ]
-        },
-        {
-          "leaves": 9000,
-          "timber": 60,
-          "goals": [
-            {
-              "type": "mission",
-              "n": 9
-            },
-            {
-              "type": "station",
-              "id": "target",
-              "level": 3
-            },
-            {
-              "type": "station",
-              "id": "bench",
-              "level": 3
-            },
-            {
-              "type": "station",
-              "id": "cottage",
-              "level": 3
-            },
-            {
-              "type": "station",
-              "id": "stall",
-              "level": 3
-            },
-            {
-              "type": "station",
-              "id": "well",
-              "level": 2
-            },
-            {
-              "type": "station",
-              "id": "garden",
-              "level": 2
-            },
-            {
-              "type": "stat",
-              "id": "damage",
-              "level": 8
-            },
-            {
-              "type": "stat",
-              "id": "draw",
-              "level": 7
-            },
-            {
-              "type": "stat",
-              "id": "range",
-              "level": 5
-            },
-            {
-              "type": "stat",
-              "id": "health",
-              "level": 7
-            },
-            {
-              "type": "stat",
-              "id": "speed",
-              "level": 5
-            },
-            {
-              "type": "bow_any",
-              "level": 7
-            },
-            {
-              "type": "towers",
-              "count": 4,
-              "level": 1
-            },
-            {
-              "type": "towers",
-              "count": 2,
-              "level": 3
-            },
-            {
-              "type": "defence",
-              "id": "barricade",
-              "level": 3
-            },
-            {
-              "type": "defence",
-              "id": "spikes",
-              "level": 2
-            }
-          ]
-        },
-        {
-          "leaves": 10500,
-          "timber": 80,
-          "goals": [
-            {
-              "type": "mission",
-              "n": 12
-            },
-            {
-              "type": "station",
-              "id": "target",
-              "level": 4
-            },
-            {
-              "type": "station",
-              "id": "bench",
-              "level": 4
-            },
-            {
-              "type": "station",
-              "id": "well",
-              "level": 3
-            },
-            {
-              "type": "station",
-              "id": "garden",
-              "level": 3
-            },
-            {
-              "type": "stat",
-              "id": "damage",
-              "level": 9
-            },
-            {
-              "type": "stat",
-              "id": "draw",
-              "level": 9
-            },
-            {
-              "type": "stat",
-              "id": "range",
-              "level": 7
-            },
-            {
-              "type": "stat",
-              "id": "health",
-              "level": 9
-            },
-            {
-              "type": "stat",
-              "id": "speed",
-              "level": 7
-            },
-            {
-              "type": "bow_any",
-              "level": 9
-            },
-            {
-              "type": "towers",
-              "count": 5,
-              "level": 3
-            },
-            {
-              "type": "defence",
-              "id": "spikes",
-              "level": 3
-            }
-          ]
-        },
-        {
-          "leaves": 17160,
-          "timber": 110,
-          "needs_burrows": true,
-          "needs_depth": 1,
-          "goals": [
-            {
-              "type": "mission",
-              "n": 15
-            },
-            {
-              "type": "depth",
-              "n": 1
-            },
-            {
-              "type": "station",
-              "id": "target",
-              "level": 5
-            },
-            {
-              "type": "station",
-              "id": "bench",
-              "level": 5
-            },
-            {
-              "type": "all_stats",
-              "level": 10
-            },
-            {
-              "type": "bow_any",
-              "level": 10
-            },
-            {
-              "type": "bow_owned",
-              "id": "frost"
-            }
-          ]
-        },
-        {
-          "leaves": 33480,
-          "timber": 150,
-          "needs_burrows": true,
-          "needs_depth": 2,
-          "goals": [
-            {
-              "type": "depth",
-              "n": 2
-            }
-          ]
-        },
-        {
-          "leaves": 54400,
-          "timber": 200,
-          "needs_burrows": true,
-          "needs_depth": 3,
-          "goals": [
-            {
-              "type": "depth",
-              "n": 3
-            }
-          ]
-        }
-      ],
-      "_note": "Phase F (19 Nov 2026): each home level has `goals`; the home grows only when every goal is met and its price is paid. Goal types: mission {n: mission number, 1-based, won}; station {id, level}; stat {id, level}; bow {id, level} (that bow owned at that level); bow_any {level}; bow_owned {id}; towers {count, level} (placed towers at least that level); defence {id, level} (barricade / spikes / tower type level); all_stats {level}; depth {n} (Gloomwood level n beaten). needs_burrows / needs_depth on levels 6-8 are kept for older code."
-    },
-    "target": {
-      "name": "Training Target",
-      "build": {
-        "leaves": 10
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 150
-        },
-        {
-          "leaves": 600,
-          "timber": 20
-        },
-        {
-          "leaves": 2000,
-          "timber": 60
-        },
-        {
-          "leaves": 4000,
-          "timber": 100
-        }
-      ]
-    },
-    "bench": {
-      "name": "Bow Shop",
-      "_note": "G3 (21 Nov 2026): the Bow Bench became the Bow Shop (same id and model): it sells, upgrades and equips the bows in `bows` (each bow: bench_level = the shop level that sells it, craft = its price, burn = Ember fire arrows: seconds, and share_per_s of the hit's damage each second). 22 Nov 2026: hidden = not sold or shown on the shop (a save that owns one still sees and uses it; Thorn Volley and Foxfire for now); frost = Frost Bow ice arrows: each hit slows the enemy by `slow` (moving and attacking) for `seconds` (a new hit restarts it), the `hits_to_freeze`th hit while slowed freezes it for `freeze_s` (bosses `boss_freeze_s`), then the count starts over; fx = the shooting effects (fx.gd: color = the release glint and trail, burst = puff or sparks at release, trail = wind, glint, flame, frost or tint, hit = leaf, flash, fire, ice or tint; *_n = particle counts before the graphics level scales them)",
-      "build": {
-        "leaves": 40
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 200
-        },
-        {
-          "leaves": 700,
-          "timber": 30
-        },
-        {
-          "leaves": 2000,
-          "timber": 60
-        },
-        {
-          "leaves": 4000,
-          "timber": 100
-        }
-      ]
-    },
-    "well": {
-      "name": "Wishing Well",
-      "build": {
-        "leaves": 80
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 250
-        },
-        {
-          "leaves": 700,
-          "timber": 25
-        }
-      ],
-      "needs_home": 3
-    },
-    "cottage": {
-      "name": "Mushroom Cottage",
-      "build": {
-        "leaves": 160
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 350
-        },
-        {
-          "leaves": 900,
-          "timber": 30
-        }
-      ],
-      "needs_home": 2,
-      "_note": "Phase G2: Sprig's home, buildable at Hearthtree level 2"
-    },
-    "stall": {
-      "name": "Market",
-      "build": {
-        "leaves": 260,
-        "timber": 10
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 450
-        },
-        {
-          "leaves": 1000,
-          "timber": 35
-        }
-      ],
-      "needs_home": 2,
-      "_note": "Phase G2: the Market (Bramble the trader), buildable at Hearthtree level 2; Thistle the hare comes free with it"
-    },
-    "stone": {
-      "name": "Guardian Stone",
-      "build": {
-        "leaves": 0
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 500
-        },
-        {
-          "leaves": 1200,
-          "timber": 15
-        },
-        {
-          "leaves": 2500,
-          "timber": 20,
-          "needs_burrows": true
-        }
-      ]
-    },
-    "garden": {
-      "name": "Garden",
-      "build": {
-        "leaves": 0
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 400
-        },
-        {
-          "leaves": 1000
-        }
-      ]
-    },
-    "fishing": {
-      "name": "Fishing Spot",
-      "build": {
-        "leaves": 0
-      },
-      "levels": [
-        {}
-      ]
-    },
-    "saddlery": {
-      "name": "Saddlery",
-      "_note": "G4 (21 Nov 2026): the mount's building. Built on the Hearthtree's card once `needs_missions` missions are won and the Hearthtree is at `needs_home` (level 2, from 21 Nov 2026); levels 1-5, never above the Hearthtree's level; its level caps the level of every skill and attachment (mount_skills, mount_attachments). Its other rules are in the top-level `saddlery` block.",
-      "build": {
-        "leaves": 900,
-        "timber": 30
-      },
-      "levels": [
-        {},
-        {
-          "leaves": 1500,
-          "timber": 50
-        },
-        {
-          "leaves": 3000,
-          "timber": 80
-        },
-        {
-          "leaves": 5000,
-          "timber": 120
-        },
-        {
-          "leaves": 8000,
-          "timber": 160
-        }
-      ],
-      "needs_missions": 8,
-      "needs_home": 2
-    },
-    "tailor": {
-      "name": "Tailor's Nook",
-      "_note": "23 Nov 2026 (the owner): the cat's outfit shop. Built on the Hearthtree's card once the Hearthtree is at `needs_home` (3). One level, no upgrades. It sells outfits from the top-level `cat_skins` block: looks only, no strength. A normal building: health in building_hp.tailor, it can be ruined and repaired. stand_in: until the owner's model res://assets/props/tailors_nook.glb exists, this prop shows, tinted (delete stand_in when the model comes; the model is used as soon as its file exists).",
-      "build": {
-        "leaves": 1500,
-        "timber": 40
-      },
-      "levels": [
-        {}
-      ],
-      "needs_home": 3,
-      "stand_in": {
-        "model": "market_stall",
-        "tint": "#B48CE6"
-      }
-    }
+  "windows": {
+    "_note": "H4: the words of the building windows (ui/windows), the confirm window (ui/kit) and the build menu; %s and %d are filled in by the code",
+    "upgrade": "Upgrade", "confirm": "Confirm", "cancel": "Cancel", "back": "Back", "equipped": "Equipped",
+    "level_of": "Level %d of %d", "max": "Max level", "max_for_now": "Max level for now",
+    "needs_home": "Needs %s at level %d", "needs_missions": "Finish %d Raid Missions first",
+    "goals_met": "%d of %d goals met",
+    "arrow_hit": "Each arrow hits for %s (the cat's Damage %s)", "arrow_hit_potion": "Each arrow hits for %s (the cat's Damage %s and a potion %s)",
+    "tab_cat": "Cat", "tab_defences": "Defences",
+    "stat_next": "Next: %s · now %s", "stat_next_first": "Next: %s", "bow_next": "Next: +%s%% damage",
+    "bow_damage": "Damage %d%%", "bow_level": "Level %d of %d",
+    "home_look": "New look: %s", "home_fire": "Campfire: %d health", "home_light": "A bigger firelight",
+    "home_towers": "Up to %d %s", "home_buildings": "Buildings up to level %d",
+    "home_stats": "The cat's upgrades up to level %d", "home_defences": "Defences up to level %d", "home_opens": "Opens: %s",
+    "build_title": "Build", "build": "Build", "build_empty": "Nothing to build right now", "build_ruined": "Repair %s first",
+    "tip_build_target": "%s's shop is open! Tap the build icon next to the Bag to build a Training Target.",
+    "tip_build_new": "New at %s: tap the build icon next to the Bag to build the %s."
   },
+  "build_menu": {"_note": "H4: locked buildings show in the build menu once this many Raid Missions are won", "locked_from_missions": 1},
   "home_names": [
     "Shed",
     "Hut",
@@ -721,361 +219,6 @@
     "late_from_level": 6,
     "late_to_level": 10,
     "late_per_level": 0.2
-  },
-  "bows": {
-    "twig": {
-      "name": "Twig Bow",
-      "damage": 1.0,
-      "arrows": 1,
-      "spread_deg": 0,
-      "pierce": 0,
-      "range_bonus": 0.0,
-      "bench_level": 1,
-      "craft": 0,
-      "tint": "#FFFFFF",
-      "fx": {
-        "color": "#EEF6E2",
-        "burst": "puff",
-        "burst_colors": [
-          "#FFFFFF",
-          "#DDEBC8"
-        ],
-        "burst_n": 6,
-        "trail": "wind",
-        "trail_len": 0.8,
-        "trail_w": 0.03,
-        "trail_alpha": 0.4,
-        "hit": "leaf",
-        "hit_colors": [
-          "#9CCB5A",
-          "#7A5A36",
-          "#D9E8A6"
-        ],
-        "hit_n": 7
-      },
-      "per_level": 0.1,
-      "cost": [
-        26,
-        39,
-        58,
-        84,
-        117,
-        120,
-        165,
-        225,
-        300,
-        410
-      ],
-      "mastery": [
-        {
-          "leaves": 1200
-        },
-        {
-          "leaves": 2100
-        }
-      ],
-      "draw_mult": 1.0
-    },
-    "sunwood": {
-      "name": "Sunwood Longbow",
-      "damage": 1.15,
-      "arrows": 1,
-      "spread_deg": 0,
-      "pierce": 1,
-      "range_bonus": 1.5,
-      "bench_level": 2,
-      "craft": {
-        "leaves": 400,
-        "timber": 15
-      },
-      "tint": "#FFD36A",
-      "fx": {
-        "color": "#FFD66E",
-        "burst": "sparks",
-        "burst_colors": [
-          "#FFF6C8",
-          "#FFD36A",
-          "#FFB43C"
-        ],
-        "burst_n": 8,
-        "trail": "glint",
-        "trail_len": 1.0,
-        "trail_w": 0.035,
-        "trail_alpha": 0.55,
-        "trail_n": 10,
-        "hit": "flash",
-        "hit_colors": [
-          "#FFF6C8",
-          "#FFD36A",
-          "#FFAE3A"
-        ],
-        "hit_n": 8
-      },
-      "per_level": 0.1,
-      "cost": [
-        39,
-        58,
-        84,
-        117,
-        162,
-        165,
-        225,
-        300,
-        410,
-        545
-      ],
-      "mastery": [
-        {
-          "leaves": 1200
-        },
-        {
-          "leaves": 2100
-        }
-      ],
-      "draw_mult": 1.1
-    },
-    "ember": {
-      "name": "Ember Bow",
-      "damage": 1.3,
-      "arrows": 1,
-      "spread_deg": 0,
-      "pierce": 0,
-      "range_bonus": -0.8,
-      "bench_level": 3,
-      "craft": {
-        "leaves": 900,
-        "timber": 30
-      },
-      "tint": "#E0603A",
-      "fx": {
-        "color": "#FF8A3C",
-        "burst": "sparks",
-        "burst_colors": [
-          "#FFE58A",
-          "#FF8A3C",
-          "#D8401E"
-        ],
-        "burst_n": 10,
-        "trail": "flame",
-        "trail_len": 0.9,
-        "trail_w": 0.04,
-        "trail_alpha": 0.5,
-        "trail_n": 12,
-        "hit": "fire",
-        "hit_colors": [
-          "#FFE58A",
-          "#FF8A3C",
-          "#C8341A"
-        ],
-        "hit_n": 12
-      },
-      "per_level": 0.1,
-      "cost": [
-        58,
-        84,
-        117,
-        162,
-        221,
-        225,
-        300,
-        410,
-        545,
-        730
-      ],
-      "mastery": [
-        {
-          "leaves": 1200
-        },
-        {
-          "leaves": 2100
-        }
-      ],
-      "burn": {
-        "seconds": 3.0,
-        "share_per_s": 0.25
-      },
-      "draw_mult": 1.0
-    },
-    "frost": {
-      "name": "Frost Bow",
-      "damage": 1.45,
-      "arrows": 1,
-      "spread_deg": 0,
-      "pierce": 0,
-      "range_bonus": 0.0,
-      "bench_level": 5,
-      "craft": {
-        "leaves": 1600,
-        "timber": 50
-      },
-      "tint": "#8FD8FF",
-      "fx": {
-        "color": "#BFEAFF",
-        "burst": "puff",
-        "burst_colors": [
-          "#FFFFFF",
-          "#BFEAFF",
-          "#8FD8FF"
-        ],
-        "burst_n": 8,
-        "trail": "frost",
-        "trail_len": 0.9,
-        "trail_w": 0.035,
-        "trail_alpha": 0.5,
-        "trail_n": 10,
-        "hit": "ice",
-        "hit_colors": [
-          "#FFFFFF",
-          "#BFEAFF",
-          "#7CC8F0"
-        ],
-        "hit_n": 9
-      },
-      "per_level": 0.1,
-      "cost": [
-        75,
-        109,
-        152,
-        211,
-        287,
-        290,
-        395,
-        535,
-        710,
-        950
-      ],
-      "mastery": [
-        {
-          "leaves": 1380
-        },
-        {
-          "leaves": 2340
-        }
-      ],
-      "frost": {
-        "slow": 0.5,
-        "seconds": 3.0,
-        "hits_to_freeze": 3,
-        "freeze_s": 1.5,
-        "boss_freeze_s": 0.5
-      },
-      "draw_mult": 1.25
-    },
-    "volley": {
-      "name": "Thorn Volley",
-      "hidden": true,
-      "damage": 0.65,
-      "arrows": 3,
-      "spread_deg": 13,
-      "pierce": 0,
-      "range_bonus": 0.0,
-      "bench_level": 4,
-      "craft": {
-        "leaves": 1200,
-        "timber": 40
-      },
-      "tint": "#8FD06A",
-      "fx": {
-        "color": "#B6E890",
-        "burst": "sparks",
-        "burst_colors": [
-          "#E8FFD0",
-          "#8FD06A"
-        ],
-        "burst_n": 6,
-        "trail": "tint",
-        "trail_len": 0.7,
-        "trail_w": 0.03,
-        "trail_alpha": 0.4,
-        "hit": "leaf",
-        "hit_colors": [
-          "#8FD06A",
-          "#5E9A3A",
-          "#D9E8A6"
-        ],
-        "hit_n": 6
-      },
-      "per_level": 0.1,
-      "cost": [
-        58,
-        84,
-        117,
-        162,
-        221,
-        225,
-        300,
-        410,
-        545,
-        730
-      ],
-      "mastery": [
-        {
-          "leaves": 1200
-        },
-        {
-          "leaves": 2100
-        }
-      ],
-      "draw_mult": 1.0
-    },
-    "foxfire": {
-      "name": "Foxfire Bow",
-      "damage": 1.45,
-      "arrows": 1,
-      "spread_deg": 0,
-      "pierce": 2,
-      "range_bonus": 1.0,
-      "bench_level": 3,
-      "craft": {
-        "leaves": 5120
-      },
-      "needs_burrows": true,
-      "hidden": true,
-      "tint": "#7FF0D8",
-      "fx": {
-        "color": "#9FF6E2",
-        "burst": "sparks",
-        "burst_colors": [
-          "#E6FFF8",
-          "#7FF0D8",
-          "#3FC8B0"
-        ],
-        "burst_n": 8,
-        "trail": "tint",
-        "trail_len": 1.0,
-        "trail_w": 0.035,
-        "trail_alpha": 0.5,
-        "hit": "flash",
-        "hit_colors": [
-          "#E6FFF8",
-          "#7FF0D8",
-          "#3FC8B0"
-        ],
-        "hit_n": 8
-      },
-      "per_level": 0.1,
-      "cost": [
-        58,
-        84,
-        117,
-        162,
-        221,
-        225,
-        300,
-        410,
-        545,
-        730
-      ],
-      "mastery": [
-        {
-          "leaves": 1200
-        },
-        {
-          "leaves": 2100
-        }
-      ],
-      "draw_mult": 1.0
-    }
   },
   "defences": {
     "fence": {
@@ -1104,6 +247,7 @@
     },
     "tower": {
       "name": "Acorn Tower",
+      "from_bag": true,
       "piece": 90,
       "aim_turn_deg_per_s": 540,
       "aim_tolerance_deg": 4,
@@ -1195,6 +339,7 @@
     },
     "spikes": {
       "name": "Thorn Spikes",
+      "from_bag": true,
       "piece": 70,
       "levels": [
         {
@@ -1867,7 +1012,7 @@
   },
   "mount": {
     "name": "Thistle",
-    "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission, it throws the cat off and stays out until the cat feeds it (revive_food from the pantry, the HUD's Feed button, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
+    "_note": "the giant hare from the Market Stall; the cat rides it (faster: speed_by_level, by the Market's level) and it takes the hits while the cat rides it (hp_by_level, x the Mossweave Saddle); knocked out in a mission or a run, it throws the cat off and stays out until a Mount Health Potion brings it back (H3, 26 Nov 2026, the owner's Q1: the potion replaces Feed; the HUD's potion button in Ride's place, any time) or the next chapter break; outside missions it rests `rest_s` and gets up by itself; whole again at every chapter break and when a mission ends. G4 (21 Nov 2026): no built-in move any more (the Thump became the Saddlery's Stomp skill, mount_skills); thump_damage_by_level, thump_every and thump_range are kept but no longer read.",
     "speed_by_level": [
       0,
       1.275,
@@ -1889,9 +1034,6 @@
       13
     ],
     "rest_s": 20,
-    "revive_food": {
-      "berries": 2
-    },
     "_note_aim": "23 Nov 2026 (owner's follow-up): the mount faces joystick travel and runs forward as before. The cat acquires and shoots only within aim_cone_deg either side of that heading (140 each side, a 280-degree arc). aim_cone_keep_deg is zero so held targets are released outside it; the rear blind spot is 80 degrees. Dedicated upper-body mounted Front, QuarterLeft/Right and RearLeft/Right shooting clips blend across this arc. The character root, pelvis and seated legs keep facing the mount; only the torso, shoulders, arms and head aim. The rear poses limit chest rotation and reposition both arms for an over-shoulder shot. Draw and release stay synchronized with Shoot. Pose values are authored animation data in assets/cat/mounted/shooting.res.",
     "aim_cone_deg": 140,
     "aim_cone_keep_deg": 0,
@@ -2338,58 +1480,25 @@
     ]
   },
   "garden": {
-    "_note": "a planted plot grows grow_dry steps for every wave the camp holds, grow_wet while watered (watering lasts wet_waves_by_level waves held); ripe at the crop's grow. Never real time: nothing grows while the game is closed or while the cat waits in the camp.",
+    "_note": "H3 (26 Nov 2026): crops grow in real time through Timers (core/timers.gd, the job crop:<plot>), also while the game is closed. The crops are content folders (content/crops/<id>/entry.json: grow_s, yield, price). Watering is free: every growing plot that is not watered grows water_speed times as fast for the level's water_s_by_level seconds (or until it is ripe, if that is sooner). plots_by_level: open plots per garden level; extra_by_level: added to every harvest.",
+    "water_s_by_level": [
+      0,
+      300,
+      360,
+      420
+    ],
+    "water_speed": 2.0,
     "plots_by_level": [
       0,
       3,
       5,
       6
     ],
-    "wet_waves_by_level": [
-      0,
-      3,
-      4,
-      5
-    ],
     "extra_by_level": [
       0,
       0,
       0,
       1
-    ],
-    "grow_dry": 1,
-    "grow_wet": 2,
-    "crops": [
-      {
-        "id": "sunberry",
-        "name": "Sunberries",
-        "gives": "berries",
-        "yield": 3,
-        "grow": 4,
-        "seed": {
-          "leaves": 10
-        }
-      },
-      {
-        "id": "fernmint",
-        "name": "Fernmint",
-        "gives": "herbs",
-        "yield": 2,
-        "grow": 5,
-        "seed": {
-          "leaves": 12
-        }
-      },
-      {
-        "id": "honeybell",
-        "name": "Honeybells",
-        "gives": "honey",
-        "yield": 2,
-        "grow": 6,
-        "seed": {
-          "leaves": 15
-        }
-      }
     ]
   },
   "ingredients": {
@@ -2405,6 +1514,14 @@
       "honey",
       "honey"
     ],
+    "peppers": [
+      "Emberpepper",
+      "Emberpeppers"
+    ],
+    "roots": [
+      "Swiftroot",
+      "Swiftroots"
+    ],
     "fish": [
       "fish",
       "fish"
@@ -2415,115 +1532,64 @@
     ]
   },
   "cooking": {
-    "_note": "one dish waits in the pot (Save.meal_ready); it is eaten when the next chapter (or raid) starts and lasts that chapter (Save.meal_on), then it is used up; if the camp falls it goes back into the pot. Boost keys: hp (added), draw, damage, friends (pet, mount and Warden hits), fire (campfire health), guardian_hp (shares), guardian_revive_s (seconds). unlock: garden | fishing | fishing+stone | goldfish (one was ever caught).",
-    "pantry_cap": 20,
-    "max_rows": 6,
-    "recipes": [
-      {
-        "id": "berry_tart",
-        "name": "Berry Tart",
-        "needs": {
-          "berries": 3
-        },
-        "boost": {
-          "draw": 0.15
-        },
-        "says": "shoots 15% faster",
-        "unlock": "garden",
-        "color": "#e8603c"
+    "_note": "H3 (26 Nov 2026): the recipes are content folders (content/recipes/<id>/entry.json; a recipe is its result's type and its id is the Bag item's id). You put ingredients in the pot's pot_slots slots; Cook takes them from the Bag and starts the Timers job cook:pot (the recipe's cook_s, real time, also while the game is closed); the result waits in the pot until Collect puts it in the Bag.",
+    "pot_slots": 3
+  },
+  "timers": {
+    "_note": "H3 (26 Nov 2026): Timers (core/timers.gd) runs real-time jobs that keep going while the game is closed. A job id is <kind>:<key>; its kind must be listed in jobs (a new long job is one entry here plus a small handler). check_every_s: how often (seconds of real time) ended jobs are told, besides on resume and 1 s after a save loads.",
+    "check_every_s": 1.0,
+    "jobs": {
+      "crop": {
+        "_note": "a garden plot growing (content/crops grow_s); garden.gd handles the end"
       },
-      {
-        "id": "fernmint_tea",
-        "name": "Fernmint Tea",
-        "needs": {
-          "herbs": 2
-        },
-        "boost": {
-          "hp": 2
-        },
-        "says": "+2 health",
-        "unlock": "garden",
-        "color": "#8fd18a"
-      },
-      {
-        "id": "honey_cake",
-        "name": "Honey Cake",
-        "needs": {
-          "honey": 2,
-          "berries": 1
-        },
-        "boost": {
-          "friends": 0.4
-        },
-        "says": "your pet, mount and Warden hit 40% harder",
-        "unlock": "garden",
-        "color": "#ffd36e"
-      },
-      {
-        "id": "hearth_stew",
-        "name": "Hearth Stew",
-        "needs": {
-          "herbs": 2,
-          "honey": 1,
-          "berries": 2
-        },
-        "boost": {
-          "fire": 0.4
-        },
-        "says": "the campfire has 40% more health",
-        "unlock": "garden",
-        "color": "#d98b4a"
-      },
-      {
-        "id": "fish_skewers",
-        "name": "Fish Skewers",
-        "needs": {
-          "fish": 2,
-          "herbs": 1
-        },
-        "boost": {
-          "damage": 0.2
-        },
-        "says": "arrows hit 20% harder",
-        "unlock": "fishing",
-        "color": "#f07f6a"
-      },
-      {
-        "id": "root_stew",
-        "name": "Warden's Root Stew",
-        "needs": {
-          "fish": 2,
-          "herbs": 2,
-          "honey": 1
-        },
-        "boost": {
-          "guardian_hp": 0.5,
-          "guardian_revive_s": 15
-        },
-        "says": "the Warden: +50% health, back up in 15 s",
-        "unlock": "fishing+stone",
-        "color": "#7fcf6a"
-      },
-      {
-        "id": "carp_feast",
-        "name": "Golden Carp Feast",
-        "needs": {
-          "goldfish": 1,
-          "berries": 2,
-          "honey": 1
-        },
-        "boost": {
-          "hp": 2,
-          "damage": 0.15,
-          "draw": 0.1,
-          "friends": 0.2,
-          "guardian_hp": 0.2
-        },
-        "says": "a little of everything",
-        "unlock": "goldfish",
-        "color": "#ffb43c"
+      "cook": {
+        "_note": "the cooking pot (content/recipes cook_s); cooking.gd handles the end"
       }
-    ]
+    }
+  },
+  "bag": {
+    "_note": "H3 (26 Nov 2026): the Bag (core/bag.gd). slots: how many slots; stack: how many of one thing fit in a slot (food, fish, amber, towers and spikes; a potion is one stack of at most its recipe's limit). use: what Use does for a thing that is not a recipe (effects from the effects list; a thing without effects has no Use). desc: what the Bag says a thing is for, when it is not a recipe (recipes have their own desc).",
+    "slots": 24,
+    "stack": 20,
+    "use": {
+      "fish": {
+        "effects": [
+          {
+            "type": "heal",
+            "target": "mount",
+            "share": 0.1
+          }
+        ]
+      },
+      "goldfish": {
+        "effects": [
+          {
+            "type": "heal",
+            "target": "mount",
+            "share": 0.5
+          }
+        ]
+      }
+    },
+    "desc": {
+      "berries": "For cooking at the pot.",
+      "herbs": "For cooking at the pot.",
+      "honey": "For cooking at the pot.",
+      "peppers": "For cooking at the pot.",
+      "roots": "For cooking at the pot.",
+      "fish": "Mends the mount by 10% at once. Also cooks into Cooked Fish.",
+      "goldfish": "Mends the mount by 50% at once, or Bramble buys it for 300 leaves.",
+      "amber": "Rare. Bramble buys it.",
+      "tower": "A defence for the camp. Place it from the Bag.",
+      "spikes": "A defence for the camp. Place it from the Bag."
+    }
+  },
+  "potions": {
+    "_note": "H3 (26 Nov 2026): which potion each HUD potion button uses (bottom right): cat shows while the cat is hurt and the Bag holds one; mount while the mount is knocked out and the Bag holds one.",
+    "hud": {
+      "cat": "health_potion",
+      "mount": "mount_potion"
+    }
   },
   "fishing": {
     "_note": "a calm game at the lake (fishing.gd): cast, wait, tap anywhere on the bite; uncommon and rare catches add reel pulses (tap while the closing ring is green). Misses cost nothing. rare_pity: a rare at the latest on this catch. A rolled rare is the next unfound lake treasure treasure_share of the time.",
@@ -5912,7 +4978,6 @@
     "reveal_old_save_s": 6.0,
     "reveal_wait_s": 1.0,
     "reveal_wait_max": 4,
-    "meals_in_runs": true,
     "knockout_keep": 0.5,
     "strength_by_depth": [
       0,
@@ -6461,30 +5526,7 @@
           "seal_s": 3.0
         }
       }
-    ],
-    "lunch": [
-      {
-        "item": "fish",
-        "heal": 4
-      },
-      {
-        "item": "honey",
-        "heal": 3
-      },
-      {
-        "item": "goldfish",
-        "heal": 6
-      },
-      {
-        "item": "herbs",
-        "heal": 2
-      },
-      {
-        "item": "berries",
-        "heal": 2
-      }
-    ],
-    "snack_every_s": 3.0
+    ]
   },
   "attachments": {
     "_note": "Phase E: attachments for the mount and the pet. They help in the Burrows only (burrow_run.gd adds their mods to Data.run_mods with the boons), one worn per companion, bought with leaves (H1: no materials) and worn on the Stable (Market Stall) and Nest (Mushroom Cottage) cards. Card-only for now: no model on the companions yet. mods: mount_hp (+share of the mount's health), thump_mult (+share of its Stomp, the Thump before G4), loot_mult (x chests and kills), trap_warn (+s on trap and spore warnings), pet_dmg (+share of Sprig's sparks), hp (+cat health). G4 (21 Nov 2026): the Mossweave Saddle (mount_saddle) and the Saddlebags (mount_bags) moved to the Saddlery (mount_attachments, working everywhere; old saves keep them there: saddlery.old_attachments). The Thunder Shoes stay here as they were.",
@@ -6850,7 +5892,7 @@
   },
   "camp_name": "the Hearthtree",
   "market": {
-    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade. H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials.",
+    "_note": "Phase G2: what Bramble sells to the player (sells: amount for leaves) and buys from the player (buys: amount for what he pays, every currency the entry names: leaves, and H1 shards). after_missions: only once every mission is won. Timber is in `trade`, Gloom shards in gloom_raids.shard_trade. H1 (25 Nov 2026, the owner): he buys amber for 1,000 leaves and 1 purple shard each (first guesses) and sells no materials. H3 (26 Nov 2026): he buys a Golden Carp for 300 leaves at any time; he does not sell Emberpeppers or Swiftroots. Food bought from him goes into the Bag.",
     "sells": [
       {
         "id": "berries",
@@ -6880,6 +5922,11 @@
         "leaves": 1000,
         "shards": 1,
         "after_missions": true
+      },
+      {
+        "id": "goldfish",
+        "amount": 1,
+        "leaves": 300
       }
     ]
   },
@@ -7177,6 +6224,31 @@
       },
       "key_leaves": 150,
       "key_cap": 3
+    },
+    "_note_v4": "to_v4 (H3, 26 Nov 2026): the pantry goes into the Bag (every count above 0); each old dish waiting in the pot or eaten mid-mission (old_dishes, in meal_ready and meal_on) becomes a dish_potion, up to potion_cap of them in the Bag, and each one past that pays dish_leaves leaves; the snack choice goes; a planted plot keeps its share of growth (its old steps of crop_steps) as a Timers job of crop_grow_s seconds that is already that far along; old watering is dropped; a plot with a crop id not listed here is kept as it is.",
+    "to_v4": {
+      "old_dishes": [
+        "berry_tart",
+        "fernmint_tea",
+        "honey_cake",
+        "hearth_stew",
+        "fish_skewers",
+        "root_stew",
+        "carp_feast"
+      ],
+      "dish_potion": "health_potion",
+      "potion_cap": 3,
+      "dish_leaves": 50,
+      "crop_steps": {
+        "sunberry": 4,
+        "fernmint": 5,
+        "honeybell": 6
+      },
+      "crop_grow_s": {
+        "sunberry": 240,
+        "fernmint": 300,
+        "honeybell": 360
+      }
     }
   }
 }

@@ -1,0 +1,14 @@
+{
+  "id": "graphics",
+  "name": "Graphics",
+  "window_title": "Settings",
+  "desc": "How sharp and detailed the game looks. Lower levels run smoother on older phones.",
+  "use": "Use",
+  "in_use": "In use",
+  "options": [
+    {"id": "auto", "name": "Auto", "desc": "The game picks the best level for your phone and lowers it if it runs slowly."},
+    {"id": "low", "name": "Low", "desc": "Simpler look, no shadows. The smoothest."},
+    {"id": "medium", "name": "Medium", "desc": "Shadows and a sharper picture."},
+    {"id": "high", "name": "High", "desc": "The full look, with glow and all the grass."}
+  ]
+}

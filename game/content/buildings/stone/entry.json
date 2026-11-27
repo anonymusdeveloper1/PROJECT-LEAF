@@ -1,0 +1,15 @@
+{
+  "id": "stone",
+  "name": "Guardian Stone",
+  "desc": "The Moss Warden's stone",
+  "icon": "guardian",
+  "price": {},
+  "unlock": {},
+  "arrives": "found",
+  "levels": [
+    {},
+    {"leaves": 500},
+    {"leaves": 1200, "timber": 15},
+    {"leaves": 2500, "timber": 20, "needs_burrows": true}
+  ]
+}

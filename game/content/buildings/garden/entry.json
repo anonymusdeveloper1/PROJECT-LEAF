@@ -1,0 +1,14 @@
+{
+  "id": "garden",
+  "name": "Garden",
+  "desc": "Grow food for the cooking pot",
+  "icon": "garden",
+  "price": {},
+  "unlock": {},
+  "arrives": "gift",
+  "levels": [
+    {},
+    {"leaves": 400},
+    {"leaves": 1000}
+  ]
+}

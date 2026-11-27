@@ -1,0 +1,15 @@
+{
+  "id": "stall",
+  "name": "Market",
+  "desc": "Bramble's shop, and {mount_look} comes free",
+  "icon": "market",
+  "price": {"leaves": 260, "timber": 10},
+  "unlock": {"flag": "shop_open", "building": ["home", 2]},
+  "arrives": "menu",
+  "levels": [
+    {},
+    {"leaves": 450},
+    {"leaves": 1000, "timber": 35}
+  ],
+  "_note": "Phase G2: the Market (Bramble the trader), buildable at Hearthtree level 2; Thistle the hare comes free with it"
+}

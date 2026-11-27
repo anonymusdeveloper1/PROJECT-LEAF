@@ -68,20 +68,23 @@ var mission_run := {}                              # campaign raid: wave_done is
                                                    # start from, "gain": leaves gained since that chapter began (see
                                                    # leaves; an older save has none: 0)}, saved at every chapter
                                                    # break; {} = none
-# Phase C: the Moss Warden, the garden, cooking and fishing. No timestamps anywhere: nothing moves on while the game is
-# closed (plants grow per wave held, a dish lasts one chapter).
+# Phase C: the Moss Warden, the garden, cooking and fishing. H3 (26 Nov 2026): only timers keep running while the game
+# is closed (the owner's rule): the crops and the cooking pot are real-time jobs in `timers` (core/timers.gd). Nothing
+# else moves on while the game is closed.
 var guardian_look := "moss_warden"                 # which look fills the guardian slot (same numbers for all)
 var guardian_skin := "natural"
 var guardian_post := -1                            # -1 guards the camp, 0-3 holds that trail
-var garden: Array = _empty_garden()                # 6 plots: {"crop": id or "", "grow": steps, "wet": waves left}
-var pantry := {"berries": 0, "herbs": 0, "honey": 0, "fish": 0, "goldfish": 0}
-var snack_choice := "auto"                         # the quick-heal food, or the configured automatic order
-var meal_ready := ""                               # the dish waiting in the pot (a recipe id)
-var meal_on := ""                                  # the dish eaten this chapter
+var garden: Array = _empty_garden()                # 6 plots: {"crop": id or ""}; a plot's growth is the Timers job "crop:<i>"
+## H3: the Bag's food, fish and potions, {id: count} (core/bag.gd writes it; towers and spikes stay in items, amber in
+## mats). Unknown ids are kept.
+var bag := {}
+## H3: the Timers jobs (core/timers.gd writes them): {"seen": the highest clock reading (Unix s), "jobs": {id: {"start",
+## "len", "data", "told"}}}.
+var timers := {"seen": 0.0, "jobs": {}}
 var fish_log := {}                                 # catch id -> how many caught
 var fish_dry := 0                                  # catches since the last rare one (the pity counter)
-# Phase D: the Gloom Raids. No timestamps anywhere: the meter fills only while the game runs, and a raid that was
-# coming (or under way) comes back at its warning.
+# Phase D: the Gloom Raids. The only timestamps are the Timers jobs (`timers`, above): the raid meter fills only while the
+# game runs, and a raid that was coming (or under way) comes back at its warning.
 var shards := 0:                                   # Gloom shards: earned in play only, never sold
 	set(v):
 		if v == shards:
@@ -97,7 +100,8 @@ var fire_look := ""                                # "" or "shardfire"
 var save_v := Upgrades.CURRENT_VERSION             # format version written by save_game()
 ## Version read from disk before upgrades. Zero means no save was loaded.
 var loaded_v := 0
-# Phase E: the Burrows. No timestamps anywhere: a run in progress waits at the Hollow while the game is closed.
+# Phase E: the Burrows. No timestamps here (only the Timers jobs have them): a run in progress waits at the Hollow
+# while the game is closed.
 var mats := {"amber": 0}                           # the expedition materials (H1: amber only; an older save's glowstone and
                                                    # heartwood became leaves, core/save_upgrades.gd 2 -> 3)
 var burrows := {}                                  # burrow id -> {"depth": deepest boss beaten, "runs", "won", "falls", "best"}
@@ -134,7 +138,7 @@ const RAID_INTS := ["renown", "held", "lost", "perfect", "streak", "best_streak"
 static func _empty_garden() -> Array:
 	var g: Array = []
 	for i in 6:
-		g.append({"crop": "", "grow": 0, "wet": 0})
+		g.append({"crop": ""})
 	return g
 
 
@@ -221,7 +225,7 @@ func load_game() -> void:
 	for k in saved_bows:
 		bows[k] = int(saved_bows[k])
 	bow = String(d.get("bow", "twig"))
-	if not (Data.b["bows"] as Dictionary).has(bow):
+	if not Data.has_bow(bow):
 		bow = "twig"
 		if not bows.has(bow):
 			bows[bow] = 1
@@ -274,22 +278,17 @@ func load_game() -> void:
 	if typeof(gd) == TYPE_ARRAY:
 		for i in mini(gd.size(), 6):
 			if typeof(gd[i]) == TYPE_DICTIONARY:
-				garden[i] = {"crop": String(gd[i].get("crop", "")), "grow": int(gd[i].get("grow", 0)), "wet": int(gd[i].get("wet", 0))}
-				garden[i].merge(gd[i])
-	var pd = d.get("pantry", {})
-	if typeof(pd) == TYPE_DICTIONARY:
-		for k in pd:
-			pantry[String(k)] = int(pd[k])
-	snack_choice = String(d.get("snack_choice", "auto"))
-	if snack_choice != "auto" and Data.snack(snack_choice).is_empty():
-		snack_choice = "auto"
-	meal_ready = String(d.get("meal_ready", ""))
-	meal_on = String(d.get("meal_on", ""))
-	if meal_on != "" and not mission_run.has("wave_done"):
-		# Legacy chapter checkpoints restart the chapter; new wave checkpoints keep its active dish.
-		if meal_ready == "":
-			meal_ready = meal_on
-		meal_on = ""
+				garden[i] = {"crop": String(gd[i].get("crop", ""))}
+				garden[i].merge(gd[i])                   # other keys are kept (a plot with an unknown crop keeps its old form)
+	# H3: the Bag and the Timers jobs (a v3 save got them from core/save_upgrades.gd 3 -> 4)
+	bag = {}
+	var bgd: Variant = d.get("bag", {})
+	if bgd is Dictionary:
+		for k: Variant in bgd:
+			var v: Variant = (bgd as Dictionary)[k]
+			if v is int or v is float:
+				bag[String(k)] = maxi(0, int(v))
+	timers = _load_timers(d.get("timers", {}))
 	fish_log = {}
 	var fl = d.get("fish_log", {})
 	if typeof(fl) == TYPE_DICTIONARY:
@@ -444,10 +443,9 @@ func _endgame_seed() -> void:
 	camp_level = 5
 	stations = {"target": 0, "bench": 0, "well": 0, "cottage": 0, "stall": 0, "stone": 0, "garden": 0, "fishing": 1, "saddlery": 0,
 		"tailor": 0}
-	var st: Dictionary = Data.b.get("stations", {})
 	# G4: the Saddlery built, nothing learned; 23 Nov 2026: the Tailor's Nook built, only the original outfit owned
 	for id in ["target", "bench", "well", "cottage", "stall", "garden", "saddlery", "tailor"]:
-		stations[id] = mini(camp_level, (st.get(id, {}).get("levels", [{}, {}, {}]) as Array).size())
+		stations[id] = mini(camp_level, Data.building_levels(id).size())
 	stats = {"damage": 9, "draw": 9, "range": 6, "health": 9, "speed": 8, "magnet": 5}
 	bows = {"twig": 10, "sunwood": 9, "volley": 6}
 	bow = "sunwood"
@@ -467,7 +465,9 @@ func _endgame_seed() -> void:
 	for f in ["shop_open", "shop_target", "shop_bench", "home", "first_stage_done", "told_horn", "told_chapter", "told_go_out",
 			"told_barricade", "told_ride", "told_hide", "told_garden", "told_cook", "told_fish", "told_feed", "told_raids", "hollow_open"]:
 		flags[f] = true
-	pantry = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3, "goldfish": 0}
+	bag = {"berries": 8, "herbs": 4, "honey": 2, "fish": 3}   # H3: the Bag (was the pantry)
+	timers = {"seen": 0.0, "jobs": {}}
+	garden = _empty_garden()
 	shards = 60
 	raids = RAIDS_DEFAULT.duplicate(true)
 	raids["meter"] = 20.0
@@ -568,6 +568,36 @@ func _load_raids(rd) -> Dictionary:
 	return r
 
 
+## H3: the Timers jobs from the save. Each job needs a number "start" and "len" (else it is dropped); "data" (a
+## Dictionary) and "told" get their defaults; seen is never below 0. Other keys are kept.
+static func _load_timers(td: Variant) -> Dictionary:
+	var out := {"seen": 0.0, "jobs": {}}
+	if not td is Dictionary:
+		return out
+	var t: Dictionary = td
+	var sv: Variant = t.get("seen", 0.0)
+	out["seen"] = maxf(0.0, float(sv)) if (sv is float or sv is int) else 0.0
+	var jobs: Dictionary = {}
+	var jd: Variant = t.get("jobs", {})
+	if jd is Dictionary:
+		for id: Variant in jd:
+			var j: Variant = (jd as Dictionary)[id]
+			if not j is Dictionary:
+				continue
+			var s: Variant = (j as Dictionary).get("start")
+			var l: Variant = (j as Dictionary).get("len")
+			if not (s is float or s is int) or not (l is float or l is int):
+				continue
+			var data: Variant = (j as Dictionary).get("data", {})
+			var job := {"start": float(s), "len": maxf(0.0, float(l)), "data": data if data is Dictionary else {},
+				"told": (j as Dictionary).get("told", false) == true}
+			job.merge(j)
+			jobs[String(id)] = job
+	out["jobs"] = jobs
+	out.merge(t)
+	return out
+
+
 func mark_dirty() -> void:
 	if not _dirty:
 		_dirty = true
@@ -613,7 +643,7 @@ func save_game(quiet := false) -> void:
 		"bows": bows, "bow": bow, "claimed": claimed, "items": items, "placed": placed, "def_levels": def_levels, "flags": flags, "best_night": best_night,
 		"stages_won": stages_won, "stages_lost": stages_lost, "riding": riding, "ruined": ruined, "fire_ruined": fire_ruined, "missions_done": missions_done, "mount_look": mount_look, "pet_look": pet_look, "mount_skin": mount_skin, "pet_skin": pet_skin, "mission_run": mission_run,
 		"guardian_look": guardian_look, "guardian_skin": guardian_skin, "guardian_post": guardian_post, "garden": garden,
-		"pantry": pantry, "snack_choice": snack_choice, "meal_ready": meal_ready, "meal_on": meal_on, "fish_log": fish_log, "fish_dry": fish_dry,
+		"bag": bag, "timers": timers, "fish_log": fish_log, "fish_dry": fish_dry,
 		"shards": shards, "raids": raids, "wear": wear, "unlocks": unlocks, "fire_look": fire_look,
 		"save_v": save_v,
 		"mats": mats, "burrows": burrows, "burrow_run": burrow_run, "attach": attach,

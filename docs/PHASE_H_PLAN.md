@@ -17,8 +17,8 @@ were written on 24 November 2026 and are on the Desktop:
 - `Game Progression and Addictiveness.docx`;
 - `UX and some mechanics overhaul.docx`.
 
-**Nothing in this plan is built yet.** When the owner says yes, the plan is built from, and the rule changes in Part A
-go into `CLAUDE.md`, `docs/STATUS.md` and `docs/GAME_GUIDE.md` part 11.
+**H1 is merged; H2 and H3 are built on their branches (see each step).** The rest is built from this plan, and the
+rule changes in Part A go into `CLAUDE.md`, `docs/STATUS.md` and `docs/GAME_GUIDE.md` part 11.
 
 - **Order:** 12 steps, H0 to H11. Each step that changes the game ends with an APK on the owner's phone.
 - **Numbers:** every number is a first guess, kept in `game/data/balance.json` and tuned by play.
@@ -250,46 +250,67 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 
 ### H2: the new HUD and Settings
 
-**What you'll see** (from the owner's sketch):
+**Built (26 Nov 2026) on `feature/h2-hud`** (commits `c030041`, `1d0377c` and `042d78c`). It waits for the owner's phone
+review before it merges into `development`. What was decided and built (the owner's sketch and answers, 26 Nov 2026):
 
 | Where | What |
 |---|---|
-| Top-left | The cat's health bar, and the mount's while riding. Under them, the three currencies, small, with no dark strip behind them. |
-| Top-centre | The raid bar. The next wave's roads still show next to it. |
+| Top-left | The three currencies only (leaves, timber, shards), small, no dark strip, always all three. Below ground the satchel follows them. |
+| Top-centre | The raid bar, with no words and no numbers. Under it, only in fights, a thin campfire bar (gold to red, flashes when the fire is hit). Under that, the words line: the next wave's roads, the wave, the raid's name, the Gloom words or the Gloomwood level. It never counts enemies left. |
 | Top-right | The Settings gear. |
-| Bottom-left | The Bag, and the build menu icon next to it (the menu itself comes in H4). |
-| Bottom-right | The potion buttons (H3), with Ride/Walk above them. |
+| Over the cat | The health bar (and the mount's while riding). The Bag shows health as bars too, with the currencies packed under them. |
+| Bottom, row 1 | The Bag (left), the build icon (a house) next to it, the snack or potion slot at the right. |
+| Bottom, row 2 | The defence buttons (smaller) just above the Bag; Ride/Walk (or Feed while the mount is knocked out) at the right, above the snack slot. |
+| While placing | Place and Done, centred at the bottom; the Bag group slides out. |
 
-- Nothing goes in the middle third of the screen. The floating joystick stays as it is, and "Start wave" stays,
-  placed to fit the new layout.
+- Nothing goes in the middle third of the screen. The floating joystick stays as it is.
+- **Start wave stays on the signpost's card only.** There is no Start wave button on the screen.
+- **The build icon** opens the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below
+  ground, and in a wave it gives the usual "A wave is on!". H4 swaps in the real build menu.
 
-**1. Health as bars,** with no numbers.
+**1. Health as bars,** with no numbers: over the cat's head, and in the Bag.
 
-**2. All three currencies** are always shown.
+**2. All three currencies** are always shown, top-left.
 
-**3. The raid bar** fills as enemies are defeated:
-- in Raid Missions it covers one wave;
-- in Random Raids it covers the whole attack;
-- it shows no numbers.
+**3. The raid bar** fills as the fight is beaten, with no numbers:
+- in a Raid Mission it is the share of this wave beaten, and an empty track between waves;
+- in a Random Raid it is the Gloom meter (violet), then the warning countdown (gold to red), then the share of the
+  whole attack beaten;
+- in the Gloomwood the same place holds the fight pips.
 
 **4. Settings** (the gear):
-- the graphics level (Low / Medium / High, today's quality setting);
-- sound on/off;
-- room for more later.
+- Graphics: Auto, Low, Medium or High;
+- Sound on or off;
+- saved in their own small file (`user://settings.json`), not in the game save, and never written during autotests;
+- the texts come from `game/content/settings/graphics/entry.json` and `.../sound/entry.json`; room for more later.
 
-**5. Buttons slide in and out** with a short fade (about 0.2 s) instead of popping.
+**5. Buttons slide in and out** with a short fade (0.2 s) instead of popping. A button that is sliding out stops
+taking touches at once.
 
-**Technical:**
-- `hud.gd`, which is one big file with one owner;
-- `quality.gd`;
-- `save.gd`, for the settings;
-- **Who:** one Opus agent.
-- **Tests:** `--smoke` and `--layout` (nothing in the middle third, nothing overlapping).
+**Technical (as built):**
+- `hud.gd` is now a facade in `game/ui/hud/` with its parts beside it (`top_bar.gd`, `fight_bar.gd`, `messages.gd`,
+  `action_buttons.gd`, `card.gd`, `settings_window.gd`, `slide.gd` and more; the list is in `docs/GAME_GUIDE.md`
+  part 11). Public names are kept.
+- The HUD listens to Events (`currency_changed`, `fight_progress`, `riding_changed`, `mount_down_changed`,
+  `placing_changed`, `area_changed`, `boss_changed`, `campfire_hit`, `wave_ended`, `raid_ended`).
+- Ride/Walk sends the Ride command (`game/commands/ride.gd`).
+- `game/core/settings_file.gd`, `Quality.set_level` and `set_auto`, `Sfx.set_sound`.
+- **Who:** Opus agents.
+- **Tests:** the new `--settings` (40 checks); `--hudcheck` is now 121 checks (real taps on Ride, the gear, a graphics
+  row, the Bag and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills);
+  `--inventory` 56; `--layout` and `--smoke` as before. The layout test checks nothing enters the middle third and no two
+  edge controls overlap. One old fail in `--raidshots` ("the Watch card": the card is now called "Random Raids") predates
+  H2 and is still there.
 - Screenshots come with the APK.
 
 ---
 
 ### H3: food, potions and the Bag
+
+**Built (26 Nov 2026) on `feature/h3-food-bag`** (commits `f0f181a` and `09dc171`, then a stage 3 clean-up). The branch
+starts from `feature/h2-hud`, so it merges after H2. It is not pushed yet and waits for the owner's phone test. The
+game as built is in `docs/GAME_GUIDE.md` part 6 (and part 11 for developers). Below: the plan, with what changed
+marked **As built**, then the owner's answers and the defaults that were built.
 
 **What you'll see:**
 - crops and cooking keep going while the game is closed;
@@ -311,8 +332,11 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 - **The window looks like the garden:** its plots are laid out as they are in the camp, with the seeds in a row below.
 - **Planting:** drag a seed onto an empty plot. You pay when you drop it. Seeds cost as today (10 / 12 / 15 leaves);
   the new seeds are priced the same way.
-- **Water** waters every planted plot. Watered crops grow twice as fast for 5 minutes.
+- **Water** waters every planted plot. Watered crops grow twice as fast for 5 minutes. **As built:** 5, 6 and 7
+  minutes at garden levels 1, 2 and 3 (levels 2 and 3 keep their longer watering); free, no cooldown; a seed planted
+  afterwards is dry.
 - **Picking:** tap a ripe plant and it goes into the Bag. If the Bag is full, "Bag full" shows and the crop stays ripe.
+- **As built:** Emberpepper seeds cost 20 leaves and Swiftroot seeds 18, both from garden level 1.
 - **Growing time is real time** (first guesses):
 
 | Crop | Gives | Grows in |
@@ -330,13 +354,14 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
   - drag ingredients into the slots; when they make a recipe, **Cook** lights up;
   - cooking takes 30 s to 1 min, and the timer runs while the game is closed;
   - **Collect** puts the result in the Bag.
+  - **As built:** 3 slots; a tap on an ingredient also fills the next slot, and the window has a recipe list (Q15).
 - There is one pot for now. More can be added later through the timer system.
 - **The recipes:**
 
 | Recipe | Ingredients (first guesses) | What it does | Bag limit | Cooks in |
 |---|---|---|---|---|
 | **Health Potion** | 2 Fernmint, 1 honey | Heals the cat by 40% of its health over 5 s | 3 | 40 s |
-| **Mount Health Potion** | 2 Sunberries, 1 honey | Revives a knocked-out mount with half its health. That is all it does. | 3 | 45 s |
+| **Mount Health Potion** | 2 Sunberries, 1 honey | Revives a knocked-out mount with half its health. That is all it does. **As built: with full health** (the owner, 26 Nov 2026). | 3 | 45 s |
 | **Cooked Fish** | 1 fish | Heals the mount to full over 10 s | 10 | 30 s |
 | **Damage Potion** | 2 Emberpeppers, 1 honey | Arrows hit 25% harder for 30 s | 1 | 60 s |
 | **Speed Potion** | 2 Swiftroots, 1 honey | The cat moves 25% faster for 20 s | 2 | 50 s |
@@ -344,7 +369,8 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 - **Raw fish** can be eaten from the Bag to heal the mount a little (10%). The rare **Golden Carp** mends it by 50% at
   once, or Bramble buys it for 300 leaves (B4; first guesses).
 - **Every old dish is gone:** Berry Tart, Fernmint Tea, Honey Cake, Hearth Stew, Fish Skewers, Warden's Root Stew and
-  the Golden Carp Feast. Dishes in a save become Health Potions, up to the limit of 3; any extra are refunded as leaves.
+  the Golden Carp Feast. Dishes in a save become Health Potions, up to the limit of 3; any extra are refunded as leaves
+  (**as built:** 50 leaves each, Q5). Feed and the snacks below ground are gone too (Q1, Q2).
 
 **4. The Bag.**
 - **24 slots in a grid,** like Minecraft. Only things you own take a slot.
@@ -357,28 +383,72 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 
 **5. Potion buttons on the HUD (bottom-right).**
 - The Health Potion button appears only when the cat is hurt and you have one.
-- The Mount Health Potion button appears only when the mount is knocked out and you have one.
-- The Damage and Speed potions are used from the Bag.
+- The Mount Health Potion button appears only when the mount is knocked out and you have one. **As built:** it takes
+  Ride's place (row 2), and the Health Potion button is in row 1 at the right.
+- The Damage and Speed potions are used from the Bag. **As built:** while one works, a line under the currencies shows
+  it (Q22).
 
 **6. Placing defences from the Bag.**
 - Towers and spikes you buy go into the Bag. Until the Workshop (H6), they are bought where they are bought today.
 - **Place** shows where the piece can go, the same places as today. Then it drops in with a small bounce and a puff of
-  dust. This is made in code, with no new cat animation.
+  dust. This is made in code, with no new cat animation. **As built:** the ghost is also red by the lake and the home
+  (Q25), and the defence buttons above the Bag stay as a shortcut (Q4).
 
-**Technical:**
-- A new `timers.gd` (autoload).
-- `inventory.gd`, `garden.gd`, the cooking code, and the potion buttons in `hud.gd`.
-- `save.gd`, to move old saves over.
-- `balance.json`: `timers`, `garden.crops`, `cooking.recipes`, `bag` and `potions`.
-- **Who:**
-  - Opus: the timer system and old saves;
-  - Opus: the Bag and potions;
-  - Sonnet: the garden window and the cooking window, each in its own file.
-- **Tests:**
-  - `--smoke`;
-  - a new `--timers`: a fake clock checks that jobs finish while the game is "closed" and wait when the clock is set back;
-  - a new `--bag`;
-  - the garden and cooking modes, updated.
+**Technical (as built):**
+- `game/core/timers.gd` (the `Timers` autoload, right after `Save`; the jobs live in `Save.timers`), `game/core/bag.gd`
+  (the Bag's counts and stacks), `game/core/effects.gd` and `game/parts/effects_holder.gd` (what potions do),
+  `game/commands/use_potion.gd` (the Use-potion command), `game/ui/windows/garden_window.gd` and
+  `cooking_window.gd`, and the drag kit `game/ui/kit/drag_source.gd` and `drop_slot.gd`.
+- `garden.gd`, `cooking.gd` and `inventory.gd` rewritten; the potion buttons in `ui/hud/action_buttons.gd`.
+- Save version 4 (`core/save_upgrades.gd`): `bag` and `timers`; the pantry, dishes and old crop growth move over.
+- **Crops and recipes are content folders** (`game/content/crops/`, `game/content/recipes/`), not `balance.json`
+  `garden.crops` and `cooking.recipes` (ARCHITECTURE part 13). `balance.json` has the new `timers`, `bag` and
+  `potions`, and `garden.water_s_by_level`, `garden.water_speed` and `cooking.pot_slots`. Stage 3 removed the old keys.
+- **Who:** Opus agents built the core, the potions, the Bag and the garden and cooking logic; the two windows were
+  separate parts; each stage had an Opus review.
+- **Tests:** `--smoke`; new `--timers` (a fake clock: jobs finish while the game is "closed" and wait when the clock is
+  set back), `--content`, `--bag` (also `--inventory`), `--garden`, `--cook`; `--feed` runs the potions checks; `--saves`
+  upgrades the v3 sample and loads the new v4 sample; `--saves --startup=1` then `=2` tests a real first launch with a
+  v3 save on disk.
+
+**The owner's answers (26 Nov 2026):**
+- **Q1:** the Mount Health Potion replaces Feed (the Feed button and its 2 Sunberries are gone). It brings the mount
+  back with **full** health, and its button takes Ride's place.
+- **Q2:** only Health Potions heal the cat below ground. No food is eaten anywhere.
+- **Q6:** stand-in icons drawn in code: a small bottle in each recipe's colour, a red pepper, a pale root. Designed
+  icons only when the owner asks.
+- **Q15:** yes: a tap on an ingredient fills the next empty slot, and the pot's window has a read-only recipe list.
+- **Q22:** yes: the line under the currencies shows a running Damage or Speed Potion ("Damage +25% · 24 s").
+- **Q25:** yes: the placing ghost uses the start-up check's rule, so it is red by the lake and the home. Drawing the
+  allowed ground is not built.
+
+**Built by default** (no answer came, so the build map's "If no answer" line was built):
+- Q5: 50 leaves for each old dish past the potion limit (this cannot happen today). Q7: an old half-grown crop keeps
+  its share. Q9: Swiftroot 18 leaves, Emberpepper 20, both from garden level 1. Q10: watering 5, 6 and 7 min by garden
+  level.
+- Q12: the garden and pot cards stay closed in a wave; the timers keep running. Q17: a catch swims away when the Bag is
+  full; buying is refused with "Bag full" before you pay; things already paid for always go in. Q18: amber, towers and
+  spikes stack to 20. Q24: the Golden Carp sells at any time for 300 leaves; Bramble sells no peppers or roots. Q28: a
+  simple `bag` of counts in the save (towers and spikes stay in `items`), and no Undo for placing (H6). Q30: the plan's
+  clock rule (a clock set back makes jobs wait; no cap on a clock set forward).
+- Q4: the row-2 defence buttons stay as a shortcut. Q8: watering is free with no cooldown. Q11: Gloom +2 once per
+  garden visit that picks, +3 on the Cook tap only. Q13: the pot keeps cooking while the fire is out. Q14: 3 slots,
+  nothing leaves the Bag until Cook. Q16: Cook is refused when the result would not fit; a full Bag at Collect keeps it
+  in the pot. Q19: the Bag sorts itself. Q20: a potion still working cannot be used again ("Already active"); effects
+  pause with the game, end on a knock-out and are lost when the game closes. Q21: the Speed Potion works while riding;
+  the Damage Potion is for arrows only. Q26: fish and Cooked Fish mend a standing mount only.
+- Decided by the plan, not asked: raw garden food has no Use (Q3); the Health Potion button shows whenever the cat is
+  hurt (Q23); crops and recipes are content folders (Q27); the old dish boosts go with the dishes (Q29); both old
+  dishes in a save, waiting and eaten, become Health Potions.
+
+**Known points (the owner's call: noted, not fixed now):**
+- `--dungeoncareful` now loses at the boss in about 2 runs of 3 (passed 1 of 3: the boss took 25 health in the run it
+  won and 32 in a run it lost, from a 14-health cat). Below ground only Health Potions heal now (Q2), and the careful
+  test cat has 3 Health and 3 Mount Health Potions. Expeditions are rebuilt in H8 and balanced in H11.
+- The garden's card scrolls about 150 px at 540x960 to reach its Upgrade row (the window itself fits). At the phone's
+  shape (480x1040 with safe insets) nothing scrolls.
+- Cooked Fish uses a bottle icon like the other recipes (the owner chose bottles); its light orange is close to the
+  Damage Potion's orange.
 
 ---
 

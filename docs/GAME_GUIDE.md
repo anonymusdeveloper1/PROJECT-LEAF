@@ -105,7 +105,7 @@ handles cooking. The Bag displays their supplies.
 >
 > **New: attack arrows.** During a wave or a raid, and in the Gloomwood, small orange arrows at the edge of the
 > screen point toward foes you cannot see (one per direction), and pulse when the campfire or a building is hit from
-> that side. Their size and strength are two numbers in `game/scripts/threat_arrows.gd`.
+> that side. Their size and strength are two numbers in `game/ui/hud/threat_arrows.gd`.
 
 > **New (20 Nov 2026, G2): shop-style cards.** A card still opens as the centred dialog with an X. Inside, the things
 > to buy are **tiles in a grid** (two per row on a phone). Each tile has an icon, a name, a short line, stat bars, a
@@ -114,23 +114,49 @@ handles cooking. The Bag displays their supplies.
 
 ### The screen
 
-- **Top bar** (one slim strip under the phone's status bar):
-  - left: golden leaves, timber and Gloom shards; in the Gloomwood, the satchel's amber too; the dish eaten this
-    chapter; "Endgame test save" when the debug save is on.
-  - right: the fight's bar. In a raid it is the campfire's health. Between waves it previews the next one:
-    "Wave 6 of 20 ready · Next: every road", "Next: Fernwood and Mossback's Den" or "Next: a rush from Fernwood!".
-    Every wave waits for **Start wave** at the signpost. After the campaign it is the Gloom meter or raid status.
-    In the Gloomwood it is a row of pips, one per fight and one for the boss.
-  - a second thin line appears when there is a status to show (for example the Gloomwood's name and level).
-- **Just under it**: the boss's health bar, then **banners** (short headlines, about 2 s; a win or a loss is bigger
-  and stays about 3.5 s), then **toasts** (one-line news) and the status line ("Rebuilding the campfire...",
-  "Hidden in the grass").
+**New (H2, 26 Nov 2026):** the screen was redrawn from the owner's sketch. Buttons slide and fade in and out over
+0.2 seconds instead of popping, and a button that is sliding out stops taking touches at once.
+
+- **Top-left**: the three currencies only, small, with no dark strip: golden leaves, timber and Gloom shards. All three
+  always show. Below ground the satchel follows them (amber and what you carry).
+- **Top-right**: the **Settings gear** (round), always shown. See "Settings" below.
+- **Top-centre**: the **raid bar**. It has no words and no numbers, and it never counts enemies left. It shows progress:
+  - in a Raid Mission, the share of this wave beaten; between waves the track is empty;
+  - in a Random Raid, first the Gloom meter (violet), then the warning countdown (gold to red), and during the attack
+    the share of the whole attack beaten;
+  - in the Gloomwood, the fight pips (one per fight and one for the boss) in the same place.
+- **Under the raid bar, only during fights**: a thin **campfire bar** (gold to red) that flashes when the fire is hit.
+  In the Last Stand it pulses red.
+- **The words line** under them says what is next or what is on: the next wave's roads ("Next: every road", "Next:
+  Fernwood and Mossback's Den", "Next: a rush from Fernwood!"), "<mission> · wave 6 of 20", the raid's name, the Gloom
+  words, the Gloomwood's name and level, and in the Last Stand "Last stand: rebuild the fire".
+- **Just under that group**: the boss's health bar, then **banners** (short headlines, about 2 s; a win or a loss is
+  bigger and stays about 3.5 s), then **toasts** (one-line news) and the status line ("Rebuilding the campfire...",
+  "Hidden in the grass"). They never reach the middle third. A toast that does not fit waits until the banner fades.
 - **Over the cat**: a red health bar. A hit drains it, and the part just lost shows grey for a moment. While riding,
-  a thinner amber bar under it shows the mount's health. The Moss Warden has its own moss-green bar.
-- **Bottom**: the buttons (Ride or Walk, Feed, Snack in the Gloomwood, defences to place, Place and Done). Just above
-  them: the **tip** (each tip shows once, often with a gold arrow pointing where to go) and the "Drag anywhere to
-  move" hint.
-- **The middle third** stays clear for the cat. Nothing of the HUD goes there except the health bars and the arrow.
+  a thinner amber bar shows the mount's health. The Moss Warden has its own moss-green bar. The **Bag** shows the same
+  health as bars (no "Health n/n" text), with the currencies packed under them.
+- **Bottom, first row**: the **Bag** (left), the **build icon** (a house) next to it, and the snack or potion slot at the
+  right. The build icon opens the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below
+  ground, and in a wave it gives the usual "A wave is on!". (H4 swaps in the real build menu.)
+- **Bottom, second row**: the defences to place (smaller buttons) just above the Bag, and **Ride** or **Walk** (or
+  **Feed** while the mount is knocked out) at the right, above the snack slot.
+- **While placing a defence**: **Place** and **Done** sit centred at the bottom and the Bag group slides out.
+- **Start wave** is on the signpost's card only. There is no Start wave button on the screen.
+- Above the buttons: the **tip** (each tip shows once, often with a gold arrow pointing where to go) and the "Drag
+  anywhere to move" hint.
+- **The middle third** stays clear for the cat. Nothing of the HUD goes there except the health bars over the cat and
+  the arrows. The layout test checks this.
+
+### Settings
+
+The gear at the top-right opens the Settings window:
+- **Graphics:** Auto, Low, Medium or High.
+- **Sound:** on or off.
+
+The choices are saved in their own small file (`user://settings.json`), not in the game save, so a new game keeps them.
+Autotests never write it. The texts come from `game/content/settings/graphics/entry.json` and
+`game/content/settings/sound/entry.json`.
 
 ---
 
@@ -1029,7 +1055,7 @@ safety net.
 - **One scene, built in code.** `main.tscn` is one Node3D with `scripts/main.gd`. Its `_ready()` builds, in order:
   `world.gd` (light, sky, ground, trails, woods, lake, collision), `fight.gd`, `raids.gd`, the joystick on a
   CanvasLayer (`joystick.gd`), the cat (`player.gd`), `defences.gd`, `garden.gd`, `cooking.gd`, `fishing.gd`,
-  `stations.gd` (every building, its ring and its card), `burrow.gd`, the HUD (`hud.gd`), the camera. Companions are
+  `stations.gd` (every building, its ring and its card), `burrow.gd`, the HUD (`ui/hud/hud.gd`, H2), the camera. Companions are
   added later by `main.refresh_companions()`: `pet.gd`, `mount.gd`, `npc.gd` (Bramble), `guardian.gd`.
 - **Autoloads** (`project.godot`). **New (H1, 25 Nov 2026):** five now, in this order: `Events` (`core/events.gd`, first:
   the signals and who sends them; read the file), `Data` (`data.gd`: `balance.json`, the derived numbers, costs and
@@ -1037,7 +1063,7 @@ safety net.
   `Quality` (`quality.gd`) and `Pools` (`core/pools.gd`). Static helpers by `class_name`: `Fx` (effects),
   `Props` (loads Blender props or builds placeholders), `Sfx` (sounds; a missing sound plays nothing).
 - **Markers and cards.** Each usable thing has a marker (`marker.gd`, the leaf-shaped badge); `interact.gd` picks the
-  marker under a tap and opens its card with `hud.show_card(...)`, walking the cat there first if it is out of reach.
+  marker under a tap and opens its card with `hud.show_card(...)` (the code is in `ui/hud/card.gd`), walking the cat there first if it is out of reach.
   A card is a dictionary `{title, sub, rows, anchor}` built by `stations._card_*()`, `burrow.card()` or
   `raids.card_watch()`; a row is `{text, note, cost, label, enabled, action, pulse}`. The home's card builds its
   "Grow the home" rows from `Data.home_goals(level)` (see Phase F below).
@@ -1148,7 +1174,7 @@ The design is `docs/PHASE_G_PLAN.md` (steps G1b and G2). The numbers are in `bal
     rules are under "Barricades and the Well" below.
   - Tower repair: a repair marker on a knocked-down tower. The badge price now matches Mend (see Loop fixes).
   - The Wishing Well is automatic (no wishes). Its heal percents and the rates in waves are in `balance.json`.
-  - Shop cards: `ui_icons.gd` draws 32 icons in code. `hud.gd` has the row kinds `section` and `item` (items are tiles,
+  - Shop cards: `ui_icons.gd` draws 32 icons in code. `ui/hud/shop_tiles.gd` and `card.gd` have the row kinds `section` and `item` (items are tiles,
     two per row on a phone). A row is still `{text, note, cost, label, enabled, action, pulse}`, with `kind` for these two.
 - **Tests:** `--rows` (`autotest_g2_def.gd`), `--campg` (`autotest_g2_camp.gd`), `--cards` (`autotest_g2_cards.gd`,
   screenshots; run at 480x1040 with `--safe-top=73 --safe-bottom=42`), and `--fightf`, updated for squads.
@@ -1171,7 +1197,7 @@ The design is `docs/PHASE_G_PLAN.md` (step G3). The numbers are in `balance.json
   - `player.gd`: `apply_bow` swaps the bow model into the cat's `SK_CatBow` (`_bow_parts`, a named-bind skin). Glowing
     parts use a second material `M_Glow` that keeps its glow (`Props.apply_vc_glow` / `Props.vc_surfaces`).
   - `arrow.gd` picks the arrow model and applies the shot's effects. `enemy.gd` handles burn, slow and freeze.
-    `fx.gd` draws the release bursts, trails, hit effects and Frost's ice. A tile row may carry a `picture` in `hud.gd`.
+    `fx.gd` draws the release bursts, trails, hit effects and Frost's ice. A tile row may carry a `picture` (`ui/hud/shop_tiles.gd`).
   - `CatRanger.glb` has revised Idle, Walk and Run carry poses and no bow spin after release in Shoot.
     `bow_face.gd` rolls the paw in place to turn the string toward the chest when carrying, using
     `cat.bow_face_max_deg`. During draw the animation already points the string at the cat.
@@ -1272,7 +1298,7 @@ Three changes and four review fixes, built and tested on the PC.
   Before, three checks blocked it in a wave: the markers were hidden, the tap card showed "A wave is on!", and
   `repair_row` refused. Building rows and repairing towers stay between waves only. The price per piece is in part 4
   (Defences).
-  - Code: `defences.gd` `_marks_state`, `repair_row`, `repair_row_cost` (the cracked-piece floor of 0.5 is new); `hud.gd`
+  - Code: `defences.gd` `_marks_state`, `repair_row`, `repair_row_cost` (the cracked-piece floor of 0.5 is new); `ui/hud/card.gd`
     `_spec` (the card).
 - **Pads follow each road.** `world.gd` uses `balance.json` `defences.barricade.pad_rule` to place the gate 2.4 m from
   the firelight along the road and the far pad near the woods' edge. Fernwood and Bandit Thicket use `patches[].far_pad`
@@ -1283,7 +1309,7 @@ Three changes and four review fixes, built and tested on the PC.
 - **The Well mends to full.** Everything damaged but not broken goes back to full health by itself: the campfire, the
   Hearthtree and buildings, barricade pieces and towers. `balance.json` `well.passive`: `between_by_level` (3%, 6%,
   10% a second) and `regen_by_level` (0.5%, 1%, 2% a second in waves). The old `cap_by_level` (60/75/90%) and
-  `between_per_s` are gone. Code: `defences.gd` `well_mend`; `stations.gd` `well_between`; `hud.gd` for the card text.
+  `between_per_s` are gone. Code: `defences.gd` `well_mend`; `stations.gd` `well_between`; `ui/hud/card.gd` for the card text.
   A tower the Well mends to full loses its dark "wrecked" look (review fix 1).
 - **Review fixes (Opus code review):**
   1. A tower the Well mends to full loses its dark "wrecked" look.
@@ -1364,6 +1390,26 @@ The first pieces of `docs/ARCHITECTURE.md` (the target structure). Step H1 only.
 - **Text:** "Burrow" became "expedition" in player-facing text. Code names (`burrow.gd`, `burrow_run.gd`) are
   unchanged. The Gloomwood and the Old Hollow keep their names; the Gloomwood's grub holes are "The Grubling holes".
 
+### The new HUD and Settings (New, H2, 26 Nov 2026)
+
+Step H2. The screen is described under "The screen" in part 2.
+
+- **`game/ui/hud/`:** `hud.gd` is the facade (every public name kept, so old callers still work). Its parts:
+  `hud_style.gd`, `hud_layout.gd` (the screen rectangles), `top_bar.gd` (currencies, gear), `fight_bar.gd` (raid bar,
+  campfire bar, words line, boss bar), `messages.gd` (banners, toasts, status), `action_buttons.gd`, `card.gd` and
+  `card_signpost.gd` (the cards), `shop_tiles.gd`, `hud_icons.gd`, `lifebar.gd`, `threat_arrows.gd`, `health_bars.gd`
+  (the Bag's health bars, with `scripts/inventory.gd`), `settings_window.gd` and `slide.gd` (the 0.2 s slide and fade).
+- **The HUD listens to Events:** `currency_changed`, `fight_progress(done, total)`, `riding_changed`,
+  `mount_down_changed`, `placing_changed`, `area_changed`, `boss_changed`, `campfire_hit`, `wave_ended`, `raid_ended`.
+- **Commands:** the Ride/Walk button sends the Ride command (`game/commands/command.gd`, `game/commands/ride.gd`).
+- **Settings:** `game/core/settings_file.gd` reads and writes the settings file (atomic write, like `save.gd`).
+  `Quality.set_level` and `Quality.set_auto` change the graphics; `Sfx.set_sound` turns sound on or off.
+- `fight.wave_total()` counts boss summons, so the raid bar's total is right.
+- **Layout check:** every visible HUD edge control is in the group `hud_edge`. The layout test checks that none enters
+  the middle third and no two overlap.
+- **Persistent buttons** leave `ui_block` and stop taking touches when they start to fade out, and `build_buttons()`
+  skips hidden ones, so the joystick and the tests do not misread them.
+
 ### Graphics levels (`quality.gd`)
 
 | | Low | Medium | High |
@@ -1392,7 +1438,7 @@ steady 30 fps. The player picks Auto, Low, Medium or High on the Shop card. The 
 | `leaf_save_test.json` | Any `--autotest` run (never touches the real save) |
 | `leaf_save_endgame.json` | The debug endgame save |
 | `endgame_slot.txt` | Marker: while it exists, a debug build keeps opening the endgame save |
-| `settings.json` | The graphics level |
+| `settings.json` | The graphics level and sound (H2) |
 | `test_args.txt` | One-shot arguments for a debug build on the phone; deleted after reading |
 
 On the phone `user://` is the app's `files/` folder (package `com.projectleaf.game`; reach it with
@@ -1442,14 +1488,15 @@ bars, in HUD pixels), `--cat1` / `--cat2` (hero model).
 | Warden, garden, cooking, fishing | `autotest.gd` | `--guardian`, `--guardianab`, `--garden`, `--cook`, `--fishing`, `--feed`, `--camplife` |
 | Gloom / Random Raids | `autotest.gd`, `autotest_assault.gd` | `--assault` / `--raidsave` (29 continuous-assault checks); `--raid` (with `--raid-small`, `--with-warden`), `--raidloss`, `--meter`, `--raidresume=1/2/3`, `--raidtypes`, `--wear`, `--shards`, `--raidintro`, `--raidshots`, `--raidperf`; flags `--raid-type=`, `--raid-warn=`, `--raid-meter=` |
 | The Gloomwood | `autotest_e.gd` | `--dungeon`, `--dungeonshots`, `--dungeonfall`, `--dungeonresume=1` then `=2`, `--boss`, `--dungeonperf`, `--dungeontreasure`, `--dungeonlevels`, `--dungeonstand` (`=god`, `=items`), `--dungeoncareful`, `--floormaps=<dir>`; kept from Phase E: `--burrowsave`, `--hollow`, `--dash`, `--traps`, `--burrowfoes`, `--topup`, `--burrowhooks` |
-| Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck`, `--taps`, `--arrows` |
+| Layout and HUD | `autotest_layout.gd` | `--layout`, `--layoutsave=1` then `=2`, `--hudcheck` (121 checks since H2: real taps on Ride, the gear, a graphics row, the Bag and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills), `--taps`, `--arrows` |
 | Phase F | `autotest_f_home.gd`, `autotest_f_fight.gd`, `autotest_f_enemy.gd` | `--homegoals` (goals and raid access), `--fightf` (90 passes: manual waves, rewards, save/resume, losses, legacy saves, squads and Gloom Raids), `--enemyf` (boars, support enemies, grub and totem) |
 | G1b and G2 | `autotest_g2_def.gd`, `autotest_towers.gd`, `autotest_g2_camp.gd`, `autotest_g2_cards.gd` | `--rows` (168 checks: pads, repair, the Well, five tower levels, full-circle arrows and loading cycles), `--campg` (the Hearthtree camp), `--cards` (shop cards; screenshots at 480x1040 with `--safe-top=73 --safe-bottom=42`) |
 | G3 | `autotest_g3_bow.gd` | `--bowshop` (buying, late damage and leaf budgets, upgrades, equipping, pierce, burn, frost, models and shot effects; 78 passes, 25 Nov 2026) |
 | G4 | `autotest_g4_saddle.gd` | `--saddlery` (skills, attachments, riding and Fire-spitter flame balls/splash/cadence/range/tracking; flame and ground-fire lifecycle/quality checks; 111 passes, 25 Nov 2026); add `--rideclear` for the clearance sweep |
 | Tailor's Nook and cat outfits | `autotest_cat_skins.gd` | `--tailor` (building, buying, wearing, saving, models, fallback and cloth; 63 passes) |
-| Supplies inventory | `autotest_inventory.gd` | `--inventory` (53 checks covering the shared slot grid, currency layout, cat and mount preview, real input, gathering, cooking, trades, food choice, live combat, healing, dungeon resume, settlement and older saves) |
+| Supplies inventory | `autotest_inventory.gd` | `--inventory` (56 checks covering the shared slot grid, currency layout, cat and mount preview, real input, gathering, cooking, trades, food choice, live combat, healing, dungeon resume, settlement and older saves) |
 | H1 (New, 25 Nov 2026) | `autotest_pools.gd`, `autotest_saves.gd` | `--pools` (the object pools and the event board), `--saves` (the sample saves in `game/tests/saves/`, `v2_sample.json` and `v3_sample.json`, load, upgrade and save) |
+| H2 (New, 26 Nov 2026) | `autotest_settings.gd` | `--settings` (40 checks: the settings file, Graphics Auto/Low/Medium/High, sound on/off, the gear window, nothing written during autotests) |
 | Mounted target lock | `autotest_mounted_aim.gd` | `--mountedaim` (69 checks: strict 280-degree arc boundaries, rear blind spot, both mounts, real arrows and hits, torso aiming above a forward-facing root, hips and feet, outfits and different bows, left/right steering and forward gait, target reacquisition, Ram direction and dismounting mid-shot) |
 
 Details of every mode: `game/README.md`. After adding a new script, run Godot once with `--headless --import` so it

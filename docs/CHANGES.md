@@ -2,6 +2,32 @@
 
 Each merged branch adds an entry here, newest first.
 
+## 26 Nov 2026 · H2: the new HUD and Settings (on `feature/h2-hud`, waiting for the owner's phone review)
+
+Built in three commits: `c030041` (part 1), `1d0377c` (parts 2, 4 and 5) and `042d78c` (part 3). Not merged yet.
+
+- **The screen** (from the owner's sketch): top-left only the three currencies, always all three, no dark strip (the
+  satchel follows them below ground); top-right the Settings gear; top-centre the raid bar with no words and no numbers,
+  a thin campfire bar under it in fights, and the words line under that. The boss bar, banners, toasts and status line
+  sit under that group and never reach the middle third.
+- **Raid bar:** a Raid Mission wave fills with the share beaten (empty between waves); a Random Raid shows the Gloom
+  meter, the warning countdown, then the share of the whole attack; the Gloomwood shows its fight pips. It never counts
+  enemies left.
+- **Bottom:** the Bag, a build icon (it opens the Hearthtree's card at its Buildings shelf) and the snack or potion slot;
+  the defence buttons (smaller) above the Bag; Ride/Walk (or Feed) at the right. Place and Done sit centred while
+  placing. Start wave is on the signpost's card only. The Bag shows health as bars and packs the currencies under them.
+- **Buttons** slide and fade over 0.2 s, and stop taking touches the moment they start to leave.
+- **Settings window** (the gear): Graphics Auto, Low, Medium or High, and Sound on or off. Saved in `user://settings.json`
+  (`core/settings_file.gd`), apart from the game save, and never written during autotests.
+- **Code:** `hud.gd` is split into `game/ui/hud/` (facade plus `top_bar`, `fight_bar`, `messages`, `action_buttons`,
+  `card`, `card_signpost`, `shop_tiles`, `hud_icons`, `lifebar`, `threat_arrows`, `health_bars`, `settings_window`,
+  `slide`, `hud_layout`, `hud_style`). The HUD listens to Events (`currency_changed`, `fight_progress`, `riding_changed`,
+  `mount_down_changed`, `placing_changed`, `area_changed`, `boss_changed`, `campfire_hit`, `wave_ended`, `raid_ended`).
+  Ride/Walk sends the Ride command (`commands/ride.gd`). `fight.wave_total()` counts boss summons.
+- **Tests:** new `--settings` (40 checks); `--hudcheck` 121 checks (real taps on Ride, the gear, a graphics row, the Bag
+  and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills); `--inventory` 56. The old
+  `--raidshots` fail ("the Watch card") predates H2.
+
 ## 25-26 Nov 2026 · H1 (merged into `development` on 26 Nov)
 
 All four parts of step H1 are committed and merged into `development` (26 Nov 2026, after the owner's phone review).

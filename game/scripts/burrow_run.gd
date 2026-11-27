@@ -153,8 +153,7 @@ func _go_down(resumed: bool) -> void:
 		main.mount.come_to(p.global_position + (Vector3.ZERO if p.riding else Vector3(1.2, 0, 0.6)))
 	_lead = Vector2.ZERO
 	main.snap_camera()
-	main.hud.refresh()
-	main.hud.refresh_build()
+	Events.area_changed.emit(true)
 	b.refresh()
 	_save_run(true)
 	await main.hud.fade(0.0, float(cfg()["fade_s"]))
@@ -1026,7 +1025,7 @@ func _boss_wakes() -> void:
 		return
 	if main.hud.boss == _boss:
 		return
-	main.hud.boss = _boss
+	Events.boss_changed.emit(_boss)
 	run["woke"] = true
 	_hide_home()
 	main.hud.banner("%s wakes!" % (_boss.title if _boss.title != "" else String(_boss.info["name"])), Color(1.0, 0.55, 0.45), "The roots close behind you")
@@ -1042,7 +1041,7 @@ func _boss_beaten(e) -> void:
 	_boss = null
 	_boss_down = true
 	run["boss_down"] = true
-	main.hud.boss = null
+	Events.boss_changed.emit(null)
 	for f in foes():
 		if f != e and (f.summoned or map.in_arena(f.global_position, -1.0)):
 			f.dead = true
@@ -1261,7 +1260,7 @@ func _leave(result: String) -> void:
 	main.area = null
 	Data.run_mods = {}
 	_env_off()
-	main.hud.boss = null
+	Events.boss_changed.emit(null)
 	if String(run.get("meal", "")) != "" and main.cooking != null:
 		main.cooking.finish(true)                          # the dish that went down is used up
 	run = {}

@@ -2659,7 +2659,25 @@ func _raidshots() -> void:
 	main.player.global_position = Vector3(0, 0, 1.6)
 	await _until(func(): return main.fight.in_wave, 3.0)
 	await _wait(2.0)
-	_expect("HUD shows continuous raid progress", String(main.hud._stage_l.text).contains("raiders left"), {"text": main.hud._stage_l.text})
+	# H2: one raider beaten (not the leader): the raid bar shows the whole attack's share beaten, the words no count
+	var one: Node3D = null
+	for i in 20:
+		for e in get_tree().get_nodes_in_group("foes"):
+			if not e.dead and e.has_meta("raid_member") and not e.has_meta("leader"):
+				one = e
+				break
+		if one != null:
+			break
+		await _wait(0.3)
+	if one != null:
+		one.hit(Vector3.FORWARD, one.hp + 1.0)
+	await _wait(0.4)
+	var run_d: Array = Save.raids.get("run", {}).get("defeated", [])
+	var fl: float = main.hud.p_fight.fill()
+	_expect("HUD shows continuous raid progress (H2: the raid bar fills with the attack's share beaten, the words give no count)",
+		one != null and not String(main.hud._stage_l.text).contains("left") and main.hud._gate_bar.visible and fl > 0.0
+		and is_equal_approx(fl, float(run_d.size()) / float(main.fight.raid_total())) and main.hud.p_fight.progress_done > 0,
+		{"text": main.hud._stage_l.text, "fill": fl, "defeated": run_d.size(), "total": main.fight.raid_total(), "done": main.hud.p_fight.progress_done})
 	await _shot("hud_wave")
 	var t := 0.0
 	while main.fight.active and t < 120.0:
@@ -3092,6 +3110,8 @@ func _phase_f() -> bool:
 		file = "res://scripts/autotest_pools.gd"
 	elif a.has("--saves"):                              # H1: the sample saves load, upgrade and save (autotest_saves.gd)
 		file = "res://scripts/autotest_saves.gd"
+	elif a.has("--settings"):                          # H2: the Settings window
+		file = "res://scripts/autotest_settings.gd"
 	if file == "":
 		return false
 	if not ResourceLoader.exists(file):

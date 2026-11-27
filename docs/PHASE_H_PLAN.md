@@ -250,41 +250,57 @@ for example the cards that say "needs Burrow materials". The Gloomwood and the O
 
 ### H2: the new HUD and Settings
 
-**What you'll see** (from the owner's sketch):
+**Built (26 Nov 2026) on `feature/h2-hud`** (commits `c030041`, `1d0377c` and `042d78c`). It waits for the owner's phone
+review before it merges into `development`. What was decided and built (the owner's sketch and answers, 26 Nov 2026):
 
 | Where | What |
 |---|---|
-| Top-left | The cat's health bar, and the mount's while riding. Under them, the three currencies, small, with no dark strip behind them. |
-| Top-centre | The raid bar. The next wave's roads still show next to it. |
+| Top-left | The three currencies only (leaves, timber, shards), small, no dark strip, always all three. Below ground the satchel follows them. |
+| Top-centre | The raid bar, with no words and no numbers. Under it, only in fights, a thin campfire bar (gold to red, flashes when the fire is hit). Under that, the words line: the next wave's roads, the wave, the raid's name, the Gloom words or the Gloomwood level. It never counts enemies left. |
 | Top-right | The Settings gear. |
-| Bottom-left | The Bag, and the build menu icon next to it (the menu itself comes in H4). |
-| Bottom-right | The potion buttons (H3), with Ride/Walk above them. |
+| Over the cat | The health bar (and the mount's while riding). The Bag shows health as bars too, with the currencies packed under them. |
+| Bottom, row 1 | The Bag (left), the build icon (a house) next to it, the snack or potion slot at the right. |
+| Bottom, row 2 | The defence buttons (smaller) just above the Bag; Ride/Walk (or Feed while the mount is knocked out) at the right, above the snack slot. |
+| While placing | Place and Done, centred at the bottom; the Bag group slides out. |
 
-- Nothing goes in the middle third of the screen. The floating joystick stays as it is, and "Start wave" stays,
-  placed to fit the new layout.
+- Nothing goes in the middle third of the screen. The floating joystick stays as it is.
+- **Start wave stays on the signpost's card only.** There is no Start wave button on the screen.
+- **The build icon** opens the Hearthtree's card at its Buildings shelf from anywhere in the camp. It is hidden below
+  ground, and in a wave it gives the usual "A wave is on!". H4 swaps in the real build menu.
 
-**1. Health as bars,** with no numbers.
+**1. Health as bars,** with no numbers: over the cat's head, and in the Bag.
 
-**2. All three currencies** are always shown.
+**2. All three currencies** are always shown, top-left.
 
-**3. The raid bar** fills as enemies are defeated:
-- in Raid Missions it covers one wave;
-- in Random Raids it covers the whole attack;
-- it shows no numbers.
+**3. The raid bar** fills as the fight is beaten, with no numbers:
+- in a Raid Mission it is the share of this wave beaten, and an empty track between waves;
+- in a Random Raid it is the Gloom meter (violet), then the warning countdown (gold to red), then the share of the
+  whole attack beaten;
+- in the Gloomwood the same place holds the fight pips.
 
 **4. Settings** (the gear):
-- the graphics level (Low / Medium / High, today's quality setting);
-- sound on/off;
-- room for more later.
+- Graphics: Auto, Low, Medium or High;
+- Sound on or off;
+- saved in their own small file (`user://settings.json`), not in the game save, and never written during autotests;
+- the texts come from `game/content/settings/graphics/entry.json` and `.../sound/entry.json`; room for more later.
 
-**5. Buttons slide in and out** with a short fade (about 0.2 s) instead of popping.
+**5. Buttons slide in and out** with a short fade (0.2 s) instead of popping. A button that is sliding out stops
+taking touches at once.
 
-**Technical:**
-- `hud.gd`, which is one big file with one owner;
-- `quality.gd`;
-- `save.gd`, for the settings;
-- **Who:** one Opus agent.
-- **Tests:** `--smoke` and `--layout` (nothing in the middle third, nothing overlapping).
+**Technical (as built):**
+- `hud.gd` is now a facade in `game/ui/hud/` with its parts beside it (`top_bar.gd`, `fight_bar.gd`, `messages.gd`,
+  `action_buttons.gd`, `card.gd`, `settings_window.gd`, `slide.gd` and more; the list is in `docs/GAME_GUIDE.md`
+  part 11). Public names are kept.
+- The HUD listens to Events (`currency_changed`, `fight_progress`, `riding_changed`, `mount_down_changed`,
+  `placing_changed`, `area_changed`, `boss_changed`, `campfire_hit`, `wave_ended`, `raid_ended`).
+- Ride/Walk sends the Ride command (`game/commands/ride.gd`).
+- `game/core/settings_file.gd`, `Quality.set_level` and `set_auto`, `Sfx.set_sound`.
+- **Who:** Opus agents.
+- **Tests:** the new `--settings` (40 checks); `--hudcheck` is now 121 checks (real taps on Ride, the gear, a graphics
+  row, the Bag and the build icon; a mission wave, the Last Stand and a raid's attack; the raid bar fills);
+  `--inventory` 56; `--layout` and `--smoke` as before. The layout test checks nothing enters the middle third and no two
+  edge controls overlap. One old fail in `--raidshots` ("the Watch card": the card is now called "Random Raids") predates
+  H2 and is still there.
 - Screenshots come with the APK.
 
 ---

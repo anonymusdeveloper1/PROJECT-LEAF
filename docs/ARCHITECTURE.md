@@ -160,6 +160,13 @@ depends on whom, so **there are exactly eight**, each with one job:
 | `wave_started(n)`, `wave_ended(n, held)` | Raid Missions |
 | `raid_started(spec)`, `raid_ended(won, perfect)` | Random Raids (moved from `raids.gd`'s signals) |
 | `mission_won(n)` | a Raid Mission is won |
+| `fight_progress(done, total)` | progress changes in the current Raid Mission wave or the whole Random Raid attack |
+| `riding_changed(on)` | the Ride command mounts or dismounts the cat |
+| `mount_down_changed(down)` | the mount is knocked out or gets back up |
+| `placing_changed(kind)` | defence placement starts or ends (empty kind) |
+| `area_changed(inside)` | the cat enters or leaves an expedition |
+| `boss_changed(boss)` | a boss appears or its encounter ends (null) |
+| `campfire_hit()` | the campfire takes damage |
 | `building_upgraded(id, level)` | any building levels up |
 | `timer_finished(job_id)` | a Timers job ends |
 | `quality_changed(level)` | the graphics level changes (moved from Quality) |
@@ -393,9 +400,10 @@ depends on whom, so **there are exactly eight**, each with one job:
 **Where the game is today** (25 November 2026):
 - five autoloads (Events, Data, Save, Quality, Pools). New in H1: `game/core/` (events, pools, save upgrades) and
   `game/content/index.json` (empty for now); the rest is in `game/scripts/`; every number in one `balance.json`;
-- a few very big files: `stations.gd` 2,760 lines, `hud.gd` 2,362, `enemy.gd` 2,352, `fight.gd` 2,184,
+- a few very big files: `stations.gd` 2,760 lines, `enemy.gd` 2,352, `fight.gd` 2,184,
   `burrow_run.gd` 1,897;
-- the Events board has 14 signals; about 730 direct calls through `main` remain until H2;
+- the Events board has 14 signals; since H2 (26 Nov 2026) the HUD is split under `game/ui/hud/` and listens to Events;
+  many direct calls through `main` remain elsewhere;
 - arrows, damage numbers, text pop-ups, hit effects and pickups are pooled (H1); every arrow still checks every enemy
   each physics step;
 - states as words with `match` blocks;

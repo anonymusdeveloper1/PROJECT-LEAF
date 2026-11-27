@@ -16,7 +16,9 @@ extends Node
 ##                     the safe area, the dim over the game; each closed by its X or a tap outside (taking turns), and
 ##                     once by Android's back button; the signpost with missions and a saved run, the Watch and a raid's
 ##                     warning; building; a mission with a boss bar; the Gloomwood's cards, pips and arena; nothing of
-##                     the HUD in the middle third of the screen
+##                     the HUD in the middle third of the screen and (H2) no two HUD controls overlapping (the group
+##                     "hud_edge"); real taps on Ride / Walk, the Settings gear (a graphics row, the X), the Bag and the
+##                     build icon. Also run it at 540x960 (a 16:9 phone).
 ##   --taps            taps and markers: nothing opens by walking; a drag that ends on a marker or a long press opens
 ##                     nothing; a tap on empty ground does nothing; a tap in reach opens at once, a far one walks the cat
 ##                     there first, a drag stops that walk; a tap on the thing itself works; a drag on the dim moves
@@ -593,6 +595,7 @@ func _hudcheck() -> void:
 	await t._wait(4.0)
 	_middle_free("camp, endgame")
 	await t._shot("hud_camp_endgame")
+	await _hud_taps()
 	for id in ["shop", "target", "bench", "well", "cottage", "stall", "sign", "stone", "garden", "pot", "fishing"]:
 		await _card_at(main.stations.rings[id], id)
 		if id == "stall" or id == "cottage":
@@ -621,14 +624,48 @@ func _hudcheck() -> void:
 	_middle_free("a raid's warning")
 	await _card_at(main.stations.rings["sign"], "raid")
 	await _close_dialog("raid")
+	# ... and its attack (the whole attack's share in the raid bar, the campfire's bar, the leader's boss bar)
+	main.player.global_position = Vector3(0, 0, 1.6)
+	main.fight.next_phase_now()
+	await t._until(func(): return main.fight.in_wave, 3.0)
+	await t._wait(1.5)
+	t._expect("the raid's attack runs", main.fight.active and main.fight.mode == "raid" and main.fight.in_wave and hud._fire_bar.visible,
+		{"mode": main.fight.mode, "in_wave": main.fight.in_wave, "fire_bar": hud._fire_bar.visible})
+	_middle_free("a raid's attack")
 	t._reset_fight()
 	t._clear_raid_state()
 	main.hud.refresh()
-	# 4. building
+	# 4. building: row 2 full (towers and spikes in the Bag beside Ride, then beside Feed; barricades never stay in the
+	# Bag: defences.gd refunds them, so two is the most row 2 shows), then placing
 	main.player.global_position = Vector3(5.0, 0, -6.0)
+	if main.player.riding:
+		main.set_riding(false, false)
+	if main.mount != null:
+		main.mount.refill()
 	Save.items["tower"] = 2
+	Save.items["spikes"] = 1
 	main.hud.refresh_build()
 	await t._wait(0.6)
+	var acts = hud.p_actions
+	var defs: Array = (acts.def_buttons as Dictionary).values().filter(func(b): return b.is_visible_in_tree() and b.modulate.a > 0.95)
+	t._expect("row 2: the towers, the spikes and Ride", defs.size() == 2 and acts.ride_button.is_visible_in_tree()
+		and defs.all(func(b): return b.get_global_rect().size.x <= 130.0), {"defs": defs.map(func(b): return b.get_global_rect())})
+	# all three would still end before Ride (each button at its own smallest size, 10 px apart, from 20 px in)
+	var three := 20.0
+	for k in acts.def_buttons:
+		three += maxf((acts.def_buttons[k] as Button).get_combined_minimum_size().x, 124.0) + 10.0
+	t._expect("three defence buttons would still end before Ride", three - 10.0 < acts.ride_button.get_global_rect().position.x,
+		{"end": three - 10.0, "ride": acts.ride_button.get_global_rect().position.x})
+	_middle_free("two defences and Ride")
+	main.mount.resting = 30.0                            # knocked out: Feed takes Ride's place (its words are longer)
+	main.hud.refresh_build()
+	await t._wait(0.4)
+	t._expect("row 2: the defences and Feed (three would still end before it)", acts.feed_button.is_visible_in_tree() and not acts.ride_button.is_visible_in_tree()
+		and three - 10.0 < acts.feed_button.get_global_rect().position.x, {"end": three - 10.0, "feed": acts.feed_button.get_global_rect()})
+	_middle_free("two defences and Feed")
+	main.mount.refill()
+	main.hud.refresh_build()
+	await t._wait(0.4)
 	main.defences.start_placing("tower")
 	await t._wait(0.6)
 	await t._shot("hud_placing")
@@ -639,17 +676,44 @@ func _hudcheck() -> void:
 	await t._wait(0.3)
 	# 5. the Burrows: a room, its rings' cards, the boss, the seal
 	await _burrow_cards()
-	# 6. a mission with a boss bar
+	# 6. a mission wave with a boss bar (the saved run of step 1 dropped, or mission 1 would be refused)
 	main.player.global_position = Vector3(0, 0, 1.6)
+	Save.mission_run = {}
 	await t._wait(0.5)
 	main.start_stage(0)
 	await t._wait(1.0)
-	var bear = main.fight.spawn("bear", main.world.spawn_point(0, 0.0) * 0.6, 0)
+	var f = main.fight
+	t._expect("the mission wave runs", f.active and f.in_wave and f.mode == "mission", {"active": f.active, "in_wave": f.in_wave, "mode": f.mode})
+	var bear = f.spawn("bear", main.world.spawn_point(0, 0.0) * 0.6, 0)
 	bear.hp = 1e9
-	await t._wait(1.5)
+	# the raid bar fills as the wave's enemies fall: one beaten (not the bear)
+	var one: Node3D = null
+	for i in 20:
+		for e in get_tree().get_nodes_in_group("foes"):
+			if e != bear and not e.dead and not e.is_in_group("bonus"):
+				one = e
+				break
+		if one != null:
+			break
+		await t._wait(0.3)
+	if one != null:
+		one.hit(Vector3.FORWARD, one.hp + 1.0)
+	await t._wait(0.4)
+	var fl: float = hud.p_fight.fill()
+	var share := float(f.wave_total() - f.left_in_wave()) / float(maxi(f.wave_total(), 1))
+	t._expect("the mission's raid bar fills as enemies fall", one != null and f.in_wave and fl > 0.0 and is_equal_approx(fl, share) and hud.p_fight.progress_done > 0,
+		{"fill": fl, "share": share, "total": f.wave_total(), "left": f.left_in_wave(), "done": hud.p_fight.progress_done})
+	await t._wait(1.0)
 	await t._shot("hud_mission_boss")
 	t._expect("the boss bar shows under the top bar", hud._boss_bar.visible and hud._boss_bar.global_position.y >= hud._safe.x + hud._top_h, {"y": hud._boss_bar.global_position.y})
-	_middle_free("a raid with a boss")
+	t._expect("the campfire's bar shows in the wave", hud._fire_bar.visible)
+	_middle_free("a mission wave with a boss")
+	# the Last Stand: the fire out, its banner and the words line
+	f._start_last_stand()
+	await t._wait(0.5)
+	t._expect("the Last Stand: the words line says so", String(hud._stage_l.text) == "Last stand: rebuild the fire" and hud._fire_bar.visible, {"text": hud._stage_l.text})
+	await t._shot("hud_last_stand")
+	_middle_free("the Last Stand")
 	t._reset_fight()
 
 
@@ -663,22 +727,117 @@ func _view() -> Vector2:
 	return main.hud.get_viewport().get_visible_rect().size
 
 
-## Nothing of the HUD in the middle third of the screen (but the bars over the cat and the pointer arrow).
+## Nothing of the HUD in the middle third of the screen (but the bars over the cat and the pointer arrow), and (H2) no
+## two of the HUD's edge controls overlapping: every control in the group "hud_edge" that shows (visible, not faded
+## out) is checked against the band and against each other (a control and one inside it are not a pair).
 func _middle_free(what: String) -> void:
 	var hud = main.hud
 	var v := _view()
 	var band := Rect2(0, v.y / 3.0, v.x, v.y / 3.0)
 	var bad: Array = []
-	var list: Array = [hud._top, hud._res, hud._line2, hud._stage_l, hud._gate_bar, hud._boss_bar, hud._hide_l, hud._banner, hud._toast, hud._tip, hud._hint]
-	list.append_array(hud._build_bar.get_children())
-	list.append_array(hud._place_bar.get_children())
-	for c in list:
-		if not (c is Control) or not (c as Control).is_visible_in_tree() or (c as Control).modulate.a < 0.05:
-			continue
+	var shown := _edge_shown()
+	for c in shown:
 		if (c as Control).get_global_rect().intersects(band):
-			bad.append([String(c.name), (c as Control).get_global_rect()])
-	t._expect("nothing of the HUD mid-screen: %s" % what, bad.is_empty(), {"bad": str(bad)})
+			bad.append([_edge_name(c), (c as Control).get_global_rect()])
+	t._expect("nothing of the HUD mid-screen: %s" % what, bad.is_empty() and shown.size() >= 4, {"bad": str(bad), "shown": shown.size()})
 	t._expect("the top bar clears the safe area: %s" % what, hud._res.global_position.y >= hud._safe.x, {"y": hud._res.global_position.y, "safe": hud._safe.x})
+	var over: Array = []
+	for i in shown.size():
+		for j in range(i + 1, shown.size()):
+			var a: Control = shown[i]
+			var b: Control = shown[j]
+			if a.is_ancestor_of(b) or b.is_ancestor_of(a):
+				continue
+			if a.get_global_rect().intersects(b.get_global_rect()):
+				over.append("%s %s / %s %s" % [_edge_name(a), a.get_global_rect(), _edge_name(b), b.get_global_rect()])
+	t._expect("no two HUD controls overlap: %s" % what, over.is_empty(), {"overlap": over.slice(0, 4)})
+
+
+## The HUD's edge controls that show now (group "hud_edge": visible and not faded out, with a size).
+func _edge_shown() -> Array:
+	var out: Array = []
+	for n in get_tree().get_nodes_in_group("hud_edge"):
+		var c := n as Control
+		if c == null or not c.is_visible_in_tree() or c.modulate.a < 0.05:
+			continue
+		var r := c.get_global_rect()
+		if r.size.x < 1.0 or r.size.y < 1.0:
+			continue
+		out.append(c)
+	return out
+
+
+func _edge_name(c: Control) -> String:
+	var label := String(c.get_meta("label", "")) if c.has_meta("label") else ""
+	return label if label != "" else (String((c as Label).text) if c is Label else String(c.name))
+
+
+## H2: real taps on the HUD's own buttons: Ride, then Walk (the mount comes and goes); the gear opens the Settings
+## window, a tap on a graphics row's button sets that level (put back after), the X closes it; the Bag opens by its
+## button (a shot), and the build icon opens the Hearthtree's card from where the cat stands.
+func _hud_taps() -> void:
+	var hud = main.hud
+	hud.hide_card()
+	main.player.global_position = Vector3(0, 0, 1.6)
+	if main.player.riding:
+		main.set_riding(false, false)
+	await t._wait(0.5)
+	var rb: Button = hud.p_actions.ride_button
+	t._expect("the Ride button shows at the bottom right", rb != null and rb.is_visible_in_tree() and rb.text == "Ride"
+		and rb.get_global_rect().position.x > _view().x * 0.6 and rb.get_global_rect().position.y > _view().y * 0.66, {"rect": rb.get_global_rect() if rb != null else Rect2()})
+	await t._tap_at(rb.get_global_rect().get_center())
+	await t._wait(0.5)
+	t._expect("a real tap on Ride: the cat rides, the button reads Walk", main.player.riding and rb.text == "Walk", {"riding": main.player.riding, "text": rb.text})
+	await t._shot("hud_riding")
+	_middle_free("riding")
+	await t._tap_at(rb.get_global_rect().get_center())
+	await t._wait(0.5)
+	t._expect("a real tap on Walk: the cat walks, the button reads Ride", not main.player.riding and rb.text == "Ride", {"riding": main.player.riding, "text": rb.text})
+	# the gear: the Settings window
+	var gear: Button = hud._gear
+	t._expect("the gear shows at the top right, round and thumb-sized", gear != null and gear.is_visible_in_tree() and gear.is_in_group("ui_block")
+		and gear.get_global_rect().size.x >= 60.0 and gear.get_global_rect().end.x > _view().x * 0.85 and gear.get_global_rect().position.y >= hud._safe.x)
+	await t._tap_at(gear.get_global_rect().get_center())
+	await t._wait(0.5)
+	t._expect("a real tap on the gear opens the Settings window", hud.card_ring() == hud.settings and hud.card_title() != "", {"title": hud.card_title()})
+	await t._shot("hud_settings")
+	_card_fits("settings")
+	var was_level: int = Quality.level
+	var was_auto: bool = Quality.auto
+	var use: Button = null
+	for b in hud.card_buttons():
+		if String(b.get_meta("label", "")) == "Use" and not b.disabled:
+			use = b
+			break
+	t._expect("the Settings window has a graphics row to pick", use != null)
+	if use != null:
+		await t._tap_at(use.get_global_rect().get_center())
+		await t._wait(0.4)
+		t._expect("a real tap on a graphics row's button changes the graphics", Quality.level != was_level or Quality.auto != was_auto,
+			{"level": [was_level, Quality.level], "auto": [was_auto, Quality.auto]})
+	if was_auto:
+		Quality.set_auto()
+	else:
+		Quality.set_level(was_level)
+	await t._tap_close()
+	t._expect("the Settings window closes by its X", hud._card == null)
+	await t._wait(0.3)
+	# the Bag through its button
+	await t._tap_at(hud.bag_button.get_global_rect().get_center())
+	await t._wait(0.6)
+	t._expect("a real tap on the Bag opens it", hud.card_ring() == hud.inventory)
+	await t._shot("hud_bag")
+	hud.hide_card()
+	await t._wait(0.3)
+	# the build icon: the Hearthtree's card from here
+	var bi: Button = hud._build_icon
+	t._expect("the build icon shows next to the Bag", bi != null and bi.is_visible_in_tree() and bi.get_global_rect().position.x >= hud.bag_button.get_global_rect().end.x)
+	await t._tap_at(bi.get_global_rect().get_center())
+	await t._wait(0.6)
+	t._expect("a real tap on the build icon opens the Hearthtree's card", hud.card_ring() == main.stations.rings["shop"], {"title": hud.card_title()})
+	await t._shot("hud_build_icon")
+	hud.hide_card()
+	await t._wait(0.3)
 
 
 var _close_way := 0                 # the dialogs close by their X and by a tap outside, taking turns

@@ -436,7 +436,7 @@ func hurt(amount: int, _from: Vector3) -> void:
 					Data.mount_name(), main.feed_text()], null)
 		else:
 			main.hud.toast("%s is hurt and runs home to rest" % Data.mount_name())
-		main.hud.refresh_build()
+		Events.mount_down_changed.emit(true)
 
 
 ## Knocked out: it cannot be ridden until it is fed, a chapter break comes, or (outside missions) it has rested.
@@ -449,8 +449,8 @@ func refill() -> void:
 	var was_out := resting > 0.0
 	resting = 0.0
 	hp = max_hp()
-	if was_out and main != null and main.hud != null:
-		main.hud.refresh_build()
+	if was_out:
+		Events.mount_down_changed.emit(false)
 
 
 func come_to(at: Vector3) -> void:
